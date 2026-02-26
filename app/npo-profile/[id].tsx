@@ -1,0 +1,414 @@
+
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
+import { useActivities } from "../../context/ActivityContext";
+import { useApplications } from "../../context/ApplicationContext";
+import { useToast } from "../../context/ToastContext";
+import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2 } from "lucide-react-native";
+import { StandardLayout } from "../../components/StandardLayout";
+import { UserAvatar } from "../../components/UserAvatar";
+import { SoftCard } from "../../components/SoftCard";
+import { StatCard } from "../../components/StatCard";
+import { BadgePill } from "../../components/BadgePill";
+import { ActivityCard } from "../../components/ActivityCard";
+import { Colors } from "../../constants/Colors";
+import { useState } from "react";
+
+export default function NPOProfileScreen() {
+    const { id } = useLocalSearchParams();
+    const router = useRouter();
+    const { user, followNPO, unfollowNPO, isFollowingNPO, getNPOFollowers, users } = useAuth();
+    const { activities, reviews } = useActivities();
+    const { applyToNPO, hasAppliedToNPO } = useApplications();
+    const { showToast } = useToast();
+    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni">("attivita");
+
+    // Get NPO data
+    const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
+    const npoUser = users.find(u => u.id === npoId && u.role === "NPO");
+
+    // Get NPO activities
+    const npoActivities = activities.filter(a => a.npoId === npoId);
+    const openActivities = npoActivities.filter(a => a.status === "APERTA");
+    const pastActivities = npoActivities.filter(a => a.status === "COMPLETATA");
+
+    // Get NPO stats
+    const followerCount = getNPOFollowers(npoId).length;
+
+    // Calculate total donated hours (approx: completed activities * duration * participants)
+    // For now, simpler metric: just sum of completed activity durations * participants
+    const totalDonatedHours = pastActivities.reduce((total, act) => {
+        const start = new Date(act.dateTime).getTime();
+        const end = new Date(act.endDateTime).getTime();
+        const durationHours = (end - start) / (1000 * 60 * 60);
+        return total + (durationHours * act.iscritti.length);
+    }, 0);
+
+    const npoReviews = reviews.filter(r => {
+        const activity = activities.find(a => a.id === r.activityId);
+        return activity?.npoId === npoId;
+    });
+
+    const averageRating = npoReviews.length > 0
+        ? (npoReviews.reduce((sum, r) => sum + r.stars, 0) / npoReviews.length).toFixed(1)
+        : "5.0"; // Default high rating for positive vibe
+
+    if (!npoUser) {
+        return (
+            <StandardLayout title="Ente Non Trovato" label="Profilo Non Trovato">
+                <View className="flex-1 items-center justify-center">
+                    <Text className="text-secondary">NPO non trovata</Text>
+                </View>
+            </StandardLayout>
+        );
+    }
+
+    const handleApply = () => {
+        if (!user || user.role !== "VOLUNTEER") return;
+
+        router.push({
+            pathname: "/(volunteer)/review-application",
+            params: { npoId, type: "NPO" }
+        } as any);
+    };
+
+    const handleOpenLink = async (url: string) => {
+        try {
+            // Check if URL has protocol, if not add https:// (unless it's mailto/tel)
+            let finalUrl = url;
+            if (!url.startsWith("http") && !url.startsWith("mailto") && !url.startsWith("tel")) {
+                finalUrl = "https://" + url;
+            }
+
+            const canOpen = await Linking.canOpenURL(finalUrl);
+            if (canOpen) {
+                await Linking.openURL(finalUrl);
+            } else {
+                Alert.alert("Errore", "Impossibile aprire il link: " + url);
+            }
+        } catch (error) {
+            console.error("Link error:", error);
+            Alert.alert("Errore", "Si è verificato un problema nell'apertura del link.");
+        }
+    };
+
+    const HeaderActions = (
+        <View className="flex-row gap-2">
+            <TouchableOpacity className="p-2 bg-white/20 rounded-full">
+                <Share2 size={20} color="white" />
+            </TouchableOpacity>
+        </View>
+    );
+
+    return (
+        <StandardLayout
+            title={npoUser.npoName || "Profilo Ente"}
+            label="Profilo Ente"
+            rightElement={HeaderActions}
+            bg="bg-background-light"
+            onBack={() => router.back()}
+        >
+            {/* Header Profile Section */}
+            <View className="items-center mb-6">
+                <View className="relative mb-3">
+                    <UserAvatar
+                        size={100}
+                        fontSize={36}
+                        name={npoUser.npoName}
+                        avatarUrl={npoUser.avatar}
+                    />
+                    <View className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white">
+                        <CheckCircle2 size={16} color="white" />
+                    </View>
+                </View>
+
+                <Text className="text-primary font-black text-2xl text-center mb-1">
+                    {npoUser.npoName}
+                </Text>
+                <Text className="text-secondary font-medium text-sm text-center mb-4">
+                    Comitato Locale • {npoUser.locationString || "Milano, MI"}
+                </Text>
+
+                {/* Main Action: Follow */}
+                <TouchableOpacity
+                    onPress={async () => {
+                        if (!user || user.role !== "VOLUNTEER") return;
+                        const isFollowing = isFollowingNPO(npoId);
+                        const success = isFollowing
+                            ? await unfollowNPO(npoId)
+                            : await followNPO(npoId);
+                        if (success) {
+                            showToast(
+                                isFollowing ? "info" : "success",
+                                isFollowing ? "Non segui più questa NPO" : `Ora segui ${npoUser.npoName}!`
+                            );
+                        }
+                    }}
+                    className={`px-6 h-11 rounded-full flex-row items-center justify-center gap-2 border ${user?.role === "VOLUNTEER" && isFollowingNPO(npoId)
+                        ? "bg-white border-accent"
+                        : "bg-accent border-accent"
+                        }`}
+                >
+                    <Heart
+                        size={18}
+                        color={user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? Colors.accent : "white"}
+                        fill={user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? Colors.accent : "transparent"}
+                    />
+                    <Text className={`font-bold text-sm ${user?.role === "VOLUNTEER" && isFollowingNPO(npoId)
+                        ? "text-accent"
+                        : "text-white"
+                        }`}>
+                        {user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? "Segui già" : "Segui Ente"}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Stats Row */}
+            <View className="flex-row gap-3 mb-8">
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={averageRating}
+                        label="RATING"
+                        valueColor="text-yellow-500"
+                        icon={<Star size={14} color="#eab308" fill="#eab308" />}
+                    />
+                </View>
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={followerCount.toString()}
+                        label="FOLLOWER"
+                        valueColor="text-pink-600"
+                        icon={<Users size={14} color="#db2777" />}
+                    />
+                </View>
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={Math.round(totalDonatedHours).toString()}
+                        label="ORE DONATE"
+                        valueColor="text-indigo-600"
+                        icon={<Clock size={14} color="#4f46e5" />}
+                    />
+                </View>
+            </View>
+
+            {/* Become Volunteer Callout */}
+            {user?.role === "VOLUNTEER" && !hasAppliedToNPO(user.id, npoId) && (
+                <SoftCard className="p-4 mb-6 bg-primary" onPress={handleApply}>
+                    <View className="flex-row items-center justify-between">
+                        <View className="flex-1 mr-4">
+                            <Text className="text-white font-black text-lg mb-1">Diventa Volontario</Text>
+                            <Text className="text-white/80 text-xs text-medium">
+                                Unisciti al team di {npoUser.npoName} per accedere ad attività esclusive.
+                            </Text>
+                        </View>
+                        <View className="bg-white/20 p-2 rounded-full">
+                            <ChevronRight size={24} color="white" />
+                        </View>
+                    </View>
+                </SoftCard>
+            )}
+
+            {/* Already Applied Badge */}
+            {user?.role === "VOLUNTEER" && hasAppliedToNPO(user.id, npoId) && (
+                <View className="bg-green-50 p-4 rounded-xl border border-green-100 flex-row items-center justify-center gap-2 mb-6">
+                    <CheckCircle2 size={18} color="#15803d" />
+                    <Text className="text-green-800 font-bold text-sm">Candidatura inviata con successo</Text>
+                </View>
+            )}
+
+            {/* Contact & Info Tabs */}
+            <View className="flex-row border-b border-gray-100 mb-6">
+                <TouchableOpacity
+                    onPress={() => setActiveTab("attivita")}
+                    className={`px-4 py-3 border-b-2 mr-4 ${activeTab === "attivita" ? "border-primary" : "border-transparent"}`}
+                >
+                    <Text className={`font-bold text-sm ${activeTab === "attivita" ? "text-primary" : "text-gray-400"}`}>Attività</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setActiveTab("info")}
+                    className={`px-4 py-3 border-b-2 mr-4 ${activeTab === "info" ? "border-primary" : "border-transparent"}`}
+                >
+                    <Text className={`font-bold text-sm ${activeTab === "info" ? "text-primary" : "text-gray-400"}`}>Chi Siamo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setActiveTab("recensioni")}
+                    className={`px-4 py-3 border-b-2 ${activeTab === "recensioni" ? "border-primary" : "border-transparent"}`}
+                >
+                    <Text className={`font-bold text-sm ${activeTab === "recensioni" ? "text-primary" : "text-gray-400"}`}>Recensioni</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Tab Content */}
+            <View className="pb-10">
+                {activeTab === "attivita" && (
+                    <View>
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-primary font-bold text-lg">Prossime Attività</Text>
+                            <TouchableOpacity onPress={() => router.push("/(volunteer)/search" as any)}>
+                                <Text className="text-accent font-bold text-xs">VEDI TUTTE</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {openActivities.length > 0 ? (
+                            openActivities.map(activity => (
+                                <ActivityCard
+                                    key={activity.id}
+                                    activity={activity}
+                                    style={{ marginBottom: 16 }}
+                                    onPress={() => router.push(`/activity/${activity.id}` as any)}
+                                />
+                            ))
+                        ) : (
+                            <View className="items-center py-8">
+                                <Text className="text-secondary/60 text-center">Nessuna attività programmata al momento.</Text>
+                            </View>
+                        )}
+
+                        {/* Past Activities Teaser */}
+                        {pastActivities.length > 0 && (
+                            <View className="mt-8">
+                                <Text className="text-primary font-bold text-lg mb-4">Attività Concluse</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6">
+                                    {pastActivities.slice(0, 5).map(act => (
+                                        <View key={act.id} className="w-64 bg-slate-50 p-4 rounded-2xl mr-3 border border-slate-100">
+                                            <Text className="text-primary font-bold text-sm mb-1" numberOfLines={1}>{act.title}</Text>
+                                            <Text className="text-secondary text-xs mb-2">
+                                                {new Date(act.dateTime).toLocaleDateString()}
+                                            </Text>
+                                            <View className="flex-row items-center gap-1">
+                                                <CheckCircle2 size={12} color="green" />
+                                                <Text className="text-green-700 text-[10px] font-bold uppercase">Completata</Text>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                {activeTab === "info" && (
+                    <View className="gap-4">
+                        <SoftCard className="p-5">
+                            <Text className="text-primary font-bold text-base mb-3">Informazioni</Text>
+
+                            <View className="gap-4">
+                                {npoUser.publicEmail && (
+                                    <TouchableOpacity
+                                        className="flex-row items-center gap-3"
+                                        onPress={() => handleOpenLink(`mailto:${npoUser.publicEmail}`)}
+                                    >
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Mail size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Email</Text>
+                                            <Text className="text-primary font-medium">{npoUser.publicEmail}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+
+                                {npoUser.phone && (
+                                    <TouchableOpacity
+                                        className="flex-row items-center gap-3"
+                                        onPress={() => handleOpenLink(`tel:${npoUser.phone}`)}
+                                    >
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Phone size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Telefono</Text>
+                                            <Text className="text-primary font-medium">{npoUser.phone}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+
+                                {npoUser.website && (
+                                    <TouchableOpacity
+                                        className="flex-row items-center gap-3"
+                                        onPress={() => handleOpenLink(npoUser.website!)}
+                                    >
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Globe size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Sito Web</Text>
+                                            <Text className="text-primary font-medium truncate max-w-[200px]" numberOfLines={1}>{npoUser.website}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+
+                                <View className="flex-row items-center gap-3">
+                                    <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                        <MapPin size={16} color={Colors.primary} />
+                                    </View>
+                                    <View>
+                                        <Text className="text-secondary text-xs font-bold uppercase">Sede Operativa</Text>
+                                        <Text className="text-primary font-medium">{npoUser.locationString || "Sede Principale"}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </SoftCard>
+
+                        {npoUser.bio && (
+                            <SoftCard className="p-5">
+                                <Text className="text-primary font-bold text-base mb-2">Chi Siamo</Text>
+                                <Text className="text-secondary leading-relaxed text-sm">
+                                    {npoUser.bio}
+                                </Text>
+                            </SoftCard>
+                        )}
+
+                        {/* Map Placeholder */}
+                        <View className="h-40 bg-slate-100 rounded-2xl items-center justify-center border border-slate-200">
+                            <MapPin size={32} color={Colors.secondary} />
+                            <Text className="text-secondary/50 text-xs font-bold mt-2">Mappa non disponibile</Text>
+                        </View>
+                    </View>
+                )}
+
+                {activeTab === "recensioni" && (
+                    <View>
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-primary font-bold text-lg">Cosa dicono di noi</Text>
+                        </View>
+
+                        {npoReviews.length > 0 ? (
+                            npoReviews.map(review => (
+                                <SoftCard key={review.id} className="p-4 mb-3">
+                                    <View className="flex-row justify-between items-start mb-2">
+                                        <View className="flex-row gap-0.5">
+                                            {[1, 2, 3, 4, 5].map(s => (
+                                                <Star key={s} size={14} color={s <= review.stars ? Colors.accent : "#e2e8f0"} fill={s <= review.stars ? Colors.accent : "transparent"} />
+                                            ))}
+                                        </View>
+                                        <Text className="text-secondary/40 text-[10px] font-bold">{new Date(review.date).toLocaleDateString()}</Text>
+                                    </View>
+                                    <Text className="text-primary italic text-sm mb-2">"{review.comment}"</Text>
+                                    {review.feelings.length > 0 && (
+                                        <View className="flex-row flex-wrap gap-2">
+                                            {review.feelings.map(f => (
+                                                <View key={f} className="bg-gray-100 px-2 py-1 rounded-md">
+                                                    <Text className="text-secondary text-[10px] font-bold uppercase">{f}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
+                                </SoftCard>
+                            ))
+                        ) : (
+                            <View className="py-12 items-center">
+                                <Text className="text-secondary/50 text-center">Nessuna recensione ancora.</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+            </View>
+        </StandardLayout>
+    );
+}
+
+const styles = {
+    // Helper if needed for specific overrides not covered by tailwind
+};

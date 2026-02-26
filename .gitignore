@@ -1,0 +1,50 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/ios
+/android
+
+# Metro
+.metro-health-check*
+
+# debug and logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+tsc_output.txt
+
+# macOS
+.DS_Store
+
+# SECRETS - IMPORTANT
+.env
+.env*.local
+google-services-key.json
+
+# typescript
+*.tsbuildinfo
+
+# AI Agent
+.gemini/
+brain/
+implementation_plan.md
+walkthrough.md
+task.md
+
+# Others
+app-example/
