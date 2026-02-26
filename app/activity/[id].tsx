@@ -22,7 +22,15 @@ import { ActivityInfoCard } from "../../components/activity/ActivityInfoCard";
 import { OrganizerCard } from "../../components/activity/OrganizerCard";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+// Conditional import for react-native-maps to prevent web bundling errors
+let MapView: any, Marker: any, PROVIDER_GOOGLE: any;
+if (Platform.OS !== 'web') {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+    PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
+}
+
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { supabase } from "../../utils/supabase";
 
@@ -400,52 +408,8 @@ export default function ActivityDetail() {
                     {/* Location Map (Real Implementation) */}
                     <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
                         <Text className="text-primary font-bold text-base mb-3">Luogo dell'Attività</Text>
-                        {isOwner ? (
-                            <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100 shadow-sm">
-                                <MapView
-                                    provider={PROVIDER_GOOGLE}
-                                    style={{ width: '100%', height: '100%' }}
-                                    initialRegion={{
-                                        latitude: activity.location.coords.lat,
-                                        longitude: activity.location.coords.lng,
-                                        latitudeDelta: 0.005,
-                                        longitudeDelta: 0.005,
-                                    }}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    pitchEnabled={false}
-                                    rotateEnabled={false}
-                                >
-                                    <Marker
-                                        coordinate={{
-                                            latitude: activity.location.coords.lat,
-                                            longitude: activity.location.coords.lng,
-                                        }}
-                                    >
-                                        <View className="bg-accent p-2.5 rounded-2xl shadow-xl shadow-accent/40 border-2 border-white">
-                                            <MapPin size={20} color="white" fill="white" />
-                                        </View>
-                                    </Marker>
-                                </MapView>
-                                <View className="absolute bottom-4 left-4 right-4 bg-white/95 px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
-                                    <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
-                                        <MapIcon size={16} color={Colors.primary} />
-                                    </View>
-                                    <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
-                                </View>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                activeOpacity={0.9}
-                                onPress={() => router.push({
-                                    pathname: '/(volunteer)/(tabs)/map',
-                                    params: {
-                                        focusLat: activity.location.coords.lat.toString(),
-                                        focusLng: activity.location.coords.lng.toString(),
-                                        focusActivityId: activity.id,
-                                    }
-                                } as any)}
-                            >
+                        {Platform.OS !== 'web' ? (
+                            isOwner ? (
                                 <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100 shadow-sm">
                                     <MapView
                                         provider={PROVIDER_GOOGLE}
@@ -476,13 +440,65 @@ export default function ActivityDetail() {
                                         <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
                                             <MapIcon size={16} color={Colors.primary} />
                                         </View>
-                                        <View className="flex-1">
-                                            <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
-                                            <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
-                                        </View>
+                                        <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
                                     </View>
                                 </View>
-                            </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity
+                                    activeOpacity={0.9}
+                                    onPress={() => router.push({
+                                        pathname: '/(volunteer)/(tabs)/map',
+                                        params: {
+                                            focusLat: activity.location.coords.lat.toString(),
+                                            focusLng: activity.location.coords.lng.toString(),
+                                            focusActivityId: activity.id,
+                                        }
+                                    } as any)}
+                                >
+                                    <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100 shadow-sm">
+                                        <MapView
+                                            provider={PROVIDER_GOOGLE}
+                                            style={{ width: '100%', height: '100%' }}
+                                            initialRegion={{
+                                                latitude: activity.location.coords.lat,
+                                                longitude: activity.location.coords.lng,
+                                                latitudeDelta: 0.005,
+                                                longitudeDelta: 0.005,
+                                            }}
+                                            scrollEnabled={false}
+                                            zoomEnabled={false}
+                                            pitchEnabled={false}
+                                            rotateEnabled={false}
+                                        >
+                                            <Marker
+                                                coordinate={{
+                                                    latitude: activity.location.coords.lat,
+                                                    longitude: activity.location.coords.lng,
+                                                }}
+                                            >
+                                                <View className="bg-accent p-2.5 rounded-2xl shadow-xl shadow-accent/40 border-2 border-white">
+                                                    <MapPin size={20} color="white" fill="white" />
+                                                </View>
+                                            </Marker>
+                                        </MapView>
+                                        <View className="absolute bottom-4 left-4 right-4 bg-white/95 px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
+                                            <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
+                                                <MapIcon size={16} color={Colors.primary} />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
+                                                <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            )
+                        ) : (
+                            <View className="rounded-[32px] overflow-hidden bg-slate-50 h-52 border-2 border-dashed border-slate-200 items-center justify-center">
+                                <MapPin size={32} color={Colors.secondary} opacity={0.3} />
+                                <Text className="text-secondary/60 font-bold mt-2">Mappa disponibile su App Mobile</Text>
+                                <Text className="text-secondary/40 text-[10px] mt-1">{activity.location.address}</Text>
+                            </View>
                         )}
                     </Animated.View>
 
