@@ -53,6 +53,7 @@ interface ActivityContextType {
         centerLat?: number;
         centerLng?: number;
         radiusKm?: number;
+        statuses?: string[];
     }) => Promise<void>;
 }
 
@@ -175,11 +176,11 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
 
     const fetchPaginatedActivities = useCallback(async ({
         reset = false, category, searchText, skills, onlyAvailable, onlyUrgent, dateFrom,
-        centerLat, centerLng, radiusKm,
+        centerLat, centerLng, radiusKm, statuses
     }: {
         reset?: boolean; category?: string; searchText?: string;
         skills?: string[]; onlyAvailable?: boolean; onlyUrgent?: boolean; dateFrom?: string;
-        centerLat?: number; centerLng?: number; radiusKm?: number;
+        centerLat?: number; centerLng?: number; radiusKm?: number; statuses?: string[];
     }) => {
         setIsLoadingMore(true);
         setError(false);
@@ -207,6 +208,7 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
                 centerLat,
                 centerLng,
                 radiusKm,
+                statuses
             }, controller.signal);
 
             if (reset) {

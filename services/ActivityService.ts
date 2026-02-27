@@ -102,6 +102,7 @@ export class ActivityService {
             onlyAvailable?: boolean;
             onlyUrgent?: boolean;
             dateFrom?: string;
+            statuses?: string[];
             // Geo-radius filter (uses get_activities_near_me RPC)
             centerLat?: number;
             centerLng?: number;
@@ -122,6 +123,7 @@ export class ActivityService {
                 if (filter.onlyUrgent) results = results.filter((a: any) => a.isUrgent);
                 if (filter.skills && filter.skills.length > 0) results = results.filter((a: any) => filter.skills!.some((s: any) => a.skills.includes(s)));
                 if (filter.dateFrom) results = results.filter((a: any) => a.dateTime >= filter.dateFrom!);
+                if (filter.statuses && filter.statuses.length > 0) results = results.filter((a: any) => filter.statuses!.includes(a.status));
 
                 // Sort by distance ascending (RPC already does this, but keep it explicit)
                 results.sort((a, b) => (a as any).distanceMeters - (b as any).distanceMeters);
@@ -201,8 +203,13 @@ export class ActivityService {
                 query = query.in('id', matchIds);
             }
 
-            // Exclude cancelled activities by default from general lists
-            query = query.neq('status', 'CANCELLATA');
+            // Status filter
+            if (filter?.statuses && filter.statuses.length > 0) {
+                query = query.in('status', filter.statuses);
+            } else {
+                // Exclude cancelled activities by default from general lists
+                query = query.neq('status', 'CANCELLATA');
+            }
 
             // Order: Important ones first (urgent/soon) or recently created
             query = query.order('is_urgent', { ascending: false })

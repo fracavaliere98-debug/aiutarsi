@@ -466,7 +466,8 @@ export default function VolunteerMap() {
         setLoadingActivities(true);
         try {
             const results = await activityService.getActivitiesByRadius(lat, lng, radius);
-            setActivities(results);
+            const activeResults = results.filter(act => ['APERTA', 'IN_CORSO'].includes(act.status));
+            setActivities(activeResults);
         } catch (e) {
             console.error('[Map] Fetch error:', e);
         } finally {
@@ -483,7 +484,6 @@ export default function VolunteerMap() {
     // ── Filter logic ────────────────────────────────────────────────────────
     const filteredActivities = useMemo(() => {
         return activities.filter(act => {
-            if (act.status === 'CANCELLATA' || act.status === 'COMPLETATA' || act.status === 'IN_CORSO') return false;
             if (filters.onlyUrgent && !act.isUrgent) return false;
             if (filters.onlyAvailable && act.iscritti.length >= act.slots) return false;
             if (filters.interests.length > 0 && !filters.interests.includes(act.category)) return false;

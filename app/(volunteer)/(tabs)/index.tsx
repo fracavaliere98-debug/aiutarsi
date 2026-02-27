@@ -41,7 +41,7 @@ export default function VolunteerDashboard() {
     }
 
     // Filter activities
-    const openActivities = activities.filter(a => a.status === "APERTA");
+    const openActivities = activities.filter(a => a.status === "APERTA" || a.status === "IN_CORSO");
     const enrolledActivities = activities.filter(a => a.iscritti.includes(user?.id || ""));
     const activeEnrolled = useMemo(() => {
         const now = new Date();

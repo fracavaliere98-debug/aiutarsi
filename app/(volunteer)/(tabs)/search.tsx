@@ -348,6 +348,7 @@ export default function SearchScreen() {
             centerLat: searchCenter?.lat,
             centerLng: searchCenter?.lng,
             radiusKm: searchCenter ? filters.radiusKm : undefined,
+            statuses: ['APERTA', 'IN_CORSO']
         });
     }, [filters, debouncedSearch, searchCenter]);
 
@@ -359,6 +360,7 @@ export default function SearchScreen() {
             centerLat: searchCenter?.lat,
             centerLng: searchCenter?.lng,
             radiusKm: searchCenter ? filters.radiusKm : undefined,
+            statuses: ['APERTA', 'IN_CORSO']
         });
         showToast('success', 'Risultati aggiornati!');
         setRefreshing(false);

@@ -50,6 +50,8 @@ export function ProfileStats({
 
     // Format hours
     const formatHours = (hours: number) => {
+        if (!hours) return "0h";
+
         const totalMinutes = hours * 60;
         const days = Math.floor(totalMinutes / (24 * 60));
         const remainingMinutesAfterDays = totalMinutes % (24 * 60);
@@ -60,14 +62,14 @@ export function ProfileStats({
         if (days > 0) {
             formattedString += `${days}g `;
         }
-        if (hoursPart > 0 || (days === 0 && minutesPart > 0)) { // Show hours if present, or if no days and minutes are present
+        if (hoursPart > 0) {
             formattedString += `${hoursPart}h `;
         }
         if (minutesPart > 0) {
             formattedString += `${minutesPart}m`;
         }
 
-        return formattedString.trim();
+        return formattedString.trim() || "0h";
     };
 
     return (
