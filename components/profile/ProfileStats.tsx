@@ -50,7 +50,7 @@ export function ProfileStats({
 
     // Format hours
     const formatHours = (hours: number) => {
-        if (!hours) return "0h";
+        if (!hours) return "0";
 
         const totalMinutes = hours * 60;
         const days = Math.floor(totalMinutes / (24 * 60));
@@ -69,7 +69,7 @@ export function ProfileStats({
             formattedString += `${minutesPart}m`;
         }
 
-        return formattedString.trim() || "0h";
+        return formattedString.trim() || "0";
     };
 
     return (
