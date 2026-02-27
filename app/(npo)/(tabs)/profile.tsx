@@ -208,10 +208,10 @@ export default function NPOProfileScreen() {
                     {isAuthLoading ? (
                         <ActivityIndicator color="#ef4444" />
                     ) : (
-                        <>
+                        <View className="flex-row items-center gap-3">
                             <LogOut size={20} color="#ef4444" />
                             <Text className="text-red-500 font-bold text-base">Esci dall'Account</Text>
-                        </>
+                        </View>
                     )}
                 </TouchableOpacity>
 
