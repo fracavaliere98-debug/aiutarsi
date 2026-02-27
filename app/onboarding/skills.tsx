@@ -1,10 +1,12 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter , useLocalSearchParams } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { ArrowLeft, Code, MessageSquare, Heart, Lightbulb, PenTool, BarChart, HardHat, Camera } from "lucide-react-native";
+
+
 
 const SKILLS = [
     { id: "comms", label: "Comunicazione", icon: MessageSquare },
@@ -16,8 +18,6 @@ const SKILLS = [
     { id: "manual", label: "Lavoro Manuale", icon: HardHat },
     { id: "photo", label: "Fotografia", icon: Camera },
 ];
-
-import { useLocalSearchParams } from "expo-router";
 
 // ... existing imports ...
 

@@ -10,7 +10,8 @@ export class ActivityService {
         return {
             id: dbActivity.id,
             npoId: dbActivity.npo_id,
-            npoName: dbActivity.profiles?.npo_name || "NPO Sconosciuta",
+            npoName: dbActivity.profiles?.npo_name || dbActivity.profiles?.full_name || "NPO Sconosciuta",
+            npoEmail: dbActivity.profiles?.public_email || dbActivity.profiles?.email || "",
             title: dbActivity.title,
             description: dbActivity.description,
             dateTime: dbActivity.date_start,
@@ -48,7 +49,7 @@ export class ActivityService {
         const [{ data: skillRows }, { data: partRows }, { data: profiles }] = await Promise.all([
             supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
             supabase.from('activity_participants').select('activity_id, user_id').in('activity_id', ids),
-            supabase.from('profiles').select('id, npo_name').in('id', (data || []).map((r: any) => r.npo_id)),
+            supabase.from('profiles').select('id, npo_name, full_name, public_email, email').in('id', (data || []).map((r: any) => r.npo_id)),
         ]);
 
         const skillsMap: Record<string, string[]> = {};
@@ -61,15 +62,19 @@ export class ActivityService {
             if (!partsMap[r.activity_id]) partsMap[r.activity_id] = [];
             partsMap[r.activity_id].push(r.user_id);
         }
-        const profilesMap: Record<string, string> = {};
+        const profilesMap: Record<string, any> = {};
         for (const r of profiles || []) {
-            profilesMap[r.id] = r.npo_name || 'NPO';
+            profilesMap[r.id] = {
+                npoName: r.npo_name || r.full_name || 'NPO Sconosciuta',
+                email: r.public_email || r.email || ''
+            };
         }
 
         return (data || []).map((r: any) => ({
             id: r.id,
             npoId: r.npo_id,
-            npoName: profilesMap[r.npo_id] || 'NPO',
+            npoName: profilesMap[r.npo_id]?.npoName || 'NPO Sconosciuta',
+            npoEmail: profilesMap[r.npo_id]?.email || '',
             title: r.title,
             description: r.description,
             dateTime: r.date_start,
@@ -144,7 +149,7 @@ export class ActivityService {
                 .from('activities')
                 .select(`
                     *,
-                    profiles:npo_id (npo_name),
+                    profiles:npo_id (npo_name, full_name, public_email, email),
                     activity_skills (skill),
                     activity_participants (user_id)
                 `, { count: 'exact' });
@@ -248,7 +253,7 @@ export class ActivityService {
                 .from('activities')
                 .select(`
                     *,
-                    profiles:npo_id (npo_name),
+                    profiles:npo_id (npo_name, full_name, public_email, email),
                     activity_skills (skill),
                     activity_participants (user_id)
                 `)

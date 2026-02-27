@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, List, Bell, Clock, MapPin, Building2 } from "lucide-react-native";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
+import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
 import { BadgePill } from "../../../components/BadgePill";
 import { useActivities } from "../../../context/ActivityContext";
@@ -99,21 +100,6 @@ export default function VolunteerCalendar() {
         setRefreshing(false);
     };
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/notifications" as any)}
-                className="bg-white/10 p-2.5 rounded-xl border border-white/20"
-            >
-                <Bell size={20} color="white" />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => router.push("/(volunteer)/profile" as any)}>
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
-
 
 
 
@@ -122,7 +108,7 @@ export default function VolunteerCalendar() {
         <StandardLayout
             label="La tua Agenda"
             title="Calendario"
-            rightElement={HeaderActions}
+            rightElement={<VolunteerHeaderActions />}
             bg="bg-background-light"
             refreshControl={
                 <RefreshControl

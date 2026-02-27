@@ -1,10 +1,10 @@
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, Platform, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter, Link, Stack, useFocusEffect } from "expo-router";
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
-import { useCallback } from "react";
+
 import { useGamification } from "../../context/GamificationContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
@@ -13,7 +13,7 @@ import { Activity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Sparkles, CheckCircle2, Send, Pencil,
-    Users, Star, Tag, MapPin, Phone, Calendar, Clock, Map as MapIcon
+    Users, Star, Tag, MapPin, Phone, Calendar, Clock, Map as MapIcon, ChevronRight
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -22,6 +22,9 @@ import { ActivityInfoCard } from "../../components/activity/ActivityInfoCard";
 import { OrganizerCard } from "../../components/activity/OrganizerCard";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { supabase } from "../../utils/supabase";
 // Conditional import for react-native-maps to prevent web bundling errors
 let MapView: any, Marker: any, PROVIDER_GOOGLE: any;
 if (Platform.OS !== 'web') {
@@ -30,9 +33,6 @@ if (Platform.OS !== 'web') {
     Marker = Maps.Marker;
     PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
 }
-
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { supabase } from "../../utils/supabase";
 
 const { width } = Dimensions.get('window');
 
@@ -247,37 +247,27 @@ export default function ActivityDetail() {
 
                     {/* Title */}
                     <Animated.View entering={FadeInDown.delay(100).springify()}>
-                        <Text className="text-[28px] font-black text-primary leading-tight mb-5 text-center">{activity.title}</Text>
+                        <Text className="text-[28px] font-black text-primary leading-tight mb-2 text-center">{activity.title}</Text>
                     </Animated.View>
 
                     {/* Organizer Card (Centered & Clickable) */}
-                    <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-8 items-center">
+                    <Animated.View entering={FadeInDown.delay(200).springify()} className="items-center mt-2 mb-2">
                         <TouchableOpacity
                             onPress={() => isOwner ? router.push('/(npo)/(tabs)/profile') : router.push(`/npo-profile/${activity?.npoId}` as any)}
                             activeOpacity={0.7}
-                            className="bg-white px-5 h-[64px] rounded-full flex-row items-center gap-3 border border-slate-100 shadow-sm"
+                            className="flex-row items-center gap-3"
                         >
                             <Image
-                                source={{ uri: npoUser?.avatar || "https://ui-avatars.com/api/?name=NPO" }}
-                                className="w-10 h-10 rounded-full"
+                                source={{ uri: npoUser?.avatar || (activity.npoId ? `https://ui-avatars.com/api/?name=${activity.npoName || 'NPO'}` : "https://ui-avatars.com/api/?name=NPO") }}
+                                className="w-10 h-10 rounded-full border-2 border-white"
                             />
-                            <View className="justify-center">
-                                <View className="flex-row items-center gap-1.5">
-                                    <Text
-                                        className="text-sm font-black text-primary leading-none"
-                                        style={{ includeFontPadding: false, textAlignVertical: 'center' }}
-                                    >
-                                        {npoUser?.npoName || activity.npoName}
-                                    </Text>
-                                    <CheckCircle2 size={12} color={Colors.accent} fill={Colors.accent} />
-                                </View>
-                                <Text
-                                    className="text-secondary/60 text-[9px] font-bold uppercase tracking-widest leading-none mt-1.5"
-                                    style={{ includeFontPadding: false, textAlignVertical: 'center' }}
-                                >
-                                    {npoUser?.publicEmail || "Organizzazione Verificata"}
+                            <View className="flex-row items-center justify-center gap-1">
+                                <Text className="text-base font-black text-primary text-center">
+                                    {npoUser?.npoName || activity.npoName || "Ente Solidale"}
                                 </Text>
+                                <CheckCircle2 size={14} color={Colors.accent} fill={Colors.accent} />
                             </View>
+                            <ChevronRight size={16} color={Colors.primary} className="ml-1" />
                         </TouchableOpacity>
                     </Animated.View>
 
@@ -318,7 +308,7 @@ export default function ActivityDetail() {
                     </Animated.View>
 
                     {/* Participants Section */}
-                    <Animated.View entering={FadeInDown.delay(400).springify()} className="bg-white mb-6">
+                    <Animated.View entering={FadeInDown.delay(400).springify()} className="bg-white mb-4">
                         <View className="flex-row justify-between items-center mb-4">
                             <View>
                                 <Text className="text-primary font-bold text-base mb-3">Volontari che parteciperanno</Text>
@@ -372,7 +362,7 @@ export default function ActivityDetail() {
 
                     {/* Category & Skills (Split) */}
                     <Animated.View entering={FadeInDown.delay(500).springify()}>
-                        <View className="mb-6">
+                        <View className="mb-4">
                             <Text className="text-primary font-bold text-base mb-3">Categoria</Text>
                             <View className="flex-row flex-wrap gap-2">
                                 <View className="bg-accent/10 px-4 py-2.5 rounded-2xl border border-accent/20">

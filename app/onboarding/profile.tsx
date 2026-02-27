@@ -1,5 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter , useLocalSearchParams } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Camera, ArrowLeft, Loader2 } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 
-import { useLocalSearchParams } from "expo-router";
+
 
 // ... imports
 

@@ -57,10 +57,10 @@ export function UserAvatar({
                         contentFit="cover"
                         transition={200}
                     />
-                ) : initials ? (
-                    <Text style={{ fontSize }} className="text-secondary font-black">{initials}</Text>
                 ) : (
-                    <UserIcon size={size * 0.5} color="#94a3b8" />
+                    <View className="items-center justify-center bg-slate-100 w-full h-full">
+                        <UserIcon size={size * 0.6} color="#94a3b8" />
+                    </View>
                 )}
             </View>
 

@@ -24,7 +24,7 @@ export function PageHeader({ label, title, rightElement, subtitle, containerStyl
                     )}
                 </View>
                 {rightElement && (
-                    <View className="flex-row items-center gap-4">
+                    <View className="flex-row items-center gap-2 ml-2">
                         {rightElement}
                     </View>
                 )}

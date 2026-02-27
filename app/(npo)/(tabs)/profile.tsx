@@ -21,6 +21,8 @@ import {
 import { SoftCard } from "../../../components/SoftCard";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { Colors } from "../../../constants/Colors";
+import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
+import { useNotifications } from "../../../context/NotificationContext";
 import { useRouter } from "expo-router";
 import { useApplications } from "../../../context/ApplicationContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -32,6 +34,7 @@ export default function NPOProfileScreen() {
     const { user, logout, isLoading: isAuthLoading, updateUserProfile } = useAuth();
     const { getNPOApplications } = useApplications();
     const router = useRouter();
+    const { unreadCount } = useNotifications();
 
     // Modal States
     const [showEditProfile, setShowEditProfile] = useState(false);
@@ -106,11 +109,14 @@ export default function NPOProfileScreen() {
         </TouchableOpacity>
     );
 
+    const HeaderActions = <NPOHeaderActions />;
+
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <StandardLayout
-                label="Impostazioni"
-                title="Impostazioni Ente"
+                label="SISTEMA"
+                title="Impostazioni"
+                rightElement={HeaderActions}
             >
                 {/* Profile Info Card */}
                 <SoftCard className="mb-8 items-center p-6 mt-2">
@@ -164,6 +170,7 @@ export default function NPOProfileScreen() {
                     />
                     <MenuItem
                         icon={Bell}
+                        badge={unreadCount > 0 ? unreadCount : undefined}
                         label="Notifiche"
                         color={Colors.accent}
                         onPress={() => router.push("/(npo)/notifications" as any)}

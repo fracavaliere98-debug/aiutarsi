@@ -1,0 +1,228 @@
+import { supabase } from '../utils/supabase';
+import { Conversation, Message, ConversationParticipant, MessageMetadata } from '../types/chat';
+
+class ChatService {
+    /**
+     * Fetch all conversations for a specific user
+     */
+    async getConversations(userId: string) {
+        const { data, error } = await supabase
+            .from('conversation_participants')
+            .select(`
+                conversation_id,
+                last_read_at,
+                conversations (
+                    id,
+                    type,
+                    activity_id,
+                    created_at,
+                    messages (
+                        id,
+                        sender_id,
+                        content,
+                        created_at
+                    )
+                )
+            `)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error fetching conversations:', error);
+            throw error;
+        }
+
+        // The query returns nested messages. We handle this in UI layer or sort them.
+        return data;
+    }
+
+    /**
+     * Start a private conversation between two users
+     */
+    async startPrivateConversation(userId1: string, userId2: string) {
+        // Checking if conversation already exists requires more complex logic.
+        // Assuming we just create it for simplicity, or we check if there's a private chat with these two participants.
+        const { data: existing, error: errCheck } = await supabase.rpc('get_private_conversation', { u1: userId1, u2: userId2 });
+
+        if (existing && existing.id) {
+            return existing.id;
+        }
+
+        const { data: conversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({ type: 'PRIVATE' })
+            .select()
+            .single();
+
+        if (convError) throw convError;
+
+        await supabase.from('conversation_participants').insert([
+            { conversation_id: conversation.id, user_id: userId1 },
+            { conversation_id: conversation.id, user_id: userId2 }
+        ]);
+
+        return conversation.id;
+    }
+
+    /**
+     * Get details of a single conversation with messages
+     */
+    async getConversationDetails(conversationId: string) {
+        const { data, error } = await supabase
+            .from('conversations')
+            .select(`
+                *,
+                conversation_participants (user_id, last_read_at),
+                messages (*)
+            `)
+            .eq('id', conversationId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Send a message
+     */
+    async sendMessage(conversationId: string, senderId: string, content: string, metadata: MessageMetadata = {}) {
+        const { data, error } = await supabase
+            .from('messages')
+            .insert({
+                conversation_id: conversationId,
+                sender_id: senderId,
+                content,
+                metadata
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Mark conversation as read
+     */
+    async markAsRead(conversationId: string, userId: string) {
+        const { error } = await supabase
+            .from('conversation_participants')
+            .update({ last_read_at: new Date().toISOString() })
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    }
+    /**
+     * Get NPOs available for chat (where user is participant/approved)
+     */
+    async getAvailableNpos(userId: string) {
+        // Find NPOs where the user has applied
+        const { data: applications, error } = await supabase
+            .from('applications')
+            .select('npo_id')
+            .eq('volunteer_id', userId);
+
+        if (error) throw error;
+
+        // @ts-ignore - Handle nested object from join
+        const npoIds = Array.from(new Set(applications?.map(app => app.npo_id).filter(id => !!id)));
+
+        if (npoIds.length === 0) return { data: [] };
+
+        const { data: npos, error: npoErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', npoIds);
+
+        if (npoErr) throw npoErr;
+        return { data: npos };
+    }
+
+    /**
+     * Get available entities for an NPO to start a chat with
+     */
+    async getAvailableEntitiesForNPO(npoId: string) {
+        // 1. Get Volunteers who have joined this NPO (from applications table)
+        const { data: applications, error: appErr } = await supabase
+            .from('applications')
+            .select(`
+                volunteer_id,
+                volunteer:profiles!applications_volunteer_id_fkey (
+                    id, 
+                    full_name, 
+                    avatar, 
+                    role
+                )
+            `)
+            .eq('npo_id', npoId)
+        // .eq('status', 'APPROVED') // Se vogliamo solo quelli approvati
+
+        if (appErr) {
+            console.error('Error fetching NPO volunteers:', appErr);
+            throw appErr;
+        }
+
+        const volunteersMap = new Map();
+        applications?.forEach(app => {
+            if (app.volunteer && !volunteersMap.has(app.volunteer_id)) {
+                volunteersMap.set(app.volunteer_id, {
+                    id: app.volunteer_id,
+                    name: (app.volunteer as any).full_name,
+                    avatar: (app.volunteer as any).avatar,
+                    type: 'VOLUNTEER',
+                    isGroup: false
+                });
+            }
+        });
+
+        // 2. Get Activity Groups (activities created by this NPO)
+        const { data: activities, error: aErr } = await supabase
+            .from('activities')
+            .select('id, title')
+            .eq('npo_id', npoId)
+            .neq('status', 'CANCELLATA');
+
+        if (aErr) throw aErr;
+
+        const groups = activities?.map(a => ({
+            id: a.id,
+            name: a.title,
+            type: 'ACTIVITY_GROUP',
+            isGroup: true
+        })) || [];
+
+        return {
+            volunteers: Array.from(volunteersMap.values()),
+            groups: groups
+        };
+    }
+
+    /**
+     * Start or get an activity group conversation
+     */
+    async startGroupConversation(activityId: string, title: string) {
+        const { data: existing, error: eErr } = await supabase
+            .from('conversations')
+            .select('id')
+            .eq('type', 'ACTIVITY_GROUP')
+            .eq('activity_id', activityId)
+            .single();
+
+        if (existing) return existing.id;
+
+        const { data: conversation, error: cErr } = await supabase
+            .from('conversations')
+            .insert({
+                type: 'ACTIVITY_GROUP',
+                activity_id: activityId
+            })
+            .select()
+            .single();
+
+        if (cErr) throw cErr;
+
+        return conversation.id;
+    }
+}
+
+export default new ChatService();

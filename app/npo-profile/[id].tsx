@@ -50,9 +50,11 @@ export default function NPOProfileScreen() {
         return activity?.npoId === npoId;
     });
 
-    const averageRating = npoReviews.length > 0
-        ? (npoReviews.reduce((sum, r) => sum + r.stars, 0) / npoReviews.length).toFixed(1)
-        : "5.0"; // Default high rating for positive vibe
+    const npoRating = npoReviews.length > 0
+        ? parseFloat((npoReviews.reduce((sum, r) => sum + r.stars, 0) / npoReviews.length).toFixed(1))
+        : 0.0;
+
+    const averageRating = npoRating.toFixed(1);
 
     if (!npoUser) {
         return (
@@ -115,7 +117,7 @@ export default function NPOProfileScreen() {
                     <UserAvatar
                         size={100}
                         fontSize={36}
-                        name={npoUser.npoName}
+                        name={npoUser.npoName || npoUser.name}
                         avatarUrl={npoUser.avatar}
                     />
                     <View className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white">
@@ -124,9 +126,9 @@ export default function NPOProfileScreen() {
                 </View>
 
                 <Text className="text-primary font-black text-2xl text-center mb-1">
-                    {npoUser.npoName}
+                    {npoUser.npoName || npoUser.name}
                 </Text>
-                <Text className="text-secondary font-medium text-sm text-center mb-4">
+                <Text className="text-secondary font-medium text-sm text-center mb-4 mt-1">
                     Comitato Locale • {npoUser.locationString || "Milano, MI"}
                 </Text>
 
@@ -166,14 +168,17 @@ export default function NPOProfileScreen() {
 
             {/* Stats Row */}
             <View className="flex-row gap-3 mb-8">
-                <View className="flex-1 h-24">
+                <TouchableOpacity
+                    className="flex-1 h-24"
+                    onPress={() => setActiveTab("recensioni")}
+                >
                     <StatCard
                         value={averageRating}
                         label="RATING"
                         valueColor="text-yellow-500"
                         icon={<Star size={14} color="#eab308" fill="#eab308" />}
                     />
-                </View>
+                </TouchableOpacity>
                 <View className="flex-1 h-24">
                     <StatCard
                         value={followerCount.toString()}

@@ -19,6 +19,7 @@ import { activityService } from "../../../services/ActivityService";
 import { supabase } from "../../../utils/supabase";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
+import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
@@ -410,22 +411,9 @@ export default function SearchScreen() {
         </TouchableOpacity>
     );
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/notifications")}
-                className="bg-white/10 p-2.5 rounded-xl border border-white/20"
-            >
-                <Bell size={20} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/(volunteer)/profile" as any)}>
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
 
     return (
-        <StandardLayout label="Scopri" title="Esplora Attività" rightElement={HeaderActions} bg="bg-background-light">
+        <StandardLayout label="Scopri" title="Esplora Attività" rightElement={<VolunteerHeaderActions />} bg="bg-background-light">
             {/* ── Search + Filter Box (rounded card, matches Map UI) ── */}
             <View style={{
                 backgroundColor: 'white',

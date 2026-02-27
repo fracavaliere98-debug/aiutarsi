@@ -10,6 +10,7 @@ import { ApplicationProvider } from "../context/ApplicationContext";
 import { GamificationProvider } from "../context/GamificationContext";
 import { ToastProvider } from "../context/ToastContext";
 import { SmartMatchProvider } from "../context/SmartMatchContext";
+import { ChatProvider } from "../context/ChatContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -158,10 +159,12 @@ export default function RootLayout() {
               <ActivityProvider>
                 <SmartMatchProvider>
                   <ApplicationProvider>
-                    <StatusBar style="dark" />
-                    <RootLayoutNav />
-                    <ToastContainer />
-                    <LevelUpOverlay />
+                    <ChatProvider>
+                      <StatusBar style="dark" />
+                      <RootLayoutNav />
+                      <ToastContainer />
+                      <LevelUpOverlay />
+                    </ChatProvider>
                   </ApplicationProvider>
                 </SmartMatchProvider>
               </ActivityProvider>

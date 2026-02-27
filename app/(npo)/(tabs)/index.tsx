@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import { useEffect, useCallback } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
 import { Bell, Sparkles, PlusCircle, Star, Users, Calendar, Clock, AlertCircle, Brain, Plus } from "lucide-react-native";
@@ -10,11 +10,12 @@ import { StatCard } from "../../../components/StatCard";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { EmptyState } from "../../../components/EmptyState";
-import { useRouter } from "expo-router";
+
 import { useApplications } from "../../../context/ApplicationContext";
 import { useNotifications } from "../../../context/NotificationContext";
-import { UserAvatar } from "../../../components/UserAvatar";
 import { LinearGradient } from "expo-linear-gradient";
+import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
+import { UserAvatar } from "../../../components/UserAvatar";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers } = useAuth();
@@ -93,31 +94,7 @@ export default function NPODashboard() {
         alert("5 Notifiche inviate! Controlla la campanella.");
     };
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={triggerTestNotifications}
-                className="bg-white/10 p-2 rounded-2xl"
-            >
-                <AlertCircle color="white" size={20} />
-            </TouchableOpacity>
-            <TouchableOpacity
-                onPress={() => router.push("/(npo)/notifications" as any)}
-                className="relative bg-white/10 p-2 rounded-2xl"
-            >
-                <Bell color="white" size={20} />
-                {unreadCount > 0 && (
-                    <View className="absolute top-2.5 right-2.5 w-2 h-2 bg-secondary rounded-full border border-white" />
-                )}
-            </TouchableOpacity>
-            <TouchableOpacity
-                onPress={() => router.push("/(npo)/profile" as any)}
-                className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden"
-            >
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
+    const HeaderActions = <NPOHeaderActions />;
 
     return (
         <StandardLayout

@@ -4,6 +4,7 @@ import { useNotifications } from "./NotificationContext";
 import { useGamification } from "./GamificationContext";
 import { Application } from "../types";
 import { npoService } from "../services/NPOService";
+import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
 
 interface ApplicationContextType {
     applications: Application[];
@@ -34,28 +35,33 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const { user } = useAuth();
     const { addNotification } = useNotifications();
 
-    // Load applications from Service based on User Role
-    useEffect(() => {
-        const loadApplications = async () => {
-            if (!user) {
-                setApplications([]);
-                return;
-            }
+    const loadApplications = useCallback(async () => {
+        if (!user) {
+            setApplications([]);
+            return;
+        }
 
-            try {
-                let fetchedApps: Application[] = [];
-                if (user.role === 'NPO') {
-                    fetchedApps = await npoService.getApplicationsForNPO(user.id);
-                } else if (user.role === 'VOLUNTEER') {
-                    fetchedApps = await npoService.getApplicationsForVolunteer(user.id);
-                }
-                setApplications(fetchedApps);
-            } catch (error) {
-                console.error("Failed to load applications:", error);
+        try {
+            let fetchedApps: Application[] = [];
+            if (user.role === 'NPO') {
+                fetchedApps = await npoService.getApplicationsForNPO(user.id);
+            } else if (user.role === 'VOLUNTEER') {
+                fetchedApps = await npoService.getApplicationsForVolunteer(user.id);
             }
-        };
+            setApplications(fetchedApps);
+        } catch (error) {
+            console.error("Failed to load applications:", error);
+        }
+    }, [user]);
+
+    useEffect(() => {
         loadApplications();
-    }, [user]); // Re-run when user changes
+
+        const unsubApps = eventEmitter.on(SyncEvents.SYNC_APPLICATIONS, loadApplications);
+        return () => {
+            unsubApps();
+        };
+    }, [loadApplications]);
 
     // Gamification: Watch for approved applications
     const { handleNPOEnrollment, isLoaded: isGamificationLoaded } = useGamification();

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { UserAvatar } from "../../../components/UserAvatar";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { Check, X, Clock, User, Filter, Search, Calendar } from "lucide-react-native";
@@ -9,7 +9,8 @@ import { Card } from "../../../components/Card";
 import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { CompactFollowerCard } from "../../../components/CompactFollowerCard";
-import { useLocalSearchParams } from "expo-router";
+import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
+
 import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
@@ -65,25 +66,29 @@ export default function VolunteersScreen() {
         }
     }, [params.tab]);
 
-    // Combine and Format Applications
     const formattedActivityApps = useMemo(() => {
-        return activityApplications.map(app => {
-            const act = activities.find(a => a.id === app.activityId);
-            return {
-                id: app.id,
-                isActivity: true, // Marker for handlers
-                activityId: app.activityId,
-                npoId: user?.id || "",
-                npoName: act ? `Attività: ${act.title}` : "Attività",
-                volunteerId: app.volunteerId,
-                volunteerName: app.volunteerName,
-                volunteerAvatar: "", // Fetched by component
-                message: app.message || "",
-                skills: [],
-                status: app.status,
-                appliedDate: app.appliedDate
-            };
-        });
+        // Only include applications for activities that belong to this NPO
+        const myActivityIds = new Set(activities.map(a => a.id));
+
+        return activityApplications
+            .filter(app => myActivityIds.has(app.activityId))
+            .map(app => {
+                const act = activities.find(a => a.id === app.activityId);
+                return {
+                    id: app.id,
+                    isActivity: true, // Marker for handlers
+                    activityId: app.activityId,
+                    npoId: user?.id || "",
+                    npoName: act ? `Attività: ${act.title}` : "Attività",
+                    volunteerId: app.volunteerId,
+                    volunteerName: app.volunteerName,
+                    volunteerAvatar: app.volunteerAvatar,
+                    message: app.message || "",
+                    skills: [],
+                    status: app.status,
+                    appliedDate: app.appliedDate
+                };
+            });
     }, [activityApplications, activities, user]);
 
     const allApplications = useMemo(() => {
@@ -259,19 +264,12 @@ export default function VolunteersScreen() {
         </View>
     );
 
-    const HeaderActions = (
-        <TouchableOpacity
-            onPress={() => router.push("/(npo)/(tabs)/profile")}
-            className="active:scale-95"
-        >
-            <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-        </TouchableOpacity>
-    );
+    const HeaderActions = <NPOHeaderActions />;
 
     return (
         <StandardLayout
-            label={`Coordinamento • ${user?.npoName || "Area NPO"}`}
-            title="Volontari Iscritti"
+            label="ATTIVITÀ"
+            title="Volontari"
             rightElement={HeaderActions}
             noScroll={true}
             bg="bg-[#f0f2f5]"

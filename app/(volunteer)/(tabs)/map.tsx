@@ -5,6 +5,7 @@ import {
 import { WebView } from "react-native-webview";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { PageHeader } from "../../../components/PageHeader";
+import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import {
     ArrowRight, Search, SlidersHorizontal, X, MapPin, Target, Calendar,
@@ -22,6 +23,8 @@ import { activityService } from "../../../services/ActivityService";
 import * as Location from "expo-location";
 import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { supabase } from "../../../utils/supabase";
+
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 async function fetchNominatim(text: string): Promise<{ id: number; label: string; lat: number; lng: number }[]> {
     try {
@@ -38,8 +41,6 @@ async function fetchNominatim(text: string): Promise<{ id: number; label: string
         }));
     } catch { return []; }
 }
-
-import { supabase } from "../../../utils/supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const INTERESTS = [
@@ -761,27 +762,6 @@ export default function VolunteerMap() {
     // We'll compute a rough height for the rounded-box overlay
     const HEADER_TOP = Platform.OS === 'ios' ? 54 : 34;
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/notifications" as any)}
-                className="bg-white/10 p-2.5 rounded-xl border border-white/20 relative"
-            >
-                <Bell size={20} color="white" />
-                {unreadCount > 0 && (
-                    <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
-                        <Text className="text-white text-[10px] font-black">{unreadCount}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/profile" as any)}
-            >
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
 
     return (
         <ScreenWrapper bg="bg-f6f6f8" withPadding={false} edges={["top"]}>
@@ -789,7 +769,7 @@ export default function VolunteerMap() {
                 label="Esplora"
                 title="Mappa"
                 containerStyle={{ marginBottom: 0, zIndex: 10 }}
-                rightElement={HeaderActions}
+                rightElement={<VolunteerHeaderActions />}
             />
 
             <View style={{ flex: 1, position: 'relative' }}>

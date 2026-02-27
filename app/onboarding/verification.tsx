@@ -1,13 +1,13 @@
 import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter , useLocalSearchParams } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { Colors } from "../../constants/Colors";
 import { ShieldCheck, Sparkles, Eye, FileUp, Lock, ArrowLeft } from "lucide-react-native";
 
-const { width } = Dimensions.get("window");
 
-import { useLocalSearchParams } from "expo-router";
+
+const { width } = Dimensions.get("window");
 
 // ... imports ...
 

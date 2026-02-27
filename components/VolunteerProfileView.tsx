@@ -2,8 +2,8 @@ import React from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { Settings } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
-import { User } from "../types";
-import { Application } from "../types";
+import { User , Application } from "../types";
+
 import { ProfileHeader } from "./profile/ProfileHeader";
 import { ProfileStats } from "./profile/ProfileStats";
 import { BadgeSection } from "./profile/BadgeSection";

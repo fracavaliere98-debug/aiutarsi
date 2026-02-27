@@ -10,6 +10,7 @@ import { useState, useMemo } from "react";
 import { CalendarGrid } from "../../../components/CalendarGrid";
 import { Colors } from "../../../constants/Colors";
 import { useToast } from "../../../context/ToastContext";
+import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { ErrorState } from "../../../components/ErrorState";
 import { ActivityCard } from "../../../components/ActivityCard";
 
@@ -23,7 +24,7 @@ export default function NPOCalendarScreen() {
 
     if (error) {
         return (
-            <StandardLayout label="Gestione" title="Calendario Attività">
+            <StandardLayout label="Attività" title="Calendario">
                 <ErrorState
                     title="Errore caricamento"
                     description="Impossibile recuperare i tuoi progetti."
@@ -51,23 +52,7 @@ export default function NPOCalendarScreen() {
         setRefreshing(false);
     };
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={() => router.push("/(npo)/create-activity")}
-                className="bg-accent p-3 rounded-2xl shadow-lg active:scale-90"
-            >
-                <Plus size={24} color="white" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => router.push("/(npo)/(tabs)/profile")}
-                className="active:scale-95"
-            >
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
+    const HeaderActions = <NPOHeaderActions />;
 
     // Filter projects for selected date in calendar mode
     const selectedDateProjects = useMemo(() => {
@@ -76,8 +61,8 @@ export default function NPOCalendarScreen() {
 
     return (
         <StandardLayout
-            label="Gestione"
-            title="Calendario Attività"
+            label="ATTIVITÀ"
+            title="Calendario"
             rightElement={HeaderActions}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />

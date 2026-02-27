@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { Bell, ArrowLeft, CheckCircle, Info, AlertCircle } from "lucide-react-native";
+import { Bell, ArrowLeft, CheckCircle, Info, AlertCircle, MessageCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
@@ -15,7 +15,7 @@ export default function NotificationsScreen() {
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
-    const getNotificationIcon = (type: string) => {
+    const getNotificationIcon = (type: string, title?: string) => {
         switch (type) {
             case "ACTIVITY_UPDATE":
                 return { Icon: AlertCircle, color: Colors.accent };
@@ -23,7 +23,15 @@ export default function NotificationsScreen() {
                 return { Icon: CheckCircle, color: "#22c55e" };
             case "URGENT":
                 return { Icon: Bell, color: "#ef4444" };
+            case "INFO":
+                if (title?.startsWith("Nuovo messaggio da")) {
+                    return { Icon: MessageCircle, color: Colors.primary };
+                }
+                return { Icon: Info, color: Colors.accent };
             default:
+                if (title?.startsWith("Nuovo messaggio da")) {
+                    return { Icon: MessageCircle, color: Colors.primary };
+                }
                 return { Icon: Info, color: Colors.accent };
         }
     };
@@ -78,13 +86,15 @@ export default function NotificationsScreen() {
         >
             {notifications.length > 0 ? (
                 notifications.map((notif) => {
-                    const { Icon, color } = getNotificationIcon(notif.type);
+                    const { Icon, color } = getNotificationIcon(notif.type, notif.title);
                     return (
                         <SoftCard
                             key={notif.id}
                             onPress={() => {
                                 markAsRead(notif.id);
-                                if (notif.activityId) {
+                                if (notif.title.startsWith("Nuovo messaggio da")) {
+                                    router.push("/messages" as any);
+                                } else if (notif.activityId) {
                                     router.push(`/activity/${notif.activityId}` as any);
                                 }
                             }}

@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { Sparkles, Map as MapIcon, Bell, ArrowRight, Clock, Target, Building2 } from "lucide-react-native";
+import { Sparkles, Map as MapIcon, Bell, ArrowRight, Clock, Target, Building2, MessageCircle } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useActivities } from "../../../context/ActivityContext";
@@ -7,11 +7,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
+import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
 import { BadgePill } from "../../../components/BadgePill";
 import { useNotifications } from "../../../context/NotificationContext";
 import { useToast } from "../../../context/ToastContext";
+import { useChat } from "../../../context/ChatContext";
 import { useState, useMemo } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
@@ -20,7 +22,8 @@ export default function VolunteerDashboard() {
     const router = useRouter();
     const { user } = useAuth();
     const { activities, userReviews, volunteerStats, error, loadData } = useActivities();
-    const { unreadCount } = useNotifications();
+    const { unreadCount: notificationsUnreadCount } = useNotifications();
+    const { unreadCount: chatUnreadCount } = useChat();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -75,33 +78,12 @@ export default function VolunteerDashboard() {
         setRefreshing(false);
     };
 
-    const HeaderActions = (
-        <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/notifications" as any)}
-                className="bg-white/10 p-2.5 rounded-xl border border-white/20 relative"
-            >
-                <Bell size={20} color="white" />
-                {unreadCount > 0 && (
-                    <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
-                        <Text className="text-white text-[10px] font-black">{unreadCount}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => router.push("/(volunteer)/profile" as any)}
-            >
-                <UserAvatar size={40} fontSize={14} useAuthFallback={true} />
-            </TouchableOpacity>
-        </View>
-    );
 
     return (
         <StandardLayout
             label={`Ciao, ${user?.name?.split(" ")[0] || "Volontario"}! 👋`}
             title="Dashboard"
-            rightElement={HeaderActions}
+            rightElement={<VolunteerHeaderActions />}
             bg="bg-background-light"
             refreshControl={
                 <RefreshControl

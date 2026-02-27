@@ -4,7 +4,7 @@ import { useNotifications } from "../../context/NotificationContext";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { EmptyState } from "../../components/EmptyState";
-import { Bell, CheckCircle, AlertCircle, Info, Users, Calendar, FileText } from "lucide-react-native";
+import { Bell, CheckCircle, AlertCircle, Info, Users, Calendar, FileText, MessageCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -22,7 +22,7 @@ export default function NPONotificationsScreen() {
         .filter(n => n.userId === user?.id)
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    const getNotificationIcon = (type: string) => {
+    const getNotificationIcon = (type: string, title?: string) => {
         switch (type) {
             case "VOLUNTEER_ENROLLED":
                 return { Icon: Users, color: Colors.accent };
@@ -34,7 +34,15 @@ export default function NPONotificationsScreen() {
                 return { Icon: AlertCircle, color: "#ef4444" };
             case "ACTIVITY_UPDATE":
                 return { Icon: Calendar, color: Colors.primary };
+            case "INFO":
+                if (title?.startsWith("Nuovo messaggio da")) {
+                    return { Icon: MessageCircle, color: Colors.primary };
+                }
+                return { Icon: Info, color: Colors.accent };
             default:
+                if (title?.startsWith("Nuovo messaggio da")) {
+                    return { Icon: MessageCircle, color: Colors.primary };
+                }
                 return { Icon: Info, color: Colors.accent };
         }
     };
@@ -89,13 +97,15 @@ export default function NPONotificationsScreen() {
         >
             {myNotifications.length > 0 ? (
                 myNotifications.map((notif) => {
-                    const { Icon, color } = getNotificationIcon(notif.type);
+                    const { Icon, color } = getNotificationIcon(notif.type, notif.title);
                     return (
                         <SoftCard
                             key={notif.id}
                             onPress={() => {
                                 markAsRead(notif.id);
-                                if (notif.type === "APPLICATION_RECEIVED") {
+                                if (notif.title.startsWith("Nuovo messaggio da")) {
+                                    router.push("/messages" as any);
+                                } else if (notif.type === "APPLICATION_RECEIVED") {
                                     router.push("/(npo)/(tabs)/volunteers" as any);
                                 } else if (notif.activityId) {
                                     router.push(`/activity/${notif.activityId}` as any);

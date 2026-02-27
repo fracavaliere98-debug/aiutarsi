@@ -49,7 +49,8 @@ export interface Activity {
     iscritti: string[]; // Array di ID_Volontari
     matchPercentage: number;
     isUrgent: boolean;
-    imageUrl?: string; // Added for Supabase Storage
+    imageUrl?: string;
+    npoEmail?: string;
 }
 
 export interface Review {
@@ -79,6 +80,7 @@ export interface ActivityApplication {
     activityId: string;
     volunteerId: string;
     volunteerName: string;
+    volunteerAvatar?: string;
     status: "PENDING" | "APPROVED" | "REJECTED" | "REGISTERED";
     appliedDate: string;
     message?: string;

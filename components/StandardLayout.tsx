@@ -58,7 +58,7 @@ export function StandardLayout({
                             </TouchableOpacity>
                         )}
                         <View className="flex-1">
-                            <Text className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">{label}</Text>
+                            <Text className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1" numberOfLines={1}>{label}</Text>
                             <Text className="text-white text-2xl font-black" numberOfLines={1}>{title}</Text>
                             {subtitle && (
                                 <Text className="text-white/60 text-xs font-medium mt-1">{subtitle}</Text>
@@ -66,7 +66,7 @@ export function StandardLayout({
                         </View>
                     </View>
                     {rightElement && (
-                        <View className="flex-row items-center gap-4 ml-4">
+                        <View className="flex-row items-center gap-2 ml-2">
                             {rightElement}
                         </View>
                     )}
