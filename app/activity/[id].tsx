@@ -299,43 +299,51 @@ export default function ActivityDetail() {
                 <Text className="text-secondary/80 text-base leading-7">{activity?.description}</Text>
             </Animated.View>
 
-            {/* Location Map - RE-ENABLED for Android 9 test */}
-            <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
-                <Text className="text-primary font-bold text-base mb-3">Mappa</Text>
-                {MapView && activity?.location?.coords?.lat ? (
-                    <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100">
-                        <MapView
-                            provider={PROVIDER_GOOGLE}
-                            style={{ width: '100%', height: '100%' }}
-                            initialRegion={{
-                                latitude: activity.location.coords.lat,
-                                longitude: activity.location.coords.lng,
-                                latitudeDelta: 0.005,
-                                longitudeDelta: 0.005,
-                            }}
-                            scrollEnabled={false}
-                            zoomEnabled={false}
-                        >
-                            <Marker coordinate={{ latitude: activity.location.coords.lat, longitude: activity.location.coords.lng }}>
-                                <View className="bg-accent p-2.5 rounded-2xl border-2 border-white"><MapPin size={20} color="white" fill="white" /></View>
-                            </Marker>
-                        </MapView>
-                        <View className="absolute bottom-4 left-4 right-4 bg-white px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
-                            <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
-                                <MapIcon size={16} color={Colors.primary} />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity?.location?.address || "Indirizzo"}</Text>
-                                <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
+            {/* Location Map - Permanently disabled for Android < 10 due to crashes */}
+            {!isOldAndroid ? (
+                <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
+                    <Text className="text-primary font-bold text-base mb-3">Mappa</Text>
+                    {MapView && activity?.location?.coords?.lat ? (
+                        <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100">
+                            <MapView
+                                provider={PROVIDER_GOOGLE}
+                                style={{ width: '100%', height: '100%' }}
+                                initialRegion={{
+                                    latitude: activity.location.coords.lat,
+                                    longitude: activity.location.coords.lng,
+                                    latitudeDelta: 0.005,
+                                    longitudeDelta: 0.005,
+                                }}
+                                scrollEnabled={false}
+                                zoomEnabled={false}
+                            >
+                                <Marker coordinate={{ latitude: activity.location.coords.lat, longitude: activity.location.coords.lng }}>
+                                    <View className="bg-accent p-2.5 rounded-2xl border-2 border-white"><MapPin size={20} color="white" fill="white" /></View>
+                                </Marker>
+                            </MapView>
+                            <View className="absolute bottom-4 left-4 right-4 bg-white px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
+                                <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
+                                    <MapIcon size={16} color={Colors.primary} />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity?.location?.address || "Indirizzo"}</Text>
+                                    <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                ) : (
-                    <View className="h-40 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 items-center justify-center">
-                        <Text className="text-secondary/40">Mappa non disponibile</Text>
-                    </View>
-                )}
-            </Animated.View>
+                    ) : (
+                        <View className="h-40 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 items-center justify-center">
+                            <Text className="text-secondary/40">Mappa non disponibile</Text>
+                        </View>
+                    )}
+                </Animated.View>
+            ) : (
+                <View className="mb-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100">
+                    <Text className="text-primary font-bold text-base mb-2">Mappa</Text>
+                    <Text className="text-secondary/60 text-sm">Indirizzo: {activity?.location?.address || "Non specificato"}</Text>
+                    <Text className="text-[10px] text-secondary/40 italic mt-2">La mappa è disattivata su questa versione di Android per motivi di stabilità.</Text>
+                </View>
+            )}
 
             {/* Owner List of Volunteers */}
             {isOwner && (
