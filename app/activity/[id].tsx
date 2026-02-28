@@ -20,7 +20,7 @@ import { ErrorState } from "../../components/ErrorState";
 import ParallaxScrollView from "../../components/ui/ParallaxScrollView";
 import { ActivityInfoCard } from "../../components/activity/ActivityInfoCard";
 import { OrganizerCard } from "../../components/activity/OrganizerCard";
-// import { BlurView } from "expo-blur";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -222,7 +222,7 @@ export default function ActivityDetail() {
                 headerImage={
                     <View style={{ width: '100%', height: 300 }}>
                         <Image
-                            source={{ uri: activity.imageUrl || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop" }}
+                            source={{ uri: activity?.imageUrl || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop" }}
                             style={{ width: '100%', height: '100%' }}
                             resizeMode="cover"
                         />
@@ -251,7 +251,7 @@ export default function ActivityDetail() {
 
                     {/* Title */}
                     <Animated.View entering={FadeInDown.delay(100).springify()}>
-                        <Text className="text-[28px] font-black text-primary leading-tight mb-2 text-center">{activity.title}</Text>
+                        <Text className="text-[28px] font-black text-primary leading-tight mb-2 text-center">{activity?.title}</Text>
                     </Animated.View>
 
                     {/* Organizer Card (Centered & Clickable) */}
@@ -267,7 +267,7 @@ export default function ActivityDetail() {
                             />
                             <View className="flex-row items-center justify-center gap-1">
                                 <Text className="text-base font-black text-primary text-center">
-                                    {npoUser?.npoName || npoUser?.name || activity.npoName || "Ente Solidale"}
+                                    {npoUser?.npoName || npoUser?.name || activity?.npoName || "Ente Solidale"}
                                 </Text>
                                 <CheckCircle2 size={14} color={Colors.accent} fill={Colors.accent} />
                             </View>
@@ -285,7 +285,7 @@ export default function ActivityDetail() {
                             <Text className="text-primary font-bold text-sm text-center">
                                 {activity.dateTime ? new Date(activity.dateTime).toLocaleDateString("it-IT", { day: '2-digit', month: 'short' }).replace('.', '') : "--"}
                             </Text>
-                            <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">DATA</Text>
+                            <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">DATA</Text>
                         </View>
 
                         {/* TIME */}
@@ -296,7 +296,7 @@ export default function ActivityDetail() {
                             <Text className="text-primary font-bold text-sm text-center">
                                 {activity.dateTime ? new Date(activity.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' }) : "--:--"}
                             </Text>
-                            <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">ORARIO</Text>
+                            <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">ORARIO</Text>
                         </View>
 
                         {/* LOCATION */}
@@ -307,7 +307,7 @@ export default function ActivityDetail() {
                             <Text className="text-primary font-bold text-xs text-center leading-tight" numberOfLines={2}>
                                 {activity.location?.address?.split(',')[1]?.trim() || activity.location?.address?.split(',')[0]?.trim() || "ND"}
                             </Text>
-                            <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">CITTÀ</Text>
+                            <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">CITTÀ</Text>
                         </View>
                     </Animated.View>
 
@@ -370,7 +370,7 @@ export default function ActivityDetail() {
                             <Text className="text-primary font-bold text-base mb-3">Categoria</Text>
                             <View className="flex-row flex-wrap gap-2">
                                 <View className="bg-accent/10 px-4 py-2.5 rounded-2xl border border-accent/20">
-                                    <Text className="text-accent font-bold text-xs uppercase">{activity.category}</Text>
+                                    <Text className="text-accent font-bold text-xs uppercase">{activity?.category}</Text>
                                 </View>
                             </View>
                         </View>
@@ -395,7 +395,7 @@ export default function ActivityDetail() {
                     <Animated.View entering={FadeInDown.delay(600).springify()} className="mb-6">
                         <Text className="text-primary font-bold text-base mb-3">Descrizione Attività</Text>
                         <Text className="text-secondary/80 text-base leading-7">
-                            {activity.description}
+                            {activity?.description}
                         </Text>
                     </Animated.View>
 
@@ -581,7 +581,7 @@ export default function ActivityDetail() {
                 {/* Slots Left or Status */}
                 <View className="flex-1 mr-4">
                     <Text className="text-[9px] font-bold text-secondary/40 uppercase tracking-widest mb-1">
-                        {activity.status === "COMPLETATA" ? "ATTIVITÀ" : "STATO"}
+                        {activity?.status === "COMPLETATA" ? "ATTIVITÀ" : "STATO"}
                     </Text>
                     <Text className="text-accent font-bold text-base" numberOfLines={1}>
                         {activity.status === "COMPLETATA" ? "Conclusa" : `${Math.max(0, (activity?.slots || 0) - currentIscritti.length)} posti rimasti`}
