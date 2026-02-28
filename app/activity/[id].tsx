@@ -351,16 +351,23 @@ export default function ActivityDetail() {
                     <Text className="text-xl font-black text-primary mb-4">Volontari Iscritti</Text>
                     {currentIscritti.map(volId => {
                         const v = users.find(u => u.id === volId);
-                        const app = activityApplications.find(a => a.activityId === activity.id && a.volunteerId === volId);
+                        const app = activityApplications.find(a => a.activityId === activity?.id && a.volunteerId === volId);
                         if (!v) return null;
                         return (
-                            <View key={volId} className="bg-white p-4 rounded-2xl mb-3 border border-slate-100">
+                            <TouchableOpacity
+                                key={volId}
+                                onPress={() => router.push(`/(npo)/volunteer-profile/${volId}` as any)}
+                                className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 active:bg-slate-50"
+                            >
                                 <View className="flex-row items-center gap-3">
                                     <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
-                                    <View><Text className="font-bold text-primary">{v.name}</Text><Text className="text-xs text-secondary">{v.email}</Text></View>
+                                    <View>
+                                        <Text className="font-bold text-primary">{v.name}</Text>
+                                        <Text className="text-xs text-secondary">{v.email}</Text>
+                                    </View>
                                 </View>
                                 {app?.phone && <Text className="mt-2 text-xs font-bold text-primary italic">Tel: {app.phone}</Text>}
-                            </View>
+                            </TouchableOpacity>
                         );
                     })}
                 </View>
@@ -437,7 +444,7 @@ export default function ActivityDetail() {
                         }} className="bg-red-50 p-4 rounded-2xl"><Text className="text-red-500 font-bold">Annulla</Text></TouchableOpacity>
                         <View className="bg-emerald-50 px-6 py-4 rounded-2xl"><Text className="text-emerald-700 font-bold">Iscritto</Text></View>
                     </View>
-                ) : (
+                ) : user?.role === 'VOLUNTEER' ? (
                     <TouchableOpacity
                         onPress={() => router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
                         disabled={isFull}
@@ -445,6 +452,10 @@ export default function ActivityDetail() {
                     >
                         <Text className="text-white font-black">{isFull ? "Pieno" : "Iscriviti"}</Text>
                     </TouchableOpacity>
+                ) : (
+                    <View className="px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100">
+                        <Text className="text-slate-400 font-bold">Solo Volontari</Text>
+                    </View>
                 )}
             </View>
 

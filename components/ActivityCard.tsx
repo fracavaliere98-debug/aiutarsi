@@ -12,7 +12,7 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
-    const { users } = useAuth();
+    const { users, user } = useAuth();
     const activityDate = new Date(activity.dateTime);
     const month = activityDate.toLocaleDateString("it-IT", { month: "short" }).toUpperCase();
     const day = activityDate.getDate();
@@ -127,7 +127,15 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                             <Text className="text-secondary/60 text-[10px] font-medium italic">Ancora nessun iscritto</Text>
                         )}
                     </View>
-                    <Text className="text-accent font-bold text-xs">CANDIDATI &rarr;</Text>
+                    {user?.role === 'VOLUNTEER' ? (
+                        <Text className="text-accent font-bold text-xs">CANDIDATI &rarr;</Text>
+                    ) : user?.role === 'NPO' && activity.npoId === user.id ? (
+                        <Text className="text-primary font-bold text-xs uppercase">GESTISCI &rarr;</Text>
+                    ) : (
+                        <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
+                            <Text className="text-slate-400 text-[10px] font-black uppercase">INFO</Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </SoftCard>

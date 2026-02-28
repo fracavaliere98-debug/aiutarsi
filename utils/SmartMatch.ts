@@ -8,38 +8,41 @@ import { Activity, User } from "../types";
  * - Proximity (Distance): 15%
  * - Urgency: 10%
  */
-export const calculateSmartMatch = (user: User | null, activity: Activity): number => {
+export const calculateSmartMatch = (user: User | null, activity: Activity, semanticSimilarity?: number): number => {
     if (!user || user.role !== "VOLUNTEER") return 0;
 
     let score = 0;
 
-    // 1. Interests (35%) - Category Match
-    const userInterests = user.interests?.map(i => i.toLowerCase()) || [];
-    if (userInterests.includes(activity.category.toLowerCase())) {
-        score += 35;
-    }
-
-    // 2. Skills (40%) - Skill Overlap + Keywords
-    const activitySkills = activity.skills.map(s => s.toLowerCase());
-    const userSkills = user.skills?.map(s => s.toLowerCase()) || [];
-
-    // Exact skill match
-    const skillsOverlap = userSkills.filter(s => activitySkills.includes(s));
-    if (skillsOverlap.length > 0) {
-        // Scaled: 1 skill = 20pts, 2+ skills = 40pts
-        score += Math.min(40, skillsOverlap.length * 20);
+    // 1. Semantic Similarity (75%) - IF PROVIDED
+    if (semanticSimilarity !== undefined) {
+        score += (semanticSimilarity * 75);
     } else {
-        // Fallback: description keyword search
-        const description = activity.description.toLowerCase();
-        const matchedKeywords = userSkills.filter(skill =>
-            description.includes(skill)
-        );
-        if (matchedKeywords.length > 0) {
-            score += 20;
+        // Legacy fallback (Explore tab logic)
+        let legacySemanticScore = 0;
+
+        // Interests (35%)
+        const userInterests = user.interests?.map(i => i.toLowerCase()) || [];
+        if (userInterests.includes(activity.category.toLowerCase())) {
+            legacySemanticScore += 35;
         }
+
+        // Skills (40%)
+        const activitySkills = activity.skills?.map(s => s.toLowerCase()) || [];
+        const userSkills = user.skills?.map(s => s.toLowerCase()) || [];
+        const skillsOverlap = userSkills.filter(s => activitySkills.includes(s));
+
+        if (skillsOverlap.length > 0) {
+            legacySemanticScore += Math.min(40, skillsOverlap.length * 20);
+        } else {
+            const description = activity.description?.toLowerCase() || "";
+            if (userSkills.some(skill => description.includes(skill))) {
+                legacySemanticScore += 20;
+            }
+        }
+        score += legacySemanticScore;
     }
 
-    // 3. Proximity (15%)
+    // 2. Proximity (15%)
     if (user.locationCoords && activity.location.coords) {
         const R = 6371; // km
         const dLat = (activity.location.coords.lat - user.locationCoords.lat) * Math.PI / 180;
@@ -54,23 +57,22 @@ export const calculateSmartMatch = (user: User | null, activity: Activity): numb
         if (distance < 5) score += 15;
         else if (distance < 15) score += 10;
         else if (distance < 50) score += 5;
-    } else if (activity.location.address?.toLowerCase()?.includes("bari")) {
-        // Fallback for demo data
-        score += 10;
     }
 
-    // 4. Urgency
+    // 3. Urgency/Time (10%)
     if (activity.isUrgent) {
-        score += 15; // Manual flag bonus
+        score += 6;
     }
 
-    const actDate = new Date(activity.dateTime);
-    const daysUntil = (actDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    if (daysUntil > 0 && daysUntil <= 2) {
-        score += 10;
-    } else if (daysUntil <= 7) {
-        score += 5;
+    if (activity.dateTime) {
+        const actDate = new Date(activity.dateTime);
+        const diffDays = (actDate.getTime() - Date.now()) / (1000 * 3600 * 24);
+        if (diffDays > 0 && diffDays <= 2) {
+            score += 4;
+        } else if (diffDays <= 7) {
+            score += 2;
+        }
     }
 
-    return Math.min(100, score);
+    return Math.round(Math.min(100, score));
 };

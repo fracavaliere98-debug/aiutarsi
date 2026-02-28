@@ -8,10 +8,24 @@ import React, {
     useMemo,
 } from 'react';
 import * as Location from 'expo-location';
-import { GeminiMatch, geminiMatchService, GeminiQuotaDailyError } from '../services/GeminiMatchService';
+import { supabase } from '../utils/supabase';
+import { GeminiMatch, geminiMatchService } from '../services/GeminiMatchService';
 import { activityService } from '../services/ActivityService';
 import { useAuth } from './AuthContext';
-import { Activity } from '../types';
+import { Activity, User } from '../types';
+
+// Helper function for Haversine distance
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SmartMatchContextType {
@@ -48,6 +62,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profileCompleted:', user?.profileCompleted);
             return;
         }
+
         // Guard: prevent concurrent fetches
         if (isFetchingRef.current) return;
 
@@ -56,57 +71,118 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         setError(null);
 
         try {
-            // 1. Get volunteer's location (or fallback to a default Italian city)
-            let lat = user.locationCoords?.lat ?? 41.9028; // Rome fallback
-            let lng = user.locationCoords?.lng ?? 12.4964;
+            // Guard: check if user has an embedding (pgvector)
+            if (!user.embedding) {
+                console.log('[SmartMatchContext] User has no embedding yet — waiting for auto-generation');
+                setError('Analisi del profilo in corso... riprova tra pochi secondi.');
+                setIsLoading(false);
+                isFetchingRef.current = false;
+                return;
+            }
 
-            // Try to get device location if user has no saved coords
-            if (!user.locationCoords) {
-                try {
-                    const { status } = await Location.requestForegroundPermissionsAsync();
-                    if (status === 'granted') {
-                        const loc = await Location.getCurrentPositionAsync({
-                            accuracy: Location.Accuracy.Balanced,
-                        });
-                        lat = loc.coords.latitude;
-                        lng = loc.coords.longitude;
-                    }
-                } catch {
-                    // Silent fallback — use Rome coords
+            console.log('[SmartMatchContext] Fetching matches via pgvector RPC...');
+
+            // 1. Chiamata all'RPC match_activities del database
+            const { data, error: rpcError } = await supabase.rpc('match_activities', {
+                query_embedding: user.embedding,
+                match_threshold: 0.35,
+                match_count: 5,
+                user_lat: user.locationCoords?.lat || null,
+                user_lng: user.locationCoords?.lng || null
+            });
+
+            if (rpcError) throw rpcError;
+
+            // 2. Map RPC results to match the UI interface
+            const mappedMatches: GeminiMatch[] = (data || []).map((item: any) => {
+                // Spatio-temporal reasoning logic
+                let reason = "Alta affinità semantica con il tuo profilo.";
+                const reasons: string[] = [];
+
+                // 1. Keyword check (Skills/Interests)
+                if (user.skills && item.description) {
+                    const matchingSkill = user.skills.find(s =>
+                        item.title.toLowerCase().includes(s.toLowerCase()) ||
+                        item.description.toLowerCase().includes(s.toLowerCase())
+                    );
+                    if (matchingSkill) reasons.push(`Match per la tua competenza in ${matchingSkill}`);
                 }
-            }
 
-            // 2. Fetch 15 nearest open activities
-            // Strategy: try geographically-sorted first, fallback to global list
-            // (needed when activity coordinates in DB are incorrect/missing)
-            let openActivities: Activity[] = (await activityService.getActivitiesByRadius(lat, lng, 100))
-                .filter((a) => a.status === 'APERTA').slice(0, 15);
+                if (user.interests && item.description && reasons.length < 2) {
+                    const matchingInterest = user.interests.find(i =>
+                        item.title.toLowerCase().includes(i.toLowerCase()) ||
+                        item.description.toLowerCase().includes(i.toLowerCase())
+                    );
+                    if (matchingInterest) reasons.push(`Affinità con il tuo interesse per ${matchingInterest}`);
+                }
 
-            if (openActivities.length === 0) {
-                // Fallback: fetch all open activities (no geo-filter)
-                console.log('[SmartMatchContext] No nearby activities found — falling back to global list');
-                const { activities: allActivities } = await activityService.getActivities({
-                    limit: 15,
-                    onlyAvailable: false,
-                });
-                openActivities = allActivities.filter((a) => a.status === 'APERTA').slice(0, 15);
-            }
+                // 2. Distance check
+                if (user.locationCoords && item.location_lat && item.location_lng) {
+                    const dist = calculateDistance(
+                        user.locationCoords.lat,
+                        user.locationCoords.lng,
+                        item.location_lat,
+                        item.location_lng
+                    );
+                    if (dist < 5) {
+                        reasons.push("A pochi passi da te");
+                    } else if (dist < 15) {
+                        reasons.push(`A soli ${dist.toFixed(1)} km da te`);
+                    }
+                }
 
-            console.log(`[SmartMatchContext] Found ${openActivities.length} activities for matching`);
+                // 3. Time check
+                if (item.date_start) {
+                    const start = new Date(item.date_start);
+                    const now = new Date();
+                    const diffDays = (start.getTime() - now.getTime()) / (1000 * 3600 * 24);
+                    if (diffDays > 0 && diffDays < 3) {
+                        reasons.push("Ideale per questa settimana");
+                    }
+                }
 
-            // 3. Call Gemini matching service
-            const result = await geminiMatchService.getSmartMatches(user, openActivities);
-            setMatches(result);
+                if (reasons.length > 0) {
+                    reason = reasons.slice(0, 2).join(" • ");
+                }
+
+                return {
+                    id: item.id,
+                    score: item.match_percentage, // Use the weighted percentage from RPC
+                    reason: reason, // Dynamic reason
+                    activity: {
+                        id: item.id,
+                        npoId: item.npo_id,
+                        npoName: item.npo_name || "Organizzazione",
+                        title: item.title,
+                        description: item.description,
+                        category: item.category,
+                        dateTime: item.date_start, // Map date_start to dateTime
+                        endDateTime: item.date_end,
+                        location: {
+                            address: item.location_address,
+                            coords: {
+                                lat: item.location_lat,
+                                lng: item.location_lng
+                            }
+                        },
+                        imageUrl: item.image_url,
+                        isUrgent: item.is_urgent,
+                        status: item.status,
+                        matchPercentage: Math.round(item.similarity * 100),
+                        // Default values for fields not returned by RPC but expected by Activity type
+                        iscritti: [],
+                        slots: 0,
+                        skills: []
+                    } as Activity
+                };
+            });
+
+            console.log(`[SmartMatchContext] Found ${mappedMatches.length} semantic matches`);
+            setMatches(mappedMatches);
             setLastUpdated(new Date());
         } catch (err: any) {
-            if (err instanceof GeminiQuotaDailyError) {
-                // Daily quota exhausted — not a bug, reset tomorrow
-                console.warn('[SmartMatchContext] Daily quota exhausted.');
-                setError('quota_daily');
-            } else {
-                console.error('[SmartMatchContext] Error fetching matches:', err);
-                setError('Impossibile caricare i suggerimenti AI. Riprova tra poco.');
-            }
+            console.error('[SmartMatchContext] Error fetching matches:', err);
+            setError('Impossibile caricare i suggerimenti. Riprova tra poco.');
         } finally {
             setIsLoading(false);
             isFetchingRef.current = false;

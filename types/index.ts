@@ -28,6 +28,7 @@ export interface User {
     profileCompleted?: boolean;
     lastSeenAt?: string;
     createdAt?: string;
+    embedding?: number[];
 }
 
 export interface Activity {
@@ -51,6 +52,7 @@ export interface Activity {
     isUrgent: boolean;
     imageUrl?: string;
     npoEmail?: string;
+    embedding?: number[];
 }
 
 export interface Review {

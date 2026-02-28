@@ -318,7 +318,8 @@ export class AuthService {
             publicEmail: profile.public_email,
             profileCompleted: profile.profile_completed,
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || [],
-            lastSeenAt: profile.last_seen_at
+            lastSeenAt: profile.last_seen_at,
+            embedding: profile.embedding
         };
     }
 
@@ -387,6 +388,11 @@ export class AuthService {
         if (!user) {
             console.warn("[DEBUG] AuthService: Fallback to session metadata");
             user = this._mapSupabaseUserToAppUser(session.user);
+        }
+
+        // 4. Persistence Check: If we got a fresh user from DB, we should update local storage
+        if (user) {
+            await this.saveUserLocally(user);
         }
 
         return user;
@@ -472,7 +478,14 @@ export class AuthService {
             }
 
             // 5. Return fresh user object
-            const updatedUser = await this.getCurrentUser(); // Re-fetch to ensure we have the full picture
+            const updatedUser = await this.getCurrentUser(); // Re-fetch to ensure we have the full picture (including relational lists)
+
+            // 6. Persistence Fix: Force local storage sync
+            if (updatedUser) {
+                await this.saveUserLocally(updatedUser);
+                console.log("[DEBUG] AuthService: updateProfile - Local storage synced");
+            }
+
             eventEmitter.emit(SyncEvents.SYNC_USERS);
             return updatedUser!;
 

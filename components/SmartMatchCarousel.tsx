@@ -216,9 +216,24 @@ function MatchCard({ match, index }: { match: GeminiMatch; index: number }) {
     );
 }
 
-// ─── SmartMatchCarousel (exported) ────────────────────────────────────────────
 export function SmartMatchCarousel() {
     const { matches, isLoading, error, refresh, lastUpdated } = useSmartMatch();
+    const [activeIndex, setActiveIndex] = React.useState(0);
+
+    const handleScroll = (event: any) => {
+        const x = event.nativeEvent.contentOffset.x;
+        const index = Math.round(x / 316); // card width (300) + gap (16)
+        if (index !== activeIndex) {
+            setActiveIndex(index);
+        }
+    };
+
+    // Sort by score DESC and limit to 5
+    const displayedMatches = React.useMemo(() => {
+        return [...matches]
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+    }, [matches]);
 
     // Header row
     const Header = (
@@ -394,23 +409,25 @@ export function SmartMatchCarousel() {
                 decelerationRate="fast"
                 snapToInterval={316} // card width + gap
                 snapToAlignment="start"
+                onMomentumScrollEnd={handleScroll}
+                scrollEventThrottle={16}
                 style={{ marginHorizontal: -24 }}
                 contentContainerStyle={{ paddingHorizontal: 24 }}
             >
-                {matches.map((match, i) => (
+                {displayedMatches.map((match, i) => (
                     <MatchCard key={match.id} match={match} index={i} />
                 ))}
             </ScrollView>
             {/* Dot indicators */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 12 }}>
-                {matches.map((_, i) => (
+                {displayedMatches.map((_, i) => (
                     <View
                         key={i}
                         style={{
-                            width: i === 0 ? 16 : 6,
+                            width: i === activeIndex ? 16 : 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: i === 0 ? Colors.accent : '#e2e8f0',
+                            backgroundColor: i === activeIndex ? Colors.accent : '#e2e8f0',
                         }}
                     />
                 ))}
