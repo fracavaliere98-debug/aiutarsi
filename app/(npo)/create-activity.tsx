@@ -143,7 +143,7 @@ export default function CreateActivityScreen() {
                                     <View className="bg-primary/5 p-4 rounded-3xl mb-2">
                                         <Camera size={32} color={Colors.primary} />
                                     </View>
-                                    <Text className="text-primary/40 font-bold text-sm">Carica una foto per l'attività</Text>
+                                    <Text className="text-primary/40 font-bold text-sm">Carica una foto per l&apos;attività</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -318,7 +318,7 @@ export default function CreateActivityScreen() {
                             </View>
                             <View>
                                 <Text className="font-bold text-primary">Segnala come Urgente</Text>
-                                <Text className="text-secondary text-[10px]">L'attività avrà priorità nel match.</Text>
+                                <Text className="text-secondary text-[10px]">L&apos;attività avrà priorità nel match.</Text>
                             </View>
                         </View>
                         <Switch

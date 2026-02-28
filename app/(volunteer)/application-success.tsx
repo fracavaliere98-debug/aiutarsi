@@ -31,12 +31,12 @@ export default function ApplicationSuccess() {
                 </Animated.Text>
 
                 <Animated.Text entering={FadeInDown.delay(300).duration(500)} className="text-lg text-secondary text-center px-4 leading-relaxed">
-                    L'ente <Text className="font-bold text-accent">{npoName}</Text> riceverà la tua richiesta e ti risponderà a breve.
+                    L&apos;ente <Text className="font-bold text-accent">{npoName}</Text> riceverà la tua richiesta e ti risponderà a breve.
                 </Animated.Text>
 
                 <Animated.Text entering={FadeInDown.delay(400).duration(500)} className="text-secondary text-center mt-8 text-sm">
                     Puoi monitorare lo stato in{"\n"}
-                    <Text className="font-bold">"Le Mie Attività"</Text>.
+                    <Text className="font-bold">&quot;Le Mie Attività&quot;</Text>.
                 </Animated.Text>
 
                 {/* Dots indicator mimicking design */}

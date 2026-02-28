@@ -357,7 +357,7 @@ export default function EditActivityScreen() {
                                 </View>
                                 <View>
                                     <Text className="font-bold text-primary">Segnala come Urgente</Text>
-                                    <Text className="text-secondary text-[10px]">L'attività avrà priorità nel match.</Text>
+                                    <Text className="text-secondary text-[10px]">L&apos;attività avrà priorità nel match.</Text>
                                 </View>
                             </View>
                             <Switch

@@ -37,17 +37,6 @@ export default function VolunteersScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
 
-    if (error) {
-        return (
-            <View className="flex-1 bg-white">
-                <ErrorState
-                    title="Errore applicazioni"
-                    description="Impossibile caricare l'elenco dei volontari."
-                    onRetry={loadData}
-                />
-            </View>
-        );
-    }
 
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -184,6 +173,18 @@ export default function VolunteersScreen() {
     // but preserving "empty state if NOTHING at all" is okay.
     // However, the segmented control usually is always visible.
     // Let's keep it visible so user can switch and see empty states per tab.
+
+    if (error) {
+        return (
+            <View className="flex-1 bg-white">
+                <ErrorState
+                    title="Errore applicazioni"
+                    description="Impossibile caricare l'elenco dei volontari."
+                    onRetry={loadData}
+                />
+            </View>
+        );
+    }
 
     const Tabs = () => (
         <View className="flex-row gap-3 mb-4 px-1">

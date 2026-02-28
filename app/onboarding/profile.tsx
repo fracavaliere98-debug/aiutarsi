@@ -1,5 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from "react-native";
-import { useRouter , useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -142,7 +142,7 @@ export default function OnboardingProfile() {
                         {isUploading ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-white text-lg font-bold">Inizia l'avventura</Text>
+                            <Text className="text-white text-lg font-bold">Inizia l&apos;avventura</Text>
                         )}
                     </TouchableOpacity>
 

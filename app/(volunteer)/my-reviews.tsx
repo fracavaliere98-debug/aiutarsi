@@ -108,7 +108,7 @@ export default function MyReviewsScreen() {
                                 {/* Comment */}
                                 {review.comment ? (
                                     <Text className="text-secondary/80 text-[15px] leading-6 italic">
-                                        "{review.comment}"
+                                        &quot;{review.comment}&quot;
                                     </Text>
                                 ) : (
                                     <Text className="text-slate-400 text-[13px] italic">

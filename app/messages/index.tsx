@@ -3,11 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, SafeAreaView, TextInput, Modal,
 import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useChat } from '../../context/ChatContext';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import ChatService from '../../services/ChatService';
-import { Stack } from 'expo-router';
+
 import { StandardLayout } from '../../components/StandardLayout'; // Ensure StandardLayout is imported
 
 export default function MessagesListScreen() {
@@ -290,7 +290,7 @@ export default function MessagesListScreen() {
                                         </View>
                                         <Text className="text-slate-400 font-bold text-lg text-center">Nessun Ente trovato</Text>
                                         <Text className="text-slate-400 text-center mt-2 px-10">
-                                            Devi essere parte di almeno un'attività per poter chattare con un'organizzazione.
+                                            Devi essere parte di almeno un&apos;attività per poter chattare con un&apos;organizzazione.
                                         </Text>
                                     </View>
                                 ) : (

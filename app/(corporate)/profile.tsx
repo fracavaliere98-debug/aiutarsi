@@ -62,7 +62,7 @@ export default function CorporateProfileScreen() {
                 className="flex-row items-center justify-center gap-3 bg-white py-5 rounded-2xl border border-red-100 mb-12 shadow-sm active:scale-95"
             >
                 <LogOut size={20} color="#ef4444" />
-                <Text className="text-red-500 font-black text-lg">Esci dall'Account</Text>
+                <Text className="text-red-500 font-black text-lg">Esci dall&apos;Account</Text>
             </TouchableOpacity>
         </StandardLayout>
     );

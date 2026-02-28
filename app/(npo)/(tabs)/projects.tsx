@@ -22,18 +22,6 @@ export default function NPOCalendarScreen() {
     const router = useRouter();
     const { showToast } = useToast();
 
-    if (error) {
-        return (
-            <StandardLayout label="Attività" title="Calendario">
-                <ErrorState
-                    title="Errore caricamento"
-                    description="Impossibile recuperare i tuoi progetti."
-                    onRetry={loadData}
-                />
-            </StandardLayout>
-        );
-    }
-
     const [viewMode, setViewMode] = useState<ViewMode>("calendar");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [refreshing, setRefreshing] = useState(false);
@@ -58,6 +46,18 @@ export default function NPOCalendarScreen() {
     const selectedDateProjects = useMemo(() => {
         return myProjects.filter(p => new Date(p.dateTime).toDateString() === selectedDate.toDateString());
     }, [myProjects, selectedDate]);
+
+    if (error) {
+        return (
+            <StandardLayout label="Attività" title="Calendario">
+                <ErrorState
+                    title="Errore caricamento"
+                    description="Impossibile recuperare i tuoi progetti."
+                    onRetry={loadData}
+                />
+            </StandardLayout>
+        );
+    }
 
     return (
         <StandardLayout

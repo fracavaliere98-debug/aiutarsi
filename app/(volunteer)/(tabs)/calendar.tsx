@@ -25,17 +25,7 @@ export default function VolunteerCalendar() {
     const { activities, error, loadData } = useActivities();
     const { showToast } = useToast();
 
-    if (error) {
-        return (
-            <StandardLayout label="La tua Agenda" title="Calendario" bg="bg-background-light">
-                <ErrorState
-                    title="Errore caricamento"
-                    description="Impossibile recuperare il tuo calendario."
-                    onRetry={loadData}
-                />
-            </StandardLayout>
-        );
-    }
+
     const [viewMode, setViewMode] = useState<ViewMode>("list");
     const [filterMode, setFilterMode] = useState<FilterMode>("upcoming");
     const [refreshing, setRefreshing] = useState(false);
@@ -103,6 +93,18 @@ export default function VolunteerCalendar() {
 
 
 
+
+    if (error) {
+        return (
+            <StandardLayout label="La tua Agenda" title="Calendario" bg="bg-background-light">
+                <ErrorState
+                    title="Errore caricamento"
+                    description="Impossibile recuperare il tuo calendario."
+                    onRetry={loadData}
+                />
+            </StandardLayout>
+        );
+    }
 
     return (
         <StandardLayout

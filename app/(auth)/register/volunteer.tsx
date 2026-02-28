@@ -108,7 +108,7 @@ export default function VolunteerRegister() {
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-6 gap-2">
-                    <Text className="text-secondary">Sei una NPO o un'Azienda?</Text>
+                    <Text className="text-secondary">Sei una NPO o un&apos;Azienda?</Text>
                     <TouchableOpacity onPress={() => router.push("/register/npo")}>
                         <Text className="text-primary font-bold underline">Registrati qui</Text>
                     </TouchableOpacity>

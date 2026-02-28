@@ -102,7 +102,7 @@ export default function NPORegister() {
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-6 gap-2">
-                    <Text className="text-secondary">Sei un'Azienda?</Text>
+                    <Text className="text-secondary">Sei un&apos;Azienda?</Text>
                     <TouchableOpacity onPress={() => router.push("/register/corporate")}>
                         <Text className="text-primary font-bold underline">Clicca qui</Text>
                     </TouchableOpacity>

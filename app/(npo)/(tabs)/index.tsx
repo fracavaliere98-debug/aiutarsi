@@ -161,7 +161,7 @@ export default function NPODashboard() {
                     </View>
                     <Text className="text-white text-xl font-black mb-1">Previsione Carenza</Text>
                     <Text className="text-white/80 text-xs leading-5 mb-5 font-medium">
-                        Carenza prevista per il weekend del 15/10. Copri subito i turni per non perdere l'impatto.
+                        Carenza prevista per il weekend del 15/10. Copri subito i turni per non perdere l&apos;impatto.
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push("/(npo)/create-activity" as any)}

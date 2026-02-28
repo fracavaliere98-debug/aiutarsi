@@ -125,7 +125,7 @@ function FilterModal({
                         {/* Raggio */}
                         <View>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                                <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b' }}>Raggio d'azione</Text>
+                                <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b' }}>Raggio d&apos;azione</Text>
                                 <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>Entro {pendingFilters.radiusKm}km</Text>
                             </View>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

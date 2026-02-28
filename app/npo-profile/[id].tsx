@@ -390,7 +390,7 @@ export default function NPOProfileScreen() {
                                         </View>
                                         <Text className="text-secondary/40 text-[10px] font-bold">{new Date(review.date).toLocaleDateString()}</Text>
                                     </View>
-                                    <Text className="text-primary italic text-sm mb-2">"{review.comment}"</Text>
+                                    <Text className="text-primary italic text-sm mb-2">&quot;{review.comment}&quot;</Text>
                                     {review.feelings.length > 0 && (
                                         <View className="flex-row flex-wrap gap-2">
                                             {review.feelings.map(f => (

@@ -84,7 +84,7 @@ export default function FeedbackScreen() {
                     </View>
                 </View>
 
-                <Text className="text-3xl font-black text-primary text-center leading-tight mb-10">Com'è andata la tua attività?</Text>
+                <Text className="text-3xl font-black text-primary text-center leading-tight mb-10">Com&apos;è andata la tua attività?</Text>
 
                 {/* Stars */}
                 <View className="flex-row justify-center gap-3 mb-10">

@@ -145,7 +145,7 @@ export default function ReviewVolunteersScreen() {
             >
                 <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                     <Text className="text-secondary/70 mb-6 font-medium leading-5">
-                        Conferma la presenza dei volontari iscritti all'attività "{activity.title}".
+                        Conferma la presenza dei volontari iscritti all&apos;attività &quot;{activity.title}&quot;.
                         Puoi salvare in momenti diversi, aggiungendo feedback e stelle per chi ha partecipato.
                     </Text>
 

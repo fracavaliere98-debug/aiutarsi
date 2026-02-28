@@ -65,15 +65,6 @@ export default function ActivityDetail() {
     } = useActivities();
     const { handleActivityShare } = useGamification();
 
-    if (error) {
-        return (
-            <ErrorState
-                title="Errore di caricamento"
-                description="Non siamo riusciti a caricare i dettagli dell'attività."
-                onRetry={loadData}
-            />
-        );
-    }
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
@@ -173,6 +164,16 @@ export default function ActivityDetail() {
         const reviewedVolunteerIds = new Set(currentReviews.map(r => r.volunteerId));
         return currentIscritti.filter(volId => !reviewedVolunteerIds.has(volId)).length;
     }, [activity?.id, isOwner, volunteerReviews, currentIscritti]);
+
+    if (error) {
+        return (
+            <ErrorState
+                title="Errore di caricamento"
+                description="Non siamo riusciti a caricare i dettagli dell'attività."
+                onRetry={loadData}
+            />
+        );
+    }
 
     if (fetchLoading) {
         return (
@@ -397,7 +398,7 @@ export default function ActivityDetail() {
 
                     {/* Location Map (Real Implementation) */}
                     <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
-                        <Text className="text-primary font-bold text-base mb-3">Luogo dell'Attività</Text>
+                        <Text className="text-primary font-bold text-base mb-3">Luogo dell&apos;Attività</Text>
                         {Platform.OS !== 'web' ? (
                             isOwner ? (
                                 <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100 shadow-sm">
@@ -531,7 +532,7 @@ export default function ActivityDetail() {
                                                 {application.message && (
                                                     <View className="flex-row items-start gap-2">
                                                         <View className="mt-0.5"><Tag size={14} color={Colors.secondary} /></View>
-                                                        <Text className="text-xs text-secondary italic flex-1">"{application.message}"</Text>
+                                                        <Text className="text-xs text-secondary italic flex-1">&quot;{application.message}&quot;</Text>
                                                     </View>
                                                 )}
                                             </View>

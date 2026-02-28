@@ -118,7 +118,7 @@ export default function SecurityScreen() {
                 <View className="flex-1">
                     <Text className="text-blue-800 font-bold text-sm mb-1">Gestione Sicurezza</Text>
                     <Text className="text-blue-600 text-xs leading-4">
-                        Modifica la tua email, aggiorna la password o attiva l'autenticazione a due fattori per proteggere l'account dell'ente.
+                        Modifica la tua email, aggiorna la password o attiva l&apos;autenticazione a due fattori per proteggere l&apos;account dell&apos;ente.
                     </Text>
                 </View>
             </View>
@@ -170,7 +170,7 @@ export default function SecurityScreen() {
                     </View>
                     <View className="flex-1">
                         <Text className="text-primary font-bold text-base">Autenticazione a due fattori</Text>
-                        <Text className="text-secondary text-xs">Richiedi codice OTP all'accesso</Text>
+                        <Text className="text-secondary text-xs">Richiedi codice OTP all&apos;accesso</Text>
                     </View>
                 </View>
                 <Switch

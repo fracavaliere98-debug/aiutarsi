@@ -27,21 +27,7 @@ export default function VolunteerDashboard() {
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
-    if (error) {
-        return (
-            <StandardLayout
-                title="Dashboard"
-                label="Qualcosa è andato storto"
-                bg="bg-background-light"
-            >
-                <ErrorState
-                    title="Errore nel caricamento"
-                    description="Non siamo riusciti a recuperare le tue attività. Controlla la connessione."
-                    onRetry={loadData}
-                />
-            </StandardLayout>
-        );
-    }
+
 
     // Filter activities
     const openActivities = activities.filter(a => a.status === "APERTA" || a.status === "IN_CORSO");
@@ -78,6 +64,22 @@ export default function VolunteerDashboard() {
         setRefreshing(false);
     };
 
+
+    if (error) {
+        return (
+            <StandardLayout
+                title="Dashboard"
+                label="Qualcosa è andato storto"
+                bg="bg-background-light"
+            >
+                <ErrorState
+                    title="Errore nel caricamento"
+                    description="Non siamo riusciti a recuperare le tue attività. Controlla la connessione."
+                    onRetry={loadData}
+                />
+            </StandardLayout>
+        );
+    }
 
     return (
         <StandardLayout

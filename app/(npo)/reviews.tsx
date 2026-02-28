@@ -106,7 +106,7 @@ export default function NPOReviewsScreen() {
 
                                     {review.comment ? (
                                         <Text className="text-sm text-slate-600 leading-5 italic">
-                                            "{review.comment}"
+                                            &quot;{review.comment}&quot;
                                         </Text>
                                     ) : (
                                         <Text className="text-sm text-slate-400 italic">
