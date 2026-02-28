@@ -378,7 +378,7 @@ export default function ActivityDetail() {
                         <View className="mb-6">
                             <Text className="text-primary font-bold text-base mb-3">Competenze Richieste</Text>
                             <View className="flex-row flex-wrap gap-2">
-                                {activity.skills && activity.skills.length > 0 ? (
+                                {activity?.skills && activity.skills.length > 0 ? (
                                     activity.skills.map(skillId => (
                                         <View key={skillId} className="bg-primary/5 px-4 py-2.5 rounded-2xl border border-primary/10">
                                             <Text className="text-primary font-bold text-xs">{SKILLS_MAP[skillId] || skillId}</Text>
