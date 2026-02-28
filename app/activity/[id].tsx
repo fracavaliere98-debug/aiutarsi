@@ -365,9 +365,12 @@ export default function ActivityDetail() {
                 <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
                     <View style={{ width: '100%', height: 250 }}>
                         <Image source={{ uri: activity?.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={StyleSheet.absoluteFill} />
                     </View>
                     <View style={{ padding: 20 }}>
-                        <Text className="text-2xl font-black text-primary mb-4">{activity?.title}</Text>
+                        <Animated.View entering={FadeInDown.delay(100).springify()}>
+                            <Text className="text-2xl font-black text-primary mb-4">{activity?.title}</Text>
+                        </Animated.View>
                         {renderContent()}
                     </View>
                 </ScrollView>
