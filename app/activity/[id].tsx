@@ -361,34 +361,31 @@ export default function ActivityDetail() {
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {isOldAndroid ? (
-                <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
-                    <View style={{ width: '100%', height: 250 }}>
+            <ParallaxScrollView
+                headerBackgroundColor={{ light: 'white', dark: 'black' }}
+                headerImage={
+                    <View style={{ width: '100%', height: 300 }}>
                         <Image source={{ uri: activity?.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={StyleSheet.absoluteFill} />
                     </View>
-                    <View style={{ padding: 20 }}>
-                        <Animated.View entering={FadeInDown.delay(100).springify()}>
-                            <Text className="text-2xl font-black text-primary mb-4">{activity?.title}</Text>
-                        </Animated.View>
-                        {renderContent()}
-                    </View>
-                </ScrollView>
-            ) : (
-                <ParallaxScrollView
-                    headerBackgroundColor={{ light: 'white', dark: 'black' }}
-                    headerImage={
-                        <View style={{ width: '100%', height: 300 }}>
-                            <Image source={{ uri: activity?.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={StyleSheet.absoluteFill} />
+                }
+            >
+                <View className="flex-1 bg-white -mt-12 rounded-t-[40px] px-8 pt-12 pb-40">
+                    <View className="absolute -top-6 left-0 right-0 items-center z-10">
+                        <View className="shadow-lg shadow-black/20">
+                            <View className="px-6 py-3 rounded-full flex-row items-center gap-2 bg-white">
+                                <View className={`w-2.5 h-2.5 rounded-full ${activity?.status === "IN_CORSO" ? "bg-amber-500" :
+                                    activity?.status === "APERTA" ? "bg-emerald-500" : "bg-slate-400"
+                                    }`} />
+                                <Text className="text-xs font-black uppercase tracking-widest text-primary">
+                                    {activity?.status?.replace("_", " ") || "Dettaglio"}
+                                </Text>
+                            </View>
                         </View>
-                    }
-                >
-                    <View className="flex-1 bg-white -mt-12 rounded-t-[40px] px-8 pt-12 pb-40">
-                        {renderContent()}
                     </View>
-                </ParallaxScrollView>
-            )}
+                    {renderContent()}
+                </View>
+            </ParallaxScrollView>
 
             {/* Sticky Header */}
             <View className="absolute top-0 left-0 right-0 pt-16 px-5 z-50 flex-row justify-between">
