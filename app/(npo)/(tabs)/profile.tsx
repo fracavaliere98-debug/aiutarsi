@@ -135,7 +135,7 @@ export default function NPOProfileScreen() {
                     </TouchableOpacity>
 
                     <Text className="text-primary font-black text-2xl mt-4 text-center">
-                        {user?.npoName || "Ente Solidale"}
+                        {user?.npoName || user?.name || "Ente Solidale"}
                     </Text>
                     <Text className="text-secondary font-bold text-sm mt-1">
                         ID Ente: #{user?.shortId || user?.id?.substring(0, 8).toUpperCase() || "N/A"}

@@ -58,10 +58,10 @@ export default function LandingPage() {
                 contentContainerStyle={{ paddingBottom: 120 }} // Space for sticky CTA
             >
                 {/* Navbar */}
-                <View className="px-6 py-6 flex-row justify-between items-center">
+                <View className="pl-0 pr-6 pt-6 pb-2 flex-row justify-between items-center">
                     <Image
                         source={require("../assets/images/logo-transparent.png")}
-                        className="w-48 h-14 -ml-4"
+                        className="w-56 h-16 -ml-12"
                         resizeMode="contain"
                     />
                     <TouchableOpacity
@@ -87,10 +87,10 @@ export default function LandingPage() {
                         {/* Floating Badge */}
                         <Animated.View
                             entering={FadeInDown.delay(300).springify()}
-                            className="absolute bottom-6 right-6 bg-white px-4 py-2 rounded-full flex-row items-center justify-center gap-2 shadow-lg shadow-black/10"
+                            className="absolute bottom-6 right-6 bg-white p-0 rounded-full flex-row items-center justify-center gap-2 shadow-lg shadow-black/10"
                         >
                             <Heart size={18} color={Colors.accent} fill={Colors.accent} />
-                            <Text className="text-primary font-bold text-sm leading-none pt-0.5">Impatto Reale</Text>
+                            <Text className="text-primary font-bold text-sm leading-tight">Impatto Reale</Text>
                         </Animated.View>
                     </Animated.View>
 
@@ -137,7 +137,7 @@ export default function LandingPage() {
                     <FeatureCard
                         icon={Wallet}
                         title="Ottieni Valore"
-                        description="Le tue ore sono riconosciute con Impact Points e premi reali nel tuo Wallet digitale."
+                        description="Il tuo impegno e le tue ore sono riconosciute con badge che potrai condividere con i tuoi amici"
                         color="#10b981"
                         delay={400}
                     />

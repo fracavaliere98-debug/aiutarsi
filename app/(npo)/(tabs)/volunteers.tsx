@@ -187,7 +187,7 @@ export default function VolunteersScreen() {
     }
 
     const Tabs = () => (
-        <View className="flex-row gap-3 mb-4 px-1">
+        <View className="flex-row justify-center gap-3 mb-4">
             <TouchableOpacity
                 onPress={() => setActiveTab("CANDIDATURE")}
                 style={{

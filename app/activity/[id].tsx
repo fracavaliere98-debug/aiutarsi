@@ -134,7 +134,10 @@ export default function ActivityDetail() {
 
     const currentIscritti = localIscrittiOverride ?? activity?.iscritti ?? [];
     const isEnrolled = !!user && currentIscritti.includes(user.id);
-    const npoUser = useMemo(() => users.find(u => u.id === activity?.npoId), [users, activity?.npoId]);
+    const npoUser = useMemo(() => {
+        if (!activity?.npoId) return null;
+        return users.find(u => u.id === activity.npoId);
+    }, [users, activity?.npoId]);
     const isFull = activity ? currentIscritti.length >= activity.slots : false;
     const activityReviews = reviews.filter(r => r.activityId === activityId);
     const hasReviewed = !!user && !!activity && reviews.some(r => r.activityId === activityId && r.volunteerId === user.id);
@@ -235,14 +238,14 @@ export default function ActivityDetail() {
                     {/* Centered Floating Status Badge - Positioned on the edge */}
                     <View className="absolute -top-6 left-0 right-0 items-center z-10">
                         <View className="shadow-lg shadow-black/20">
-                            <BlurView intensity={90} tint="light" className="px-6 py-3 rounded-full overflow-hidden flex-row items-center gap-2 bg-white/95">
+                            <View className="px-6 py-3 rounded-full overflow-hidden flex-row items-center gap-2 bg-white/95">
                                 <View className={`w-2.5 h-2.5 rounded-full ${activity.status === "IN_CORSO" ? "bg-amber-500" :
                                     activity.status === "APERTA" ? "bg-emerald-500" : "bg-slate-400"
                                     }`} />
                                 <Text className="text-xs font-black uppercase tracking-widest text-primary">
                                     {activity.status.replace("_", " ")}
                                 </Text>
-                            </BlurView>
+                            </View>
                         </View>
                     </View>
 
@@ -264,7 +267,7 @@ export default function ActivityDetail() {
                             />
                             <View className="flex-row items-center justify-center gap-1">
                                 <Text className="text-base font-black text-primary text-center">
-                                    {npoUser?.npoName || activity.npoName || "Ente Solidale"}
+                                    {npoUser?.npoName || npoUser?.name || activity.npoName || "Ente Solidale"}
                                 </Text>
                                 <CheckCircle2 size={14} color={Colors.accent} fill={Colors.accent} />
                             </View>
@@ -399,7 +402,7 @@ export default function ActivityDetail() {
                     {/* Location Map (Real Implementation) */}
                     <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
                         <Text className="text-primary font-bold text-base mb-3">Luogo dell&apos;Attività</Text>
-                        {Platform.OS !== 'web' ? (
+                        {Platform.OS !== 'web' && activity.location?.coords?.lat != null && activity.location?.coords?.lng != null ? (
                             isOwner ? (
                                 <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100 shadow-sm">
                                     <MapView
@@ -487,8 +490,10 @@ export default function ActivityDetail() {
                         ) : (
                             <View className="rounded-[32px] overflow-hidden bg-slate-50 h-52 border-2 border-dashed border-slate-200 items-center justify-center">
                                 <MapPin size={32} color={Colors.secondary} opacity={0.3} />
-                                <Text className="text-secondary/60 font-bold mt-2">Mappa disponibile su App Mobile</Text>
-                                <Text className="text-secondary/40 text-[10px] mt-1">{activity.location.address}</Text>
+                                <Text className="text-secondary/60 font-bold mt-2">
+                                    {Platform.OS === 'web' ? 'Mappa disponibile su App Mobile' : 'Dati posizione non disponibili'}
+                                </Text>
+                                <Text className="text-secondary/40 text-[10px] mt-1">{activity.location?.address || "Indirizzo non presente"}</Text>
                             </View>
                         )}
                     </Animated.View>

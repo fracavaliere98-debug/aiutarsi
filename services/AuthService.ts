@@ -553,6 +553,8 @@ export class AuthService {
                             full_name: metadata.name || 'Utente',
                             avatar_url: metadata.avatar,
                             role: (metadata.role || 'VOLUNTEER').toUpperCase(),
+                            npo_name: metadata.npoName,
+                            company_name: metadata.companyName,
                             profile_completed: metadata.profileCompleted || false
                         });
 
