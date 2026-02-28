@@ -7,11 +7,12 @@ import { useApplications } from "../../../context/ApplicationContext";
 import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } from "../../../context/GamificationContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { User } from "../../../types";
+import ChatService from "../../../services/ChatService";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { getUserById, users } = useAuth();
+    const { getUserById, users, user: currentUser } = useAuth();
     const { getVolunteerApplications } = useApplications();
     const { activities, reviews } = useActivities();
 
@@ -125,6 +126,16 @@ export default function NPOVolunteerProfile() {
         rating: averageRating
     };
 
+    const handleMessageVolunteer = async () => {
+        if (!user) return;
+        try {
+            const convId = await ChatService.startPrivateConversation(currentUser?.id || '', user.id);
+            router.push(`/messages/${convId}` as any);
+        } catch (error) {
+            console.error("Error starting chat with volunteer:", error);
+        }
+    };
+
     return (
         <VolunteerProfileView
             user={user}
@@ -134,6 +145,7 @@ export default function NPOVolunteerProfile() {
             xpInLevel={xpInLevel}
             xpNeededForLevel={xpNeededForLevel}
             onBack={() => router.back()}
+            onMessagePress={handleMessageVolunteer}
             followedNPOs={followedNPOs}
             affiliatedNPOs={affiliatedNPOs}
             npoApplications={userApplications}

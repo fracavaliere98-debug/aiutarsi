@@ -118,6 +118,12 @@ class ChatService {
             .single();
 
         if (error) throw error;
+
+        // Auto-sync participants for group chats when details are fetched
+        if (data && data.type === 'ACTIVITY_GROUP' && data.activity_id) {
+            this.startGroupConversation(data.activity_id, data.activities?.title || '');
+        }
+
         return data;
     }
 
@@ -190,7 +196,7 @@ class ChatService {
                 volunteer:profiles!applications_volunteer_id_fkey (
                     id, 
                     full_name, 
-                    avatar, 
+                    avatar_url, 
                     role
                 )
             `)
@@ -208,7 +214,7 @@ class ChatService {
                 volunteersMap.set(app.volunteer_id, {
                     id: app.volunteer_id,
                     name: (app.volunteer as any).full_name,
-                    avatar: (app.volunteer as any).avatar,
+                    avatar: (app.volunteer as any).avatar_url,
                     type: 'VOLUNTEER',
                     isGroup: false
                 });
@@ -216,20 +222,23 @@ class ChatService {
         });
 
         // 2. Get Activity Groups (activities created by this NPO)
+        // We only want activities that have participants
         const { data: activities, error: aErr } = await supabase
             .from('activities')
-            .select('id, title')
+            .select('id, title, activity_participants(count)')
             .eq('npo_id', npoId)
             .neq('status', 'CANCELLATA');
 
         if (aErr) throw aErr;
 
-        const groups = activities?.map(a => ({
-            id: a.id,
-            name: a.title,
-            type: 'ACTIVITY_GROUP',
-            isGroup: true
-        })) || [];
+        const groups = activities
+            ?.filter(a => (a.activity_participants as any)?.[0]?.count > 0)
+            .map(a => ({
+                id: a.id,
+                name: a.title,
+                type: 'ACTIVITY_GROUP',
+                isGroup: true
+            })) || [];
 
         return {
             volunteers: Array.from(volunteersMap.values()),
@@ -240,7 +249,9 @@ class ChatService {
     /**
      * Start or get an activity group conversation
      */
-    async startGroupConversation(activityId: string, title: string) {
+    async startGroupConversation(activityId: string, title: string, initiatorId?: string) {
+        let convId: string;
+
         const { data: existing, error: eErr } = await supabase
             .from('conversations')
             .select('id')
@@ -248,20 +259,47 @@ class ChatService {
             .eq('activity_id', activityId)
             .single();
 
-        if (existing) return existing.id;
+        if (existing) {
+            convId = existing.id;
+        } else {
+            const { data: conversation, error: cErr } = await supabase
+                .from('conversations')
+                .insert({
+                    type: 'ACTIVITY_GROUP',
+                    activity_id: activityId
+                })
+                .select()
+                .single();
 
-        const { data: conversation, error: cErr } = await supabase
-            .from('conversations')
-            .insert({
-                type: 'ACTIVITY_GROUP',
-                activity_id: activityId
-            })
-            .select()
-            .single();
+            if (cErr) throw cErr;
+            convId = conversation.id;
+        }
 
-        if (cErr) throw cErr;
+        // 3. Sync activity participants to conversation participants
+        // Get all approved/registered volunteers for this activity
+        const { data: activityParts } = await supabase
+            .from('activity_participants')
+            .select('user_id')
+            .eq('activity_id', activityId)
+            .in('status', ['APPROVED', 'REGISTERED']);
 
-        return conversation.id;
+        const participantIds = new Set((activityParts || []).map(p => p.user_id));
+        if (initiatorId) participantIds.add(initiatorId);
+
+        if (participantIds.size > 0) {
+            const upsertData = Array.from(participantIds).map(uid => ({
+                conversation_id: convId,
+                user_id: uid
+            }));
+
+            const { error: pErr } = await supabase
+                .from('conversation_participants')
+                .upsert(upsertData, { onConflict: 'conversation_id,user_id' });
+
+            if (pErr) console.error("Error syncing participants to group conversation:", pErr);
+        }
+
+        return convId;
     }
 }
 

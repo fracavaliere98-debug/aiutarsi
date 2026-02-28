@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
-import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2 } from "lucide-react-native";
+import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { UserAvatar } from "../../components/UserAvatar";
 import { SoftCard } from "../../components/SoftCard";
@@ -14,6 +14,7 @@ import { BadgePill } from "../../components/BadgePill";
 import { ActivityCard } from "../../components/ActivityCard";
 import { Colors } from "../../constants/Colors";
 import { useState } from "react";
+import ChatService from "../../services/ChatService";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
@@ -75,6 +76,17 @@ export default function NPOProfileScreen() {
         } as any);
     };
 
+    const handleMessageNPO = async () => {
+        if (!user || user.role !== "VOLUNTEER") return;
+        try {
+            const convId = await ChatService.startPrivateConversation(user.id, npoId);
+            router.push(`/messages/${convId}` as any);
+        } catch (error) {
+            console.error("Error starting chat with NPO:", error);
+            showToast("error", "Errore nell'avvio della chat");
+        }
+    };
+
     const handleOpenLink = async (url: string) => {
         try {
             // Check if URL has protocol, if not add https:// (unless it's mailto/tel)
@@ -97,6 +109,14 @@ export default function NPOProfileScreen() {
 
     const HeaderActions = (
         <View className="flex-row gap-2">
+            {user?.role === "VOLUNTEER" && (
+                <TouchableOpacity
+                    onPress={handleMessageNPO}
+                    className="p-2 bg-white/20 rounded-full"
+                >
+                    <MessageCircle size={20} color="white" />
+                </TouchableOpacity>
+            )}
             <TouchableOpacity className="p-2 bg-white/20 rounded-full">
                 <Share2 size={20} color="white" />
             </TouchableOpacity>

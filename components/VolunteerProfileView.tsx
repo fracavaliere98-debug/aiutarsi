@@ -1,8 +1,8 @@
 import React from "react";
-import { ScrollView, TouchableOpacity } from "react-native";
-import { Settings } from "lucide-react-native";
+import { View, ScrollView, TouchableOpacity } from "react-native";
+import { Settings, MessageCircle } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
-import { User , Application } from "../types";
+import { User, Application } from "../types";
 
 import { ProfileHeader } from "./profile/ProfileHeader";
 import { ProfileStats } from "./profile/ProfileStats";
@@ -42,6 +42,7 @@ interface VolunteerProfileViewProps {
     xpNeededForLevel: number;
     isOwnProfile?: boolean;
     onSettingsPress?: () => void;
+    onMessagePress?: () => void;
     onBack?: () => void;
     followedNPOs?: User[];
     affiliatedNPOs: User[];
@@ -58,20 +59,33 @@ export function VolunteerProfileView({
     xpNeededForLevel,
     isOwnProfile = false,
     onSettingsPress,
+    onMessagePress,
     onBack,
     followedNPOs,
     affiliatedNPOs = [],
     npoApplications = [],
     children
 }: VolunteerProfileViewProps) {
-    const HeaderActions = isOwnProfile ? (
-        <TouchableOpacity
-            onPress={onSettingsPress}
-            className="bg-white/10 p-2.5 rounded-xl border border-white/20"
-        >
-            <Settings size={20} color="white" />
-        </TouchableOpacity>
-    ) : null;
+    const HeaderActions = (
+        <View className="flex-row gap-2">
+            {!isOwnProfile && onMessagePress && (
+                <TouchableOpacity
+                    onPress={onMessagePress}
+                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
+                >
+                    <MessageCircle size={20} color="white" />
+                </TouchableOpacity>
+            )}
+            {isOwnProfile && (
+                <TouchableOpacity
+                    onPress={onSettingsPress}
+                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
+                >
+                    <Settings size={20} color="white" />
+                </TouchableOpacity>
+            )}
+        </View>
+    );
 
     return (
         <StandardLayout

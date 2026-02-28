@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Phone, MoreVertical, Plus, Smile, Send } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -85,16 +85,43 @@ export default function ChatDetailScreen() {
                         <ArrowLeft size={24} color={Colors.primary} />
                     </TouchableOpacity>
                     <View>
-                        <Text className="text-primary font-black text-lg">
-                            {conversation?.type === 'ACTIVITY_GROUP'
-                                ? (conversation?.activities?.npo?.npo_name || 'Gruppo Attività')
-                                : (conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.npo_name ||
-                                    conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.full_name ||
-                                    'Chat Privata')}
-                        </Text>
+                        <View className="flex-row items-center gap-2">
+                            <Text className="text-primary font-black text-lg">
+                                {conversation?.type === 'ACTIVITY_GROUP'
+                                    ? (conversation?.activities?.title || 'Gruppo Attività')
+                                    : (conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.npo_name ||
+                                        conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.full_name ||
+                                        'Chat Privata')}
+                            </Text>
+                            {conversation?.type === 'ACTIVITY_GROUP' && (
+                                <View className="flex-row items-center ml-1">
+                                    {(conversation?.participants || [])
+                                        .filter((p: any) => p.profiles?.role === 'VOLUNTEER')
+                                        .slice(0, 4)
+                                        .map((p: any, idx: number) => (
+                                            <Image
+                                                key={p.user_id}
+                                                source={{ uri: p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${p.profiles?.full_name || 'V'}` }}
+                                                className="w-6 h-6 rounded-full border-2 border-white"
+                                                style={{ marginLeft: idx > 0 ? -10 : 0, zIndex: 10 - idx }}
+                                            />
+                                        ))}
+                                    {(conversation?.participants || []).filter((p: any) => p.profiles?.role === 'VOLUNTEER').length > 4 && (
+                                        <View
+                                            className="w-6 h-6 rounded-full bg-slate-100 items-center justify-center border-2 border-white"
+                                            style={{ marginLeft: -10, zIndex: 0 }}
+                                        >
+                                            <Text className="text-[8px] font-bold text-slate-500">
+                                                +{(conversation?.participants || []).filter((p: any) => p.profiles?.role === 'VOLUNTEER').length - 4}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
                         {conversation?.type === 'ACTIVITY_GROUP' && (
                             <Text className="text-slate-500 text-sm font-medium">
-                                {conversation?.activities?.title}
+                                {conversation?.activities?.npo?.npo_name || 'Organizzazione'}
                             </Text>
                         )}
                     </View>

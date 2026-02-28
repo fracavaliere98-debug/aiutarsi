@@ -465,6 +465,24 @@ export class ActivityService {
             }
         }
 
+        // Sync with group chat if it exists
+        try {
+            const { data: conv } = await supabase
+                .from('conversations')
+                .select('id, title')
+                .eq('type', 'ACTIVITY_GROUP')
+                .eq('activity_id', activityId)
+                .single();
+
+            if (conv) {
+                // This will trigger the sync logic I just added to startGroupConversation
+                const ChatServiceModule = require('./ChatService').default;
+                await ChatServiceModule.startGroupConversation(activityId, conv.title || '', userId);
+            }
+        } catch (e) {
+            // No group chat yet, or error. Ignore.
+        }
+
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
         const updated = await this.getActivityById(activityId);
         return updated!;
@@ -607,6 +625,26 @@ export class ActivityService {
             .eq('user_id', volunteerId);
 
         if (error) throw error;
+
+        // If approved, sync with group chat
+        if (status === 'APPROVED') {
+            try {
+                const { data: conv } = await supabase
+                    .from('conversations')
+                    .select('id, title')
+                    .eq('type', 'ACTIVITY_GROUP')
+                    .eq('activity_id', activityId)
+                    .single();
+
+                if (conv) {
+                    const ChatServiceModule = require('./ChatService').default;
+                    await ChatServiceModule.startGroupConversation(activityId, conv.title || '', volunteerId);
+                }
+            } catch (e) {
+                // Ignore
+            }
+        }
+
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
     }
 

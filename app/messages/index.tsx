@@ -83,7 +83,7 @@ export default function MessagesListScreen() {
         try {
             let convId;
             if (entity.isGroup) {
-                convId = await ChatService.startGroupConversation(entity.id, entity.name);
+                convId = await ChatService.startGroupConversation(entity.id, entity.name, user?.id);
             } else {
                 convId = await ChatService.startPrivateConversation(user?.id || '', entity.id);
             }
