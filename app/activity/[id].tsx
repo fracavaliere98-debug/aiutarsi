@@ -20,7 +20,7 @@ import { ErrorState } from "../../components/ErrorState";
 import ParallaxScrollView from "../../components/ui/ParallaxScrollView";
 import { ActivityInfoCard } from "../../components/activity/ActivityInfoCard";
 import { OrganizerCard } from "../../components/activity/OrganizerCard";
-import { BlurView } from "expo-blur";
+// import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -227,7 +227,7 @@ export default function ActivityDetail() {
                             resizeMode="cover"
                         />
                         <LinearGradient
-                            colors={['transparent', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
+                            colors={['transparent', 'rgba(0,0,0,0.4)']}
                             style={[StyleSheet.absoluteFill]}
                         />
                     </View>
@@ -238,12 +238,12 @@ export default function ActivityDetail() {
                     {/* Centered Floating Status Badge - Positioned on the edge */}
                     <View className="absolute -top-6 left-0 right-0 items-center z-10">
                         <View className="shadow-lg shadow-black/20">
-                            <View className="px-6 py-3 rounded-full overflow-hidden flex-row items-center gap-2 bg-white/95">
-                                <View className={`w-2.5 h-2.5 rounded-full ${activity.status === "IN_CORSO" ? "bg-amber-500" :
-                                    activity.status === "APERTA" ? "bg-emerald-500" : "bg-slate-400"
+                            <View className="px-6 py-3 rounded-full flex-row items-center gap-2 bg-white">
+                                <View className={`w-2.5 h-2.5 rounded-full ${activity?.status === "IN_CORSO" ? "bg-amber-500" :
+                                    activity?.status === "APERTA" ? "bg-emerald-500" : "bg-slate-400"
                                     }`} />
                                 <Text className="text-xs font-black uppercase tracking-widest text-primary">
-                                    {activity.status.replace("_", " ")}
+                                    {activity?.status?.replace("_", " ") || "Dettaglio"}
                                 </Text>
                             </View>
                         </View>
@@ -262,7 +262,7 @@ export default function ActivityDetail() {
                             className="flex-row items-center gap-3"
                         >
                             <Image
-                                source={{ uri: npoUser?.avatar || (activity.npoId ? `https://ui-avatars.com/api/?name=${activity.npoName || 'NPO'}` : "https://ui-avatars.com/api/?name=NPO") }}
+                                source={{ uri: npoUser?.avatar || (activity?.npoId ? `https://ui-avatars.com/api/?name=${activity?.npoName}` || "NPO" : "https://ui-avatars.com/api/?name=NPO") }}
                                 className="w-10 h-10 rounded-full border-2 border-white"
                             />
                             <View className="flex-row items-center justify-center gap-1">
@@ -283,7 +283,7 @@ export default function ActivityDetail() {
                                 <Calendar size={20} color={Colors.primary} />
                             </View>
                             <Text className="text-primary font-bold text-sm text-center">
-                                {new Date(activity.dateTime).toLocaleDateString("it-IT", { day: '2-digit', month: 'short' }).replace('.', '')}
+                                {activity.dateTime ? new Date(activity.dateTime).toLocaleDateString("it-IT", { day: '2-digit', month: 'short' }).replace('.', '') : "--"}
                             </Text>
                             <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">DATA</Text>
                         </View>
@@ -294,7 +294,7 @@ export default function ActivityDetail() {
                                 <Clock size={20} color={Colors.primary} />
                             </View>
                             <Text className="text-primary font-bold text-sm text-center">
-                                {new Date(activity.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
+                                {activity.dateTime ? new Date(activity.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' }) : "--:--"}
                             </Text>
                             <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">ORARIO</Text>
                         </View>
@@ -305,7 +305,7 @@ export default function ActivityDetail() {
                                 <MapPin size={20} color={Colors.primary} />
                             </View>
                             <Text className="text-primary font-bold text-xs text-center leading-tight" numberOfLines={2}>
-                                {activity.location.address.split(',')[1]?.trim() || activity.location.address.split(',')[0]?.trim() || "ND"}
+                                {activity.location?.address?.split(',')[1]?.trim() || activity.location?.address?.split(',')[0]?.trim() || "ND"}
                             </Text>
                             <Text className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide mt-1">CITTÀ</Text>
                         </View>
@@ -347,11 +347,11 @@ export default function ActivityDetail() {
                                 <View className="flex-row items-center gap-2 mb-1.5">
                                     <Text className="text-secondary/60 text-[10px] font-bold uppercase tracking-widest">Stato</Text>
                                 </View>
-                                {activity.status === "COMPLETATA" ? (
+                                {activity?.status === "COMPLETATA" ? (
                                     <View className="bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
                                         <Text className="text-slate-600 font-black text-[9px] uppercase">Conclusa</Text>
                                     </View>
-                                ) : currentIscritti.length >= activity.slots ? (
+                                ) : currentIscritti.length >= (activity?.slots || 0) ? (
                                     <View className="bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">
                                         <Text className="text-rose-600 font-black text-[9px] uppercase">Posti Esauriti</Text>
                                     </View>
@@ -430,11 +430,11 @@ export default function ActivityDetail() {
                                             </View>
                                         </Marker>
                                     </MapView>
-                                    <View className="absolute bottom-4 left-4 right-4 bg-white/95 px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
+                                    <View className="absolute bottom-4 left-4 right-4 bg-white px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
                                         <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
                                             <MapIcon size={16} color={Colors.primary} />
                                         </View>
-                                        <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
+                                        <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity?.location?.address || "Indirizzo"}</Text>
                                     </View>
                                 </View>
                             ) : (
@@ -475,12 +475,12 @@ export default function ActivityDetail() {
                                                 </View>
                                             </Marker>
                                         </MapView>
-                                        <View className="absolute bottom-4 left-4 right-4 bg-white/95 px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
+                                        <View className="absolute bottom-4 left-4 right-4 bg-white px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
                                             <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
                                                 <MapIcon size={16} color={Colors.primary} />
                                             </View>
                                             <View className="flex-1">
-                                                <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity.location.address}</Text>
+                                                <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity?.location?.address || "Indirizzo"}</Text>
                                                 <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
                                             </View>
                                         </View>
@@ -553,14 +553,14 @@ export default function ActivityDetail() {
             {/* Sticky Header (Back, Share, Edit) */}
             <View className="absolute top-0 left-0 right-0 pt-16 px-5 z-50 flex-row justify-between items-center">
                 <TouchableOpacity onPress={() => router.back()}>
-                    <View className="w-10 h-10 rounded-full bg-black/30 items-center justify-center backdrop-blur-md">
+                    <View className="w-10 h-10 rounded-full bg-black/40 items-center justify-center">
                         <ArrowLeft size={20} color="white" />
                     </View>
                 </TouchableOpacity>
                 <View className="flex-row gap-3">
                     {/* Share Button */}
                     <TouchableOpacity onPress={handleShare}>
-                        <View className="w-10 h-10 rounded-full bg-black/30 items-center justify-center backdrop-blur-md">
+                        <View className="w-10 h-10 rounded-full bg-black/40 items-center justify-center">
                             <Share2 size={20} color="white" />
                         </View>
                     </TouchableOpacity>
@@ -584,7 +584,7 @@ export default function ActivityDetail() {
                         {activity.status === "COMPLETATA" ? "ATTIVITÀ" : "STATO"}
                     </Text>
                     <Text className="text-accent font-bold text-base" numberOfLines={1}>
-                        {activity.status === "COMPLETATA" ? "Conclusa" : `${Math.max(0, activity.slots - currentIscritti.length)} posti rimasti`}
+                        {activity.status === "COMPLETATA" ? "Conclusa" : `${Math.max(0, (activity?.slots || 0) - currentIscritti.length)} posti rimasti`}
                     </Text>
                 </View>
 
