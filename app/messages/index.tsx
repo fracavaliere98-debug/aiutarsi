@@ -88,7 +88,7 @@ export default function MessagesListScreen() {
                 convId = await ChatService.startPrivateConversation(user?.id || '', entity.id);
             }
             setShowNpoPicker(false);
-            router.push(`/ messages / ${convId} ` as any);
+            router.push(`/messages/${convId}` as any);
         } catch (error) {
             console.error(error);
         }
@@ -207,10 +207,10 @@ export default function MessagesListScreen() {
 
                             if (!isGroup) {
                                 const other = conv.participants?.find((p: any) => p.user_id !== user?.id);
-                                if (other?.user?.full_name || other?.user?.npo_name) {
-                                    displayTitle = other.user.full_name || other.user.npo_name;
+                                if (other?.profiles) {
+                                    displayTitle = other.profiles.npo_name || other.profiles.full_name || 'Chat Diretta';
+                                    displayAvatar = other.profiles.avatar_url;
                                 }
-                                displayAvatar = other?.user?.avatar;
                             }
 
                             return (
@@ -223,7 +223,7 @@ export default function MessagesListScreen() {
                                     isGroup={isGroup}
                                     lastSenderName={lastMessage?.sender_id === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessage.sender_id)?.name || 'Utente') : undefined)}
                                     isOwnLastMessage={lastMessage?.sender_id === user?.id}
-                                    onPress={() => router.push(`/ messages / ${item.conversation_id} ` as any)}
+                                    onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
                                 />
                             );
                         }}
@@ -303,7 +303,7 @@ export default function MessagesListScreen() {
                                                     activeOpacity={0.7}
                                                     className="bg-slate-50 border border-slate-100 rounded-3xl p-4 flex-row items-center gap-4"
                                                 >
-                                                    <View className={`w - 14 h - 14 rounded - full items - center justify - center border border - slate - 100 ${item.isGroup ? 'bg-indigo-50' : 'bg-white'} `}>
+                                                    <View className={`w-14 h-14 rounded-full items-center justify-center border border-slate-100 ${item.isGroup ? 'bg-indigo-50' : 'bg-white'}`}>
                                                         {item.isGroup ? (
                                                             <UsersIcon size={24} color={Colors.primary} />
                                                         ) : (

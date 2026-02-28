@@ -86,11 +86,17 @@ export default function ChatDetailScreen() {
                     </TouchableOpacity>
                     <View>
                         <Text className="text-primary font-black text-lg">
-                            {conversation?.type === 'ACTIVITY_GROUP' ? 'Gruppo Attività' : 'AiutarSì'}
+                            {conversation?.type === 'ACTIVITY_GROUP'
+                                ? (conversation?.activities?.npo?.npo_name || 'Gruppo Attività')
+                                : (conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.npo_name ||
+                                    conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.full_name ||
+                                    'Chat Privata')}
                         </Text>
-                        <Text className="text-slate-500 text-sm font-medium">
-                            {conversation?.activities?.name || 'Raccolta Alimentare Sabato'}
-                        </Text>
+                        {conversation?.type === 'ACTIVITY_GROUP' && (
+                            <Text className="text-slate-500 text-sm font-medium">
+                                {conversation?.activities?.title}
+                            </Text>
+                        )}
                     </View>
                 </View>
 

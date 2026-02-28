@@ -16,6 +16,14 @@ class ChatService {
                     type,
                     activity_id,
                     created_at,
+                    participants:conversation_participants (
+                        user_id,
+                        profiles (
+                            full_name,
+                            npo_name,
+                            avatar_url
+                        )
+                    ),
                     messages (
                         id,
                         sender_id,
@@ -39,12 +47,30 @@ class ChatService {
      * Start a private conversation between two users
      */
     async startPrivateConversation(userId1: string, userId2: string) {
-        // Checking if conversation already exists requires more complex logic.
-        // Assuming we just create it for simplicity, or we check if there's a private chat with these two participants.
-        const { data: existing, error: errCheck } = await supabase.rpc('get_private_conversation', { u1: userId1, u2: userId2 });
+        // Checking if conversation already exists
+        // Find conversations where both users are participants
+        const { data: existingParticipant, error: errCheck } = await supabase
+            .from('conversation_participants')
+            .select('conversation_id, conversations!inner(type)')
+            .eq('user_id', userId1)
+            .eq('conversations.type', 'PRIVATE');
 
-        if (existing && existing.id) {
-            return existing.id;
+        if (errCheck) console.error('Error checking existing conversation:', errCheck);
+
+        if (existingParticipant && existingParticipant.length > 0) {
+            const convIds = existingParticipant.map(p => p.conversation_id);
+
+            // Check if userId2 is also a participant in any of these private conversations
+            const { data: commonPart, error: errCommon } = await supabase
+                .from('conversation_participants')
+                .select('conversation_id')
+                .in('conversation_id', convIds)
+                .eq('user_id', userId2)
+                .single();
+
+            if (commonPart) {
+                return commonPart.conversation_id;
+            }
         }
 
         const { data: conversation, error: convError } = await supabase
@@ -71,7 +97,21 @@ class ChatService {
             .from('conversations')
             .select(`
                 *,
-                conversation_participants (user_id, last_read_at),
+                activities (
+                    title,
+                    npo:profiles!npo_id (
+                        npo_name
+                    )
+                ),
+                participants:conversation_participants (
+                    user_id,
+                    profiles (
+                        full_name,
+                        npo_name,
+                        avatar_url,
+                        role
+                    )
+                ),
                 messages (*)
             `)
             .eq('id', conversationId)
