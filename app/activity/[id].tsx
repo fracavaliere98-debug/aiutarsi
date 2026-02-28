@@ -35,6 +35,7 @@ if (Platform.OS !== 'web') {
 }
 
 const { width } = Dimensions.get('window');
+const isOldAndroid = Platform.OS === 'android' && (typeof Platform.Version === 'number' ? Platform.Version < 29 : parseInt(Platform.Version, 10) < 29);
 
 const SKILLS_MAP: Record<string, string> = {
     "comms": "Comunicazione",
@@ -64,6 +65,12 @@ export default function ActivityDetail() {
         volunteerReviews
     } = useActivities();
     const { handleActivityShare } = useGamification();
+    const [debugLogs, setDebugLogs] = useState<string[]>(["Mounting ActivityDetail..."]);
+
+    const addLog = useCallback((msg: string) => {
+        console.log(`[DEBUG] ${msg}`);
+        setDebugLogs(prev => [...prev.slice(-14), `${new Date().toLocaleTimeString()} - ${msg}`]);
+    }, []);
 
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
@@ -74,11 +81,20 @@ export default function ActivityDetail() {
     const [fetchLoading, setFetchLoading] = useState(false);
     useEffect(() => {
         if (!activityFromContext && activityId) {
+            addLog(`Fetching activity ${activityId} from DB...`);
             setFetchLoading(true);
-            activityService.getActivityById(activityId).then(act => {
-                setFetchedActivity(act);
-                setFetchLoading(false);
-            });
+            activityService.getActivityById(activityId)
+                .then(act => {
+                    addLog(act ? `Activity fetched successfully: ${act.title}` : `Activity NOT found in DB`);
+                    setFetchedActivity(act);
+                    setFetchLoading(false);
+                })
+                .catch(err => {
+                    addLog(`FETCH ERROR: ${err.message}`);
+                    setFetchLoading(false);
+                });
+        } else if (activityFromContext) {
+            addLog(`Activity found in context: ${activityFromContext.title}`);
         }
     }, [activityId, activityFromContext]);
 
@@ -250,12 +266,17 @@ export default function ActivityDetail() {
                     </View>
 
                     {/* Title */}
-                    <Animated.View entering={FadeInDown.delay(100).springify()}>
+                    <Animated.View
+                        entering={isOldAndroid ? undefined : FadeInDown.delay(100).springify()}
+                    >
                         <Text className="text-[28px] font-black text-primary leading-tight mb-2 text-center">{activity?.title}</Text>
                     </Animated.View>
 
                     {/* Organizer Card (Centered & Clickable) */}
-                    <Animated.View entering={FadeInDown.delay(200).springify()} className="items-center mt-2 mb-2">
+                    <Animated.View
+                        entering={isOldAndroid ? undefined : FadeInDown.delay(200).springify()}
+                        className="items-center mt-2 mb-2"
+                    >
                         <TouchableOpacity
                             onPress={() => isOwner ? router.push('/(npo)/(tabs)/profile') : router.push(`/npo-profile/${activity?.npoId}` as any)}
                             activeOpacity={0.7}
@@ -276,7 +297,10 @@ export default function ActivityDetail() {
                     </Animated.View>
 
                     {/* 3-Column Info Row */}
-                    <Animated.View entering={FadeInDown.delay(300).springify()} className="flex-row gap-3 mb-6">
+                    <Animated.View
+                        entering={isOldAndroid ? undefined : FadeInDown.delay(300).springify()}
+                        className="flex-row gap-3 mb-6"
+                    >
                         {/* DATE */}
                         <View className="flex-1 bg-white p-4 rounded-[24px] items-center justify-center shadow-lg shadow-slate-100 border border-slate-50 aspect-square">
                             <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mb-2">
@@ -697,6 +721,32 @@ export default function ActivityDetail() {
                     </TouchableOpacity>
                 )}
             </View>
+
+            {/* DEBUG OVERLAY - Only for Android 9 diagnosis */}
+            {isOldAndroid && (
+                <View style={{
+                    position: 'absolute',
+                    top: 100,
+                    left: 20,
+                    right: 20,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 10,
+                    borderRadius: 10,
+                    maxHeight: 200,
+                    zIndex: 999
+                }}>
+                    <Text style={{ color: '#00ff00', fontWeight: 'bold', fontSize: 10, marginBottom: 5 }}>DIAGNOSTICA ANDROID 9</Text>
+                    {debugLogs.map((log, i) => (
+                        <Text key={i} style={{ color: 'white', fontSize: 9 }}>{log}</Text>
+                    ))}
+                    <TouchableOpacity
+                        onPress={() => setDebugLogs(["Logs resettati"])}
+                        style={{ alignSelf: 'flex-end', padding: 5 }}
+                    >
+                        <Text style={{ color: '#00ff00', fontSize: 9 }}>CLR</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }
