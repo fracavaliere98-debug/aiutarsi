@@ -15,7 +15,8 @@ import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Alert } from "react-native";
+import * as Updates from "expo-updates";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -96,6 +97,39 @@ function RootLayoutNav() {
       else if (user.role === "CORPORATE") router.replace("/(corporate)" as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
       return;
+    }
+
+    // 7. OTA UPDATE CHECK
+    if (!__DEV__) {
+      const checkUpdates = async () => {
+        try {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            Alert.alert(
+              "Nuovo Aggiornamento",
+              "È disponibile una nuova versione dell'app. Vuoi installarla ora?",
+              [
+                { text: "Più tardi", style: "cancel" },
+                {
+                  text: "Installa ora",
+                  onPress: async () => {
+                    try {
+                      await Updates.fetchUpdateAsync();
+                      await Updates.reloadAsync();
+                    } catch (e) {
+                      console.error("Error fetching update:", e);
+                    }
+                  }
+                }
+              ]
+            );
+          }
+        } catch (e) {
+          console.log("[DEBUG] OTA Check error:", e);
+        }
+      };
+
+      checkUpdates();
     }
 
   }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage]);
