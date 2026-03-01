@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments, Redirect } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityProvider } from "../context/ActivityContext";
@@ -20,11 +21,42 @@ import * as Updates from "expo-updates";
 
 SplashScreen.preventAutoHideAsync();
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 function RootLayoutNav() {
   const { user, isLoaded, isLoading: isAuthLoading, isLoggingOut } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const isRedirecting = useRef(false);
+
+  // Notification listeners
+  useEffect(() => {
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log("[Notification] Received:", notification);
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      console.log("[Notification] Response:", data);
+
+      if (data?.conversationId) {
+        router.push(`/messages/${data.conversationId}`);
+      }
+    });
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
+  }, []);
 
   // Join segments to avoid reference mismatch loops
   const routeSegments = segments as string[];

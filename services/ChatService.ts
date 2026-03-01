@@ -249,10 +249,11 @@ class ChatService {
     /**
      * Start or get an activity group conversation
      */
-    async startGroupConversation(activityId: string, title: string, initiatorId?: string) {
+    async startGroupConversation(activityId: string, title: string, initiatorId?: string): Promise<string> {
+        // ... (existing implementation)
         let convId: string;
 
-        const { data: existing, error: eErr } = await supabase
+        const { data: existing } = await supabase
             .from('conversations')
             .select('id')
             .eq('type', 'ACTIVITY_GROUP')
@@ -275,15 +276,13 @@ class ChatService {
             convId = conversation.id;
         }
 
-        // 3. Sync activity participants to conversation participants
-        // Get all approved/registered volunteers for this activity
         const { data: activityParts } = await supabase
             .from('activity_participants')
             .select('user_id')
             .eq('activity_id', activityId)
             .in('status', ['APPROVED', 'REGISTERED']);
 
-        const participantIds = new Set((activityParts || []).map(p => p.user_id));
+        const participantIds = new Set((activityParts || []).map((p: any) => p.user_id));
         if (initiatorId) participantIds.add(initiatorId);
 
         if (participantIds.size > 0) {
@@ -300,6 +299,20 @@ class ChatService {
         }
 
         return convId;
+    }
+
+    /**
+     * Toggle notification muting for a specific conversation
+     */
+    async toggleNotifications(conversationId: string, userId: string, muted: boolean) {
+        const { error } = await supabase
+            .from('conversation_participants')
+            .update({ notifications_muted: muted })
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+        return true;
     }
 }
 

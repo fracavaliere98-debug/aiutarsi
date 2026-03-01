@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from "react";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 
@@ -23,6 +27,7 @@ interface NotificationContextType {
     clearAll: () => Promise<void>;
     getUnreadCount: () => number;
     unreadCount: number;
+    expoPushToken: string | null;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -31,6 +36,30 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
+
+    // 1. Handle Push Token Registration
+    useEffect(() => {
+        if (!user) return;
+
+        const registerForPush = async () => {
+            try {
+                const token = await registerForPushNotificationsAsync();
+                if (token) {
+                    setExpoPushToken(token);
+                    // Save to Supabase
+                    await supabase
+                        .from('profiles')
+                        .update({ expo_push_token: token })
+                        .eq('id', user.id);
+                }
+            } catch (error) {
+                console.error("Error registering for push notifications:", error);
+            }
+        };
+
+        registerForPush();
+    }, [user?.id]);
 
     // Load notifications from Supabase
     useEffect(() => {
@@ -49,9 +78,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
                 if (error) throw error;
 
-                // Map DB snake_case to CamelCase if needed, but schema uses snake_case column names ?
-                // The scheme created: id, user_id, type, title, message, read, related_activity_id, created_at
-                // Interface: id, userId, type, title, message, read, activityId, timestamp
                 const mapped: Notification[] = data.map((n: any) => ({
                     id: n.id,
                     userId: n.user_id,
@@ -72,7 +98,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchNotifications();
-    }, [user]);
+    }, [user?.id]);
 
     const addNotification = useCallback(async (notification: Omit<Notification, "id" | "timestamp" | "read">) => {
         if (!user) return;
@@ -82,7 +108,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
         try {
             if (isSelfNotification) {
-                // If notifying self, we can SELECT and update UI
                 const { data, error } = await supabase
                     .from('notifications')
                     .insert({
@@ -112,8 +137,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 setAllNotifications(prev => [newNotif, ...prev]);
 
             } else {
-                // If notifying SOMEONE ELSE, we CANNOT select (RLS violation: "Users can view THEIR OWN notifications")
-                // So we just INSERT (Fire and Forget)
                 const { error } = await supabase
                     .from('notifications')
                     .insert({
@@ -133,7 +156,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, [user]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
-        // Optimistic
         setAllNotifications(prev =>
             prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
         );
@@ -147,14 +169,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (error) throw error;
         } catch (e) {
             console.error("Failed to mark notification as read", e);
-            // Rollback? simplified for now
         }
     }, []);
 
     const markAllAsRead = useCallback(async () => {
         if (!user) return;
 
-        // Optimistic
         setAllNotifications(prev =>
             prev.map(n => n.userId === user.id ? { ...n, read: true } : n)
         );
@@ -175,14 +195,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const clearAll = useCallback(async () => {
         if (!user) return;
 
-        // Optimistic
         setAllNotifications([]);
 
         try {
             const { error } = await supabase
                 .from('notifications')
                 .delete()
-                .eq('user_id', user.id); // Delete all for user
+                .eq('user_id', user.id);
 
             if (error) throw error;
         } catch (e) {
@@ -190,8 +209,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [user]);
 
-
-    // Derived: Current user notifications
     const userNotifications = useMemo(() => {
         if (!user) return [];
         return allNotifications.filter((n: Notification) => n.userId === user.id);
@@ -213,6 +230,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 clearAll,
                 getUnreadCount,
                 unreadCount,
+                expoPushToken,
             }}
         >
             {children}
@@ -227,3 +245,38 @@ export const useNotifications = () => {
     }
     return context;
 };
+
+async function registerForPushNotificationsAsync() {
+    let token;
+
+    if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+    }
+
+    if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+            console.log('Failed to get push token for push notification!');
+            return null;
+        }
+
+        token = (await Notifications.getExpoPushTokenAsync({
+            projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        })).data;
+    } else {
+        console.log('Must use physical device for Push Notifications');
+    }
+
+    return token;
+}
+

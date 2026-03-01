@@ -95,11 +95,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
             // 2. Map RPC results to match the UI interface
             const mappedMatches: GeminiMatch[] = (data || []).map((item: any) => {
-                // Spatio-temporal reasoning logic
+                // ... same mapping logic as before ...
                 let reason = "Alta affinità semantica con il tuo profilo.";
                 const reasons: string[] = [];
-
-                // 1. Keyword check (Skills/Interests)
+                // ... (rest of the mapping logic) ...
                 if (user.skills && item.description) {
                     const matchingSkill = user.skills.find(s =>
                         item.title.toLowerCase().includes(s.toLowerCase()) ||
@@ -107,7 +106,6 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     );
                     if (matchingSkill) reasons.push(`Match per la tua competenza in ${matchingSkill}`);
                 }
-
                 if (user.interests && item.description && reasons.length < 2) {
                     const matchingInterest = user.interests.find(i =>
                         item.title.toLowerCase().includes(i.toLowerCase()) ||
@@ -115,40 +113,23 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     );
                     if (matchingInterest) reasons.push(`Affinità con il tuo interesse per ${matchingInterest}`);
                 }
-
-                // 2. Distance check
                 if (user.locationCoords && item.location_lat && item.location_lng) {
-                    const dist = calculateDistance(
-                        user.locationCoords.lat,
-                        user.locationCoords.lng,
-                        item.location_lat,
-                        item.location_lng
-                    );
-                    if (dist < 5) {
-                        reasons.push("A pochi passi da te");
-                    } else if (dist < 15) {
-                        reasons.push(`A soli ${dist.toFixed(1)} km da te`);
-                    }
+                    const dist = calculateDistance(user.locationCoords.lat, user.locationCoords.lng, item.location_lat, item.location_lng);
+                    if (dist < 5) reasons.push("A pochi passi da te");
+                    else if (dist < 15) reasons.push(`A soli ${dist.toFixed(1)} km da te`);
                 }
-
-                // 3. Time check
                 if (item.date_start) {
                     const start = new Date(item.date_start);
                     const now = new Date();
                     const diffDays = (start.getTime() - now.getTime()) / (1000 * 3600 * 24);
-                    if (diffDays > 0 && diffDays < 3) {
-                        reasons.push("Ideale per questa settimana");
-                    }
+                    if (diffDays > 0 && diffDays < 3) reasons.push("Ideale per questa settimana");
                 }
-
-                if (reasons.length > 0) {
-                    reason = reasons.slice(0, 2).join(" • ");
-                }
+                if (reasons.length > 0) reason = reasons.slice(0, 2).join(" • ");
 
                 return {
                     id: item.id,
-                    score: item.match_percentage, // Use the weighted percentage from RPC
-                    reason: reason, // Dynamic reason
+                    score: item.match_percentage,
+                    reason: reason,
                     activity: {
                         id: item.id,
                         npoId: item.npo_id,
@@ -156,20 +137,16 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                         title: item.title,
                         description: item.description,
                         category: item.category,
-                        dateTime: item.date_start, // Map date_start to dateTime
+                        dateTime: item.date_start,
                         endDateTime: item.date_end,
                         location: {
                             address: item.location_address,
-                            coords: {
-                                lat: item.location_lat,
-                                lng: item.location_lng
-                            }
+                            coords: { lat: item.location_lat, lng: item.location_lng }
                         },
                         imageUrl: item.image_url,
                         isUrgent: item.is_urgent,
                         status: item.status,
                         matchPercentage: Math.round(item.similarity * 100),
-                        // Default values for fields not returned by RPC but expected by Activity type
                         iscritti: [],
                         slots: 0,
                         skills: []
@@ -177,8 +154,52 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 };
             });
 
-            console.log(`[SmartMatchContext] Found ${mappedMatches.length} semantic matches`);
-            setMatches(mappedMatches);
+            // 3. Filter out activities the user is already enrolled in
+            const { data: enrollments } = await supabase
+                .from('activity_participants')
+                .select('activity_id')
+                .eq('user_id', user.id);
+
+            const enrolledIds = new Set((enrollments || []).map(e => e.activity_id));
+
+            // 4. Get completed categories for weighting boost
+            const { data: completedActivities } = await supabase
+                .from('activity_participants')
+                .select('activities(category)')
+                .eq('user_id', user.id)
+                .eq('status', 'COMPLETATA');
+
+            const completedCategories = new Set(
+                (completedActivities || [])
+                    .map((ca: any) => ca.activities?.category)
+                    .filter(Boolean)
+            );
+
+            const finalMatches: GeminiMatch[] = mappedMatches
+                .filter(m => !enrolledIds.has(m.id))
+                .map(m => {
+                    const activity = m.activity;
+                    if (!activity) return m;
+
+                    // Boost similarity if category matches a completed one
+                    let boostedScore = activity.matchPercentage || 50;
+                    if (activity.category && completedCategories.has(activity.category)) {
+                        boostedScore = Math.min(99, Math.round(boostedScore * 1.15));
+                        return {
+                            ...m,
+                            activity: {
+                                ...activity,
+                                matchPercentage: boostedScore
+                            } as Activity,
+                            reason: `Visto il tuo interesse passato per ${activity.category} • ${m.reason}`
+                        };
+                    }
+                    return m;
+                })
+                .sort((a, b) => (b.activity?.matchPercentage || 0) - (a.activity?.matchPercentage || 0));
+
+            console.log(`[SmartMatchContext] Found ${mappedMatches.length} semantic matches, boosted ${completedCategories.size} categories, filtered to ${finalMatches.length}`);
+            setMatches(finalMatches);
             setLastUpdated(new Date());
         } catch (err: any) {
             console.error('[SmartMatchContext] Error fetching matches:', err);
