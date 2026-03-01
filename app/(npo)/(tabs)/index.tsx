@@ -117,26 +117,34 @@ export default function NPODashboard() {
                         icon={<Star size={12} color="#d97706" fill="#d97706" />}
                     />
                 </TouchableOpacity>
-                <View className="flex-1 mx-1">
+                <TouchableOpacity
+                    className="flex-1 mx-1"
+                    activeOpacity={0.7}
+                    onPress={() => router.push("/(npo)/projects" as any)}
+                >
                     <StatCard
                         value={myActivities.length}
-                        label="MISSIONI"
+                        label="ATTIVITÀ"
                         valueColor="text-indigo-600"
                         icon={<Sparkles size={12} color="#4f46e5" />}
                     />
-                </View>
-                <View className="flex-1 mx-1">
+                </TouchableOpacity>
+                <TouchableOpacity
+                    className="flex-1 mx-1"
+                    activeOpacity={0.7}
+                    onPress={() => router.push("/(npo)/volunteers?tab=FOLLOWERS" as any)}
+                >
                     <StatCard
                         value={followerCount}
                         label="FOLLOWERS"
                         valueColor="text-blue-600"
                         icon={<Users size={12} color="#2563eb" />}
                     />
-                </View>
+                </TouchableOpacity>
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
+                    onPress={() => router.push("/(npo)/volunteers?tab=STORICO" as any)}
                 >
                     <StatCard
                         value={totalEnrollmentsCount}

@@ -109,9 +109,10 @@ export default function VolunteerDashboard() {
                 <View className="flex-1 h-24">
                     <StatCard
                         value={volunteerStats.completedMissions.toString()}
-                        label="MISSIONI"
+                        label="ATTIVITÀ"
                         valueColor="text-pink-600"
                         icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
+                        onPress={() => router.push("/(volunteer)/calendar" as any)}
                     />
                 </View>
                 <View className="flex-1 h-24">
