@@ -10,6 +10,31 @@ import ChatService from '../../services/ChatService';
 
 import { StandardLayout } from '../../components/StandardLayout'; // Ensure StandardLayout is imported
 
+const formatRelativeDate = (dateString: string | null) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+
+    // Normalize to compare just dates
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (messageDate.getTime() === today.getTime()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+        return 'Ieri';
+    } else {
+        const diffDays = Math.floor((today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 7) {
+            return date.toLocaleDateString('it-IT', { weekday: 'short' }).replace('.', '');
+        }
+        return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+    }
+};
+
 export default function MessagesListScreen() {
     const router = useRouter();
     const { conversations, refreshConversations } = useChat();
@@ -121,14 +146,17 @@ export default function MessagesListScreen() {
         return true;
     }).sort((a: any, b: any) => {
         // Put unread conversations at the top
-        const aMsg = a.conversations?.messages?.[0];
-        const bMsg = b.conversations?.messages?.[0];
-        const aUnread = aMsg && aMsg.created_at > a.last_read_at && aMsg.sender_id !== user?.id;
-        const bUnread = bMsg && bMsg.created_at > b.last_read_at && bMsg.sender_id !== user?.id;
+        const aConv = a.conversations;
+        const bConv = b.conversations;
+
+        const aUnread = aConv && aConv.last_message_at > a.last_read_at && aConv.last_message_sender_id !== user?.id;
+        const bUnread = bConv && bConv.last_message_at > b.last_read_at && bConv.last_message_sender_id !== user?.id;
+
         if (aUnread && !bUnread) return -1;
         if (!aUnread && bUnread) return 1;
+
         // Then sort by most recent message
-        return (bMsg?.created_at || '').localeCompare(aMsg?.created_at || '');
+        return (bConv?.last_message_at || '').localeCompare(aConv?.last_message_at || '');
     });
 
     return (
@@ -207,9 +235,12 @@ export default function MessagesListScreen() {
                             const conv = item.conversations;
                             if (!conv) return null;
 
-                            const lastMessage = conv.messages?.[0];
+                            const lastMessageContent = conv.last_message_content || '';
+                            const lastMessageAt = conv.last_message_at;
+                            const lastMessageSenderId = conv.last_message_sender_id;
+
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
-                            const isUnread = lastMessage && lastMessage.created_at > item.last_read_at && lastMessage.sender_id !== user?.id;
+                            const isUnread = lastMessageAt && lastMessageAt > item.last_read_at && lastMessageSenderId !== user?.id;
 
                             // Determine title and avatar
                             let displayTitle = isGroup ? (conv.activities?.title || 'Gruppo Attività') : 'Chat Diretta';
@@ -227,12 +258,12 @@ export default function MessagesListScreen() {
                                 <ConversationListItem
                                     title={displayTitle}
                                     avatarUrl={displayAvatar}
-                                    lastMessage={lastMessage?.content || ''}
-                                    timestamp={lastMessage ? new Date(lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    lastMessage={lastMessageContent}
+                                    timestamp={formatRelativeDate(lastMessageAt)}
                                     unreadCount={isUnread ? 1 : 0}
                                     isGroup={isGroup}
-                                    lastSenderName={lastMessage?.sender_id === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessage.sender_id)?.name || 'Utente') : undefined)}
-                                    isOwnLastMessage={lastMessage?.sender_id === user?.id}
+                                    lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessageSenderId || '')?.name || 'Utente') : undefined)}
+                                    isOwnLastMessage={lastMessageSenderId === user?.id}
                                     onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
                                 />
                             );

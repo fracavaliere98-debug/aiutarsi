@@ -39,14 +39,21 @@ export default function ChatDetailScreen() {
     const messagesWithDividers = React.useMemo(() => {
         if (!messages.length) return [];
         const result: any[] = [];
-        let lastDay = '';
-        for (const msg of messages) {
-            const day = new Date(msg.created_at).toDateString();
-            if (day !== lastDay) {
-                result.push({ __divider: true, id: `divider-${day}`, label: formatDayLabel(msg.created_at) });
-                lastDay = day;
-            }
+
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            const nextMsg = messages[i + 1];
+
             result.push(msg);
+
+            const currentDay = new Date(msg.created_at).toDateString();
+            const nextDay = nextMsg ? new Date(nextMsg.created_at).toDateString() : null;
+
+            if (currentDay !== nextDay) {
+                // Day changed after this message (messages are DESC, so this is the oldest of the day)
+                // In inverted list, higher index = higher visually. So push divider AFTER messages.
+                result.push({ __divider: true, id: `divider-${currentDay}`, label: formatDayLabel(msg.created_at) });
+            }
         }
         return result;
     }, [messages]);
@@ -309,6 +316,7 @@ export default function ChatDetailScreen() {
                     const timestamp = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const sender = conversation?.participants?.find((p: any) => p.user_id === item.sender_id);
                     const senderName = isOwn ? 'Tu' : (sender?.profiles?.npo_name || sender?.profiles?.full_name || 'Utente');
+                    const avatarUrl = isOwn ? user?.avatar : sender?.profiles?.avatar_url;
 
                     return (
                         <ChatBubble
@@ -316,6 +324,7 @@ export default function ChatDetailScreen() {
                             isOwn={isOwn}
                             timestamp={timestamp}
                             senderName={senderName}
+                            avatarUrl={avatarUrl}
                             isRead={true}
                         />
                     );

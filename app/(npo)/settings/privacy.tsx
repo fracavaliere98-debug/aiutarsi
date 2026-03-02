@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Switch, ActivityIndicator } from "react-native";
+import { View, Text, Switch, ActivityIndicator , TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Phone, Eye, Users, Mail, Save } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -8,7 +8,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { supabase } from "../../../utils/supabase";
 import { Colors } from "../../../constants/Colors";
-import { TouchableOpacity } from "react-native";
+
 
 export default function NPOPrivacyScreen() {
     const { user } = useAuth();

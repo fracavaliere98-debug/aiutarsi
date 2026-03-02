@@ -11,11 +11,14 @@ class ChatService {
             .select(`
                 conversation_id,
                 last_read_at,
-                conversations (
+                conversations!inner (
                     id,
                     type,
                     activity_id,
                     created_at,
+                    last_message_at,
+                    last_message_content,
+                    last_message_sender_id,
                     participants:conversation_participants (
                         user_id,
                         profiles (
@@ -23,16 +26,11 @@ class ChatService {
                             npo_name,
                             avatar_url
                         )
-                    ),
-                    messages (
-                        id,
-                        sender_id,
-                        content,
-                        created_at
                     )
                 )
             `)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .order('last_message_at', { foreignTable: 'conversations', ascending: false });
 
         if (error) {
             console.error('Error fetching conversations:', error);

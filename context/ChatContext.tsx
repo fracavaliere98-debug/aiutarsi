@@ -20,13 +20,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         if (!user) return;
         try {
             const data = await ChatService.getConversations(user.id);
-            // Sort by most recent message
-            const sorted = data.sort((a: any, b: any) => {
-                const aLast = a.conversations.messages?.[0]?.created_at;
-                const bLast = b.conversations.messages?.[0]?.created_at;
-                return new Date(bLast || 0).getTime() - new Date(aLast || 0).getTime();
-            });
-            setConversations(sorted);
+            // Sorting is now handled by the backend (order by last_message_at DESC)
+            setConversations(data);
 
             // Fetch unread count from view
             const { data: unreadData } = await supabase
