@@ -261,6 +261,7 @@ export default function VolunteerSettings() {
                         icon={Shield}
                         label="Privacy e Visibilità"
                         color={Colors.success}
+                        onPress={() => router.push("/(volunteer)/privacy" as any)}
                     />
                     <MenuItem
                         icon={HelpCircle}

@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { Colors } from "../../../constants/Colors";
 import { useState } from "react";
@@ -8,6 +9,7 @@ import { useState } from "react";
 export default function VolunteerRegister() {
     const router = useRouter();
     const { login, register } = useAuth();
+    const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: "",
@@ -18,7 +20,7 @@ export default function VolunteerRegister() {
 
     const handleRegister = async () => {
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-            alert("Per favore compila tutti i campi obbligatori.");
+            showToast("error", "Compila tutti i campi obbligatori.");
             return;
         }
 
@@ -35,7 +37,7 @@ export default function VolunteerRegister() {
             router.replace("/onboarding/interests");
 
         } catch (error: any) {
-            alert(error.message || "Errore durante la registrazione.");
+            showToast("error", error.message || "Errore durante la registrazione.");
         } finally {
             setIsLoading(false);
         }

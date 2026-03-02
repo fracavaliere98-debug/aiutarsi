@@ -9,22 +9,8 @@ import { Colors } from '../constants/Colors';
 
 export const VolunteerHeaderActions = () => {
     const router = useRouter();
-    const { conversations } = useChat();
+    const { unreadCount: chatUnreadCount } = useChat();
     const { unreadCount: notificationsUnreadCount } = useNotifications();
-
-    // Calculate unread count from conversations
-    const chatUnreadCount = React.useMemo(() => {
-        return conversations.reduce((acc, c) => {
-            const conv = c.conversations;
-            const lastMsg = conv.messages?.[0];
-            if (!lastMsg) return acc;
-
-            // Check if last message is newer than last read
-            const isUnread = lastMsg.created_at > c.last_read_at;
-            return isUnread ? acc + 1 : acc;
-        }, 0);
-    }, [conversations]);
-
 
     return (
         <View className="flex-row items-center gap-2">

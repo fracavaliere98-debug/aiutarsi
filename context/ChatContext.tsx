@@ -50,19 +50,27 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
         refreshConversations();
 
-        // Subscribe to messages table for realtime updates
-        const channel = supabase.channel('public:messages')
+        // Subscribe to messages INSERT (new message arrives)
+        const msgsChannel = supabase.channel('public:messages:context')
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'messages' },
-                () => {
-                    refreshConversations();
-                }
+                () => { refreshConversations(); }
+            )
+            .subscribe();
+
+        // Subscribe to conversation_participants UPDATE (last_read_at changes when marking read)
+        const participantsChannel = supabase.channel('public:conv_participants:context')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'conversation_participants' },
+                () => { refreshConversations(); }
             )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(msgsChannel);
+            supabase.removeChannel(participantsChannel);
         };
     }, [user]);
 

@@ -191,6 +191,7 @@ export default function NPOProfileScreen() {
                         icon={Eye}
                         label="Privacy e Visibilità"
                         color={Colors.success}
+                        onPress={() => router.push("/(npo)/settings/privacy" as any)}
                     />
                     <MenuItem
                         icon={LifeBuoy}

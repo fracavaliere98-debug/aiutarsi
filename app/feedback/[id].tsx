@@ -24,7 +24,7 @@ export default function FeedbackScreen() {
     // Role Guard: Only Volunteers can give feedback
     useEffect(() => {
         if (user && user.role !== "VOLUNTEER") {
-            alert("Solo i volontari possono inviare feedback alle attività.");
+            showToast("error", "Solo i volontari possono inviare feedback alle attività.");
             router.replace("/");
         }
     }, [user]);
@@ -41,7 +41,7 @@ export default function FeedbackScreen() {
 
     const handleSubmit = async () => {
         if (rating === 0) {
-            alert("Per favore seleziona un punteggio.");
+            showToast("error", "Seleziona un punteggio prima di inviare.");
             return;
         }
 

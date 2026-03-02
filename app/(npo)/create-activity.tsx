@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
 import { ArrowLeft, Calendar, MapPin, Users, Tag, AlignLeft, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react-native";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
@@ -95,11 +96,12 @@ export default function CreateActivityScreen() {
 
     const urgentCount = activities.filter(a => a.npoId === user?.id && a.isUrgent && (a.status === 'APERTA' || a.status === 'IN_CORSO')).length;
     const [coordsConfirmed, setCoordsConfirmed] = useState(false);
+    const { showToast } = useToast();
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            alert('Permesso galleria necessario.');
+            showToast('error', 'Permesso galleria necessario per aggiungere una foto.');
             return;
         }
 
@@ -117,17 +119,15 @@ export default function CreateActivityScreen() {
 
     const handleCreate = async () => {
         if (!formData.title || !formData.address || !formData.description || !formData.endTime || !formData.date) {
-            alert("Compila tutti i campi obbligatori, inclusa la data e l'orario di fine.");
+            showToast('error', 'Compila tutti i campi obbligatori, inclusa la data e l\'orario di fine.');
             return;
         }
 
-        // Guard: user typed an address but never tapped a suggestion from the autocomplete dropdown
         if (!coordsConfirmed) {
-            alert("Seleziona un indirizzo dalla lista dei suggerimenti per ottenere le coordinate corrette.");
+            showToast('error', 'Seleziona un indirizzo dalla lista dei suggerimenti.');
             return;
         }
 
-        // ISO strings from local time
         const start = new Date(`${formData.date}T${formData.startTime}:00`);
         const end = new Date(`${formData.date}T${formData.endTime}:00`);
         const startISO = start.toISOString();
@@ -136,12 +136,12 @@ export default function CreateActivityScreen() {
         const now = new Date();
 
         if (start < now) {
-            alert("Non puoi creare un'attività che inizia nel passato. Seleziona una data e un orario futuri.");
+            showToast('error', 'Non puoi creare un\'attività nel passato. Scegli data e orario futuri.');
             return;
         }
 
         if (end <= start) {
-            alert("L'orario di fine deve essere successivo all'orario di inizio.");
+            showToast('error', 'L\'orario di fine deve essere successivo all\'orario di inizio.');
             return;
         }
 
@@ -438,7 +438,7 @@ export default function CreateActivityScreen() {
                                 value={formData.isUrgent}
                                 onValueChange={(v) => {
                                     if (v && urgentCount >= 3) {
-                                        alert("Puoi avere al massimo 3 attività urgenti contemporaneamente.");
+                                        showToast('error', "Puoi avere al massimo 3 attività urgenti contemporaneamente.");
                                         return;
                                     }
                                     setFormData({ ...formData, isUrgent: v });

@@ -1,27 +1,25 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Switch } from "react-native";
 import { useRouter } from "expo-router";
-import { Key, Lock, Mail, Shield, CheckCircle2, Eye, EyeOff, Save } from "lucide-react-native";
+import { Lock, Mail, Shield, Eye, EyeOff, Save } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
+import { authService } from "../../services/AuthService";
 
 export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
-    const { user, updateUserProfile } = useAuth(); // In real app, separate auth methods needed
+    const { user } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
-    React.useEffect(() => {
-        console.log("[DEBUG] SecurityScreen MOUNTED");
-    }, []);
-
-    // State
+    // Email state
     const [loginEmail, setLoginEmail] = useState(user?.email || "");
+    const [isEditingEmail, setIsEditingEmail] = useState(false);
 
-    // Password State
+    // Password state
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,34 +30,53 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
 
     const handleSave = async () => {
         setIsLoading(true);
-        // Simulate API delay
-        setTimeout(async () => {
-            try {
-                // Here we would call a specific updateCredentials endpoint
-                // For now, we update email via profile if changed
-                if (loginEmail !== user?.email) {
-                    await updateUserProfile({ email: loginEmail });
-                }
-
-                // Password logic would go here
-                if (newPassword) {
-                    if (newPassword !== confirmPassword) {
-                        showToast("error", "Le password non coincidono.");
-                        setIsLoading(false);
-                        return;
-                    }
-                    // Mock password update
-                }
-
-                showToast("success", "Credenziali aggiornate!");
-                if (onClose) onClose();
-                else router.back();
-            } catch (error) {
-                showToast("error", "Errore durante l'aggiornamento.");
-            } finally {
-                setIsLoading(false);
+        try {
+            // 1. Email Update
+            if (loginEmail !== user?.email) {
+                await authService.updateEmail(loginEmail);
+                showToast("success", "Email aggiornata! Controlla la posta per confermare.");
             }
-        }, 1000);
+
+            // 2. Password Update
+            if (newPassword) {
+                if (!currentPassword) {
+                    showToast("error", "Inserisci la password attuale per confermare le modifiche.");
+                    setIsLoading(false);
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showToast("error", "Le nuove password non coincidono.");
+                    setIsLoading(false);
+                    return;
+                }
+                const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+                if (!strongPasswordRegex.test(newPassword)) {
+                    showToast("error", "Password: 8+ caratteri, 1 maiuscola, 1 numero, 1 speciale.");
+                    setIsLoading(false);
+                    return;
+                }
+                await authService.updatePassword(currentPassword, newPassword);
+                showToast("success", "Password aggiornata con successo!");
+                setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+            } else if (currentPassword && !newPassword) {
+                showToast("error", "Inserisci la nuova password.");
+                setIsLoading(false);
+                return;
+            }
+
+            if (loginEmail === user?.email && !newPassword) {
+                showToast("info", "Nessuna modifica rilevata.");
+            } else if (onClose) {
+                onClose();
+            } else {
+                router.back();
+            }
+        } catch (error: any) {
+            console.error("Update credentials error:", error);
+            showToast("error", error.message || "Errore durante l'aggiornamento.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -71,29 +88,32 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
                 <View className="flex-1">
                     <Text className="text-blue-800 font-bold text-sm mb-1">Gestione Sicurezza</Text>
                     <Text className="text-blue-600 text-xs leading-4">
-                        Modifica la tua email, aggiorna la password o attiva l&apos;autenticazione a due fattori per proteggere l&apos;account dell&apos;ente.
+                        Modifica la tua email, aggiorna la password o attiva l&apos;autenticazione a due fattori per proteggere il tuo account.
                     </Text>
                 </View>
             </View>
 
-            {/* Email Accesso */}
+            {/* Email */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">EMAIL DI ACCESSO</Text>
             <SoftCard className="p-5 mb-6">
                 <View className="flex-row items-center gap-4">
-                    <View className="bg-indigo-50 p-3 rounded-full">
-                        <Mail size={24} color={Colors.primary} />
+                    <View className={`p-3 rounded-full ${isEditingEmail ? "bg-accent/10" : "bg-indigo-50"}`}>
+                        <Mail size={24} color={isEditingEmail ? Colors.accent : Colors.primary} />
                     </View>
                     <View className="flex-1">
                         <Text className="text-secondary text-xs font-bold uppercase">Email attuale</Text>
                         <TextInput
                             value={loginEmail}
                             onChangeText={setLoginEmail}
-                            className="text-primary font-black text-lg p-0"
+                            className={`font-black text-lg p-0 ${isEditingEmail ? "text-accent border-b border-accent" : "text-primary"}`}
                             keyboardType="email-address"
+                            editable={isEditingEmail}
                         />
                     </View>
-                    <TouchableOpacity>
-                        <Text className="text-primary font-bold text-sm">Modifica</Text>
+                    <TouchableOpacity onPress={() => setIsEditingEmail(!isEditingEmail)}>
+                        <Text className={`${isEditingEmail ? "text-accent" : "text-primary"} font-bold text-sm`}>
+                            {isEditingEmail ? "Annulla" : "Modifica"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </SoftCard>

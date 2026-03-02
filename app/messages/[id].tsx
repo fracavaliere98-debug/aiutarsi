@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, ScrollView, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MoreVertical, Plus, Smile, Send, Bell, BellOff, Users, X } from 'lucide-react-native';
+import { ArrowLeft, Phone, MoreVertical, Plus, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
 import ChatService from '../../services/ChatService';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabase';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function ChatDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -21,6 +22,72 @@ export default function ChatDetailScreen() {
     const [showParticipants, setShowParticipants] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const flatListRef = useRef<FlatList>(null);
+
+    // Helper: format date to Italian day label
+    const formatDayLabel = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        if (d.toDateString() === today.toDateString()) return 'Oggi';
+        if (d.toDateString() === yesterday.toDateString()) return 'Ieri';
+        return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
+    // Inject day dividers between messages (list is DESC, inverted FlatList shows newest at bottom)
+    const messagesWithDividers = React.useMemo(() => {
+        if (!messages.length) return [];
+        const result: any[] = [];
+        let lastDay = '';
+        for (const msg of messages) {
+            const day = new Date(msg.created_at).toDateString();
+            if (day !== lastDay) {
+                result.push({ __divider: true, id: `divider-${day}`, label: formatDayLabel(msg.created_at) });
+                lastDay = day;
+            }
+            result.push(msg);
+        }
+        return result;
+    }, [messages]);
+
+    // Determine the other participant (for private chats)
+    const otherParticipant = React.useMemo(() => {
+        if (!conversation || conversation.type !== 'PRIVATE') return null;
+        return conversation.participants?.find((p: any) => p.user_id !== user?.id);
+    }, [conversation, user]);
+
+    // Online status: online if lastSeenAt < 5 mins ago
+    const isOnline = React.useMemo(() => {
+        const lastSeen = otherParticipant?.profiles?.last_seen_at;
+        if (!lastSeen) return false;
+        return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
+    }, [otherParticipant]);
+
+    // Can we call this person?
+    const otherAllowsCalls = otherParticipant?.profiles?.allow_calls !== false;
+    const otherPhone = otherParticipant?.profiles?.phone;
+
+    const handleCall = () => {
+        if (!otherPhone || !otherAllowsCalls) return;
+        Linking.openURL(`tel:${otherPhone}`);
+    };
+
+    const handleAttachFile = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true,
+            });
+            if (!result.canceled && result.assets?.[0]) {
+                const file = result.assets[0];
+                // Send the filename as a message (future: upload to Supabase Storage)
+                await ChatService.sendMessage(id as string, user!.id, `📎 ${file.name}`);
+            }
+        } catch (e) {
+            console.error('File pick error', e);
+        }
+    };
 
     useEffect(() => {
         if (!user || !id) return;
@@ -93,6 +160,17 @@ export default function ChatDetailScreen() {
     const volunteers = (conversation?.participants || []).filter((p: any) => p.profiles?.role === 'VOLUNTEER');
     const npos = (conversation?.participants || []).filter((p: any) => p.profiles?.role === 'NPO');
 
+    // Chat title and subtitle
+    const chatTitle = conversation?.type === 'ACTIVITY_GROUP'
+        ? (conversation?.activities?.title || 'Gruppo Attività')
+        : (otherParticipant?.profiles?.npo_name || otherParticipant?.profiles?.full_name || 'Chat Privata');
+
+    const chatSubtitle = conversation?.type === 'ACTIVITY_GROUP'
+        ? (conversation?.activities?.npo?.npo_name || 'Organizzazione')
+        : (isOnline ? 'Online' : 'Offline');
+
+    const subtitleColor = conversation?.type === 'PRIVATE' ? (isOnline ? '#22c55e' : '#94a3b8') : '#94a3b8';
+
     return (
         <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
             {/* Custom Header */}
@@ -102,29 +180,26 @@ export default function ChatDetailScreen() {
                         <ArrowLeft size={28} color={Colors.primary} />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <View className="flex-row items-center gap-2">
-                            <Text className="text-primary font-black text-lg flex-1" numberOfLines={1}>
-                                {conversation?.type === 'ACTIVITY_GROUP'
-                                    ? (conversation?.activities?.title || 'Gruppo Attività')
-                                    : (conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.npo_name ||
-                                        conversation?.participants?.find((p: any) => p.user_id !== user?.id)?.profiles?.full_name ||
-                                        'Chat Privata')}
-                            </Text>
-                        </View>
-                        {conversation?.type === 'ACTIVITY_GROUP' && (
-                            <Text className="text-slate-500 text-sm font-medium" numberOfLines={1}>
-                                {conversation?.activities?.npo?.npo_name || 'Organizzazione'}
-                            </Text>
-                        )}
-                        {conversation?.type === 'PRIVATE' && (
-                            <Text className="text-slate-400 text-xs font-medium">Online</Text>
-                        )}
+                        <Text className="text-primary font-black text-lg" numberOfLines={1}>
+                            {chatTitle}
+                        </Text>
+                        <Text style={{ color: subtitleColor }} className="text-xs font-semibold">
+                            {chatSubtitle}
+                        </Text>
                     </View>
                 </View>
 
                 <View className="flex-row items-center gap-1">
-                    <TouchableOpacity className="p-2">
-                        <Phone size={24} color={Colors.primary} />
+                    {/* Phone call button — disabled if callee has disabled calls or has no phone number */}
+                    <TouchableOpacity
+                        onPress={handleCall}
+                        disabled={!otherPhone || !otherAllowsCalls}
+                        className="p-2"
+                    >
+                        {otherPhone && otherAllowsCalls
+                            ? <Phone size={24} color={Colors.primary} />
+                            : <PhoneOff size={24} color="#cbd5e1" />
+                        }
                     </TouchableOpacity>
                     <TouchableOpacity className="p-2" onPress={() => setShowMenu(!showMenu)}>
                         <MoreVertical size={24} color={Colors.primary} />
@@ -211,12 +286,25 @@ export default function ChatDetailScreen() {
             {/* Chat List */}
             <FlatList
                 ref={flatListRef}
-                data={messages}
+                data={messagesWithDividers}
                 keyExtractor={(item) => item.id}
                 inverted
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 10 }}
                 renderItem={({ item }) => {
+                    // Day divider
+                    if (item.__divider) {
+                        return (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16 }}>
+                                <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                                <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginHorizontal: 8 }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', textTransform: 'capitalize' }}>{item.label}</Text>
+                                </View>
+                                <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                            </View>
+                        );
+                    }
+                    // Regular message
                     const isOwn = item.sender_id === user?.id;
                     const timestamp = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const sender = conversation?.participants?.find((p: any) => p.user_id === item.sender_id);
@@ -240,8 +328,9 @@ export default function ChatDetailScreen() {
             >
                 <View className="px-4 py-3 border-t border-gray-100 bg-white flex-row items-center">
                     <View className="flex-1 flex-row items-center bg-slate-50 rounded-full px-4 py-2 mr-3 border border-slate-100">
-                        <TouchableOpacity className="mr-3">
-                            <Plus size={24} color="#64748b" />
+                        {/* Attachment button */}
+                        <TouchableOpacity className="mr-3" onPress={handleAttachFile}>
+                            <Paperclip size={22} color="#64748b" />
                         </TouchableOpacity>
 
                         <TextInput
@@ -252,10 +341,6 @@ export default function ChatDetailScreen() {
                             value={inputText}
                             onChangeText={setInputText}
                         />
-
-                        <TouchableOpacity className="ml-2">
-                            <Smile size={24} color="#64748b" />
-                        </TouchableOpacity>
                     </View>
 
                     <TouchableOpacity

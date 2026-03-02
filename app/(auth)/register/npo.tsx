@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { useState } from "react";
 
@@ -10,6 +11,7 @@ import { ArrowLeft } from "lucide-react-native";
 export default function NPORegister() {
     const router = useRouter();
     const { register } = useAuth();
+    const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         orgName: "",
@@ -30,7 +32,7 @@ export default function NPORegister() {
             });
             router.replace("/(npo)" as any);
         } catch (error: any) {
-            alert(error.message || "Errore durante la registrazione.");
+            showToast("error", error.message || "Errore durante la registrazione.");
         } finally {
             setIsLoading(false);
         }
