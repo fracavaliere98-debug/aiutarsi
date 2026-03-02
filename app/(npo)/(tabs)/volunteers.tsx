@@ -4,7 +4,7 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { Check, X, Clock, User, Filter, Search, Calendar } from "lucide-react-native";
+import { Check, X, Clock, User, Filter, Search, Calendar, Sparkles } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -99,6 +99,25 @@ export default function VolunteersScreen() {
         });
 
     const followers = getNPOFollowers(user?.id || "");
+
+    // Smart Match Logic
+    const matchedFollowers = useMemo(() => {
+        if (!params.activityMatch) return [];
+        const activity = activities.find(a => a.id === params.activityMatch);
+        if (!activity) return [];
+
+        return followers.map(f => {
+            const matchingSkills = f.skills.filter(s => activity.skills.includes(s));
+            return {
+                ...f,
+                matchScore: matchingSkills.length,
+                matchingSkills
+            };
+        })
+            .filter(f => f.matchScore > 0)
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 5);
+    }, [followers, params.activityMatch, activities]);
 
     // Global filtering based on search query
     const searchFilter = (item: any) => {
@@ -384,9 +403,36 @@ export default function VolunteersScreen() {
                         <Text className="text-primary font-black text-lg">I Tuoi Follower</Text>
                     </View>
 
+                    {matchedFollowers.length > 0 && (
+                        <View className="mb-6 px-1">
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <Sparkles size={18} color={Colors.accent} />
+                                <Text className="text-secondary font-black text-xs uppercase tracking-widest">Top matches per l'attività</Text>
+                            </View>
+                            {matchedFollowers.map((f) => (
+                                <View key={`match-${f.id}`} className="mb-4">
+                                    <VolunteerCard
+                                        volunteer={f}
+                                        onPress={() => router.push(`/(npo)/volunteer-profile/${f.id}`)}
+                                        actions={
+                                            <TouchableOpacity
+                                                onPress={() => handleInviteFollower(f.id)}
+                                                className="px-4 py-2 rounded-lg bg-accent"
+                                            >
+                                                <Text className="text-white font-bold text-xs">Invita Ora</Text>
+                                            </TouchableOpacity>
+                                        }
+                                    />
+                                </View>
+                            ))}
+                            <View className="h-[1px] bg-black/5 w-full my-4" />
+                            <Text className="text-primary font-black text-lg mb-2">Tutti i Follower</Text>
+                        </View>
+                    )}
+
                     {displayFollowers.length > 0 ? (
                         <FlashList
-                            data={displayFollowers as any[]}
+                            data={displayFollowers.filter(f => !matchedFollowers.find(m => m.id === f.id)) as any[]}
                             // @ts-ignore
                             estimatedItemSize={100}
                             renderItem={({ item }) => (

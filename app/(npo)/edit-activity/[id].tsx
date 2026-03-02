@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useActivities } from "../../../context/ActivityContext";
 import { Colors } from "../../../constants/Colors";
-import { ArrowLeft, Calendar, MapPin, Users, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, Trash2, Plus } from "lucide-react-native";
+import { ArrowLeft, Calendar, MapPin, Users, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, Trash2, Plus, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 import { Activity } from "../../../types";
@@ -39,7 +39,8 @@ export default function EditActivityScreen() {
         endTime: "12:00",
         isUrgent: false,
         skills: [] as string[],
-        imageUrl: "" as string | undefined
+        imageUrl: "" as string | undefined,
+        recurrence: 'NONE' as 'NONE' | 'WEEKLY' | 'MONTHLY',
     });
 
     useEffect(() => {
@@ -58,7 +59,8 @@ export default function EditActivityScreen() {
                 endTime: new Date(activity.endDateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' }),
                 isUrgent: activity.isUrgent || false,
                 skills: activity.skills || [],
-                imageUrl: activity.imageUrl
+                imageUrl: activity.imageUrl,
+                recurrence: (activity.recurrence as any) || 'NONE',
             });
             setLoading(false);
         }
@@ -120,7 +122,8 @@ export default function EditActivityScreen() {
             endDateTime: endISO,
             skills: formData.skills,
             isUrgent: formData.isUrgent,
-            imageUrl: formData.imageUrl
+            imageUrl: formData.imageUrl,
+            recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,
         });
 
         setLoading(false);
@@ -313,6 +316,34 @@ export default function EditActivityScreen() {
                                         className="flex-1 text-primary font-medium text-base"
                                     />
                                 </View>
+                            </View>
+                        </View>
+
+                        {/* Recurrence */}
+                        <View className="bg-white p-5 rounded-2xl border border-primary/5">
+                            <View className="flex-row items-center gap-3 mb-3">
+                                <View className="bg-indigo-50 p-2 rounded-xl">
+                                    <RefreshCw size={18} color="#6366f1" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="font-bold text-primary">Ricorrenza</Text>
+                                    <Text className="text-secondary text-[10px]">Il badge appare sulla scheda attività.</Text>
+                                </View>
+                            </View>
+                            <View className="flex-row gap-2">
+                                {(['NONE', 'WEEKLY', 'MONTHLY'] as const).map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        onPress={() => setFormData(prev => ({ ...prev, recurrence: opt }))}
+                                        className={`flex-1 py-2.5 rounded-xl border items-center ${formData.recurrence === opt ? 'bg-primary border-primary' : 'bg-white border-primary/10'
+                                            }`}
+                                    >
+                                        <Text className={`font-bold text-xs ${formData.recurrence === opt ? 'text-white' : 'text-primary'
+                                            }`}>
+                                            {opt === 'NONE' ? 'Nessuna' : opt === 'WEEKLY' ? 'Sett.' : 'Mens.'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </View>
 

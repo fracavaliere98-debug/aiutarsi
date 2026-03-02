@@ -81,6 +81,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     timeoutPromise.then(() => ({ error: { message: "Auth init timeout" } }))
                 ]);
 
+                // HANDLE CRITICAL AUTH ERRORS (e.g. Invalid Refresh Token)
+                if (result?.error && authService.isUnrecoverableAuthError(result.error)) {
+                    console.error("[Supabase Auth] Unrecoverable session error detected during init:", result.error.message);
+                    await logout(); // Force clean slate
+                    return;
+                }
+
                 // If Supabase finds a session, we load the full app user (with DB profile)
                 if (result?.data?.session?.user && isMounted) {
                     const currentUser = await authService.getCurrentUser();
@@ -104,6 +111,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // 3. Listen for Supabase Auth Changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Supabase Auth] Event: ${event}`);
+
+            // Handle potential session errors during auth state change events
+            if ((event as any) === 'INITIAL_SESSION_ERROR' || (event as any) === 'TOKEN_REFRESH_FAILED') {
+                console.warn(`[Supabase Auth] Critical event ${event} detected.`);
+                // We might want to trigger logout here if it's persistent, 
+                // but let's prioritize init() for now as it's the most common failure point.
+            }
 
             if (!isMounted) return;
 

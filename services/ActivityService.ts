@@ -30,7 +30,8 @@ export class ActivityService {
             isUrgent: dbActivity.is_urgent || false,
             skills: dbActivity.activity_skills?.map((s: any) => s.skill) || [],
             iscritti: dbActivity.activity_participants?.map((p: any) => p.user_id) || [],
-            imageUrl: dbActivity.image_url
+            imageUrl: dbActivity.image_url,
+            recurrence: dbActivity.recurrence || 'NONE',
         };
     }
 
@@ -296,7 +297,8 @@ export class ActivityService {
                     status: activityData.status || 'APERTA',
                     match_percentage: activityData.matchPercentage,
                     is_urgent: activityData.isUrgent || false,
-                    image_url: activityData.imageUrl
+                    image_url: activityData.imageUrl,
+                    recurrence: activityData.recurrence || null,
                 })
                 .select()
                 .single();
@@ -355,7 +357,8 @@ export class ActivityService {
                 category: activity.category,
                 status: activity.status,
                 is_urgent: activity.isUrgent,
-                image_url: activity.imageUrl
+                image_url: activity.imageUrl,
+                recurrence: activity.recurrence || null,
             })
             .eq('id', activity.id);
 

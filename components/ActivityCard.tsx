@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
-import { Clock, Building2, MapPin } from "lucide-react-native";
+import { Clock, Building2, MapPin, RefreshCw } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
 import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
@@ -102,6 +102,14 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                                 {activity.status}
                             </Text>
                         </View>
+                        {activity.recurrence && activity.recurrence !== 'NONE' && (
+                            <View className="flex-row items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-full mr-2">
+                                <RefreshCw size={9} color="#4f46e5" />
+                                <Text className="text-indigo-600 text-[9px] font-black uppercase">
+                                    {activity.recurrence === 'WEEKLY' ? 'Sett.' : 'Mens.'}
+                                </Text>
+                            </View>
+                        )}
                         {activity.iscritti && activity.iscritti.length > 0 ? (
                             <View className="flex-row -space-x-2">
                                 {activity.iscritti.slice(0, 3).map((volId: string, idx: number) => {

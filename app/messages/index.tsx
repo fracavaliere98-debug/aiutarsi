@@ -119,6 +119,16 @@ export default function MessagesListScreen() {
         if (activeTab === 'Gruppi Attività') return conv.type === 'ACTIVITY_GROUP';
         if (activeTab === 'Privati') return conv.type === 'PRIVATE';
         return true;
+    }).sort((a: any, b: any) => {
+        // Put unread conversations at the top
+        const aMsg = a.conversations?.messages?.[0];
+        const bMsg = b.conversations?.messages?.[0];
+        const aUnread = aMsg && aMsg.created_at > a.last_read_at && aMsg.sender_id !== user?.id;
+        const bUnread = bMsg && bMsg.created_at > b.last_read_at && bMsg.sender_id !== user?.id;
+        if (aUnread && !bUnread) return -1;
+        if (!aUnread && bUnread) return 1;
+        // Then sort by most recent message
+        return (bMsg?.created_at || '').localeCompare(aMsg?.created_at || '');
     });
 
     return (

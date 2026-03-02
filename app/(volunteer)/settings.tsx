@@ -292,22 +292,27 @@ export default function VolunteerSettings() {
                     />
                 </SoftCard>
 
-                {/* Log Out */}
-                <TouchableOpacity
-                    onPress={async () => await logout()}
-                    disabled={isAuthLoading}
-                    activeOpacity={0.7}
-                    className="bg-red-50 flex-row items-center justify-center gap-3 py-4 rounded-[20px] mb-6 border border-red-100"
-                >
-                    {isAuthLoading ? (
-                        <ActivityIndicator color="#ef4444" />
-                    ) : (
-                        <View className="flex-row items-center gap-3">
-                            <LogOut size={20} color="#ef4444" />
+                {/* Log Out - styled like other menu items */}
+                <SoftCard className="mb-8 px-5">
+                    <TouchableOpacity
+                        onPress={async () => await logout()}
+                        disabled={isAuthLoading}
+                        activeOpacity={0.7}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <View className="flex-row items-center gap-4">
+                            <View className="bg-red-50 p-2.5 rounded-2xl">
+                                {isAuthLoading ? (
+                                    <ActivityIndicator size={20} color="#ef4444" />
+                                ) : (
+                                    <LogOut size={20} color="#ef4444" />
+                                )}
+                            </View>
                             <Text className="text-red-500 font-bold text-base">Esci dall&apos;Account</Text>
                         </View>
-                    )}
-                </TouchableOpacity>
+                        <ChevronRight size={18} color="#fca5a5" />
+                    </TouchableOpacity>
+                </SoftCard>
 
                 {/* Info and Versioning */}
                 <TouchableOpacity className="mb-8 items-center">

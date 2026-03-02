@@ -15,6 +15,19 @@ export class AuthService {
         return password.length >= 6;
     }
 
+    // Identifies errors that cannot be solved by retrying (e.g. invalid session/token)
+    isUnrecoverableAuthError(error: any): boolean {
+        if (!error) return false;
+        const msg = (error.message || "").toLowerCase();
+        return (
+            msg.includes("refresh token not found") ||
+            msg.includes("invalid refresh token") ||
+            msg.includes("refresh_token_not_found") ||
+            msg.includes("session_not_found") ||
+            msg.includes("user_not_found")
+        );
+    }
+
     // Helper to map Supabase User (with metadata) to our App User interface
     private _mapSupabaseUserToAppUser(sbUser: any): User | null {
         if (!sbUser) return null;

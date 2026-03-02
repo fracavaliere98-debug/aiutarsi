@@ -53,6 +53,7 @@ export interface Activity {
     imageUrl?: string;
     npoEmail?: string;
     embedding?: number[];
+    recurrence?: 'NONE' | 'WEEKLY' | 'MONTHLY'; // Recurring activity
 }
 
 export interface Review {

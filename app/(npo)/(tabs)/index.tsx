@@ -16,6 +16,8 @@ import { useNotifications } from "../../../context/NotificationContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { UserAvatar } from "../../../components/UserAvatar";
+import { useNPOInsights } from "../../../hooks/useNPOInsights";
+import { InsightCarousel } from "../../../components/InsightCarousel";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers } = useAuth();
@@ -24,6 +26,7 @@ export default function NPODashboard() {
     const { getNPOApplications } = useApplications();
     const { unreadCount } = useNotifications();
     const { users, refreshUsers } = useAuth(); // Destructure users and refreshUsers
+    const { insights, dismissInsight } = useNPOInsights();
 
     // Refresh followers when screen gains focus to update "online" status
     useFocusEffect(
@@ -34,6 +37,13 @@ export default function NPODashboard() {
 
     // Filter activities created by this NPO
     const myActivities = activities.filter(a => a.npoId === user?.id);
+
+    // For "Prossime Attività": only open/ongoing with future end date
+    const now = new Date();
+    const upcomingActivities = myActivities.filter(a =>
+        (a.status === 'APERTA' || a.status === 'IN_CORSO') &&
+        new Date(a.endDateTime) > now
+    ).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
     const npoRating = getNPORating(user?.id || "");
 
     // Calculate followers (volunteers following the NPO)
@@ -155,31 +165,10 @@ export default function NPODashboard() {
                 </TouchableOpacity>
             </View>
 
-            {/* AI Insight Card - Updated with Design System Colors */}
-            <TouchableOpacity activeOpacity={0.95} className="mb-8">
-                <LinearGradient
-                    colors={[Colors.primary, '#5b3dc4']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ borderRadius: 24, padding: 20, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 }}
-                >
-                    <View className="flex-row items-center gap-2 mb-3">
-                        <Brain size={18} color={Colors.accent} />
-                        <Text className="text-white/80 text-[10px] font-black uppercase tracking-[2px]">AI Insight</Text>
-                    </View>
-                    <Text className="text-white text-xl font-black mb-1">Previsione Carenza</Text>
-                    <Text className="text-white/80 text-xs leading-5 mb-5 font-medium">
-                        Carenza prevista per il weekend del 15/10. Copri subito i turni per non perdere l&apos;impatto.
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push("/(npo)/create-activity" as any)}
-                        className="bg-accent w-full py-3.5 rounded-xl shadow-lg active:scale-[0.98] items-center justify-center"
-                        style={{ backgroundColor: Colors.accent }}
-                    >
-                        <Text className="text-white font-extrabold text-sm">Risolvi Ora</Text>
-                    </TouchableOpacity>
-                </LinearGradient>
-            </TouchableOpacity>
+            {/* AI Insight Carousel - bleed to screen edges */}
+            <View style={{ marginHorizontal: -24, paddingHorizontal: 0 }}>
+                <InsightCarousel insights={insights} onDismiss={dismissInsight} />
+            </View>
 
             {/* Active Volunteers Section */}
             <View className="mb-8">
@@ -241,9 +230,9 @@ export default function NPODashboard() {
                     </TouchableOpacity>
                 </View>
 
-                {myActivities.length > 0 ? (
+                {upcomingActivities.length > 0 ? (
                     <View>
-                        {myActivities.map((act) => (
+                        {upcomingActivities.map((act) => (
                             <View key={act.id} className="mb-4">
                                 <ActivityCard activity={act} onPress={() => router.push(`/activity/${act.id}` as any)} />
                             </View>
@@ -252,8 +241,8 @@ export default function NPODashboard() {
                 ) : (
                     <EmptyState
                         emoji="🎨"
-                        title="Vuoto"
-                        description="Nessuna attività in arrivo"
+                        title="Nessuna attività imminente"
+                        description="Aggiungi una nuova attività per iniziare"
                     />
                 )}
             </View>
