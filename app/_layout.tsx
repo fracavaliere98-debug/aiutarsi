@@ -13,6 +13,7 @@ import { ToastProvider } from "../context/ToastContext";
 import { SmartMatchProvider } from "../context/SmartMatchContext";
 import { ChatProvider } from "../context/ChatContext";
 import { CommunityProvider } from "../context/CommunityContext";
+import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -229,10 +230,12 @@ export default function RootLayout() {
                   <ApplicationProvider>
                     <ChatProvider>
                       <CommunityProvider>
-                        <StatusBar style="dark" />
-                        <RootLayoutNav />
-                        <ToastContainer />
-                        <LevelUpOverlay />
+                        <StoriesProvider>
+                          <StatusBar style="dark" />
+                          <RootLayoutNav />
+                          <ToastContainer />
+                          <LevelUpOverlay />
+                        </StoriesProvider>
                       </CommunityProvider>
                     </ChatProvider>
                   </ApplicationProvider>

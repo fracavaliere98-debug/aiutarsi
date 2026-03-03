@@ -4,19 +4,23 @@ import {
     Image, KeyboardAvoidingView, Platform, ActivityIndicator, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Image as ImageIcon, X, Link2 } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ArrowLeft, Image as ImageIcon, X, Link2, Zap } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../constants/Colors';
 import { useCommunity } from '../../context/CommunityContext';
+import { useStories } from '../../context/StoriesContext';
 import { useActivities } from '../../context/ActivityContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
 export default function CreatePostScreen() {
     const router = useRouter();
+    const { mode } = useLocalSearchParams<{ mode?: string }>();
+    const isStoryMode = mode === 'story';
     const { user } = useAuth();
     const { createPost } = useCommunity();
+    const { createStory } = useStories();
     const { activities } = useActivities();
     const { showToast } = useToast();
 
@@ -51,10 +55,19 @@ export default function CreatePostScreen() {
             showToast('warning', 'Aggiungi almeno una foto o una descrizione.');
             return;
         }
+        if (isStoryMode && !imageUri) {
+            showToast('warning', 'Le storie richiedono almeno una foto.');
+            return;
+        }
         setIsSubmitting(true);
         try {
-            await createPost(caption.trim(), imageUri, linkedActivityId);
-            showToast('success', 'Post pubblicato nella Community! 🎉');
+            if (isStoryMode) {
+                await createStory(imageUri!, caption.trim() || undefined, linkedActivityId);
+                showToast('success', 'Storia pubblicata! Sparirà tra 24h ✨');
+            } else {
+                await createPost(caption.trim(), imageUri, linkedActivityId);
+                showToast('success', 'Post pubblicato nella Community! 🎉');
+            }
             router.back();
         } catch (e) {
             console.error(e);
@@ -71,7 +84,9 @@ export default function CreatePostScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                         <ArrowLeft size={18} color={Colors.primary} />
                     </TouchableOpacity>
-                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>Nuovo Post Community</Text>
+                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>
+                        {isStoryMode ? '✨ Nuova Storia (24h)' : 'Nuovo Post Community'}
+                    </Text>
                     <TouchableOpacity
                         onPress={handleSubmit}
                         disabled={isSubmitting}
@@ -144,31 +159,44 @@ export default function CreatePostScreen() {
                         <Text style={{ textAlign: 'right', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>{caption.length}/500</Text>
                     </View>
 
-                    {/* Link activity */}
-                    <TouchableOpacity
-                        onPress={() => setShowActivityPicker(true)}
-                        style={{ backgroundColor: 'white', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: linkedActivityId ? Colors.primary : '#e2e8f0', flexDirection: 'row', alignItems: 'center', gap: 12 }}
-                        activeOpacity={0.8}
-                    >
-                        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: linkedActivityId ? '#ede9fe' : '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
-                            <Link2 size={18} color={linkedActivityId ? Colors.primary : '#94a3b8'} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ fontWeight: '800', color: linkedActivityId ? Colors.primary : '#64748b', fontSize: 14 }}>
-                                {linkedActivity ? linkedActivity.title : 'Collega un\'attività (opzionale)'}
-                            </Text>
-                            {linkedActivity && (
-                                <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>
-                                    {new Date(linkedActivity.dateTime).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}
+                    {/* Link activity – hidden in story mode */}
+                    {!isStoryMode && (
+                        <TouchableOpacity
+                            onPress={() => setShowActivityPicker(true)}
+                            style={{ backgroundColor: 'white', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: linkedActivityId ? Colors.primary : '#e2e8f0', flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                            activeOpacity={0.8}
+                        >
+                            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: linkedActivityId ? '#ede9fe' : '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+                                <Link2 size={18} color={linkedActivityId ? Colors.primary : '#94a3b8'} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontWeight: '800', color: linkedActivityId ? Colors.primary : '#64748b', fontSize: 14 }}>
+                                    {linkedActivity ? linkedActivity.title : 'Collega un\'attività (opzionale)'}
                                 </Text>
+                                {linkedActivity && (
+                                    <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>
+                                        {new Date(linkedActivity.dateTime).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}
+                                    </Text>
+                                )}
+                            </View>
+                            {linkedActivityId && (
+                                <TouchableOpacity onPress={() => setLinkedActivityId(undefined)}>
+                                    <X size={16} color="#94a3b8" />
+                                </TouchableOpacity>
                             )}
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Story mode info banner */}
+                    {isStoryMode && (
+                        <View style={{ backgroundColor: '#fffbeb', borderRadius: 16, padding: 14, flexDirection: 'row', gap: 10, alignItems: 'flex-start', borderWidth: 1, borderColor: '#fde68a' }}>
+                            <Zap size={18} color="#f59e0b" />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontWeight: '800', color: '#92400e', fontSize: 13 }}>Storia effimera</Text>
+                                <Text style={{ fontSize: 12, color: '#78350f', marginTop: 2, lineHeight: 18 }}>Visibile per 24 ore. Perfetta per aggiornamenti in tempo reale dall'evento!</Text>
+                            </View>
                         </View>
-                        {linkedActivityId && (
-                            <TouchableOpacity onPress={() => setLinkedActivityId(undefined)}>
-                                <X size={16} color="#94a3b8" />
-                            </TouchableOpacity>
-                        )}
-                    </TouchableOpacity>
+                    )}
 
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     View, Text, FlatList, TouchableOpacity, RefreshControl,
-    ActivityIndicator, Modal, Image, Platform, Dimensions
+    ActivityIndicator, Modal, Image, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,8 +13,8 @@ import { useActivities } from '../../../context/ActivityContext';
 import { StoriesRow } from '../../../components/StoriesRow';
 import { CommunityPostCard } from '../../../components/CommunityPostCard';
 import { CommunityPost } from '../../../types/community';
+import { Story } from '../../../types/stories';
 import { Activity } from '../../../types';
-import { useRouter as useRouterNav } from 'expo-router';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -121,7 +121,7 @@ export default function CommunityScreen() {
     const { posts, isLoading, fetchFeed } = useCommunity();
     const { activities } = useActivities();
     const [refreshing, setRefreshing] = useState(false);
-    const [storyPost, setStoryPost] = useState<CommunityPost | null>(null);
+    const [storyPost, setStoryPost] = useState<Story | null>(null);
 
     const isNPO = user?.role === 'NPO';
 
@@ -214,7 +214,7 @@ export default function CommunityScreen() {
                     renderItem={renderItem}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 100 }}
-                    ListHeaderComponent={<StoriesRow posts={posts} isNPO={isNPO} onAddStory={() => router.push('/community/create-post' as any)} onStoryPress={setStoryPost} />}
+                    ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={setStoryPost} />}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
@@ -252,6 +252,13 @@ export default function CommunityScreen() {
                     {storyPost?.caption && (
                         <View style={{ position: 'absolute', bottom: 60, left: 0, right: 0, padding: 20, backgroundColor: 'rgba(0,0,0,0.5)' }}>
                             <Text style={{ color: 'white', fontSize: 16, fontWeight: '600', lineHeight: 24 }}>{storyPost.caption}</Text>
+                        </View>
+                    )}
+                    {storyPost?.expires_at && (
+                        <View style={{ position: 'absolute', top: 60, right: 20, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 }}>
+                            <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>
+                                Scade tra {Math.max(0, Math.floor((new Date(storyPost.expires_at).getTime() - Date.now()) / 3600000))}h
+                            </Text>
                         </View>
                     )}
                 </TouchableOpacity>

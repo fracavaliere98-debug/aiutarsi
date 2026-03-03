@@ -11,6 +11,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Tag, AlignLeft, Send, Clock, Sparkl
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { StandardLayout } from "../../components/StandardLayout";
 import { AddressAutocomplete } from "../../components/AddressAutocomplete";
+import { CalendarPicker } from "../../components/CalendarPicker";
 
 const SKILLS = [
     { id: "comms", label: "Comunicazione", icon: MessageSquare },
@@ -96,6 +97,7 @@ export default function CreateActivityScreen() {
 
     const urgentCount = activities.filter(a => a.npoId === user?.id && a.isUrgent && (a.status === 'APERTA' || a.status === 'IN_CORSO')).length;
     const [coordsConfirmed, setCoordsConfirmed] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
     const { showToast } = useToast();
 
     const pickImage = async () => {
@@ -130,6 +132,12 @@ export default function CreateActivityScreen() {
 
         const start = new Date(`${formData.date}T${formData.startTime}:00`);
         const end = new Date(`${formData.date}T${formData.endTime}:00`);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            showToast('error', 'Data o orario non validi. Controlla i campi.');
+            return;
+        }
+
         const startISO = start.toISOString();
         const endISO = end.toISOString();
 
@@ -168,295 +176,313 @@ export default function CreateActivityScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={0}
-        >
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ flexGrow: 1 }}
+        <>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={0}
             >
-                <StandardLayout
-                    label="Inizia ora"
-                    title="Crea Attività"
-                    bg="bg-background-light"
-                    onBack={() => router.back()}
-                    noScroll
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ flexGrow: 1 }}
                 >
-                    <View className="gap-6 pb-12">
-                        {/* Activity Image */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Foto Attività</Text>
-                            <TouchableOpacity
-                                onPress={pickImage}
-                                activeOpacity={0.8}
-                                className="w-full h-48 bg-white rounded-[28px] border border-primary/5 shadow-sm overflow-hidden items-center justify-center"
-                            >
-                                {formData.imageUrl ? (
-                                    <Image
-                                        source={{ uri: formData.imageUrl }}
-                                        style={{ width: "100%", height: "100%" }}
-                                        contentFit="cover"
-                                    />
-                                ) : (
-                                    <View className="items-center">
-                                        <View className="bg-primary/5 p-4 rounded-3xl mb-2">
-                                            <Camera size={32} color={Colors.primary} />
+                    <StandardLayout
+                        label="Inizia ora"
+                        title="Crea Attività"
+                        bg="bg-background-light"
+                        onBack={() => router.back()}
+                        noScroll
+                    >
+                        <View className="gap-6 pb-12">
+                            {/* Activity Image */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Foto Attività</Text>
+                                <TouchableOpacity
+                                    onPress={pickImage}
+                                    activeOpacity={0.8}
+                                    className="w-full h-48 bg-white rounded-[28px] border border-primary/5 shadow-sm overflow-hidden items-center justify-center"
+                                >
+                                    {formData.imageUrl ? (
+                                        <Image
+                                            source={{ uri: formData.imageUrl }}
+                                            style={{ width: "100%", height: "100%" }}
+                                            contentFit="cover"
+                                        />
+                                    ) : (
+                                        <View className="items-center">
+                                            <View className="bg-primary/5 p-4 rounded-3xl mb-2">
+                                                <Camera size={32} color={Colors.primary} />
+                                            </View>
+                                            <Text className="text-primary/40 font-bold text-sm">Carica una foto per l&apos;attività</Text>
                                         </View>
-                                        <Text className="text-primary/40 font-bold text-sm">Carica una foto per l&apos;attività</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Title */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Titolo Attività</Text>
+                                <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
+                                    <TextInput
+                                        placeholder="es. Distribuzione Pasti"
+                                        value={formData.title}
+                                        onChangeText={(t) => setFormData({ ...formData, title: t })}
+                                        className="flex-1 text-primary font-medium text-base"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Category */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
+                                <View className="flex-row flex-wrap gap-2">
+                                    {["Sociale", "Ambiente", "Istruzione", "Salute", "Animali"].map(cat => (
+                                        <TouchableOpacity
+                                            key={cat}
+                                            onPress={() => setFormData({ ...formData, category: cat })}
+                                            className={`px-4 py-2 rounded-full border ${formData.category === cat ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+                                        >
+                                            <Text className={`font-bold text-xs ${formData.category === cat ? "text-white" : "text-primary"}`}>{cat}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Skills Selection */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Competenze Richieste (Opzionale)</Text>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                    {SKILLS.map((skill) => {
+                                        const isSelected = formData.skills.includes(skill.id);
+                                        const SkillIcon = skill.icon;
+                                        return (
+                                            <TouchableOpacity
+                                                key={skill.id}
+                                                onPress={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        skills: isSelected
+                                                            ? prev.skills.filter(id => id !== skill.id)
+                                                            : [...prev.skills, skill.id]
+                                                    }));
+                                                }}
+                                                style={{
+                                                    width: '30.5%',
+                                                    paddingVertical: 10,
+                                                    paddingHorizontal: 4,
+                                                    borderRadius: 14,
+                                                    borderWidth: 1,
+                                                    alignItems: 'center',
+                                                    flexDirection: 'row',
+                                                    justifyContent: 'center',
+                                                    gap: 4,
+                                                    backgroundColor: isSelected ? Colors.primary : 'white',
+                                                    borderColor: isSelected ? Colors.primary : '#ede9fe',
+                                                }}
+                                            >
+                                                <SkillIcon size={11} color={isSelected ? 'white' : Colors.primary} />
+                                                <Text style={{ fontWeight: '800', fontSize: 10, color: isSelected ? 'white' : Colors.primary }}>{skill.label}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
+                            {/* Location */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Indirizzo / Luogo</Text>
+                                <AddressAutocomplete
+                                    onSelect={(addr, lat, lng) => {
+                                        setFormData({ ...formData, address: addr, lat, lng });
+                                        setCoordsConfirmed(true);
+                                    }}
+                                    onChangeText={() => setCoordsConfirmed(false)}
+                                    placeholder="Scrivi qui l'indirizzo..."
+                                />
+                                {/* Coordinate status badge */}
+                                {formData.address !== '' && (
+                                    <View style={{
+                                        flexDirection: 'row', alignItems: 'center', gap: 6,
+                                        marginTop: 8, paddingHorizontal: 4,
+                                    }}>
+                                        {coordsConfirmed ? (
+                                            <>
+                                                <CheckCircle2 size={14} color="#22c55e" />
+                                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#22c55e' }}>Posizione confermata</Text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <AlertCircle size={14} color="#f59e0b" />
+                                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#f59e0b' }}>Seleziona un suggerimento per confermare le coordinate</Text>
+                                            </>
+                                        )}
                                     </View>
                                 )}
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Title */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Titolo Attività</Text>
-                            <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                <TextInput
-                                    placeholder="es. Distribuzione Pasti"
-                                    value={formData.title}
-                                    onChangeText={(t) => setFormData({ ...formData, title: t })}
-                                    className="flex-1 text-primary font-medium text-base"
-                                />
                             </View>
-                        </View>
 
-                        {/* Category */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
-                            <View className="flex-row flex-wrap gap-2">
-                                {["Sociale", "Ambiente", "Istruzione", "Salute", "Animali"].map(cat => (
+                            {/* Date + Slots row */}
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                {/* Date – tap to open calendar */}
+                                <View style={{ flex: 1.7 }}>
+                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Data</Text>
                                     <TouchableOpacity
-                                        key={cat}
-                                        onPress={() => setFormData({ ...formData, category: cat })}
-                                        className={`px-4 py-2 rounded-full border ${formData.category === cat ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+                                        onPress={() => setShowCalendar(true)}
+                                        activeOpacity={0.8}
+                                        style={{
+                                            backgroundColor: 'white', padding: 16, borderRadius: 16,
+                                            flexDirection: 'row', alignItems: 'center', gap: 10,
+                                            borderWidth: 1, borderColor: formData.date ? Colors.primary + '40' : '#ede9fe',
+                                            shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
+                                        }}
                                     >
-                                        <Text className={`font-bold text-xs ${formData.category === cat ? "text-white" : "text-primary"}`}>{cat}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Skills Selection */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Competenze Richieste (Opzionale)</Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                                {SKILLS.map((skill) => {
-                                    const isSelected = formData.skills.includes(skill.id);
-                                    const SkillIcon = skill.icon;
-                                    return (
-                                        <TouchableOpacity
-                                            key={skill.id}
-                                            onPress={() => {
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    skills: isSelected
-                                                        ? prev.skills.filter(id => id !== skill.id)
-                                                        : [...prev.skills, skill.id]
-                                                }));
-                                            }}
-                                            style={{
-                                                width: '30.5%',
-                                                paddingVertical: 10,
-                                                paddingHorizontal: 4,
-                                                borderRadius: 14,
-                                                borderWidth: 1,
-                                                alignItems: 'center',
-                                                flexDirection: 'row',
-                                                justifyContent: 'center',
-                                                gap: 4,
-                                                backgroundColor: isSelected ? Colors.primary : 'white',
-                                                borderColor: isSelected ? Colors.primary : '#ede9fe',
-                                            }}
-                                        >
-                                            <SkillIcon size={11} color={isSelected ? 'white' : Colors.primary} />
-                                            <Text style={{ fontWeight: '800', fontSize: 10, color: isSelected ? 'white' : Colors.primary }}>{skill.label}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-                        </View>
-
-                        {/* Location */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Indirizzo / Luogo</Text>
-                            <AddressAutocomplete
-                                onSelect={(addr, lat, lng) => {
-                                    setFormData({ ...formData, address: addr, lat, lng });
-                                    setCoordsConfirmed(true);
-                                }}
-                                onChangeText={() => setCoordsConfirmed(false)}
-                                placeholder="Scrivi qui l'indirizzo..."
-                            />
-                            {/* Coordinate status badge */}
-                            {formData.address !== '' && (
-                                <View style={{
-                                    flexDirection: 'row', alignItems: 'center', gap: 6,
-                                    marginTop: 8, paddingHorizontal: 4,
-                                }}>
-                                    {coordsConfirmed ? (
-                                        <>
-                                            <CheckCircle2 size={14} color="#22c55e" />
-                                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#22c55e' }}>Posizione confermata</Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <AlertCircle size={14} color="#f59e0b" />
-                                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#f59e0b' }}>Seleziona un suggerimento per confermare le coordinate</Text>
-                                        </>
-                                    )}
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Date + Slots row */}
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            {/* Date */}
-                            <View style={{ flex: 1.7 }}>
-                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Data (GG-MM-AAAA)</Text>
-                                <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                    <Calendar size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
-                                    <TextInput
-                                        placeholder="GG/MM/AAAA"
-                                        placeholderTextColor="#94a3b8"
-                                        value={formData.date}
-                                        onChangeText={(t) => setFormData({ ...formData, date: t })}
-                                        style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
-                                    />
-                                </View>
-                            </View>
-                            {/* Slots */}
-                            <View style={{ flex: 1 }}>
-                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">N. Volontari</Text>
-                                <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                    <Users size={18} color={Colors.secondary} style={{ marginRight: 6 }} />
-                                    <TextInput
-                                        placeholder="10"
-                                        placeholderTextColor="#94a3b8"
-                                        keyboardType="number-pad"
-                                        maxLength={3}
-                                        value={formData.slots}
-                                        onChangeText={(t) => setFormData({ ...formData, slots: t })}
-                                        style={{ flex: 1, color: Colors.primary, fontWeight: '700', fontSize: 16 }}
-                                    />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Time - aligned to page margins */}
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <View style={{ flex: 1 }}>
-                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Inizio</Text>
-                                <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                    <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
-                                    <TextInput
-                                        placeholder="10:00"
-                                        placeholderTextColor="#94a3b8"
-                                        value={formData.startTime}
-                                        onChangeText={(t) => setFormData({ ...formData, startTime: t })}
-                                        style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
-                                    />
-                                </View>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Fine</Text>
-                                <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                    <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
-                                    <TextInput
-                                        placeholder="12:00"
-                                        placeholderTextColor="#94a3b8"
-                                        value={formData.endTime}
-                                        onChangeText={(t) => setFormData({ ...formData, endTime: t })}
-                                        style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
-                                    />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Recurrence */}
-                        <View className="bg-white p-5 rounded-2xl border border-primary/5">
-                            <View className="flex-row items-center gap-3 mb-3">
-                                <View className="bg-indigo-50 p-2 rounded-xl">
-                                    <RefreshCw size={18} color="#6366f1" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="font-bold text-primary">Ricorrenza</Text>
-                                    <Text className="text-secondary text-[10px]">Il badge appare sulla scheda attività.</Text>
-                                </View>
-                            </View>
-                            <View className="flex-row gap-2">
-                                {(['NONE', 'WEEKLY', 'MONTHLY'] as const).map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt}
-                                        onPress={() => setFormData(prev => ({ ...prev, recurrence: opt }))}
-                                        className={`flex-1 py-2.5 rounded-xl border items-center ${formData.recurrence === opt ? 'bg-primary border-primary' : 'bg-white border-primary/10'
-                                            }`}
-                                    >
-                                        <Text className={`font-bold text-xs ${formData.recurrence === opt ? 'text-white' : 'text-primary'
-                                            }`}>
-                                            {opt === 'NONE' ? 'Nessuna' : opt === 'WEEKLY' ? 'Sett.' : 'Mens.'}
+                                        <Calendar size={18} color={formData.date ? Colors.primary : Colors.secondary} />
+                                        <Text style={{
+                                            flex: 1, fontSize: 14, fontWeight: '600',
+                                            color: formData.date ? Colors.primary : '#94a3b8',
+                                        }}>
+                                            {formData.date
+                                                ? new Date(formData.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' })
+                                                : 'Scegli data'}
                                         </Text>
                                     </TouchableOpacity>
-                                ))}
+                                </View>
+                                {/* Slots */}
+                                <View style={{ flex: 1 }}>
+                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">N. Volontari</Text>
+                                    <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
+                                        <Users size={18} color={Colors.secondary} style={{ marginRight: 6 }} />
+                                        <TextInput
+                                            placeholder="10"
+                                            placeholderTextColor="#94a3b8"
+                                            keyboardType="number-pad"
+                                            maxLength={3}
+                                            value={formData.slots}
+                                            onChangeText={(t) => setFormData({ ...formData, slots: t })}
+                                            style={{ flex: 1, color: Colors.primary, fontWeight: '700', fontSize: 16 }}
+                                        />
+                                    </View>
+                                </View>
                             </View>
-                        </View>
 
-                        {/* Slots section removed — merged into Date+Slots row above */}
+                            {/* Time - aligned to page margins */}
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Inizio</Text>
+                                    <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
+                                        <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
+                                        <TextInput
+                                            placeholder="10:00"
+                                            placeholderTextColor="#94a3b8"
+                                            value={formData.startTime}
+                                            onChangeText={(t) => setFormData({ ...formData, startTime: t })}
+                                            style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
+                                        />
+                                    </View>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Fine</Text>
+                                    <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
+                                        <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
+                                        <TextInput
+                                            placeholder="12:00"
+                                            placeholderTextColor="#94a3b8"
+                                            value={formData.endTime}
+                                            onChangeText={(t) => setFormData({ ...formData, endTime: t })}
+                                            style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
+                                        />
+                                    </View>
+                                </View>
+                            </View>
 
-                        {/* Description */}
-                        <View>
-                            <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Descrizione</Text>
-                            <View className="bg-white p-5 rounded-[28px] shadow-sm border border-primary/5">
-                                <TextInput
-                                    placeholder="Descrivi l'attività, i requisiti e l'impatto..."
-                                    multiline
-                                    numberOfLines={5}
-                                    textAlignVertical="top"
-                                    value={formData.description}
-                                    onChangeText={(t) => setFormData({ ...formData, description: t })}
-                                    className="text-primary font-medium text-base min-h-[100px]"
+                            {/* Recurrence */}
+                            <View className="bg-white p-5 rounded-2xl border border-primary/5">
+                                <View className="flex-row items-center gap-3 mb-3">
+                                    <View className="bg-indigo-50 p-2 rounded-xl">
+                                        <RefreshCw size={18} color="#6366f1" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="font-bold text-primary">Ricorrenza</Text>
+                                        <Text className="text-secondary text-[10px]">Il badge appare sulla scheda attività.</Text>
+                                    </View>
+                                </View>
+                                <View className="flex-row gap-2">
+                                    {(['NONE', 'WEEKLY', 'MONTHLY'] as const).map((opt) => (
+                                        <TouchableOpacity
+                                            key={opt}
+                                            onPress={() => setFormData(prev => ({ ...prev, recurrence: opt }))}
+                                            className={`flex-1 py-2.5 rounded-xl border items-center ${formData.recurrence === opt ? 'bg-primary border-primary' : 'bg-white border-primary/10'
+                                                }`}
+                                        >
+                                            <Text className={`font-bold text-xs ${formData.recurrence === opt ? 'text-white' : 'text-primary'
+                                                }`}>
+                                                {opt === 'NONE' ? 'Nessuna' : opt === 'WEEKLY' ? 'Sett.' : 'Mens.'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Slots section removed — merged into Date+Slots row above */}
+
+                            {/* Description */}
+                            <View>
+                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Descrizione</Text>
+                                <View className="bg-white p-5 rounded-[28px] shadow-sm border border-primary/5">
+                                    <TextInput
+                                        placeholder="Descrivi l'attività, i requisiti e l'impatto..."
+                                        multiline
+                                        numberOfLines={5}
+                                        textAlignVertical="top"
+                                        value={formData.description}
+                                        onChangeText={(t) => setFormData({ ...formData, description: t })}
+                                        className="text-primary font-medium text-base min-h-[100px]"
+                                    />
+                                </View>
+                            </View>
+
+
+                            {/* Urgent Toggle */}
+                            <View className="flex-row items-center justify-between bg-white p-5 rounded-2xl border border-primary/5">
+                                <View className="flex-row items-center gap-3">
+                                    <View className="bg-red-50 p-2 rounded-xl">
+                                        <Send size={20} color="#ef4444" />
+                                    </View>
+                                    <View>
+                                        <Text className="font-bold text-primary">Segnala come Urgente</Text>
+                                        <Text className="text-secondary text-[10px]">L&apos;attività avrà priorità nel match.</Text>
+                                    </View>
+                                </View>
+                                <Switch
+                                    value={formData.isUrgent}
+                                    onValueChange={(v) => {
+                                        if (v && urgentCount >= 3) {
+                                            showToast('error', "Puoi avere al massimo 3 attività urgenti contemporaneamente.");
+                                            return;
+                                        }
+                                        setFormData({ ...formData, isUrgent: v });
+                                    }}
+                                    trackColor={{ false: "#e2e8f0", true: Colors.accent }}
                                 />
                             </View>
+
+                            <TouchableOpacity
+                                onPress={handleCreate}
+                                className="bg-accent py-5 rounded-[24px] shadow-xl shadow-accent/40 items-center justify-center flex-row gap-3 mt-4"
+                            >
+                                <Text className="text-white font-black text-lg">Pubblica Attività</Text>
+                                <Send size={20} color="white" />
+                            </TouchableOpacity>
                         </View>
-
-
-                        {/* Urgent Toggle */}
-                        <View className="flex-row items-center justify-between bg-white p-5 rounded-2xl border border-primary/5">
-                            <View className="flex-row items-center gap-3">
-                                <View className="bg-red-50 p-2 rounded-xl">
-                                    <Send size={20} color="#ef4444" />
-                                </View>
-                                <View>
-                                    <Text className="font-bold text-primary">Segnala come Urgente</Text>
-                                    <Text className="text-secondary text-[10px]">L&apos;attività avrà priorità nel match.</Text>
-                                </View>
-                            </View>
-                            <Switch
-                                value={formData.isUrgent}
-                                onValueChange={(v) => {
-                                    if (v && urgentCount >= 3) {
-                                        showToast('error', "Puoi avere al massimo 3 attività urgenti contemporaneamente.");
-                                        return;
-                                    }
-                                    setFormData({ ...formData, isUrgent: v });
-                                }}
-                                trackColor={{ false: "#e2e8f0", true: Colors.accent }}
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            onPress={handleCreate}
-                            className="bg-accent py-5 rounded-[24px] shadow-xl shadow-accent/40 items-center justify-center flex-row gap-3 mt-4"
-                        >
-                            <Text className="text-white font-black text-lg">Pubblica Attività</Text>
-                            <Send size={20} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                </StandardLayout>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    </StandardLayout>
+                </ScrollView>
+            </KeyboardAvoidingView>
+            <CalendarPicker
+                visible={showCalendar}
+                value={formData.date}
+                onSelect={(d) => setFormData(prev => ({ ...prev, date: d }))}
+                onClose={() => setShowCalendar(false)}
+            />
+        </>
     );
 }
