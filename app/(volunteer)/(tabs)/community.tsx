@@ -214,7 +214,7 @@ export default function CommunityScreen() {
                     renderItem={renderItem}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 100 }}
-                    ListHeaderComponent={<StoriesRow posts={posts} onStoryPress={setStoryPost} />}
+                    ListHeaderComponent={<StoriesRow posts={posts} isNPO={isNPO} onAddStory={() => router.push('/community/create-post' as any)} onStoryPress={setStoryPost} />}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>

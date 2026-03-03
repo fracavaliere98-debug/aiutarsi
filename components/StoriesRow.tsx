@@ -6,10 +6,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 interface StoriesRowProps {
     posts: CommunityPost[];
+    isNPO?: boolean;
+    onAddStory?: () => void;
     onStoryPress?: (post: CommunityPost) => void;
 }
 
-export function StoriesRow({ posts, onStoryPress }: StoriesRowProps) {
+export function StoriesRow({ posts, isNPO, onAddStory, onStoryPress }: StoriesRowProps) {
     // Show most recent post per NPO from last 24h
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
     const recentByNpo = new Map<string, CommunityPost>();
@@ -29,6 +31,26 @@ export function StoriesRow({ posts, onStoryPress }: StoriesRowProps) {
                 Storie di Impatto
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }}>
+                {/* Add Story bubble – NPO only */}
+                {isNPO && (
+                    <TouchableOpacity
+                        onPress={onAddStory}
+                        activeOpacity={0.8}
+                        style={{ alignItems: 'center', width: 72 }}
+                    >
+                        <View style={{
+                            width: 72, height: 72, borderRadius: 36,
+                            backgroundColor: '#f1f5f9',
+                            borderWidth: 2, borderColor: '#e2e8f0',
+                            borderStyle: 'dashed',
+                            alignItems: 'center', justifyContent: 'center',
+                            marginBottom: 6,
+                        }}>
+                            <Text style={{ fontSize: 28, color: Colors.primary, lineHeight: 32 }}>+</Text>
+                        </View>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, textAlign: 'center' }}>La tua storia</Text>
+                    </TouchableOpacity>
+                )}
                 {stories.map(post => {
                     const isLive = post.linked_activity?.status === 'IN_CORSO';
                     const name = post.author?.npo_name || post.author?.name || 'NPO';

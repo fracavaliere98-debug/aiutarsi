@@ -58,7 +58,7 @@ export default function NPOTabsLayout() {
                         </View>
                     ),
                     tabBarLabel: () => (
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: Colors.primary, marginTop: -2 }}>Community</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
                     ),
                 }}
             />

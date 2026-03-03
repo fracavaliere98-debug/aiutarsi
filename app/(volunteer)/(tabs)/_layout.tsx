@@ -69,7 +69,7 @@ export default function VolunteerTabsLayout() {
                         </View>
                     ),
                     tabBarLabel: () => (
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: -2 }}>Community</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
                     ),
                 }}
             />
