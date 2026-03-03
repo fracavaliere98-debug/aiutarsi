@@ -109,22 +109,31 @@ export default function ChatDetailScreen() {
         }
     };
 
+    // Merge without duplicates, sorted newest-first (FlatList is inverted)
+    const mergeMessages = (prev: any[], incoming: any[]): any[] => {
+        const map = new Map<string, any>();
+        for (const m of prev) map.set(m.id, m);
+        for (const m of incoming) map.set(m.id, m); // incoming wins (fresher profile data)
+        return Array.from(map.values()).sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    };
+
     const handleSend = async () => {
         if (!inputText.trim()) return;
         const text = inputText.trim();
         setInputText(''); // Optimistically clear
         try {
             const newMsg = await ChatService.sendMessage(id as string, user!.id, text);
-            // Optimistically add to local state
-            setMessages(prev => [newMsg, ...prev]);
+            // Merge into state — realtime will also deliver this, mergeMessages handles the dedup
+            setMessages(prev => mergeMessages(prev, [newMsg]));
         } catch (e) {
             if (e instanceof ChatFilterError) {
-                // Restore the text so the user can edit rather than lose it
                 setInputText(text);
                 showToast('warning', e.message);
             } else {
                 console.error('Send error', e);
-                setInputText(text); // Restore on generic errors too
+                setInputText(text);
                 showToast('error', 'Errore durante l\'invio del messaggio.');
             }
         }
@@ -135,8 +144,8 @@ export default function ChatDetailScreen() {
         const conv = await ChatService.getConversationDetails(id as string);
         setConversation(conv);
         const msgs = await ChatService.getMessages(id as string);
-        setMessages(msgs);
-        // Mark as read
+        // Merge instead of replacing, so optimistic messages aren't duplicated
+        setMessages(prev => mergeMessages(prev, msgs));
         if (user?.id) {
             ChatService.markAsRead(id as string, user.id).catch(() => { });
         }
@@ -153,25 +162,25 @@ export default function ChatDetailScreen() {
                 table: 'messages',
                 filter: `conversation_id=eq.${id}`
             }, (payload) => {
-                // Add to top of inverted list, then fetch fresh profile info
                 supabase
                     .from('messages')
                     .select('*, profiles:sender_id (name:full_name, avatar:avatar_url)')
                     .eq('id', payload.new.id)
                     .single()
                     .then(({ data }) => {
-                        if (data) setMessages(prev => {
-                            // avoid duplicates (optimistic insert)
-                            if (prev.find(m => m.id === data.id)) return prev;
-                            return [data, ...prev];
-                        });
+                        if (data) setMessages(prev => mergeMessages(prev, [data]));
                     });
             })
             .subscribe();
 
-        // Poll online status every 30s
+        // Poll online status every 30s (does NOT re-fetch messages to avoid duplicates)
         const timer = setInterval(() => {
-            loadData();
+            // Only refresh conversation metadata (online status, etc.), not messages
+            if (id) {
+                ChatService.getConversationDetails(id as string)
+                    .then(conv => setConversation(conv))
+                    .catch(() => { });
+            }
         }, 30000);
 
         return () => {

@@ -12,6 +12,7 @@ import { GamificationProvider } from "../context/GamificationContext";
 import { ToastProvider } from "../context/ToastContext";
 import { SmartMatchProvider } from "../context/SmartMatchContext";
 import { ChatProvider } from "../context/ChatContext";
+import { CommunityProvider } from "../context/CommunityContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -193,6 +194,7 @@ function RootLayoutNav() {
       <Stack.Screen name="activity/[id]" />
       <Stack.Screen name="feedback/[id]" />
       <Stack.Screen name="npo-profile/[id]" />
+      <Stack.Screen name="community/create-post" />
     </Stack>
   );
 }
@@ -226,10 +228,12 @@ export default function RootLayout() {
                 <SmartMatchProvider>
                   <ApplicationProvider>
                     <ChatProvider>
-                      <StatusBar style="dark" />
-                      <RootLayoutNav />
-                      <ToastContainer />
-                      <LevelUpOverlay />
+                      <CommunityProvider>
+                        <StatusBar style="dark" />
+                        <RootLayoutNav />
+                        <ToastContainer />
+                        <LevelUpOverlay />
+                      </CommunityProvider>
                     </ChatProvider>
                   </ApplicationProvider>
                 </SmartMatchProvider>

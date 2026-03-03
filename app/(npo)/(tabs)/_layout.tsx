@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, Users, Calendar, Settings } from "lucide-react-native";
+import { LayoutDashboard, Users, Calendar, Settings, Globe } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
+import { View, Text } from "react-native";
 
 export default function NPOTabsLayout() {
     return (
@@ -35,6 +36,30 @@ export default function NPOTabsLayout() {
                 options={{
                     title: "Volontari",
                     tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+                }}
+            />
+            {/* Community – raised center button */}
+            <Tabs.Screen
+                name="community"
+                options={{
+                    title: "Community",
+                    tabBarIcon: ({ focused }) => (
+                        <View style={{
+                            width: 52, height: 52, borderRadius: 26,
+                            backgroundColor: Colors.primary,
+                            alignItems: 'center', justifyContent: 'center',
+                            marginTop: -20,
+                            shadowColor: Colors.primary,
+                            shadowOpacity: 0.35,
+                            shadowRadius: 10,
+                            elevation: 8,
+                        }}>
+                            <Globe size={22} color="white" />
+                        </View>
+                    ),
+                    tabBarLabel: () => (
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: Colors.primary, marginTop: -2 }}>Community</Text>
+                    ),
                 }}
             />
             <Tabs.Screen
