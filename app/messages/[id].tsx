@@ -5,15 +5,17 @@ import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Papercli
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
-import ChatService from '../../services/ChatService';
+import ChatService, { ChatFilterError } from '../../services/ChatService';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabase';
 import * as DocumentPicker from 'expo-document-picker';
+import { useToast } from '../../context/ToastContext';
 
 export default function ChatDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth();
+    const { showToast } = useToast();
 
     const [conversation, setConversation] = useState<any>(null);
     const [messages, setMessages] = useState<any[]>([]);
@@ -110,13 +112,21 @@ export default function ChatDetailScreen() {
     const handleSend = async () => {
         if (!inputText.trim()) return;
         const text = inputText.trim();
-        setInputText('');
+        setInputText(''); // Optimistically clear
         try {
             const newMsg = await ChatService.sendMessage(id as string, user!.id, text);
             // Optimistically add to local state
             setMessages(prev => [newMsg, ...prev]);
         } catch (e) {
-            console.error('Send error', e);
+            if (e instanceof ChatFilterError) {
+                // Restore the text so the user can edit rather than lose it
+                setInputText(text);
+                showToast('warning', e.message);
+            } else {
+                console.error('Send error', e);
+                setInputText(text); // Restore on generic errors too
+                showToast('error', 'Errore durante l\'invio del messaggio.');
+            }
         }
     };
 

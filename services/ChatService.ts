@@ -1,5 +1,14 @@
 import { supabase } from '../utils/supabase';
 import { Conversation, Message, ConversationParticipant, MessageMetadata } from '../types/chat';
+import { filterMessage, recordMessageSent, getFilterErrorMessage } from '../utils/chatFilter';
+
+/** Thrown when a message is blocked by the content filter */
+export class ChatFilterError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ChatFilterError';
+    }
+}
 
 class ChatService {
     /**
@@ -136,9 +145,38 @@ class ChatService {
     }
 
     /**
-     * Send a message and update the conversation's last_message metadata
+     * Send a message, running content filter checks first.
+     * Throws ChatFilterError if blocked by spam/banned-word filter.
      */
     async sendMessage(conversationId: string, senderId: string, content: string, metadata: MessageMetadata = {}) {
+        // ── Layer 1: Client-side filter (instant, no network) ──────────────
+        const clientResult = filterMessage(content);
+        if (clientResult.blocked) {
+            throw new ChatFilterError(getFilterErrorMessage(clientResult));
+        }
+
+        // ── Layer 2: Server-side Edge Function (authoritative) ─────────────
+        try {
+            const { data: fnData, error: fnError } = await supabase.functions.invoke('chat-filter', {
+                body: { message: content, userId: senderId },
+            });
+            if (!fnError && fnData && fnData.allowed === false) {
+                const reasonMap: Record<string, string> = {
+                    rate_limit: '🕐 Stai scrivendo troppo velocemente. Aspetta qualche secondo.',
+                    banned_word: '⛔ Messaggio non consentito: contiene parole inappropriate.',
+                    spam_url: '🔗 I link non sono consentiti in questa chat.',
+                    spam_pattern: '⚠️ Messaggio bloccato: rilevato contenuto spam.',
+                    missing_fields: '⛔ Messaggio non valido.',
+                };
+                throw new ChatFilterError(reasonMap[fnData.reason] ?? '⛔ Messaggio non inviato.');
+            }
+        } catch (e) {
+            // Re-throw only ChatFilterErrors; network/server errors are fail-open
+            if (e instanceof ChatFilterError) throw e;
+            console.warn('chat-filter edge function unavailable, continuing:', e);
+        }
+
+        // ── Insert message ────────────────────────────────────────────────
         const { data, error } = await supabase
             .from('messages')
             .insert({
@@ -152,7 +190,10 @@ class ChatService {
 
         if (error) throw error;
 
-        // Update the conversation's last_message fields so the preview is always fresh
+        // Record successful send for rate-limit window
+        recordMessageSent();
+
+        // Update conversation preview
         await supabase
             .from('conversations')
             .update({

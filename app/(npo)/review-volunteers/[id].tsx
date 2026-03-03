@@ -140,7 +140,7 @@ export default function ReviewVolunteersScreen() {
         >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                className="flex-1"
+                style={{ flex: 1 }}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
             >
                 <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>

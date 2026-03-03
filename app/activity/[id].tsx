@@ -14,7 +14,7 @@ import { Activity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
-    RefreshCw, ChevronRight, Users, Star, CheckCircle2, Zap, FileText
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2, Zap, FileText, MessageSquare
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -236,7 +236,7 @@ export default function ActivityDetail() {
                 <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
 
                     {/* Badges row: category + recurrence */}
-                    <Animated.View entering={FadeInDown.delay(100).springify()} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    <Animated.View entering={FadeInDown.delay(100).springify()} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
                         {activity.category && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
                                 <Star size={12} color="white" fill="white" />
@@ -334,7 +334,6 @@ export default function ActivityDetail() {
                     {activity.skills && activity.skills.length > 0 && (
                         <Animated.View entering={FadeInDown.delay(280).springify()} style={{ marginBottom: 24 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <Zap size={18} color={Colors.primary} fill={Colors.primary} />
                                 <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Competenze Richieste</Text>
                             </View>
                             {/* Auto-sizing chips that wrap naturally */}
@@ -360,10 +359,7 @@ export default function ActivityDetail() {
 
                     {/* Description */}
                     <Animated.View entering={FadeInDown.delay(340).springify()} style={{ marginBottom: 28 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                            <FileText size={18} color={Colors.primary} />
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Descrizione Attività</Text>
-                        </View>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>Descrizione Attività</Text>
                         <Text style={{ fontSize: 15, color: '#475569', lineHeight: 24 }}>{activity.description}</Text>
                     </Animated.View>
 
@@ -428,6 +424,152 @@ export default function ActivityDetail() {
                             })}
                         </Animated.View>
                     )}
+                    {/* ── Community Reviews ─────────────────────────────── */}
+                    <Animated.View entering={FadeInDown.delay(500).springify()} style={{ marginBottom: 20 }}>
+                        {(() => {
+                            // Collect reviews: direct match, or same-title+NPO for recurring
+                            const directReviews = reviews.filter(r => r.activityId === activity.id);
+                            const allRelevantReviews = activity.recurrence && activity.recurrence !== 'NONE'
+                                ? reviews.filter(r => {
+                                    const a = activities.find(act => act.id === r.activityId);
+                                    return a && a.npoId === activity.npoId && a.title === activity.title;
+                                })
+                                : directReviews;
+
+                            const last5 = [...allRelevantReviews]
+                                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                .slice(0, 5);
+
+                            const avgStars = last5.length > 0
+                                ? (last5.reduce((sum, r) => sum + r.stars, 0) / last5.length)
+                                : null;
+
+                            return (
+                                <>
+                                    {/* Section header */}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Cosa ne pensa la Community</Text>
+                                        {avgStars !== null && (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#fde68a' }}>
+                                                <Star size={13} color="#f59e0b" fill="#f59e0b" />
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400e' }}>
+                                                    {avgStars.toFixed(1)} / 5
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {last5.length === 0 ? (
+                                        /* No reviews yet – CTA to NPO profile */
+                                        <TouchableOpacity
+                                            onPress={() => router.push(`/npo-profile/${activity.npoId}?tab=recensioni` as any)}
+                                            activeOpacity={0.8}
+                                            style={{
+                                                backgroundColor: '#f8fafc',
+                                                borderRadius: 20, padding: 20,
+                                                borderWidth: 1, borderColor: '#e2e8f0',
+                                                borderStyle: 'dashed',
+                                                alignItems: 'center', gap: 10
+                                            }}
+                                        >
+                                            <MessageSquare size={32} color="#cbd5e1" />
+                                            <Text style={{ fontSize: 14, fontWeight: '700', color: '#64748b', textAlign: 'center' }}>
+                                                {activity.recurrence && activity.recurrence !== 'NONE'
+                                                    ? "Questa è la prima occorrenza dell'attività, ancora nessuna recensione."
+                                                    : "Questa attività non è ancora stata recensita."}
+                                            </Text>
+                                            <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>Leggi le recensioni generali della NPO organizzatrice</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.accent }}>Vedi recensioni NPO</Text>
+                                                <ChevronRight size={14} color={Colors.accent} />
+                                            </View>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <>
+                                            {/* Horizontal review cards */}
+                                            <ScrollView
+                                                horizontal
+                                                showsHorizontalScrollIndicator={false}
+                                                contentContainerStyle={{ paddingBottom: 8, gap: 12 }}
+                                                style={{ marginHorizontal: -20 }}
+                                                contentInset={{ left: 20, right: 20 }}
+                                                contentOffset={{ x: -20, y: 0 }}
+                                            >
+                                                <View style={{ width: 20 }} />
+                                                {last5.map(review => {
+                                                    const reviewer = users.find(u => u.id === review.volunteerId);
+                                                    return (
+                                                        <View
+                                                            key={review.id}
+                                                            style={{
+                                                                width: SCREEN_W * 0.78,
+                                                                backgroundColor: 'white',
+                                                                borderRadius: 20,
+                                                                padding: 18,
+                                                                borderWidth: 1,
+                                                                borderColor: '#e2e8f0',
+                                                                shadowColor: '#000',
+                                                                shadowOpacity: 0.04,
+                                                                shadowRadius: 8,
+                                                                elevation: 2,
+                                                            }}
+                                                        >
+                                                            {/* Reviewer info */}
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                                                                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                                                    {reviewer?.avatar
+                                                                        ? <Image source={{ uri: reviewer.avatar }} style={{ width: 38, height: 38, borderRadius: 19 }} />
+                                                                        : <Users size={18} color={Colors.primary} />
+                                                                    }
+                                                                </View>
+                                                                <View style={{ flex: 1 }}>
+                                                                    <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>
+                                                                        {reviewer?.name || 'Volontario'}
+                                                                    </Text>
+                                                                    <Text style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600', letterSpacing: 0.3 }}>Volontario</Text>
+                                                                </View>
+                                                                {/* Stars */}
+                                                                <View style={{ flexDirection: 'row', gap: 2 }}>
+                                                                    {[1, 2, 3, 4, 5].map(i => (
+                                                                        <Star key={i} size={13}
+                                                                            color={i <= review.stars ? '#f59e0b' : '#e2e8f0'}
+                                                                            fill={i <= review.stars ? '#f59e0b' : '#e2e8f0'}
+                                                                        />
+                                                                    ))}
+                                                                </View>
+                                                            </View>
+                                                            {/* Comment */}
+                                                            <Text style={{ fontSize: 14, color: '#475569', lineHeight: 21, fontStyle: 'italic', marginBottom: 12 }}
+                                                                numberOfLines={4}
+                                                            >
+                                                                &quot;{review.comment}&quot;
+                                                            </Text>
+                                                            {/* Date */}
+                                                            <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>
+                                                                {new Date(review.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                            </Text>
+                                                        </View>
+                                                    );
+                                                })}
+                                                <View style={{ width: 20 }} />
+                                            </ScrollView>
+
+                                            {/* Link to NPO full reviews */}
+                                            <TouchableOpacity
+                                                onPress={() => router.push(`/npo-profile/${activity.npoId}?tab=recensioni` as any)}
+                                                activeOpacity={0.7}
+                                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 14 }}
+                                            >
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.accent }}>Tutte le recensioni della NPO</Text>
+                                                <ChevronRight size={15} color={Colors.accent} />
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
+                                </>
+                            );
+                        })()}
+                    </Animated.View>
+
                 </View>
             </ScrollView>
 
@@ -478,13 +620,19 @@ export default function ActivityDetail() {
 
                 {/* CTA Button */}
                 {isOwner ? (
-                    <TouchableOpacity
-                        onPress={() => router.push(`/(npo)/review-volunteers/${activity.id}` as any)}
-                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 24, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                    >
-                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Gestisci</Text>
-                        <ChevronRight size={18} color="white" />
-                    </TouchableOpacity>
+                    activity.status === 'COMPLETATA' ? (
+                        <TouchableOpacity
+                            onPress={() => router.push(`/(npo)/review-volunteers/${activity.id}` as any)}
+                            style={{ backgroundColor: Colors.accent, paddingHorizontal: 24, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Gestisci</Text>
+                            <ChevronRight size={18} color="white" />
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 28, alignItems: 'center' }}>
+                            <Text style={{ color: '#94a3b8', fontWeight: '700', fontSize: 13 }}>Disponibile a fine attività</Text>
+                        </View>
+                    )
                 ) : isOtherNPO ? (
                     <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28 }}>
                         <Text style={{ color: '#94a3b8', fontWeight: '700', fontSize: 15 }}>Solo volontari</Text>
