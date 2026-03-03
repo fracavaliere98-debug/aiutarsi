@@ -1,5 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, Platform, ActivityIndicator, Share, ScrollView } from "react-native";
+import {
+    View, Text, TouchableOpacity, Image, ScrollView,
+    Share, Platform, Dimensions, ActivityIndicator, Linking
+} from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
@@ -10,37 +13,64 @@ import { activityService } from "../../services/ActivityService";
 import { Activity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
-    ArrowLeft, Share2, CheckCircle2, Pencil,
-    Users, Star, Tag, MapPin, Phone, Calendar, Clock, Map as MapIcon, ChevronRight
+    ArrowLeft, Share2, Pencil, MapPin, Calendar,
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
-import ParallaxScrollView from "../../components/ui/ParallaxScrollView";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { supabase } from "../../utils/supabase";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// Conditional import for react-native-maps to prevent web bundling errors
-let MapView: any, Marker: any, PROVIDER_GOOGLE: any;
-if (Platform.OS !== 'web') {
-    const Maps = require('react-native-maps');
-    MapView = Maps.default;
-    Marker = Maps.Marker;
-    PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-}
+// Conditional import for map opening
+const openMapsUrl = (lat: number, lng: number, label?: string) => {
+    const encoded = encodeURIComponent(label || '');
+    const url = Platform.OS === 'ios'
+        ? `maps:?q=${encoded}&ll=${lat},${lng}`
+        : `geo:${lat},${lng}?q=${lat},${lng}(${encoded})`;
+    Linking.openURL(url).catch(() => {
+        // Fallback to Google Maps
+        Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`);
+    });
+};
 
-const { width } = Dimensions.get('window');
-const isOldAndroid = Platform.OS === 'android' && (typeof Platform.Version === 'number' ? Platform.Version < 29 : parseInt(String(Platform.Version), 10) < 29);
+const { width: SCREEN_W } = Dimensions.get('window');
 
-const SKILLS_MAP: Record<string, string> = {
-    "comms": "Comunicazione",
-    "tech": "Informatica",
-    "medical": "Primo Soccorso",
-    "creative": "Creatività",
-    "planning": "Organizzazione",
-    "data": "Analisi Dati",
-    "manual": "Lavoro Manuale",
-    "photo": "Fotografia"
+const SKILLS_LABELS: Record<string, string> = {
+    comms: "Comunicazione",
+    tech: "Informatica",
+    medical: "Primo Soccorso",
+    creative: "Creatività",
+    planning: "Organizzazione",
+    data: "Analisi Dati",
+    manual: "Lavoro Manuale",
+    photo: "Fotografia",
+    empathy: "Empatia",
+    logistics: "Logistica",
+    teamwork: "Lavoro di squadra",
+};
+
+// Human-readable recurrence label derived from the start date
+const getRecurrenceLabel = (recurrence: string | undefined, dateTime: string | undefined): string | null => {
+    if (!recurrence || recurrence === 'NONE' || !dateTime) return null;
+    const d = new Date(dateTime);
+    if (recurrence === 'WEEKLY') {
+        const dayName = d.toLocaleDateString('it-IT', { weekday: 'long' });
+        return `OGNI ${dayName.toUpperCase()}`;
+    }
+    if (recurrence === 'MONTHLY') {
+        const day = d.getDate();
+        return `OGNI ${day} DEL MESE`;
+    }
+    return null;
+};
+
+const STATUS_CONFIG = {
+    APERTA: { label: 'Aperta', bg: '#dcfce7', text: '#16a34a', dot: '#16a34a' },
+    IN_CORSO: { label: 'In Corso', bg: '#fef9c3', text: '#ca8a04', dot: '#ca8a04' },
+    COMPLETATA: { label: 'Completata', bg: '#f1f5f9', text: '#64748b', dot: '#94a3b8' },
+    CANCELLATA: { label: 'Cancellata', bg: '#fee2e2', text: '#dc2626', dot: '#dc2626' },
 };
 
 export default function ActivityDetail() {
@@ -49,82 +79,56 @@ export default function ActivityDetail() {
     const { user, users } = useAuth();
     const { showToast } = useToast();
     const {
-        activities,
-        reviews,
-        unenrollFromActivity,
-        error,
-        loadData,
-        activityApplications,
-        volunteerReviews
+        activities, reviews, unenrollFromActivity, error, loadData,
+        activityApplications, volunteerReviews
     } = useActivities();
     const { handleActivityShare } = useGamification();
-    const [debugLogs, setDebugLogs] = useState<string[]>(["Mounting ActivityDetail..."]);
-
-    const addLog = useCallback((msg: string) => {
-        console.log(`[DEBUG] ${msg}`);
-        setDebugLogs(prev => [...prev.slice(-14), `${new Date().toLocaleTimeString()} - ${msg}`]);
-    }, []);
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
 
     const [fetchedActivity, setFetchedActivity] = useState<Activity | null>(null);
     const [fetchLoading, setFetchLoading] = useState(false);
+    const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
 
     useEffect(() => {
         if (!activityFromContext && activityId) {
-            addLog(`Fetching activity ${activityId} from DB...`);
             setFetchLoading(true);
             activityService.getActivityById(activityId)
-                .then(act => {
-                    addLog(act ? `Activity fetched successfully: ${act.title}` : `Activity NOT found in DB`);
-                    setFetchedActivity(act);
-                    setFetchLoading(false);
-                })
-                .catch(err => {
-                    addLog(`FETCH ERROR: ${err.message}`);
-                    setFetchLoading(false);
-                });
-        } else if (activityFromContext) {
-            addLog(`Activity found in context: ${activityFromContext.title}`);
+                .then(act => { setFetchedActivity(act); setFetchLoading(false); })
+                .catch(() => setFetchLoading(false));
         }
-    }, [activityId, activityFromContext, addLog]);
+    }, [activityId, activityFromContext]);
 
     const activity = activityFromContext ?? fetchedActivity;
-    const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
 
     useEffect(() => {
         if (!activity) return;
         const channel = supabase
-            .channel(`activity_changes_${activity.id}`)
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'activities', filter: `id=eq.${activity.id}` },
-                () => { setLocalIscrittiOverride(null); }
-            )
+            .channel(`activity_detail_${activity.id}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities', filter: `id=eq.${activity.id}` },
+                () => setLocalIscrittiOverride(null))
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [activity?.id]);
 
-    useFocusEffect(
-        useCallback(() => {
-            setLocalIscrittiOverride(null);
-        }, [])
-    );
+    useFocusEffect(useCallback(() => { setLocalIscrittiOverride(null); }, []));
 
     const isOwner = useMemo(() => {
         if (!user || user.role !== "NPO" || !activity) return false;
         return user.id.trim() === activity.npoId.trim();
     }, [user, activity]);
 
+    const isOtherNPO = user?.role === 'NPO' && !isOwner;
+
     const currentIscritti = localIscrittiOverride ?? activity?.iscritti ?? [];
     const isEnrolled = !!user && currentIscritti.includes(user.id);
+    const isFull = activity ? currentIscritti.length >= activity.slots : false;
+
     const npoUser = useMemo(() => {
         if (!activity?.npoId) return null;
         return users.find(u => u.id === activity.npoId);
     }, [users, activity?.npoId]);
-
-    const isFull = activity ? currentIscritti.length >= activity.slots : false;
 
     const currentUserApplication = useMemo(() => {
         if (!user || !activity) return null;
@@ -133,339 +137,403 @@ export default function ActivityDetail() {
 
     const isPending = currentUserApplication?.status === "PENDING";
 
+    const hasReviewed = !!user && !!activity &&
+        reviews.some(r => r.activityId === activityId && r.volunteerId === user.id);
+
     const daysSinceEnd = useMemo(() => {
-        if (!activity || !activity.endDateTime) return 0;
-        const end = new Date(activity.endDateTime).getTime();
-        const now = new Date().getTime();
-        return Math.floor((now - end) / (1000 * 3600 * 24));
+        if (!activity?.endDateTime) return 0;
+        return Math.floor((Date.now() - new Date(activity.endDateTime).getTime()) / 86400000);
     }, [activity?.endDateTime]);
 
-    const canNPOReview = isOwner && activity?.status === "COMPLETATA" && daysSinceEnd <= 10;
-    const hasReviewed = !!user && !!activity && reviews.some(r => r.activityId === activityId && r.volunteerId === user.id);
+    const canLeaveReview = user?.role === 'VOLUNTEER' && isEnrolled &&
+        activity?.status === 'COMPLETATA' && !hasReviewed && daysSinceEnd <= 10;
 
-    const pendingReviewsCount = useMemo(() => {
-        if (!activity || !isOwner) return 0;
-        const currentReviews = volunteerReviews.filter(r => r.activityId === activity.id);
-        const reviewedVolunteerIds = new Set(currentReviews.map(r => r.volunteerId));
-        return currentIscritti.filter(volId => !reviewedVolunteerIds.has(volId)).length;
-    }, [activity?.id, isOwner, volunteerReviews, currentIscritti]);
-
+    // ─── Share ──────────────────────────────────────────────────────────────
     const handleShare = async () => {
         if (!activity) return;
         try {
-            const result = await Share.share({
-                message: `Partecipa a questa attività di volontariato: ${activity.title}\nScarica AiutarSi!`,
-                url: `https://aiutarsi.app/activity/${activity.id}`,
+            await Share.share({
+                title: activity.title,
+                message: `👐 ${activity.title}\nPartecipa a questa attività su AiutarSi!\nhttps://aiutarsi.app/activity/${activity.id}`,
+                url: `https://aiutarsi.app/activity/${activity.id}`, // iOS only
             });
-            if (result.action === Share.sharedAction) {
-                handleActivityShare(activity.id);
-            }
-        } catch (error) {
-            console.error("Error sharing activity:", error);
-        }
+            handleActivityShare(activity.id);
+        } catch (e) { /* user cancelled */ }
     };
 
-    const renderContent = () => (
-        <View>
-            {/* Title - Only in Parallax View, in Safe Mode it's rendered outside */}
-            {!isOldAndroid && (
-                <Animated.View entering={FadeInDown.delay(100).springify()}>
-                    <Text className="text-[28px] font-black text-primary leading-tight mb-2 text-center">{activity?.title}</Text>
-                </Animated.View>
-            )}
+    // ─── Computed display values ─────────────────────────────────────────────
+    const statusCfg = STATUS_CONFIG[activity?.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.APERTA;
+    const recurrenceLabel = getRecurrenceLabel(activity?.recurrence, activity?.dateTime);
 
-            {/* Organizer Card */}
-            <View style={isOldAndroid ? { alignItems: 'center', marginVertical: 10 } : undefined}>
-                <Animated.View
-                    entering={isOldAndroid ? undefined : FadeInDown.delay(200).springify()}
-                    className={isOldAndroid ? "" : "items-center mt-2 mb-2"}
-                >
-                    <TouchableOpacity
-                        onPress={() => isOwner ? router.push('/(npo)/(tabs)/profile') : router.push(`/npo-profile/${activity?.npoId}` as any)}
-                        activeOpacity={0.7}
-                        className="flex-row items-center gap-3"
-                    >
-                        <Image
-                            source={{ uri: npoUser?.avatar || (activity?.npoId ? `https://ui-avatars.com/api/?name=${activity?.npoName}` : "https://ui-avatars.com/api/?name=NPO") }}
-                            className="w-10 h-10 rounded-full border-2 border-white"
-                        />
-                        <View className="flex-row items-center justify-center gap-1">
-                            <Text className="text-base font-black text-primary text-center">
-                                {npoUser?.npoName || npoUser?.name || activity?.npoName || "Ente Solidale"}
-                            </Text>
-                            <CheckCircle2 size={14} color={Colors.accent} fill={Colors.accent} />
-                        </View>
-                        <ChevronRight size={16} color={Colors.primary} className="ml-1" />
-                    </TouchableOpacity>
-                </Animated.View>
-            </View>
+    const formattedDateRange = useMemo(() => {
+        if (!activity?.dateTime) return '—';
+        const start = new Date(activity.dateTime);
+        const dateStr = start.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+        const startTime = start.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        const endTime = activity.endDateTime
+            ? new Date(activity.endDateTime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+            : null;
+        const capitalized = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+        return endTime ? `${capitalized}, ${startTime} – ${endTime}` : `${capitalized}, ${startTime}`;
+    }, [activity?.dateTime, activity?.endDateTime]);
 
-            {/* 3-Column Info Row */}
-            <Animated.View
-                entering={isOldAndroid ? undefined : FadeInDown.delay(300).springify()}
-                className="flex-row gap-3 mb-6"
-            >
-                <View className="flex-1 bg-white p-4 rounded-[24px] items-center justify-center shadow-lg shadow-slate-100 border border-slate-50 aspect-square">
-                    <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mb-2">
-                        <Calendar size={20} color={Colors.primary} />
-                    </View>
-                    <Text className="text-primary font-bold text-sm text-center">
-                        {activity?.dateTime ? new Date(activity.dateTime).toLocaleDateString("it-IT", { day: '2-digit', month: 'short' }).replace('.', '') : "--"}
-                    </Text>
-                    <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">DATA</Text>
-                </View>
+    const locationShortName = useMemo(() => {
+        const addr = activity?.location?.address;
+        if (!addr) return 'Posizione';
+        const parts = addr.split(',');
+        return parts[0]?.trim() || addr;
+    }, [activity?.location?.address]);
 
-                <View className="flex-1 bg-white p-4 rounded-[24px] items-center justify-center shadow-lg shadow-slate-100 border border-slate-50 aspect-square">
-                    <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mb-2">
-                        <Clock size={20} color={Colors.primary} />
-                    </View>
-                    <Text className="text-primary font-bold text-sm text-center">
-                        {activity?.dateTime ? new Date(activity.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' }) : "--:--"}
-                    </Text>
-                    <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">ORARIO</Text>
-                </View>
+    const slotsLeft = Math.max(0, (activity?.slots ?? 0) - currentIscritti.length);
 
-                <View className="flex-1 bg-white p-4 rounded-[24px] items-center justify-center shadow-lg shadow-slate-100 border border-slate-50 aspect-square">
-                    <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mb-2">
-                        <MapPin size={20} color={Colors.primary} />
-                    </View>
-                    <Text className="text-primary font-bold text-xs text-center leading-tight" numberOfLines={2}>
-                        {activity?.location?.address?.split(',')[1]?.trim() || activity?.location?.address?.split(',')[0]?.trim() || "ND"}
-                    </Text>
-                    <Text className="text-secondary/60 font-bold uppercase tracking-wide mt-1">CITTÀ</Text>
-                </View>
-            </Animated.View>
-
-            {/* Participants */}
-            <Animated.View entering={isOldAndroid ? undefined : FadeInDown.delay(400).springify()} className="bg-white mb-4">
-                <View className="flex-row justify-between items-center mb-4">
-                    <View>
-                        <Text className="text-primary font-bold text-base mb-3">Volontari partecipanti</Text>
-                        <View className="flex-row items-center">
-                            <View className="flex-row">
-                                {currentIscritti.slice(0, 4).map((volId, index) => {
-                                    const v = users.find(u => u.id === volId);
-                                    return (
-                                        <View key={volId} className="rounded-full border-2 border-white -ml-3 first:ml-0" style={{ zIndex: 10 - index }}>
-                                            <Image source={{ uri: v?.avatar || "https://ui-avatars.com/api/?name=User" }} className="w-9 h-9 rounded-full" />
-                                        </View>
-                                    )
-                                })}
-                                {currentIscritti.length > 4 && (
-                                    <View className="w-9 h-9 rounded-full bg-slate-100 border-2 border-white items-center justify-center -ml-3" style={{ zIndex: 0 }}>
-                                        <Text className="text-secondary font-bold text-[10px]">+{currentIscritti.length - 4}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            {currentIscritti.length === 0 && <Text className="text-secondary/60 text-xs italic ml-2">Nessuno ancora</Text>}
-                        </View>
-                    </View>
-                    <View className="items-end">
-                        <Text className="text-secondary/60 text-[10px] font-bold uppercase mb-1">Stato</Text>
-                        {activity?.status === "COMPLETATA" ? (
-                            <View className="bg-slate-100 px-3 py-1 rounded-xl border border-slate-200"><Text className="text-slate-600 font-black text-[9px] uppercase">Conclusa</Text></View>
-                        ) : currentIscritti.length >= (activity?.slots || 0) ? (
-                            <View className="bg-rose-50 px-3 py-1 rounded-xl border border-rose-100"><Text className="text-rose-600 font-black text-[9px] uppercase">Pieno</Text></View>
-                        ) : (
-                            <View className="bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-100"><Text className="text-emerald-600 font-black text-[9px] uppercase">Posti Liberi</Text></View>
-                        )}
-                    </View>
-                </View>
-            </Animated.View>
-
-            {/* Category & Skills */}
-            <Animated.View entering={isOldAndroid ? undefined : FadeInDown.delay(500).springify()}>
-                <View className="mb-4">
-                    <Text className="text-primary font-bold text-base mb-3">Categoria</Text>
-                    <View className="bg-accent/10 px-4 py-2.5 rounded-2xl border border-accent/20 self-start">
-                        <Text className="text-accent font-bold text-xs uppercase">{activity?.category}</Text>
-                    </View>
-                </View>
-                <View className="mb-6">
-                    <Text className="text-primary font-bold text-base mb-3">Competenze</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                        {activity?.skills?.map(s => (
-                            <View key={s} className="bg-primary/5 px-4 py-2.5 rounded-2xl border border-primary/10">
-                                <Text className="text-primary font-bold text-xs">{SKILLS_MAP[s] || s}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-            </Animated.View>
-
-            {/* Description */}
-            <Animated.View entering={isOldAndroid ? undefined : FadeInDown.delay(600).springify()} className="mb-6">
-                <Text className="text-primary font-bold text-base mb-3">Descrizione</Text>
-                <Text className="text-secondary/80 text-base leading-7">{activity?.description}</Text>
-            </Animated.View>
-
-            {/* Location Map - Permanently disabled for Android < 10 due to crashes */}
-            {!isOldAndroid ? (
-                <Animated.View entering={FadeInDown.delay(700).springify()} className="mb-6">
-                    <Text className="text-primary font-bold text-base mb-3">Mappa</Text>
-                    {MapView && activity?.location?.coords?.lat ? (
-                        <View className="rounded-[32px] overflow-hidden bg-slate-100 h-52 relative border border-slate-100">
-                            <MapView
-                                provider={PROVIDER_GOOGLE}
-                                style={{ width: '100%', height: '100%' }}
-                                initialRegion={{
-                                    latitude: activity.location.coords.lat,
-                                    longitude: activity.location.coords.lng,
-                                    latitudeDelta: 0.005,
-                                    longitudeDelta: 0.005,
-                                }}
-                                scrollEnabled={false}
-                                zoomEnabled={false}
-                            >
-                                <Marker coordinate={{ latitude: activity.location.coords.lat, longitude: activity.location.coords.lng }}>
-                                    <View className="bg-accent p-2.5 rounded-2xl border-2 border-white"><MapPin size={20} color="white" fill="white" /></View>
-                                </Marker>
-                            </MapView>
-                            <View className="absolute bottom-4 left-4 right-4 bg-white px-4 py-3 rounded-2xl shadow-lg flex-row items-center gap-3 border border-slate-100">
-                                <View className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
-                                    <MapIcon size={16} color={Colors.primary} />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-[11px] font-bold text-primary flex-1" numberOfLines={1}>{activity?.location?.address || "Indirizzo"}</Text>
-                                    <Text className="text-[9px] font-bold text-accent uppercase tracking-wide">Tocca per aprire nella Mappa</Text>
-                                </View>
-                            </View>
-                        </View>
-                    ) : (
-                        <View className="h-40 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 items-center justify-center">
-                            <Text className="text-secondary/40">Mappa non disponibile</Text>
-                        </View>
-                    )}
-                </Animated.View>
-            ) : (
-                <View className="mb-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100">
-                    <Text className="text-primary font-bold text-base mb-2">Mappa</Text>
-                    <Text className="text-secondary/60 text-sm">Indirizzo: {activity?.location?.address || "Non specificato"}</Text>
-                    <Text className="text-[10px] text-secondary/40 italic mt-2">La mappa è disattivata su questa versione di Android per motivi di stabilità.</Text>
-                </View>
-            )}
-
-            {/* Owner List of Volunteers */}
-            {isOwner && (
-                <View className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 mb-8">
-                    <Text className="text-xl font-black text-primary mb-4">Volontari Iscritti</Text>
-                    {currentIscritti.map(volId => {
-                        const v = users.find(u => u.id === volId);
-                        const app = activityApplications.find(a => a.activityId === activity?.id && a.volunteerId === volId);
-                        if (!v) return null;
-                        return (
-                            <TouchableOpacity
-                                key={volId}
-                                onPress={() => router.push(`/(npo)/volunteer-profile/${volId}` as any)}
-                                className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 active:bg-slate-50"
-                            >
-                                <View className="flex-row items-center gap-3">
-                                    <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
-                                    <View>
-                                        <Text className="font-bold text-primary">{v.name}</Text>
-                                        <Text className="text-xs text-secondary">{v.email}</Text>
-                                    </View>
-                                </View>
-                                {app?.phone && <Text className="mt-2 text-xs font-bold text-primary italic">Tel: {app.phone}</Text>}
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            )}
+    // ─── Guards ──────────────────────────────────────────────────────────────
+    if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={loadData} />;
+    if (fetchLoading) return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+            <ActivityIndicator size="large" color={Colors.primary} />
         </View>
     );
-
-    if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={loadData} />;
-    if (fetchLoading) return <View className="flex-1 justify-center items-center"><ActivityIndicator size="large" color="#462282" /></View>;
-    if (!activity) return <View className="flex-1 justify-center items-center"><Text>Attività non trovata</Text></View>;
+    if (!activity) return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+            <Text style={{ color: Colors.secondary }}>Attività non trovata</Text>
+        </View>
+    );
 
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            <ParallaxScrollView
-                headerBackgroundColor={{ light: 'white', dark: 'black' }}
-                headerImage={
-                    <View style={{ width: '100%', height: 300 }}>
-                        <Image source={{ uri: activity?.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={StyleSheet.absoluteFill} />
-                    </View>
-                }
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 120 }}
             >
-                <View className="flex-1 bg-white -mt-12 rounded-t-[40px] px-8 pt-12 pb-40">
-                    <View className="absolute -top-6 left-0 right-0 items-center z-10">
-                        <View className="shadow-lg shadow-black/20">
-                            <View className="px-6 py-3 rounded-full flex-row items-center gap-2 bg-white">
-                                <View className={`w-2.5 h-2.5 rounded-full ${activity?.status === "IN_CORSO" ? "bg-amber-500" :
-                                    activity?.status === "APERTA" ? "bg-emerald-500" : "bg-slate-400"
-                                    }`} />
-                                <Text className="text-xs font-black uppercase tracking-widest text-primary">
-                                    {activity?.status?.replace("_", " ") || "Dettaglio"}
+                {/* ── Hero Image ───────────────────────────────────────── */}
+                <View style={{ width: SCREEN_W, height: 260, position: 'relative' }}>
+                    <Image
+                        source={{ uri: activity.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.title)}&size=800&background=D81B60&color=fff` }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                    />
+                    <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.45)']}
+                        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100 }}
+                    />
+                    {/* Status badge – bottom right of image */}
+                    <View style={{
+                        position: 'absolute', bottom: 14, right: 14,
+                        backgroundColor: statusCfg.bg,
+                        paddingHorizontal: 12, paddingVertical: 6,
+                        borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6
+                    }}>
+                        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusCfg.dot }} />
+                        <Text style={{ color: statusCfg.text, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            {statusCfg.label}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* ── Content ─────────────────────────────────────────── */}
+                <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+
+                    {/* Badges row: category + recurrence */}
+                    <Animated.View entering={FadeInDown.delay(100).springify()} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                        {activity.category && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                                <Star size={12} color="white" fill="white" />
+                                <Text style={{ color: 'white', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    {activity.category}
                                 </Text>
                             </View>
-                        </View>
-                    </View>
-                    {renderContent()}
-                </View>
-            </ParallaxScrollView>
+                        )}
+                        {recurrenceLabel && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#eef2ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#c7d2fe' }}>
+                                <RefreshCw size={11} color="#4f46e5" />
+                                <Text style={{ color: '#4338ca', fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                                    {recurrenceLabel}
+                                </Text>
+                            </View>
+                        )}
+                    </Animated.View>
 
-            {/* Sticky Header */}
-            <View className="absolute top-0 left-0 right-0 pt-16 px-5 z-50 flex-row justify-between">
-                <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 rounded-full bg-black/40 items-center justify-center">
-                    <ArrowLeft size={20} color="white" />
-                </TouchableOpacity>
-                <View className="flex-row gap-3">
-                    <TouchableOpacity onPress={handleShare} className="w-10 h-10 rounded-full bg-black/40 items-center justify-center">
-                        <Share2 size={20} color="white" />
-                    </TouchableOpacity>
-                    {isOwner && (
-                        <TouchableOpacity onPress={() => router.push(`/(npo)/edit-activity/${activity.id}` as any)} className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-lg">
-                            <Pencil size={20} color={Colors.primary} />
+                    {/* Title */}
+                    <Animated.Text
+                        entering={FadeInDown.delay(150).springify()}
+                        style={{ fontSize: 28, fontWeight: '900', color: Colors.primary, lineHeight: 34, marginBottom: 20 }}
+                    >
+                        {activity.title}
+                    </Animated.Text>
+
+                    {/* NPO organizer */}
+                    <Animated.View entering={FadeInDown.delay(180).springify()} style={{ marginBottom: 20 }}>
+                        <TouchableOpacity
+                            onPress={() => isOwner ? router.push('/(npo)/(tabs)/profile') : router.push(`/npo-profile/${activity.npoId}` as any)}
+                            activeOpacity={0.7}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                        >
+                            <Image
+                                source={{ uri: npoUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.npoName || 'NPO')}&background=random` }}
+                                style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'white' }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary }}>
+                                    {npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}
+                                </Text>
+                                <Text style={{ fontSize: 12, color: Colors.secondary }}>Organizzatore</Text>
+                            </View>
+                            <CheckCircle2 size={16} color={Colors.accent} fill={Colors.accent} />
                         </TouchableOpacity>
+                    </Animated.View>
+
+                    {/* Info Card: date/time + location */}
+                    <Animated.View entering={FadeInDown.delay(220).springify()} style={{
+                        backgroundColor: '#f8fafc', borderRadius: 20, marginBottom: 24,
+                        borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden'
+                    }}>
+                        {/* Date & Time row */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
+                            <View style={{ width: 38, height: 38, backgroundColor: '#ede9fe', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <Calendar size={18} color={Colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>DATA E ORA</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>{formattedDateRange}</Text>
+                            </View>
+                        </View>
+
+                        {/* Divider */}
+                        <View style={{ height: 1, backgroundColor: '#e2e8f0', marginHorizontal: 16 }} />
+
+                        {/* Location row – tappable */}
+                        <TouchableOpacity
+                            activeOpacity={activity.location?.coords?.lat ? 0.7 : 1}
+                            disabled={!activity.location?.coords?.lat}
+                            onPress={() => {
+                                if (activity.location?.coords?.lat) {
+                                    openMapsUrl(activity.location.coords.lat, activity.location.coords.lng, locationShortName);
+                                }
+                            }}
+                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}
+                        >
+                            <View style={{ width: 38, height: 38, backgroundColor: '#ffe4e6', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <MapPin size={18} color="#e11d48" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>LUOGO</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>{locationShortName}</Text>
+                                {activity.location?.address && locationShortName !== activity.location.address && (
+                                    <Text style={{ fontSize: 12, color: '#64748b' }} numberOfLines={1}>{activity.location.address}</Text>
+                                )}
+                            </View>
+                            {activity.location?.coords?.lat && (
+                                <ChevronRight size={18} color={Colors.secondary} />
+                            )}
+                        </TouchableOpacity>
+                    </Animated.View>
+
+                    {/* Skills */}
+                    {activity.skills && activity.skills.length > 0 && (
+                        <Animated.View entering={FadeInDown.delay(280).springify()} style={{ marginBottom: 24 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                <MapPin size={18} color={Colors.primary} />
+                                <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Competenze Richieste</Text>
+                            </View>
+                            {/* 3-column grid */}
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                {activity.skills.map(s => (
+                                    <View
+                                        key={s}
+                                        style={{
+                                            width: (SCREEN_W - 40 - 16) / 3,
+                                            backgroundColor: '#f8fafc',
+                                            paddingVertical: 10, paddingHorizontal: 12,
+                                            borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0',
+                                            flexDirection: 'row', alignItems: 'center', gap: 5
+                                        }}
+                                    >
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary, flex: 1 }} numberOfLines={1}>
+                                            {SKILLS_LABELS[s] || s}
+                                        </Text>
+                                        <Text style={{ fontSize: 10, color: Colors.accent }}>✦</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </Animated.View>
+                    )}
+
+                    {/* Description */}
+                    <Animated.View entering={FadeInDown.delay(340).springify()} style={{ marginBottom: 28 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>Descrizione Attività</Text>
+                        <Text style={{ fontSize: 15, color: '#475569', lineHeight: 24 }}>{activity.description}</Text>
+                    </Animated.View>
+
+                    {/* Volunteers participating */}
+                    <Animated.View entering={FadeInDown.delay(400).springify()} style={{ marginBottom: 24 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <Users size={18} color={Colors.primary} />
+                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Volontari Partecipanti</Text>
+                        </View>
+                        {currentIscritti.length === 0 ? (
+                            <View style={{ backgroundColor: '#f8fafc', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', borderStyle: 'dashed' }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>Nessun volontario iscritto ancora</Text>
+                            </View>
+                        ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                {currentIscritti.slice(0, 8).map((volId, idx) => {
+                                    const v = users.find(u => u.id === volId);
+                                    return (
+                                        <View key={volId} style={{ marginRight: -8, zIndex: 20 - idx }}>
+                                            <Image
+                                                source={{ uri: v?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(v?.name || 'U')}&background=random` }}
+                                                style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: 'white' }}
+                                            />
+                                        </View>
+                                    );
+                                })}
+                                {currentIscritti.length > 8 && (
+                                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: 'white', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}>
+                                        <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.secondary }}>+{currentIscritti.length - 8}</Text>
+                                    </View>
+                                )}
+                                <Text style={{ marginLeft: 20, fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                                    {currentIscritti.length} iscritto{currentIscritti.length !== 1 ? 'i' : ''}
+                                </Text>
+                            </View>
+                        )}
+                    </Animated.View>
+
+                    {/* NPO Owner: enrolled volunteers list */}
+                    {isOwner && currentIscritti.length > 0 && (
+                        <Animated.View entering={FadeInDown.delay(460).springify()} style={{
+                            backgroundColor: '#f8fafc', borderRadius: 20, padding: 20,
+                            borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20
+                        }}>
+                            <Text style={{ fontSize: 17, fontWeight: '900', color: Colors.primary, marginBottom: 12 }}>Gestione Volontari</Text>
+                            {currentIscritti.map(volId => {
+                                const v = users.find(u => u.id === volId);
+                                const app = activityApplications.find(a => a.activityId === activity.id && a.volunteerId === volId);
+                                if (!v) return null;
+                                return (
+                                    <TouchableOpacity
+                                        key={volId}
+                                        onPress={() => router.push(`/(npo)/volunteer-profile/${volId}` as any)}
+                                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 14, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: '#f1f5f9' }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
+                                        <View style={{ marginLeft: 12, flex: 1 }}>
+                                            <Text style={{ fontWeight: '700', color: Colors.primary, fontSize: 14 }}>{v.name}</Text>
+                                            <Text style={{ color: '#64748b', fontSize: 12 }}>{v.email}</Text>
+                                        </View>
+                                        <ChevronRight size={16} color={Colors.secondary} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </Animated.View>
                     )}
                 </View>
-            </View>
+            </ScrollView>
 
-            {/* Bottom Bar */}
-            <View className="absolute bottom-0 left-0 right-0 bg-white py-5 px-8 rounded-t-[40px] shadow-lg flex-row items-center justify-between border-t border-slate-50">
+            {/* ── Sticky Top Header ────────────────────────────────────── */}
+            <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <ArrowLeft size={20} color="white" />
+                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity
+                            onPress={handleShare}
+                            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <Share2 size={20} color="white" />
+                        </TouchableOpacity>
+                        {isOwner && (
+                            <TouchableOpacity
+                                onPress={() => router.push(`/(npo)/edit-activity/${activity.id}` as any)}
+                                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 }}
+                            >
+                                <Pencil size={18} color={Colors.primary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </SafeAreaView>
+
+            {/* ── Bottom Action Bar ─────────────────────────────────────── */}
+            <View style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                backgroundColor: 'white', paddingTop: 14, paddingBottom: 28, paddingHorizontal: 20,
+                borderTopWidth: 1, borderTopColor: '#f1f5f9',
+                shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, elevation: 8,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
+            }}>
                 <View>
-                    <Text className="text-[10px] text-secondary/40 font-bold">STATO</Text>
-                    <Text className="text-accent font-bold text-base">{activity.status === "COMPLETATA" ? "Chiusa" : `${Math.max(0, activity.slots - currentIscritti.length)} posti`}</Text>
+                    <Text style={{ fontSize: 20, fontWeight: '900', color: Colors.primary }}>
+                        {activity.status === 'COMPLETATA' ? '0 posti' : `${slotsLeft} posti`}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 1 }}>
+                        SU {activity.slots} VOLONTARI TOTALI
+                    </Text>
                 </View>
 
+                {/* CTA Button */}
                 {isOwner ? (
-                    <TouchableOpacity className="bg-slate-100 px-6 py-4 rounded-2xl"><Text className="font-bold">Gestione</Text></TouchableOpacity>
-                ) : isEnrolled ? (
-                    <View className="flex-row gap-2">
-                        <TouchableOpacity onPress={async () => {
-                            const prev = localIscrittiOverride;
-                            setLocalIscrittiOverride((current) => (current ?? activity.iscritti).filter(i => i !== user?.id));
-                            try { await unenrollFromActivity(activity.id); } catch (e) { setLocalIscrittiOverride(prev); }
-                        }} className="bg-red-50 p-4 rounded-2xl"><Text className="text-red-500 font-bold">Annulla</Text></TouchableOpacity>
-                        <View className="bg-emerald-50 px-6 py-4 rounded-2xl"><Text className="text-emerald-700 font-bold">Iscritto</Text></View>
+                    <TouchableOpacity
+                        onPress={() => router.push(`/(npo)/review-volunteers/${activity.id}` as any)}
+                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 24, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                    >
+                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Gestisci</Text>
+                        <ChevronRight size={18} color="white" />
+                    </TouchableOpacity>
+                ) : isOtherNPO ? (
+                    <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28 }}>
+                        <Text style={{ color: '#94a3b8', fontWeight: '700', fontSize: 15 }}>Solo volontari</Text>
                     </View>
+                ) : isEnrolled ? (
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity
+                            onPress={async () => {
+                                const prev = localIscrittiOverride;
+                                setLocalIscrittiOverride(c => (c ?? activity.iscritti).filter(i => i !== user?.id));
+                                try { await unenrollFromActivity(activity.id); }
+                                catch { setLocalIscrittiOverride(prev); }
+                            }}
+                            style={{ backgroundColor: '#fff0f0', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#fecaca' }}
+                        >
+                            <Text style={{ color: '#dc2626', fontWeight: '700' }}>Annulla</Text>
+                        </TouchableOpacity>
+                        <View style={{ backgroundColor: '#f0fdf4', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#bbf7d0', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <CheckCircle2 size={16} color="#16a34a" fill="#16a34a" />
+                            <Text style={{ color: '#16a34a', fontWeight: '800' }}>Iscritto</Text>
+                        </View>
+                    </View>
+                ) : canLeaveReview ? (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/(volunteer)/review-application', params: { activityId: activity.id, type: 'FEEDBACK' } } as any)}
+                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                    >
+                        <Star size={16} color="white" />
+                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Lascia feedback</Text>
+                    </TouchableOpacity>
                 ) : user?.role === 'VOLUNTEER' ? (
                     <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
-                        disabled={isFull}
-                        className={`px-10 py-4 rounded-2xl ${isFull ? "bg-slate-300" : "bg-accent"}`}
+                        onPress={() => !isFull && activity.status !== 'COMPLETATA' && router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
+                        disabled={isFull || activity.status === 'COMPLETATA'}
+                        style={{
+                            backgroundColor: (isFull || activity.status === 'COMPLETATA') ? '#e2e8f0' : Colors.accent,
+                            paddingHorizontal: 26, paddingVertical: 16, borderRadius: 28,
+                            flexDirection: 'row', alignItems: 'center', gap: 8
+                        }}
                     >
-                        <Text className="text-white font-black">{isFull ? "Pieno" : "Iscriviti"}</Text>
+                        <Text style={{ color: (isFull || activity.status === 'COMPLETATA') ? '#94a3b8' : 'white', fontWeight: '900', fontSize: 16 }}>
+                            {isFull ? 'Pieno' : activity.status === 'COMPLETATA' ? 'Chiusa' : 'Candidati Ora'}
+                        </Text>
+                        {!isFull && activity.status !== 'COMPLETATA' && <ChevronRight size={18} color="white" />}
                     </TouchableOpacity>
-                ) : (
-                    <View className="px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <Text className="text-slate-400 font-bold">Solo Volontari</Text>
-                    </View>
-                )}
+                ) : null}
             </View>
-
-            {/* Debug (Old Android only) */}
-            {isOldAndroid && (
-                <View style={{ position: 'absolute', top: 120, left: 20, right: 20, backgroundColor: 'rgba(0,0,0,0.8)', padding: 10, borderRadius: 10, zIndex: 999 }}>
-                    <Text style={{ color: '#0f0', fontSize: 10 }}>ANDROID 9 DIAG</Text>
-                    {debugLogs.map((l, i) => <Text key={i} style={{ color: '#fff', fontSize: 8 }}>{l}</Text>)}
-                </View>
-            )}
         </View>
     );
 }
