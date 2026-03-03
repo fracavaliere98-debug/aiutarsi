@@ -14,7 +14,7 @@ import { Activity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
-    RefreshCw, ChevronRight, Users, Star, CheckCircle2
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2, Zap, FileText
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -258,13 +258,13 @@ export default function ActivityDetail() {
                     {/* Title */}
                     <Animated.Text
                         entering={FadeInDown.delay(150).springify()}
-                        style={{ fontSize: 28, fontWeight: '900', color: Colors.primary, lineHeight: 34, marginBottom: 20 }}
+                        style={{ fontSize: 28, fontWeight: '900', color: Colors.primary, lineHeight: 34, marginBottom: 20, textAlign: 'center' }}
                     >
                         {activity.title}
                     </Animated.Text>
 
                     {/* NPO organizer */}
-                    <Animated.View entering={FadeInDown.delay(180).springify()} style={{ marginBottom: 20 }}>
+                    <Animated.View entering={FadeInDown.delay(180).springify()} style={{ marginBottom: 20, alignItems: 'center' }}>
                         <TouchableOpacity
                             onPress={() => isOwner ? router.push('/(npo)/(tabs)/profile') : router.push(`/npo-profile/${activity.npoId}` as any)}
                             activeOpacity={0.7}
@@ -274,11 +274,11 @@ export default function ActivityDetail() {
                                 source={{ uri: npoUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.npoName || 'NPO')}&background=random` }}
                                 style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'white' }}
                             />
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary }}>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>
                                     {npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}
                                 </Text>
-                                <Text style={{ fontSize: 12, color: Colors.secondary }}>Organizzatore</Text>
+                                <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>Organizzatore</Text>
                             </View>
                             <CheckCircle2 size={16} color={Colors.accent} fill={Colors.accent} />
                         </TouchableOpacity>
@@ -334,26 +334,24 @@ export default function ActivityDetail() {
                     {activity.skills && activity.skills.length > 0 && (
                         <Animated.View entering={FadeInDown.delay(280).springify()} style={{ marginBottom: 24 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <MapPin size={18} color={Colors.primary} />
+                                <Zap size={18} color={Colors.primary} fill={Colors.primary} />
                                 <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Competenze Richieste</Text>
                             </View>
-                            {/* 3-column grid */}
+                            {/* Auto-sizing chips that wrap naturally */}
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {activity.skills.map(s => (
                                     <View
                                         key={s}
                                         style={{
-                                            width: (SCREEN_W - 40 - 16) / 3,
                                             backgroundColor: '#f8fafc',
-                                            paddingVertical: 10, paddingHorizontal: 12,
+                                            paddingVertical: 10, paddingHorizontal: 16,
                                             borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0',
-                                            flexDirection: 'row', alignItems: 'center', gap: 5
+                                            alignItems: 'center', justifyContent: 'center'
                                         }}
                                     >
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary, flex: 1 }} numberOfLines={1}>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary }}>
                                             {SKILLS_LABELS[s] || s}
                                         </Text>
-                                        <Text style={{ fontSize: 10, color: Colors.accent }}>✦</Text>
                                     </View>
                                 ))}
                             </View>
@@ -362,42 +360,42 @@ export default function ActivityDetail() {
 
                     {/* Description */}
                     <Animated.View entering={FadeInDown.delay(340).springify()} style={{ marginBottom: 28 }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>Descrizione Attività</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <FileText size={18} color={Colors.primary} />
+                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Descrizione Attività</Text>
+                        </View>
                         <Text style={{ fontSize: 15, color: '#475569', lineHeight: 24 }}>{activity.description}</Text>
                     </Animated.View>
 
-                    {/* Volunteers participating */}
-                    <Animated.View entering={FadeInDown.delay(400).springify()} style={{ marginBottom: 24 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                            <Users size={18} color={Colors.primary} />
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Volontari Partecipanti</Text>
-                        </View>
+                    {/* Volunteers participating – icon + avatars inline, no title */}
+                    <Animated.View entering={FadeInDown.delay(400).springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                        <Users size={20} color={Colors.primary} />
                         {currentIscritti.length === 0 ? (
-                            <View style={{ backgroundColor: '#f8fafc', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', borderStyle: 'dashed' }}>
-                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>Nessun volontario iscritto ancora</Text>
-                            </View>
+                            <Text style={{ color: '#94a3b8', fontSize: 13 }}>Nessun volontario ancora</Text>
                         ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                                {currentIscritti.slice(0, 8).map((volId, idx) => {
-                                    const v = users.find(u => u.id === volId);
-                                    return (
-                                        <View key={volId} style={{ marginRight: -8, zIndex: 20 - idx }}>
-                                            <Image
-                                                source={{ uri: v?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(v?.name || 'U')}&background=random` }}
-                                                style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: 'white' }}
-                                            />
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    {currentIscritti.slice(0, 8).map((volId, idx) => {
+                                        const v = users.find(u => u.id === volId);
+                                        return (
+                                            <View key={volId} style={{ marginRight: -10, zIndex: 20 - idx }}>
+                                                <Image
+                                                    source={{ uri: v?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(v?.name || 'U')}&background=random` }}
+                                                    style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'white' }}
+                                                />
+                                            </View>
+                                        );
+                                    })}
+                                    {currentIscritti.length > 8 && (
+                                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: 'white', alignItems: 'center', justifyContent: 'center', marginLeft: 14 }}>
+                                            <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.secondary }}>+{currentIscritti.length - 8}</Text>
                                         </View>
-                                    );
-                                })}
-                                {currentIscritti.length > 8 && (
-                                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: 'white', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}>
-                                        <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.secondary }}>+{currentIscritti.length - 8}</Text>
-                                    </View>
-                                )}
-                                <Text style={{ marginLeft: 20, fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                                    )}
+                                </View>
+                                <Text style={{ marginLeft: currentIscritti.length > 8 ? 18 : 14, fontSize: 13, color: '#64748b', fontWeight: '600' }}>
                                     {currentIscritti.length} iscritto{currentIscritti.length !== 1 ? 'i' : ''}
                                 </Text>
-                            </View>
+                            </>
                         )}
                     </Animated.View>
 
