@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Switch, ActivityIndicator , TouchableOpacity } from "react-native";
+import { View, Text, Switch, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Phone, Eye, Users, Mail, Save } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -33,9 +33,7 @@ export default function NPOPrivacyScreen() {
                 .single();
             if (data) {
                 setAllowCalls(data.allow_calls !== false);
-                setProfilePublic(data.profile_public !== false);
                 setShowEmail(!!data.show_email);
-                setVolunteerListVisible(data.volunteer_list_visible !== false);
             }
             setIsFetching(false);
         };
@@ -50,9 +48,7 @@ export default function NPOPrivacyScreen() {
                 .from('profiles')
                 .update({
                     allow_calls: allowCalls,
-                    profile_public: profilePublic,
                     show_email: showEmail,
-                    volunteer_list_visible: volunteerListVisible,
                 })
                 .eq('id', user.id);
             if (error) throw error;
@@ -90,17 +86,7 @@ export default function NPOPrivacyScreen() {
 
             {/* Profile visibility */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
-            <SoftCard className="p-5 mb-4">
-                <PrivacyRow
-                    icon={<Eye size={22} color={Colors.primary} />}
-                    iconBg="bg-indigo-50"
-                    title="Profilo pubblico"
-                    subtitle="Il tuo profilo è visibile a tutti i volontari"
-                    value={profilePublic}
-                    onValueChange={setProfilePublic}
-                />
-            </SoftCard>
-            <SoftCard className="p-5 mb-4">
+            <SoftCard className="p-5 mb-8">
                 <PrivacyRow
                     icon={<Mail size={22} color={Colors.primary} />}
                     iconBg="bg-blue-50"
@@ -108,16 +94,6 @@ export default function NPOPrivacyScreen() {
                     subtitle="L'email è visibile sul profilo pubblico"
                     value={showEmail}
                     onValueChange={setShowEmail}
-                />
-            </SoftCard>
-            <SoftCard className="p-5 mb-8">
-                <PrivacyRow
-                    icon={<Users size={22} color={Colors.primary} />}
-                    iconBg="bg-violet-50"
-                    title="Lista iscritti visibile"
-                    subtitle="I volontari possono vedere chi è iscritto alle tue attività"
-                    value={volunteerListVisible}
-                    onValueChange={setVolunteerListVisible}
                 />
             </SoftCard>
 

@@ -32,9 +32,7 @@ export default function VolunteerPrivacyScreen() {
                 .single();
             if (data) {
                 setAllowCalls(data.allow_calls !== false);
-                setProfilePublic(data.profile_public !== false);
                 setShowEmail(!!data.show_email);
-                setShowVolunteeringHistory(data.show_volunteering_history !== false);
             }
             setIsFetching(false);
         };
@@ -49,9 +47,7 @@ export default function VolunteerPrivacyScreen() {
                 .from('profiles')
                 .update({
                     allow_calls: allowCalls,
-                    profile_public: profilePublic,
                     show_email: showEmail,
-                    show_volunteering_history: showVolunteeringHistory,
                 })
                 .eq('id', user.id);
             if (error) throw error;
@@ -89,17 +85,7 @@ export default function VolunteerPrivacyScreen() {
 
             {/* Profile */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
-            <SoftCard className="p-5 mb-4">
-                <PrivacyRow
-                    icon={<Eye size={22} color={Colors.primary} />}
-                    iconBg="bg-indigo-50"
-                    title="Profilo pubblico"
-                    subtitle="Il tuo profilo è visibile a tutte le NPO"
-                    value={profilePublic}
-                    onValueChange={setProfilePublic}
-                />
-            </SoftCard>
-            <SoftCard className="p-5 mb-4">
+            <SoftCard className="p-5 mb-8">
                 <PrivacyRow
                     icon={<Mail size={22} color={Colors.primary} />}
                     iconBg="bg-blue-50"
@@ -107,16 +93,6 @@ export default function VolunteerPrivacyScreen() {
                     subtitle="L'email è visibile sul tuo profilo"
                     value={showEmail}
                     onValueChange={setShowEmail}
-                />
-            </SoftCard>
-            <SoftCard className="p-5 mb-8">
-                <PrivacyRow
-                    icon={<BookOpen size={22} color={Colors.primary} />}
-                    iconBg="bg-amber-50"
-                    title="Storico volontariato visibile"
-                    subtitle="Le NPO possono vedere le tue attività passate (CV volontariato)"
-                    value={showVolunteeringHistory}
-                    onValueChange={setShowVolunteeringHistory}
                 />
             </SoftCard>
 

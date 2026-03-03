@@ -127,13 +127,15 @@ export default function MessagesListScreen() {
         // Search filter
         if (searchQuery && searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            const groupTitle = conv.activities?.title?.toLowerCase() || '';
-            const lastMsgContent = conv.messages?.[0]?.content?.toLowerCase() || '';
+            const activityData = conv.activities;
+            const activityTitle = (Array.isArray(activityData) ? activityData[0]?.title : activityData?.title) || '';
+            const groupTitle = activityTitle.toLowerCase();
+            const lastMsgContent = conv.last_message_content?.toLowerCase() || '';
 
             let participantName = '';
             if (conv.type === 'PRIVATE') {
                 const other = conv.participants?.find((p: any) => p.user_id !== user?.id);
-                participantName = other?.user?.full_name?.toLowerCase() || other?.user?.npo_name?.toLowerCase() || '';
+                participantName = other?.profiles?.name?.toLowerCase() || other?.profiles?.npo_name?.toLowerCase() || '';
             }
 
             const isMatch = groupTitle.includes(query) || lastMsgContent.includes(query) || participantName.includes(query);
@@ -235,22 +237,27 @@ export default function MessagesListScreen() {
                             const conv = item.conversations;
                             if (!conv) return null;
 
-                            const lastMessageContent = conv.last_message_content || '';
-                            const lastMessageAt = conv.last_message_at;
-                            const lastMessageSenderId = conv.last_message_sender_id;
+                            // Use actual last message from the join – always fresh from the DB
+                            const lastMsgArr = conv.last_message;
+                            const lastMsg = Array.isArray(lastMsgArr) ? lastMsgArr[0] : lastMsgArr;
+                            const lastMessageContent = lastMsg?.content || '';
+                            const lastMessageAt = lastMsg?.created_at || conv.last_message_at;
+                            const lastMessageSenderId = lastMsg?.sender_id || conv.last_message_sender_id;
 
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
                             const isUnread = lastMessageAt && lastMessageAt > item.last_read_at && lastMessageSenderId !== user?.id;
 
                             // Determine title and avatar
-                            let displayTitle = isGroup ? (conv.activities?.title || 'Gruppo Attività') : 'Chat Diretta';
+                            const activityData = conv.activities;
+                            const activityTitle = Array.isArray(activityData) ? activityData[0]?.title : activityData?.title;
+                            let displayTitle = isGroup ? (activityTitle || 'Gruppo Attività') : 'Chat Diretta';
                             let displayAvatar = undefined;
 
                             if (!isGroup) {
                                 const other = conv.participants?.find((p: any) => p.user_id !== user?.id);
                                 if (other?.profiles) {
-                                    displayTitle = other.profiles.npo_name || other.profiles.full_name || 'Chat Diretta';
-                                    displayAvatar = other.profiles.avatar_url;
+                                    displayTitle = other.profiles.npo_name || other.profiles.name || 'Chat Diretta';
+                                    displayAvatar = other.profiles.avatar;
                                 }
                             }
 

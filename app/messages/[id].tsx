@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, ScrollView, Linking } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, Linking, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MoreVertical, Plus, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff } from 'lucide-react-native';
+import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
@@ -29,66 +29,77 @@ export default function ChatDetailScreen() {
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-
         if (d.toDateString() === today.toDateString()) return 'Oggi';
         if (d.toDateString() === yesterday.toDateString()) return 'Ieri';
         return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
     };
 
-    // Inject day dividers between messages (list is DESC, inverted FlatList shows newest at bottom)
+    // Day dividers injected between messages (list is DESC for inverted FlatList)
     const messagesWithDividers = React.useMemo(() => {
         if (!messages.length) return [];
         const result: any[] = [];
-
         for (let i = 0; i < messages.length; i++) {
             const msg = messages[i];
             const nextMsg = messages[i + 1];
-
             result.push(msg);
-
             const currentDay = new Date(msg.created_at).toDateString();
             const nextDay = nextMsg ? new Date(nextMsg.created_at).toDateString() : null;
-
             if (currentDay !== nextDay) {
-                // Day changed after this message (messages are DESC, so this is the oldest of the day)
-                // In inverted list, higher index = higher visually. So push divider AFTER messages.
                 result.push({ __divider: true, id: `divider-${currentDay}`, label: formatDayLabel(msg.created_at) });
             }
         }
         return result;
     }, [messages]);
 
-    // Determine the other participant (for private chats)
+    // Other participant for PRIVATE chats
     const otherParticipant = React.useMemo(() => {
-        if (!conversation || conversation.type !== 'PRIVATE') return null;
+        if (!conversation) return null;
+        if (conversation.type !== 'PRIVATE') return null;
         return conversation.participants?.find((p: any) => p.user_id !== user?.id);
     }, [conversation, user]);
 
-    // Online status: online if lastSeenAt < 5 mins ago
+    // For group chats, pick the NPO participant to show as header (if exists)
+    const headerProfile = React.useMemo(() => {
+        if (!conversation) return null;
+        if (conversation.type === 'PRIVATE') return otherParticipant?.profiles || null;
+        // For groups, no single profile - show activity title
+        return null;
+    }, [conversation, otherParticipant]);
+
+    // Online/offline – recalculated on every render (conversation refreshes every 30s)
     const isOnline = React.useMemo(() => {
-        const lastSeen = otherParticipant?.profiles?.last_seen_at;
+        const lastSeen = headerProfile?.last_seen_at;
         if (!lastSeen) return false;
         return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
-    }, [otherParticipant]);
+    }, [headerProfile]);
 
-    // Can we call this person?
-    const otherAllowsCalls = otherParticipant?.profiles?.allow_calls !== false;
-    const otherPhone = otherParticipant?.profiles?.phone;
+    // Call capability
+    const otherAllowsCalls = headerProfile?.allow_calls !== false;
+    const otherPhone = headerProfile?.phone;
 
     const handleCall = () => {
-        if (!otherPhone || !otherAllowsCalls) return;
+        if (!otherPhone) {
+            Alert.alert('Nessun numero', 'Questo utente non ha inserito un numero di telefono.');
+            return;
+        }
+        if (!otherAllowsCalls) {
+            Alert.alert('Chiamate disabilitate', "Questo utente ha disabilitato le chiamate nelle impostazioni di privacy.");
+            return;
+        }
         Linking.openURL(`tel:${otherPhone}`);
+    };
+
+    // Navigate to a user's profile
+    const navigateToProfile = (userId: string) => {
+        if (!userId) return;
+        router.push(`/user-profile/${userId}` as any);
     };
 
     const handleAttachFile = async () => {
         try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: '*/*',
-                copyToCacheDirectory: true,
-            });
+            const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
             if (!result.canceled && result.assets?.[0]) {
                 const file = result.assets[0];
-                // Send the filename as a message (future: upload to Supabase Storage)
                 await ChatService.sendMessage(id as string, user!.id, `📎 ${file.name}`);
             }
         } catch (e) {
@@ -96,271 +107,262 @@ export default function ChatDetailScreen() {
         }
     };
 
+    const handleSend = async () => {
+        if (!inputText.trim()) return;
+        const text = inputText.trim();
+        setInputText('');
+        try {
+            const newMsg = await ChatService.sendMessage(id as string, user!.id, text);
+            // Optimistically add to local state
+            setMessages(prev => [newMsg, ...prev]);
+        } catch (e) {
+            console.error('Send error', e);
+        }
+    };
+
+    const loadData = useCallback(async () => {
+        if (!id) return;
+        const conv = await ChatService.getConversationDetails(id as string);
+        setConversation(conv);
+        const msgs = await ChatService.getMessages(id as string);
+        setMessages(msgs);
+        // Mark as read
+        if (user?.id) {
+            ChatService.markAsRead(id as string, user.id).catch(() => { });
+        }
+    }, [id, user?.id]);
+
     useEffect(() => {
-        if (!user || !id) return;
+        loadData();
 
-        const loadChat = async () => {
-            try {
-                const data = await ChatService.getConversationDetails(id as string);
-                setConversation(data);
-
-                const me = data.participants?.find((p: any) => p.user_id === user.id);
-                setIsMuted(!!me?.notifications_muted);
-
-                const sortedMessages = [...(data.messages || [])].sort(
-                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
-                setMessages(sortedMessages);
-
-                await ChatService.markAsRead(id as string, user.id);
-            } catch (error) {
-                console.error("Failed to load conversation", error);
-            }
-        };
-
-        loadChat();
-
-        const channel = supabase.channel(`public:messages:conv_${id}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` },
-                (payload) => {
-                    const newMsg = payload.new;
-                    setMessages(prev => [newMsg, ...prev]);
-                    if (newMsg.sender_id !== user.id) {
-                        ChatService.markAsRead(id as string, user.id);
-                    }
-                }
-            )
+        // Subscribe to new messages in this conversation
+        const channel = supabase.channel(`chat_${id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `conversation_id=eq.${id}`
+            }, (payload) => {
+                // Add to top of inverted list, then fetch fresh profile info
+                supabase
+                    .from('messages')
+                    .select('*, profiles:sender_id (name:full_name, avatar:avatar_url)')
+                    .eq('id', payload.new.id)
+                    .single()
+                    .then(({ data }) => {
+                        if (data) setMessages(prev => {
+                            // avoid duplicates (optimistic insert)
+                            if (prev.find(m => m.id === data.id)) return prev;
+                            return [data, ...prev];
+                        });
+                    });
+            })
             .subscribe();
+
+        // Poll online status every 30s
+        const timer = setInterval(() => {
+            loadData();
+        }, 30000);
 
         return () => {
             supabase.removeChannel(channel);
+            clearInterval(timer);
         };
-    }, [id, user]);
+    }, [id, loadData]);
 
-    const handleSend = async () => {
-        if (!inputText.trim() || !user || !id) return;
+    // Header display name
+    const displayTitle = headerProfile
+        ? (headerProfile.npo_name || headerProfile.name || 'Chat')
+        : (conversation?.activities?.title || conversation?.name || 'Gruppo');
 
-        const textToSent = inputText.trim();
-        setInputText('');
-
-        try {
-            await ChatService.sendMessage(id as string, user.id, textToSent);
-        } catch (error) {
-            console.error("Failed to send message", error);
-        }
-    };
-
-    const toggleMute = async () => {
-        if (!user || !id) return;
-        try {
-            const nextStatus = !isMuted;
-            await ChatService.toggleNotifications(id as string, user.id, nextStatus);
-            setIsMuted(nextStatus);
-            setShowMenu(false);
-        } catch (error) {
-            console.error("Failed to toggle notifications", error);
-        }
-    };
-
-    const volunteers = (conversation?.participants || []).filter((p: any) => p.profiles?.role === 'VOLUNTEER');
-    const npos = (conversation?.participants || []).filter((p: any) => p.profiles?.role === 'NPO');
-
-    // Chat title and subtitle
-    const chatTitle = conversation?.type === 'ACTIVITY_GROUP'
-        ? (conversation?.activities?.title || 'Gruppo Attività')
-        : (otherParticipant?.profiles?.npo_name || otherParticipant?.profiles?.full_name || 'Chat Privata');
-
-    const chatSubtitle = conversation?.type === 'ACTIVITY_GROUP'
-        ? (conversation?.activities?.npo?.npo_name || 'Organizzazione')
-        : (isOnline ? 'Online' : 'Offline');
-
-    const subtitleColor = conversation?.type === 'PRIVATE' ? (isOnline ? '#22c55e' : '#94a3b8') : '#94a3b8';
+    const displayAvatar = headerProfile?.avatar;
+    const otherUserId = otherParticipant?.user_id;
 
     return (
-        <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-            {/* Custom Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100 bg-white z-50">
-                <View className="flex-row items-center gap-3 flex-1">
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
-                        <ArrowLeft size={28} color={Colors.primary} />
+        <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+            {/* Header */}
+            <View className="flex-row items-center px-4 py-2 border-b border-gray-100">
+                <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+                    <ArrowLeft size={24} color={Colors.primary} />
+                </TouchableOpacity>
+
+                <View className="flex-row items-center flex-1 ml-1">
+                    {/* Avatar – tap to go to profile (private chats only) */}
+                    <TouchableOpacity
+                        onPress={() => otherUserId && navigateToProfile(otherUserId)}
+                        activeOpacity={otherUserId ? 0.7 : 1}
+                        className="relative"
+                    >
+                        <Image
+                            source={{ uri: displayAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayTitle)}&background=random` }}
+                            className="w-10 h-10 rounded-full bg-slate-100"
+                        />
+                        {isOnline && (
+                            <View className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+                        )}
                     </TouchableOpacity>
-                    <View className="flex-1">
-                        <Text className="text-primary font-black text-lg" numberOfLines={1}>
-                            {chatTitle}
-                        </Text>
-                        <Text style={{ color: subtitleColor }} className="text-xs font-semibold">
-                            {chatSubtitle}
-                        </Text>
-                    </View>
+
+                    <TouchableOpacity
+                        className="ml-3 flex-1"
+                        onPress={() => {
+                            if (conversation?.type === 'ACTIVITY_GROUP') setShowParticipants(true);
+                            else if (otherUserId) navigateToProfile(otherUserId);
+                        }}
+                    >
+                        <Text className="text-primary font-bold text-base" numberOfLines={1}>{displayTitle}</Text>
+                        {conversation?.type === 'PRIVATE' && (
+                            <Text className="text-secondary text-xs">{isOnline ? '🟢 Online' : '⚪ Offline'}</Text>
+                        )}
+                        {conversation?.type === 'ACTIVITY_GROUP' && (
+                            <Text className="text-secondary text-xs">{(conversation?.participants?.length || 0)} partecipanti · tocca per elenco</Text>
+                        )}
+                    </TouchableOpacity>
                 </View>
 
-                <View className="flex-row items-center gap-1">
-                    {/* Phone call button — disabled if callee has disabled calls or has no phone number */}
+                <View className="flex-row items-center">
                     <TouchableOpacity
+                        className={`p-2 mr-1 ${(!otherPhone || !otherAllowsCalls) ? 'opacity-40' : ''}`}
                         onPress={handleCall}
-                        disabled={!otherPhone || !otherAllowsCalls}
-                        className="p-2"
                     >
-                        {otherPhone && otherAllowsCalls
-                            ? <Phone size={24} color={Colors.primary} />
-                            : <PhoneOff size={24} color="#cbd5e1" />
-                        }
+                        {!otherPhone ? (
+                            <View className="items-center">
+                                <PhoneOff size={22} color={Colors.secondary} />
+                                <Text style={{ fontSize: 8, color: Colors.secondary, marginTop: -2 }}>No Num</Text>
+                            </View>
+                        ) : !otherAllowsCalls ? (
+                            <View className="items-center">
+                                <PhoneOff size={22} color={Colors.secondary} />
+                                <Text style={{ fontSize: 8, color: Colors.secondary, marginTop: -2 }}>Privacy</Text>
+                            </View>
+                        ) : (
+                            <Phone size={24} color={Colors.primary} />
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity className="p-2" onPress={() => setShowMenu(!showMenu)}>
                         <MoreVertical size={24} color={Colors.primary} />
                     </TouchableOpacity>
                 </View>
-
-                {/* Dropdown Menu */}
-                {showMenu && (
-                    <View
-                        className="absolute right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 w-56 z-[100]"
-                        style={{ elevation: 5 }}
-                    >
-                        <TouchableOpacity
-                            onPress={toggleMute}
-                            className="flex-row items-center px-4 py-3 border-b border-gray-50"
-                        >
-                            {isMuted ? <Bell size={22} color={Colors.primary} /> : <BellOff size={22} color="#64748b" />}
-                            <Text className={`ml-3 font-semibold ${isMuted ? 'text-primary' : 'text-slate-600'}`}>
-                                {isMuted ? 'Abilita notifiche' : 'Disabilita notifiche'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => { setShowParticipants(true); setShowMenu(false); }}
-                            className="flex-row items-center px-4 py-3"
-                        >
-                            <Users size={22} color="#64748b" />
-                            <Text className="ml-3 font-semibold text-slate-600">Partecipanti</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
             </View>
 
-            {/* Participants Modal */}
-            <Modal
-                visible={showParticipants}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowParticipants(false)}
-            >
-                <View className="flex-1 bg-black/40 justify-end">
-                    <View className="bg-white rounded-t-[32px] h-[70%] px-6 pt-6 pb-10">
-                        <View className="flex-row justify-between items-center mb-6">
-                            <Text className="text-2xl font-black text-primary">Partecipanti</Text>
-                            <TouchableOpacity onPress={() => setShowParticipants(false)} className="bg-slate-100 p-2 rounded-full">
-                                <X size={24} color="#64748b" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {npos.map((p: any) => (
-                                <View key={p.user_id} className="flex-row items-center mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                    <Image
-                                        source={{ uri: p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${p.profiles?.npo_name || 'N'}` }}
-                                        className="w-12 h-12 rounded-full border-2 border-primary/20"
-                                    />
-                                    <View className="ml-4">
-                                        <Text className="text-lg font-bold text-slate-800">{p.profiles?.npo_name}</Text>
-                                        <Text className="text-primary font-bold text-xs">Organizzatore</Text>
-                                    </View>
-                                </View>
-                            ))}
-
-                            <View className="h-[1px] bg-slate-100 my-4" />
-                            <Text className="text-slate-400 font-bold mb-4 uppercase tracking-widest text-xs">Volontari ({volunteers.length})</Text>
-
-                            {volunteers.map((p: any) => (
-                                <View key={p.user_id} className="flex-row items-center mb-4">
-                                    <Image
-                                        source={{ uri: p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${p.profiles?.full_name || 'V'}` }}
-                                        className="w-12 h-12 rounded-full"
-                                    />
-                                    <View className="ml-4">
-                                        <Text className="text-base font-bold text-slate-700">{p.profiles?.full_name}</Text>
-                                        <Text className="text-slate-400 text-xs">Volontario</Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
             {/* Chat List */}
-            <FlatList
-                ref={flatListRef}
-                data={messagesWithDividers}
-                keyExtractor={(item) => item.id}
-                inverted
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingVertical: 10 }}
-                renderItem={({ item }) => {
-                    // Day divider
-                    if (item.__divider) {
-                        return (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16 }}>
-                                <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                                <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginHorizontal: 8 }}>
-                                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', textTransform: 'capitalize' }}>{item.label}</Text>
-                                </View>
-                                <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                            </View>
-                        );
-                    }
-                    // Regular message
-                    const isOwn = item.sender_id === user?.id;
-                    const timestamp = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const sender = conversation?.participants?.find((p: any) => p.user_id === item.sender_id);
-                    const senderName = isOwn ? 'Tu' : (sender?.profiles?.npo_name || sender?.profiles?.full_name || 'Utente');
-                    const avatarUrl = isOwn ? user?.avatar : sender?.profiles?.avatar_url;
-
-                    return (
-                        <ChatBubble
-                            message={item.content}
-                            isOwn={isOwn}
-                            timestamp={timestamp}
-                            senderName={senderName}
-                            avatarUrl={avatarUrl}
-                            isRead={true}
-                        />
-                    );
-                }}
-            />
-            {/* Input Bar */}
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                className="flex-1"
             >
-                <View className="px-4 py-3 border-t border-gray-100 bg-white flex-row items-center">
-                    <View className="flex-1 flex-row items-center bg-slate-50 rounded-full px-4 py-2 mr-3 border border-slate-100">
-                        {/* Attachment button */}
-                        <TouchableOpacity className="mr-3" onPress={handleAttachFile}>
-                            <Paperclip size={22} color="#64748b" />
-                        </TouchableOpacity>
+                <FlatList
+                    ref={flatListRef}
+                    data={messagesWithDividers}
+                    keyExtractor={(item) => item.id}
+                    inverted
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 20 }}
+                    renderItem={({ item }) => {
+                        if (item.__divider) {
+                            return (
+                                <View className="items-center my-6">
+                                    <View className="bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200/50">
+                                        <Text className="text-[11px] font-bold text-slate-500 tracking-wider uppercase">
+                                            {item.label}
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        }
+                        return (
+                            <ChatBubble
+                                message={item.content}
+                                isOwn={item.sender_id === user?.id}
+                                senderName={item.sender_id === user?.id ? 'Tu' : (item.profiles?.name || 'Utente')}
+                                avatarUrl={item.profiles?.avatar}
+                                timestamp={new Date(item.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                isRead={item.is_read}
+                            />
+                        );
+                    }}
+                />
 
+                {/* Input Area */}
+                <View className="p-4 bg-white border-t border-gray-100">
+                    <View className="flex-row items-center bg-gray-50 rounded-3xl px-4 py-2 border border-gray-100">
+                        <TouchableOpacity onPress={handleAttachFile} className="p-1">
+                            <Paperclip size={22} color={Colors.secondary} />
+                        </TouchableOpacity>
                         <TextInput
-                            className="flex-1 text-base max-h-24 min-h-[40px] text-slate-800"
+                            className="flex-1 min-h-[40px] max-h-[100px] px-3 text-primary text-base"
                             placeholder="Scrivi un messaggio..."
                             placeholderTextColor="#94a3b8"
                             multiline
                             value={inputText}
                             onChangeText={setInputText}
                         />
+                        <TouchableOpacity
+                            onPress={handleSend}
+                            disabled={!inputText.trim()}
+                            className={`p-2 rounded-full ${inputText.trim() ? 'bg-accent shadow-sm' : 'bg-transparent'}`}
+                        >
+                            <Send size={22} color={inputText.trim() ? 'white' : '#cbd5e1'} />
+                        </TouchableOpacity>
                     </View>
-
-                    <TouchableOpacity
-                        onPress={handleSend}
-                        disabled={!inputText.trim()}
-                        className={`w-12 h-12 rounded-full items-center justify-center ${inputText.trim() ? 'bg-primary' : 'bg-slate-300'}`}
-                    >
-                        <Send size={20} color="white" style={{ marginLeft: inputText.trim() ? 4 : 0 }} />
-                    </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* Menu Modal */}
+            <Modal transparent visible={showMenu} animationType="fade" onRequestClose={() => setShowMenu(false)}>
+                <TouchableOpacity className="flex-1 bg-black/20" activeOpacity={1} onPress={() => setShowMenu(false)}>
+                    <View className="absolute top-20 right-4 bg-white rounded-2xl shadow-xl border border-gray-100 w-52 overflow-hidden">
+                        <TouchableOpacity
+                            className="flex-row items-center px-4 py-3 border-b border-gray-50 active:bg-gray-50"
+                            onPress={() => { setIsMuted(!isMuted); setShowMenu(false); }}
+                        >
+                            {isMuted ? <Bell size={20} color="#64748b" /> : <BellOff size={20} color="#64748b" />}
+                            <Text className="ml-3 text-primary font-medium">{isMuted ? 'Riattiva notifiche' : 'Silenzia chat'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="flex-row items-center px-4 py-3 active:bg-gray-50"
+                            onPress={() => { setShowParticipants(true); setShowMenu(false); }}
+                        >
+                            <Users size={20} color="#64748b" />
+                            <Text className="ml-3 text-primary font-medium">Partecipanti</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Participants Modal */}
+            <Modal visible={showParticipants} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowParticipants(false)}>
+                <View className="flex-1 bg-white p-6">
+                    <View className="flex-row justify-between items-center mb-6">
+                        <Text className="text-2xl font-black text-primary">Partecipanti</Text>
+                        <TouchableOpacity onPress={() => setShowParticipants(false)} className="bg-slate-100 p-2 rounded-full">
+                            <X size={24} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
+                    <FlatList
+                        data={conversation?.participants || []}
+                        keyExtractor={(item) => item.user_id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                className="flex-row items-center mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100 active:bg-slate-100"
+                                onPress={() => {
+                                    setShowParticipants(false);
+                                    navigateToProfile(item.user_id);
+                                }}
+                            >
+                                <Image
+                                    source={{ uri: item.profiles?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.profiles?.npo_name || item.profiles?.name || 'U')}&background=random` }}
+                                    className="w-12 h-12 rounded-full bg-slate-200"
+                                />
+                                <View className="ml-3 flex-1">
+                                    <Text className="text-primary font-bold text-base">{item.profiles?.npo_name || item.profiles?.name || 'Utente'}</Text>
+                                    <Text className="text-slate-500 text-xs capitalize">{item.profiles?.role?.toLowerCase() || 'aderente'}</Text>
+                                </View>
+                                <ArrowLeft size={16} color={Colors.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }

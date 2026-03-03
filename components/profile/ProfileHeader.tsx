@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Award, Settings, Camera } from "lucide-react-native";
+import { Award, Settings, Camera, Mail } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { User } from "../../types";
 import { Colors } from "../../constants/Colors";
@@ -71,12 +71,6 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
             </TouchableOpacity>
             <Text className="text-2xl font-black text-primary mb-1 text-center">{user?.name || "Utente"}</Text>
 
-            {/* Location Display */}
-            {user?.locationString && (
-                <View className="flex-row justify-center items-center mb-2">
-                    <Text className="text-xs text-gray-500 font-medium">📍 {user.locationString}</Text>
-                </View>
-            )}
 
             {/* Bio & Contacts */}
             <View className="w-full px-4 mb-2">
@@ -95,6 +89,19 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                             <Text className="text-primary font-bold text-sm">Completa il tuo profilo</Text>
                         </TouchableOpacity>
                     )
+                )}
+            </View>
+
+            {/* Location & Email Display */}
+            <View className="items-center mb-2 px-4">
+                {user?.locationString && (
+                    <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.locationString}</Text>
+                )}
+                {(isOwnProfile || user?.show_email) && user?.email && (
+                    <View className="flex-row items-center gap-1">
+                        <Mail size={12} color="#94a3b8" />
+                        <Text className="text-xs text-gray-400 font-medium">{user.email}</Text>
+                    </View>
                 )}
             </View>
         </View>

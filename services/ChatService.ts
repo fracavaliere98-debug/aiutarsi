@@ -17,27 +17,34 @@ class ChatService {
                     activity_id,
                     created_at,
                     last_message_at,
-                    last_message_content,
                     last_message_sender_id,
+                    activities (title),
                     participants:conversation_participants (
                         user_id,
                         profiles (
-                            full_name,
+                            name:full_name,
                             npo_name,
-                            avatar_url
+                            avatar:avatar_url
                         )
+                    ),
+                    last_message:messages (
+                        id,
+                        content,
+                        sender_id,
+                        created_at
                     )
                 )
             `)
             .eq('user_id', userId)
-            .order('last_message_at', { foreignTable: 'conversations', ascending: false });
+            .order('last_message_at', { foreignTable: 'conversations', ascending: false })
+            .order('created_at', { foreignTable: 'conversations.messages', ascending: false })
+            .limit(1, { foreignTable: 'conversations.messages' });
 
         if (error) {
             console.error('Error fetching conversations:', error);
             throw error;
         }
 
-        // The query returns nested messages. We handle this in UI layer or sort them.
         return data;
     }
 
@@ -104,10 +111,13 @@ class ChatService {
                 participants:conversation_participants (
                     user_id,
                     profiles (
-                        full_name,
+                        name:full_name,
                         npo_name,
-                        avatar_url,
-                        role
+                        avatar:avatar_url,
+                        role,
+                        phone,
+                        allow_calls,
+                        last_seen_at
                     )
                 ),
                 messages (*)
@@ -126,7 +136,7 @@ class ChatService {
     }
 
     /**
-     * Send a message
+     * Send a message and update the conversation's last_message metadata
      */
     async sendMessage(conversationId: string, senderId: string, content: string, metadata: MessageMetadata = {}) {
         const { data, error } = await supabase
@@ -141,6 +151,17 @@ class ChatService {
             .single();
 
         if (error) throw error;
+
+        // Update the conversation's last_message fields so the preview is always fresh
+        await supabase
+            .from('conversations')
+            .update({
+                last_message_content: content,
+                last_message_at: data.created_at,
+                last_message_sender_id: senderId
+            })
+            .eq('id', conversationId);
+
         return data;
     }
 
@@ -155,6 +176,26 @@ class ChatService {
             .eq('user_id', userId);
 
         if (error) throw error;
+    }
+
+    /**
+     * Get messages for a specific conversation
+     */
+    async getMessages(conversationId: string) {
+        const { data, error } = await supabase
+            .from('messages')
+            .select(`
+                *,
+                profiles:sender_id (
+                    name:full_name,
+                    avatar:avatar_url
+                )
+            `)
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
     }
     /**
      * Get NPOs available for chat (where user is participant/approved)
@@ -193,8 +234,9 @@ class ChatService {
                 volunteer_id,
                 volunteer:profiles!applications_volunteer_id_fkey (
                     id, 
-                    full_name, 
-                    avatar_url, 
+                    name:full_name, 
+                    npo_name,
+                    avatar:avatar_url, 
                     role
                 )
             `)
@@ -211,8 +253,8 @@ class ChatService {
             if (app.volunteer && !volunteersMap.has(app.volunteer_id)) {
                 volunteersMap.set(app.volunteer_id, {
                     id: app.volunteer_id,
-                    name: (app.volunteer as any).full_name,
-                    avatar: (app.volunteer as any).avatar_url,
+                    name: (app.volunteer as any).npo_name || (app.volunteer as any).name,
+                    avatar: (app.volunteer as any).avatar,
                     type: 'VOLUNTEER',
                     isGroup: false
                 });

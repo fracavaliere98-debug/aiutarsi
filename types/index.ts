@@ -25,6 +25,9 @@ export interface User {
     phone?: string;
     website?: string;
     publicEmail?: string; // Contact email, distinct from login email
+    profile_public?: boolean;
+    show_email?: boolean;
+    allow_calls?: boolean;
     profileCompleted?: boolean;
     lastSeenAt?: string;
     createdAt?: string;
