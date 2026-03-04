@@ -35,7 +35,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                     linked_activity:activities!linked_activity_id (
                         id,
                         title,
-                        date_time,
+                        date_start,
                         status
                     ),
                     reactions:post_reactions (

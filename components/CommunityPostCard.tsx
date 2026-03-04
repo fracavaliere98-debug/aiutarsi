@@ -87,9 +87,9 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                                     {post.linked_activity.title}
                                 </Text>
                                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
-                                    {new Date(post.linked_activity.date_time).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                    {new Date(post.linked_activity.date_start).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     {' · '}
-                                    {new Date(post.linked_activity.date_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(post.linked_activity.date_start).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                 </Text>
                             </View>
                             {post.linked_activity.status === 'APERTA' && (

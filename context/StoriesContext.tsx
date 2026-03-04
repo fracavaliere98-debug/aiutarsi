@@ -33,7 +33,7 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
                         role
                     ),
                     linked_activity:activities!linked_activity_id (
-                        id, title, date_time, status
+                        id, title, date_start, status
                     )
                 `)
                 .gt('expires_at', new Date().toISOString())

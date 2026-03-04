@@ -91,18 +91,19 @@ function SuggestedActivityInFeed({ activity }: { activity: Activity }) {
             <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={{ fontSize: 13 }}>✨</Text>
                 <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>CONSIGLIATA PER TE</Text>
-                {activity.matchPercentage && (
-                    <View style={{ marginLeft: 'auto', backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                <View style={{ flex: 1 }} />
+                {activity.matchPercentage ? (
+                    <View style={{ backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
                         <Text style={{ color: 'white', fontSize: 10, fontWeight: '900' }}>{activity.matchPercentage}% Match</Text>
                     </View>
-                )}
+                ) : null}
             </View>
             <View style={{ padding: 14 }}>
                 <Text style={{ fontWeight: '900', color: Colors.primary, fontSize: 15, marginBottom: 4 }} numberOfLines={2}>{activity.title}</Text>
                 <Text style={{ fontSize: 12, color: '#7c3aed', fontWeight: '700', marginBottom: 8 }}>{activity.npoName}</Text>
                 <View style={{ flexDirection: 'row', gap: 16, marginBottom: 10 }}>
                     <Text style={{ fontSize: 12, color: '#64748b' }}>📅 {new Date(activity.dateTime).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}</Text>
-                    <Text style={{ fontSize: 12, color: '#64748b' }}>📍 {activity.location?.address?.split(',')[0]}</Text>
+                    <Text style={{ fontSize: 12, color: '#64748b' }}>📍 {activity.location?.address?.split(',')[0] ?? 'N/D'}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1, backgroundColor: Colors.primary, paddingVertical: 10, borderRadius: 14, alignItems: 'center' }}>

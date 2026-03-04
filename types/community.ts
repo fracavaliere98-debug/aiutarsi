@@ -18,7 +18,7 @@ export interface CommunityPost {
     linked_activity?: {
         id: string;
         title: string;
-        date_time: string;
+        date_start: string;
         status: string;
     } | null;
     reactions?: PostReaction[];
