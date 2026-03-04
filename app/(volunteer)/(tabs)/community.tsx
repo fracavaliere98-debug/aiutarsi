@@ -127,7 +127,7 @@ export default function CommunityScreen() {
     const isNPO = user?.role === 'NPO';
 
     // Build hybrid feed items: 2 posts → 1 suggested activity → repeat
-    // Weekend banner is injected after position 3
+    // Weekend banner always appended at the end (or after 4 items if feed is long)
     const suggestedActivities = activities
         .filter(a => a.status === 'APERTA')
         .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
@@ -141,28 +141,31 @@ export default function CommunityScreen() {
     const feedItems: FeedItem[] = [];
     let actIdx = 0;
     let weekendInserted = false;
+
     for (let i = 0; i < posts.length; i++) {
         feedItems.push({ type: 'post', data: posts[i], key: `post_${posts[i].id}` });
-        // Every 2 posts, inject an activity
+        // Every 2 posts, inject a suggested activity
         if ((i + 1) % 2 === 0 && actIdx < suggestedActivities.length) {
-            feedItems.push({ type: 'activity', data: suggestedActivities[actIdx++], key: `act_${suggestedActivities[actIdx - 1].id}` });
+            feedItems.push({ type: 'activity', data: suggestedActivities[actIdx], key: `act_${suggestedActivities[actIdx].id}` });
+            actIdx++;
         }
-        // Insert weekend banner after 3-4 posts
+        // Insert weekend banner inline once the feed reaches 4 items
         if (!weekendInserted && feedItems.length >= 4) {
             feedItems.push({ type: 'weekend', key: 'weekend_banner' });
             weekendInserted = true;
         }
     }
-    // If no posts at all, still show banner + suggestions
-    if (posts.length === 0 && !weekendInserted) {
+
+    // Always ensure the weekend banner appears (even with 0–3 posts)
+    if (!weekendInserted) {
         feedItems.push({ type: 'weekend', key: 'weekend_banner' });
-        weekendInserted = true;
     }
-    if (posts.length === 0) {
-        suggestedActivities.slice(0, 3).forEach(a => {
-            feedItems.push({ type: 'activity', data: a, key: `act_${a.id}` });
-        });
-    }
+
+    // Always show at least 3 suggested activities after the posts / banner
+    const remainingActs = suggestedActivities.slice(actIdx, actIdx + Math.max(3, suggestedActivities.length - actIdx));
+    remainingActs.forEach(a => {
+        feedItems.push({ type: 'activity', data: a, key: `act_${a.id}` });
+    });
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
