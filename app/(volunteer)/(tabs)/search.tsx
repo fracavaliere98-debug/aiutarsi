@@ -6,10 +6,10 @@ import { FlashList } from "@shopify/flash-list";
 import { Colors } from "../../../constants/Colors";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-    Search, MapPin, Calendar, X, SlidersHorizontal,
+    Search, MapPin, Calendar, X, Map as MapIcon,
     Bell, Zap, Globe, BookOpen, Dog, Palette, Heart, Code,
     MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
-    ChevronDown, CheckCircle2, Users, TreePine
+    ChevronDown, CheckCircle2, Users, TreePine, SlidersHorizontal
 } from "lucide-react-native";
 import { Activity } from "../../../types";
 import { useRouter } from "expo-router";
@@ -23,6 +23,7 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { SoftCard } from "../../../components/SoftCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
+import { CalendarPicker } from "../../../components/CalendarPicker";
 
 // ─── Shared constants (keep in sync with map.tsx) ────────────────────────────
 const INTERESTS = [
@@ -284,6 +285,9 @@ export default function SearchScreen() {
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
     const [pendingFilters, setPendingFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
+    // Date picker visibility (for quick Date chip)
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
     // Active filter count
     const activeFilterCount = [
         filters.interests.length > 0,
@@ -472,26 +476,22 @@ export default function SearchScreen() {
                         )}
                     </View>
 
-                    {/* Filter button */}
+                    {/* Map icon — navigates to map view */}
                     <TouchableOpacity
-                        onPress={openFilters}
+                        onPress={() => router.push('/(volunteer)/(tabs)/map' as any)}
                         style={{
-                            backgroundColor: activeFilterCount > 0 ? Colors.primary : '#f8f9ff',
+                            backgroundColor: '#f8f9ff',
                             borderRadius: 14, width: 42, height: 42,
                             alignItems: 'center', justifyContent: 'center',
-                            borderWidth: 1, borderColor: activeFilterCount > 0 ? 'transparent' : '#e8eaf0',
+                            borderWidth: 1, borderColor: '#e8eaf0',
                         }}>
-                        <SlidersHorizontal size={18} color={activeFilterCount > 0 ? 'white' : Colors.primary} />
-                        {activeFilterCount > 0 && (
-                            <View style={{ position: 'absolute', top: 5, right: 5, backgroundColor: Colors.accent, borderRadius: 99, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ color: 'white', fontSize: 8, fontWeight: '900' }}>{activeFilterCount}</Text>
-                            </View>
-                        )}
+                        <MapIcon size={18} color={Colors.primary} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Quick filter chips */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+                    {/* Interessi / Competenze chips open FilterModal */}
                     {[{ id: 'interessi', label: 'Interessi', count: filters.interests.length },
                     { id: 'competenze', label: 'Competenze', count: filters.skills.length }].map(chip => (
                         <TouchableOpacity key={chip.id} onPress={openFilters}
@@ -509,11 +509,38 @@ export default function SearchScreen() {
                             <ChevronDown size={11} color={chip.count > 0 ? 'white' : Colors.primary} />
                         </TouchableOpacity>
                     ))}
+
+                    {/* Date chip — opens CalendarPicker */}
+                    <TouchableOpacity
+                        onPress={() => setShowDatePicker(true)}
+                        style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 5,
+                            backgroundColor: filters.dateFrom ? Colors.primary : '#f0f2fa',
+                            paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
+                        }}>
+                        <Calendar size={11} color={filters.dateFrom ? 'white' : Colors.primary} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : Colors.primary }}>
+                            {filters.dateFrom ? filters.dateFrom : 'Data'}
+                        </Text>
+                        {filters.dateFrom ? (
+                            <TouchableOpacity
+                                onPress={(e) => { e.stopPropagation?.(); setFilters(f => ({ ...f, dateFrom: '' })); }}
+                                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                            >
+                                <X size={11} color="white" />
+                            </TouchableOpacity>
+                        ) : (
+                            <ChevronDown size={11} color={Colors.primary} />
+                        )}
+                    </TouchableOpacity>
+
+                    {/* Disponibili chip */}
                     <TouchableOpacity
                         onPress={() => setFilters(f => ({ ...f, onlyAvailable: !f.onlyAvailable }))}
                         style={{ backgroundColor: filters.onlyAvailable ? Colors.primary : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
                         <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : Colors.primary }}>Disponibili</Text>
                     </TouchableOpacity>
+                    {/* Urgenti chip */}
                     <TouchableOpacity
                         onPress={() => setFilters(f => ({ ...f, onlyUrgent: !f.onlyUrgent }))}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: filters.onlyUrgent ? Colors.accent : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
@@ -521,6 +548,16 @@ export default function SearchScreen() {
                         <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyUrgent ? 'white' : Colors.accent }}>Urgenti</Text>
                     </TouchableOpacity>
                 </ScrollView>
+
+                {/* CalendarPicker modal for Date quick chip */}
+                <CalendarPicker
+                    visible={showDatePicker}
+                    onClose={() => setShowDatePicker(false)}
+                    onSelect={(date: string) => {
+                        setFilters(f => ({ ...f, dateFrom: date }));
+                        setShowDatePicker(false);
+                    }}
+                />
 
                 {/* Categorized search suggestions dropdown — relative to this container */}
                 {isSearchFocused && (suggestedActivities.length > 0 || suggestedNpos.length > 0 || suggestedPlaces.length > 0 || searchLoading) && (

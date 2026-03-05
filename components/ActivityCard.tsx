@@ -4,6 +4,7 @@ import { Colors } from "../constants/Colors";
 import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 interface ActivityCardProps {
     activity: any;
@@ -13,6 +14,14 @@ interface ActivityCardProps {
 
 export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
     const { users, user } = useAuth();
+    const [avatarContainerW, setAvatarContainerW] = useState(0);
+    // Dynamic: each avatar is 22px wide, overlapping by 6px each (net 16px per extra)
+    const AVATAR_SIZE = 22;
+    const OVERLAP = 6;
+    const REMAINDER_CIRCLE_W = 24;
+    const maxAvatars = avatarContainerW > 0
+        ? Math.max(1, Math.floor((avatarContainerW - REMAINDER_CIRCLE_W) / (AVATAR_SIZE - OVERLAP)) + 1)
+        : 3; // fallback while not yet measured
     const activityDate = new Date(activity.dateTime);
     const month = activityDate.toLocaleDateString("it-IT", { month: "short" }).toUpperCase();
     const day = activityDate.getDate();
@@ -111,28 +120,45 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                             </View>
                         )}
                         {activity.iscritti && activity.iscritti.length > 0 ? (
-                            <View className="flex-row -space-x-2">
-                                {activity.iscritti.slice(0, 3).map((volId: string, idx: number) => {
+                            <View
+                                style={{ flexDirection: 'row' }}
+                                onLayout={e => setAvatarContainerW(e.nativeEvent.layout.width)}
+                            >
+                                {activity.iscritti.slice(0, maxAvatars).map((volId: string, idx: number) => {
                                     const volunteer = users.find((u: any) => u.id === volId);
                                     return (
-                                        <View key={volId} style={{ zIndex: 10 - idx }}>
+                                        <View key={volId} style={{ marginLeft: idx === 0 ? 0 : -OVERLAP, zIndex: 20 - idx }}>
                                             <UserAvatar
-                                                size={24}
-                                                fontSize={10}
+                                                size={AVATAR_SIZE}
+                                                fontSize={9}
                                                 name={volunteer?.name || "V"}
                                                 avatarUrl={volunteer?.avatar}
                                             />
                                         </View>
                                     );
                                 })}
-                                {activity.iscritti.length > 3 && (
-                                    <View className="w-6 h-6 rounded-full bg-gray-100 items-center justify-center border border-white" style={{ zIndex: 0 }}>
-                                        <Text className="text-[8px] font-bold text-gray-500">+{activity.iscritti.length - 3}</Text>
+                                {activity.iscritti.length > maxAvatars && (
+                                    <View
+                                        style={{
+                                            marginLeft: -OVERLAP, zIndex: 0,
+                                            width: REMAINDER_CIRCLE_W, height: AVATAR_SIZE,
+                                            borderRadius: AVATAR_SIZE / 2,
+                                            backgroundColor: '#e2e8f0',
+                                            alignItems: 'center', justifyContent: 'center',
+                                            borderWidth: 1.5, borderColor: 'white',
+                                        }}
+                                    >
+                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#64748b' }}>
+                                            +{activity.iscritti.length - maxAvatars}
+                                        </Text>
                                     </View>
                                 )}
                             </View>
                         ) : (
-                            <Text className="text-secondary/60 text-[10px] font-medium italic">Ancora nessun iscritto</Text>
+                            <View
+                                style={{ flexDirection: 'row', flex: 1 }}
+                                onLayout={e => setAvatarContainerW(e.nativeEvent.layout.width)}
+                            />
                         )}
                     </View>
                     {user?.role === 'VOLUNTEER' ? (

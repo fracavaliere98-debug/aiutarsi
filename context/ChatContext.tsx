@@ -7,6 +7,7 @@ interface ChatContextType {
     conversations: any[];
     unreadCount: number;
     refreshConversations: () => Promise<void>;
+    markAsRead: (conversationId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -20,7 +21,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         if (!user) return;
         try {
             const data = await ChatService.getConversations(user.id);
-            // Sorting is now handled by the backend (order by last_message_at DESC)
             setConversations(data);
 
             // Fetch unread count from view
@@ -34,6 +34,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error("Error refreshing conversations:", error);
         }
+    };
+
+    // Mark a conversation as read and immediately refresh the badge count
+    const markAsRead = async (conversationId: string) => {
+        if (!user) return;
+        try {
+            await ChatService.markAsRead(conversationId, user.id);
+        } catch { /* best-effort */ }
+        // Always refresh regardless of whether markAsRead threw
+        await refreshConversations();
     };
 
     useEffect(() => {
@@ -70,7 +80,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }, [user]);
 
     return (
-        <ChatContext.Provider value={{ conversations, unreadCount, refreshConversations }}>
+        <ChatContext.Provider value={{ conversations, unreadCount, refreshConversations, markAsRead }}>
             {children}
         </ChatContext.Provider>
     );

@@ -10,7 +10,7 @@ import { Colors } from '../constants/Colors';
 
 interface CalendarPickerProps {
     visible: boolean;
-    value: string; // YYYY-MM-DD or ''
+    value?: string; // YYYY-MM-DD or '' — optional, defaults to ''
     onSelect: (date: string) => void;
     onClose: () => void;
     minDate?: Date;
@@ -32,7 +32,7 @@ function firstDayOfMonth(year: number, month: number) {
     return (raw + 6) % 7;
 }
 
-export function CalendarPicker({ visible, value, onSelect, onClose, minDate }: CalendarPickerProps) {
+export function CalendarPicker({ visible, value = '', onSelect, onClose, minDate }: CalendarPickerProps) {
     const today = new Date();
     const min = minDate || today;
 

@@ -7,6 +7,7 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
 import ChatService, { ChatFilterError } from '../../services/ChatService';
 import { useAuth } from '../../context/AuthContext';
+import { useChat } from '../../context/ChatContext';
 import { supabase } from '../../utils/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import { useToast } from '../../context/ToastContext';
@@ -15,6 +16,7 @@ export default function ChatDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth();
+    const { markAsRead } = useChat();
     const { showToast } = useToast();
 
     const [conversation, setConversation] = useState<any>(null);
@@ -147,7 +149,8 @@ export default function ChatDetailScreen() {
         // Merge instead of replacing, so optimistic messages aren't duplicated
         setMessages(prev => mergeMessages(prev, msgs));
         if (user?.id) {
-            ChatService.markAsRead(id as string, user.id).catch(() => { });
+            // Mark as read via context so the global unread badge resets immediately
+            markAsRead(id as string).catch(() => { });
         }
     }, [id, user?.id]);
 
