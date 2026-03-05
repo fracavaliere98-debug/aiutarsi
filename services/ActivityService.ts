@@ -108,6 +108,7 @@ export class ActivityService {
             onlyAvailable?: boolean;
             onlyUrgent?: boolean;
             dateFrom?: string;
+            dateTo?: string;
             statuses?: string[];
             // Geo-radius filter (uses get_activities_near_me RPC)
             centerLat?: number;
@@ -129,6 +130,7 @@ export class ActivityService {
                 if (filter.onlyUrgent) results = results.filter((a: any) => a.isUrgent);
                 if (filter.skills && filter.skills.length > 0) results = results.filter((a: any) => filter.skills!.some((s: any) => a.skills.includes(s)));
                 if (filter.dateFrom) results = results.filter((a: any) => a.dateTime >= filter.dateFrom!);
+                if (filter.dateTo) results = results.filter((a: any) => a.dateTime <= filter.dateTo! + 'T23:59:59');
                 if (filter.statuses && filter.statuses.length > 0) results = results.filter((a: any) => filter.statuses!.includes(a.status));
 
                 // Sort by distance ascending (RPC already does this, but keep it explicit)
@@ -194,6 +196,9 @@ export class ActivityService {
             }
             if (filter?.dateFrom) {
                 query = query.gte('date_start', filter.dateFrom);
+            }
+            if (filter?.dateTo) {
+                query = query.lte('date_start', filter.dateTo);
             }
             // skills filter via subquery (activities that have ANY of the requested skills)
             if (filter?.skills && filter.skills.length > 0) {

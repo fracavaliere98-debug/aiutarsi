@@ -54,6 +54,7 @@ interface FilterState {
     onlyAvailable: boolean;
     onlyUrgent: boolean;
     dateFrom: string;
+    dateTo: string;
     radiusKm: number;
 }
 
@@ -63,6 +64,7 @@ const DEFAULT_FILTERS: FilterState = {
     onlyAvailable: false,
     onlyUrgent: false,
     dateFrom: '',
+    dateTo: '',
     radiusKm: 20,
 };
 
@@ -349,6 +351,7 @@ export default function SearchScreen() {
             skills: filters.skills.length > 0 ? filters.skills : undefined,
             onlyUrgent: filters.onlyUrgent || undefined,
             dateFrom: filters.dateFrom || undefined,
+            dateTo: filters.dateTo || undefined,
             // Geo-radius params — only if a place was selected from the dropdown
             centerLat: searchCenter?.lat,
             centerLng: searchCenter?.lng,
@@ -510,7 +513,7 @@ export default function SearchScreen() {
                         </TouchableOpacity>
                     ))}
 
-                    {/* Date chip — opens CalendarPicker */}
+                    {/* Date chip — opens CalendarPicker in range mode */}
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(true)}
                         style={{
@@ -520,11 +523,15 @@ export default function SearchScreen() {
                         }}>
                         <Calendar size={11} color={filters.dateFrom ? 'white' : Colors.primary} />
                         <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : Colors.primary }}>
-                            {filters.dateFrom ? filters.dateFrom : 'Data'}
+                            {filters.dateFrom && filters.dateTo
+                                ? `${filters.dateFrom.slice(5).replace('-', '/')} → ${filters.dateTo.slice(5).replace('-', '/')}`
+                                : filters.dateFrom
+                                    ? filters.dateFrom.slice(5).replace('-', '/')
+                                    : 'Data'}
                         </Text>
                         {filters.dateFrom ? (
                             <TouchableOpacity
-                                onPress={(e) => { e.stopPropagation?.(); setFilters(f => ({ ...f, dateFrom: '' })); }}
+                                onPress={(e) => { e.stopPropagation?.(); setFilters(f => ({ ...f, dateFrom: '', dateTo: '' })); }}
                                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                             >
                                 <X size={11} color="white" />
@@ -549,12 +556,15 @@ export default function SearchScreen() {
                     </TouchableOpacity>
                 </ScrollView>
 
-                {/* CalendarPicker modal for Date quick chip */}
+                {/* CalendarPicker modal for Date quick chip — range mode */}
                 <CalendarPicker
                     visible={showDatePicker}
+                    value={filters.dateFrom}
+                    valueTo={filters.dateTo}
+                    rangeMode
                     onClose={() => setShowDatePicker(false)}
-                    onSelect={(date: string) => {
-                        setFilters(f => ({ ...f, dateFrom: date }));
+                    onSelect={(from: string, to: string) => {
+                        setFilters(f => ({ ...f, dateFrom: from, dateTo: to }));
                         setShowDatePicker(false);
                     }}
                 />

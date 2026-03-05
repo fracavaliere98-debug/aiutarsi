@@ -50,6 +50,7 @@ interface ActivityContextType {
         onlyAvailable?: boolean;
         onlyUrgent?: boolean;
         dateFrom?: string;
+        dateTo?: string;
         centerLat?: number;
         centerLng?: number;
         radiusKm?: number;
@@ -175,11 +176,11 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
     }, []);
 
     const fetchPaginatedActivities = useCallback(async ({
-        reset = false, category, searchText, skills, onlyAvailable, onlyUrgent, dateFrom,
+        reset = false, category, searchText, skills, onlyAvailable, onlyUrgent, dateFrom, dateTo,
         centerLat, centerLng, radiusKm, statuses
     }: {
         reset?: boolean; category?: string; searchText?: string;
-        skills?: string[]; onlyAvailable?: boolean; onlyUrgent?: boolean; dateFrom?: string;
+        skills?: string[]; onlyAvailable?: boolean; onlyUrgent?: boolean; dateFrom?: string; dateTo?: string;
         centerLat?: number; centerLng?: number; radiusKm?: number; statuses?: string[];
     }) => {
         setIsLoadingMore(true);
@@ -205,6 +206,7 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
                 skills,
                 onlyUrgent,
                 dateFrom,
+                dateTo,
                 centerLat,
                 centerLng,
                 radiusKm,
