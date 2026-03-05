@@ -8,10 +8,10 @@ import { PageHeader } from "../../../components/PageHeader";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import {
-    ArrowRight, Search, SlidersHorizontal, X, MapPin, Target, Calendar,
+    ArrowRight, Search, X, MapPin, Target, Calendar,
     Clock, Users, Globe, BookOpen, Dog, Palette, Heart, Code,
     MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
-    ChevronDown, CheckCircle2, Zap, TreePine, Bell
+    ChevronDown, CheckCircle2, Zap, TreePine, Bell, LayoutList
 } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -22,8 +22,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { activityService } from "../../../services/ActivityService";
 import * as Location from "expo-location";
 import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-native-reanimated';
-
 import { supabase } from "../../../utils/supabase";
+import { CalendarPicker } from "../../../components/CalendarPicker";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 async function fetchNominatim(text: string): Promise<{ id: number; label: string; lat: number; lng: number }[]> {
@@ -412,6 +412,9 @@ export default function VolunteerMap() {
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
     const [pendingFilters, setPendingFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+    // Date picker for quick chip
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Selected activity
     const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -836,22 +839,16 @@ export default function VolunteerMap() {
                                 )}
                             </View>
 
-                            {/* Filter button */}
+                            {/* "Torna alla lista" button — replaces filter icon, navigates to Esplora */}
                             <TouchableOpacity
-                                onPress={openFilters}
+                                onPress={() => router.push('/(volunteer)/(tabs)/search' as any)}
                                 style={{
-                                    backgroundColor: activeFilterCount > 0 ? Colors.primary : '#f8f9ff',
+                                    backgroundColor: '#f8f9ff',
                                     borderRadius: 14, width: 42, height: 42,
                                     alignItems: 'center', justifyContent: 'center',
-                                    borderWidth: 1, borderColor: activeFilterCount > 0 ? 'transparent' : '#e8eaf0',
-                                    flexDirection: 'row', gap: 4,
+                                    borderWidth: 1, borderColor: '#e8eaf0',
                                 }}>
-                                <SlidersHorizontal size={18} color={activeFilterCount > 0 ? 'white' : Colors.primary} />
-                                {activeFilterCount > 0 && (
-                                    <View style={{ position: 'absolute', top: 5, right: 5, backgroundColor: Colors.accent, borderRadius: 99, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-                                        <Text style={{ color: 'white', fontSize: 8, fontWeight: '900' }}>{activeFilterCount}</Text>
-                                    </View>
-                                )}
+                                <LayoutList size={18} color={Colors.primary} />
                             </TouchableOpacity>
                         </View>
 
@@ -891,6 +888,30 @@ export default function VolunteerMap() {
                                     paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                                 }}>
                                 <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : Colors.primary }}>Disponibili</Text>
+                            </TouchableOpacity>
+
+                            {/* Date chip — CalendarPicker */}
+                            <TouchableOpacity
+                                onPress={() => setShowDatePicker(true)}
+                                style={{
+                                    flexDirection: 'row', alignItems: 'center', gap: 5,
+                                    backgroundColor: filters.dateFrom ? Colors.primary : '#f0f2fa',
+                                    paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
+                                }}>
+                                <Calendar size={11} color={filters.dateFrom ? 'white' : Colors.primary} />
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : Colors.primary }}>
+                                    {filters.dateFrom ? filters.dateFrom : 'Data'}
+                                </Text>
+                                {filters.dateFrom ? (
+                                    <TouchableOpacity
+                                        onPress={() => setFilters(f => ({ ...f, dateFrom: '' }))}
+                                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                                    >
+                                        <X size={11} color="white" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <ChevronDown size={11} color={Colors.primary} />
+                                )}
                             </TouchableOpacity>
 
                             {/* Urgenti toggle */}
@@ -1152,6 +1173,17 @@ export default function VolunteerMap() {
                         </Animated.View>
                     );
                 })()}
+
+                {/* ── CalendarPicker for Date chip ── */}
+                <CalendarPicker
+                    visible={showDatePicker}
+                    value={filters.dateFrom}
+                    onClose={() => setShowDatePicker(false)}
+                    onSelect={(date: string) => {
+                        setFilters(f => ({ ...f, dateFrom: date }));
+                        setShowDatePicker(false);
+                    }}
+                />
 
                 {/* ── Filter Modal ── */}
                 <FilterModal

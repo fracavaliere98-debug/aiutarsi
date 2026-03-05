@@ -4,7 +4,6 @@ import { Colors } from "../constants/Colors";
 import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "../context/AuthContext";
-import { useState } from "react";
 
 interface ActivityCardProps {
     activity: any;
@@ -12,16 +11,12 @@ interface ActivityCardProps {
     style?: StyleProp<ViewStyle>;
 }
 
+const MAX_AVATARS = 3;
+const AVATAR_SIZE = 22;
+const OVERLAP = 5;
+
 export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
     const { users, user } = useAuth();
-    const [avatarContainerW, setAvatarContainerW] = useState(0);
-    // Dynamic: each avatar is 22px wide, overlapping by 6px each (net 16px per extra)
-    const AVATAR_SIZE = 22;
-    const OVERLAP = 6;
-    const REMAINDER_CIRCLE_W = 24;
-    const maxAvatars = avatarContainerW > 0
-        ? Math.max(1, Math.floor((avatarContainerW - REMAINDER_CIRCLE_W) / (AVATAR_SIZE - OVERLAP)) + 1)
-        : 3; // fallback while not yet measured
     const activityDate = new Date(activity.dateTime);
     const month = activityDate.toLocaleDateString("it-IT", { month: "short" }).toUpperCase();
     const day = activityDate.getDate();
@@ -45,6 +40,10 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                 return { bgColor: "bg-gray-50", textColor: "text-gray-700" };
         }
     })();
+
+    const iscritti: string[] = activity.iscritti || [];
+    const visibleAvatars = iscritti.slice(0, MAX_AVATARS);
+    const overflowCount = iscritti.length - MAX_AVATARS;
 
     return (
         <SoftCard
@@ -72,7 +71,6 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                     </View>
 
                     <View style={{ gap: 8 }}>
-                        {/* Row with Time and Location horizontally aligned */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                 <View style={{ backgroundColor: '#f8fafc', padding: 5, borderRadius: 8 }}>
@@ -104,27 +102,27 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                     </View>
                 </View>
 
-                <View style={{ paddingTop: 12, marginTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View className={`${statusProps.bgColor} px-3 py-1.5 rounded-full mr-3`}>
+                {/* Bottom row — left side flex:1 keeps action button from overflowing */}
+                <View style={{ paddingTop: 12, marginTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center' }}>
+                    {/* Left: status + recurrence + avatars — flex:1 so it doesn't spill into right */}
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden', marginRight: 8 }}>
+                        <View className={`${statusProps.bgColor} px-2 py-1 rounded-full mr-2`} style={{ flexShrink: 0 }}>
                             <Text className={`${statusProps.textColor} text-[10px] font-black uppercase tracking-wider`}>
                                 {activity.status}
                             </Text>
                         </View>
                         {activity.recurrence && activity.recurrence !== 'NONE' && (
-                            <View className="flex-row items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-full mr-2">
+                            <View className="flex-row items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full mr-2" style={{ flexShrink: 0 }}>
                                 <RefreshCw size={9} color="#4f46e5" />
                                 <Text className="text-indigo-600 text-[9px] font-black uppercase">
                                     {activity.recurrence === 'WEEKLY' ? 'Sett.' : 'Mens.'}
                                 </Text>
                             </View>
                         )}
-                        {activity.iscritti && activity.iscritti.length > 0 ? (
-                            <View
-                                style={{ flexDirection: 'row' }}
-                                onLayout={e => setAvatarContainerW(e.nativeEvent.layout.width)}
-                            >
-                                {activity.iscritti.slice(0, maxAvatars).map((volId: string, idx: number) => {
+                        {/* Avatar stack — static, no onLayout */}
+                        {visibleAvatars.length > 0 && (
+                            <View style={{ flexDirection: 'row', flexShrink: 1 }}>
+                                {visibleAvatars.map((volId: string, idx: number) => {
                                     const volunteer = users.find((u: any) => u.id === volId);
                                     return (
                                         <View key={volId} style={{ marginLeft: idx === 0 ? 0 : -OVERLAP, zIndex: 20 - idx }}>
@@ -137,39 +135,36 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                                         </View>
                                     );
                                 })}
-                                {activity.iscritti.length > maxAvatars && (
+                                {overflowCount > 0 && (
                                     <View
                                         style={{
                                             marginLeft: -OVERLAP, zIndex: 0,
-                                            width: REMAINDER_CIRCLE_W, height: AVATAR_SIZE,
+                                            width: AVATAR_SIZE, height: AVATAR_SIZE,
                                             borderRadius: AVATAR_SIZE / 2,
                                             backgroundColor: '#e2e8f0',
                                             alignItems: 'center', justifyContent: 'center',
                                             borderWidth: 1.5, borderColor: 'white',
                                         }}
                                     >
-                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#64748b' }}>
-                                            +{activity.iscritti.length - maxAvatars}
-                                        </Text>
+                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#64748b' }}>+{overflowCount}</Text>
                                     </View>
                                 )}
                             </View>
-                        ) : (
-                            <View
-                                style={{ flexDirection: 'row', flex: 1 }}
-                                onLayout={e => setAvatarContainerW(e.nativeEvent.layout.width)}
-                            />
                         )}
                     </View>
-                    {user?.role === 'VOLUNTEER' ? (
-                        <Text className="text-accent font-bold text-xs">CANDIDATI &rarr;</Text>
-                    ) : user?.role === 'NPO' && activity.npoId === user.id ? (
-                        <Text className="text-primary font-bold text-xs uppercase">GESTISCI &rarr;</Text>
-                    ) : (
-                        <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
-                            <Text className="text-slate-400 text-[10px] font-black uppercase">INFO</Text>
-                        </View>
-                    )}
+
+                    {/* Right: action button — flexShrink:0 so it never overflows */}
+                    <View style={{ flexShrink: 0 }}>
+                        {user?.role === 'VOLUNTEER' ? (
+                            <Text className="text-accent font-bold text-xs">CANDIDATI →</Text>
+                        ) : user?.role === 'NPO' && activity.npoId === user.id ? (
+                            <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
+                        ) : (
+                            <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
+                                <Text className="text-slate-400 text-[10px] font-black uppercase">INFO</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </View>
         </SoftCard>
