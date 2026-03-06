@@ -91,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // If Supabase finds a session, we load the full app user (with DB profile)
                 if (result?.data?.session?.user && isMounted) {
                     const currentUser = await authService.getCurrentUser();
+                    console.log("[DEBUG USER] Init:", currentUser);
                     setUser(currentUser);
                 }
                 // REMOVED FALLBACK: We rely on Supabase Persistence. 
@@ -129,6 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                 if (session?.user) {
                     const appUser = await authService.getCurrentUser();
+                    console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
                     await refreshUsers();
                 }
@@ -245,56 +247,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // PREVENTIVE BLOCK: Ignore updates if logout is in progress
         if (!user || isLoggingOutRef.current) return false;
 
-        // OPTIMISTIC UPDATE STRATEGY
-        // We update the local UI immediately but ALSO wait for the server to confirm
-        // to ensure critical flags like profileCompleted are saved on the server.
         try {
             console.log("[DEBUG] AuthContext: Update started for", data);
 
             // 1. Calculate new state
-            // Strip undefined values so we never accidentally overwrite existing fields
-            // (e.g. avatar: undefined would wipe the current avatar in the spread)
             const cleanData = Object.fromEntries(
                 Object.entries(data).filter(([, v]) => v !== undefined)
             );
+
+            // If updating skills/interests/followedNPOs, ensure we don't break the object structure
+            // In theory, if the component sends { skills: ['A'] }, it replaces the flat array.
             const updatedUser = { ...user, ...cleanData };
 
             // 2. Update Local State Immediately (Optimistic)
             setUser(updatedUser);
 
             // 3. Sync to Backend (Awaited)
-            const resultUser = await authService.updateProfile(user.id, data);
+            await authService.updateProfile(user.id, data);
 
-            // 4. Handle Result
-            // If the result user is exactly equal to our updated local state (optimistic) 
-            // OR if it's a fresh fetch from server, we are good.
-            // BUT: if authService returned an optimistic user due to timeout, 
-            // we SHOULD NOT call refreshUsers() because the server state is still stale.
-
-            // Check if the result was optimistic (this matches the logic in AuthService)
-            const isOptimistic = resultUser && (resultUser as any)._isOptimistic;
-            // Note: I'll add the _isOptimistic flag to the optimistic return in AuthService if not already there,
-            // but even better: just trust that if we are here and not in 'catch', we have a valid state.
-
-            // Actually, let's keep it simple: if we didn't throw, we proceed.
-            // But we add a tiny flag to the optimistic return in AuthService to be sure.
-
-            console.log("[DEBUG] AuthContext: Backend sync success (or optimistic proceed)");
-
-            // 5. Refresh List (Background) - ONLY IF NOT OPTIMISTIC
-            // For now, let's just refresh. The user mentioned opportunities disappearing, 
-            // which happens in ActivityContext, which listens for SyncEvents.SYNC_USERS.
-            // AuthService already emits SYNC_USERS on optimistic update.
-
-            // The real fix is ensuring we don't OVERWRITE the local `user` state with stale data.
-            // refreshUsers() updates `usersDB`, not the current `user` object.
+            console.log("[DEBUG USER] Profile Updated:", updatedUser);
 
             await refreshUsers();
 
             return true;
         } catch (error: any) {
             console.error("Update profile local error:", error);
-            // Revert local state if needed (complex), for now just notify caller
             throw error;
         }
     }, [user, refreshUsers]);
@@ -367,12 +344,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!user || user.role !== "VOLUNTEER") return false;
         try {
             await npoService.followNPO(npoId, user.id);
-            // Manually update local state since service returns void
-            const updatedFollowed = [...(user.followed_entities || []), { npo_id: npoId }];
-            const updatedUser = { ...user, followed_entities: updatedFollowed };
+
+            // Update both relational and flat arrays for consistency
+            const updatedFollowedEntities = [...(user.followed_entities || []), { npo_id: npoId }];
+            const updatedFollowedNPOs = [...(user.followedNPOs || []), npoId];
+
+            const updatedUser = {
+                ...user,
+                followed_entities: updatedFollowedEntities,
+                followedNPOs: updatedFollowedNPOs
+            };
             setUser(updatedUser);
 
-            // Background refresh to be sure
             refreshUsers();
             return true;
         } catch (error) {
@@ -385,9 +368,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!user || user.role !== "VOLUNTEER") return false;
         try {
             await npoService.unfollowNPO(npoId, user.id);
-            // Manually update local state
-            const updatedFollowed = (user.followed_entities || []).filter(e => e.npo_id !== npoId);
-            const updatedUser = { ...user, followed_entities: updatedFollowed };
+
+            // Update both relational and flat arrays
+            const updatedFollowedEntities = (user.followed_entities || []).filter(e => e.npo_id !== npoId);
+            const updatedFollowedNPOs = (user.followedNPOs || []).filter(id => id !== npoId);
+
+            const updatedUser = {
+                ...user,
+                followed_entities: updatedFollowedEntities,
+                followedNPOs: updatedFollowedNPOs
+            };
             setUser(updatedUser);
 
             refreshUsers();

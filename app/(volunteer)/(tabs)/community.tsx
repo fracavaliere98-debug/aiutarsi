@@ -15,12 +15,12 @@ import { StoriesRow } from '../../../components/StoriesRow';
 import { CommunityPostCard } from '../../../components/CommunityPostCard';
 import { CommunityPost } from '../../../types/community';
 import { Story } from '../../../types/stories';
-import { OldActivity } from '../../../types';
+import { AppActivity } from '../../../types';
 
 const SCREEN_W = Dimensions.get('window').width;
 
 // ── Weekend Events Banner ──────────────────────────────────────────────────────
-function WeekendEventsBanner({ activities }: { activities: OldActivity[] }) {
+function WeekendEventsBanner({ activities }: { activities: AppActivity[] }) {
     const router = useRouter();
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sun, 6=Sat
@@ -75,7 +75,7 @@ function WeekendEventsBanner({ activities }: { activities: OldActivity[] }) {
 }
 
 // ── Suggested OldActivity Card (feed inline) ─────────────────────────────────────
-function SuggestedActivityInFeed({ activity }: { activity: OldActivity }) {
+function SuggestedActivityInFeed({ activity }: { activity: AppActivity }) {
     const router = useRouter();
     return (
         <TouchableOpacity
@@ -136,7 +136,7 @@ export default function CommunityScreen() {
 
     type FeedItem =
         | { type: 'post'; data: CommunityPost; key: string }
-        | { type: 'activity'; data: OldActivity; key: string }
+        | { type: 'activity'; data: AppActivity; key: string }
         | { type: 'weekend'; key: string };
 
     const feedItems: FeedItem[] = [];

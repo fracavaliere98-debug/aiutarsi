@@ -30,25 +30,47 @@ export type AppUser = User & {
     interests: string[];
     followedNPOs: string[];
     password?: string;
+    locationCoords?: { lat: number; lng: number };
+    profileCompleted?: boolean;
+    isVerified?: boolean;
+    publicEmail?: string;
+    lastSeenAt?: string;
+    createdAt?: string;
 };
 
 // Hybrid / Frontend-only Extended Types
 export type ActivityWithDistance = Activity & { distanceMeters?: number };
 
-// DTO from Supabase joins
-export type ExtendedActivity = Activity & {
+// --- APP ACTIVITY TYPE (Successor to OldActivity) ---
+export type AppActivity = Activity & {
     profiles?: {
         npo_name?: string | null;
         full_name?: string | null;
-        public_email?: string | null;
-        email?: string | null;
+        avatar_url?: string | null;
     } | null;
     activity_participants?: { user_id: string }[] | null;
     activity_skills?: { skill: string }[] | null;
-    // For backwards compatibility during migration or UI overrides
-    npoName?: string;
-    iscritti?: string[];
+
+    // Legacy mapping for UI
+    npoName: string;
+    npoId: string;         // maps to npo_id
+    dateTime: string;      // maps to date_start
+    endDateTime: string;   // maps to date_end
+    imageUrl?: string;     // maps to image_url
+    iscritti: string[];    // maps to user_ids from activity_participants
+    skills: string[];      // maps to skills from activity_skills
+    matchPercentage?: number;
+    slots: number;         // maps to total_slots
+    category: string;      // maps to category
+    isUrgent: boolean;     // maps to is_urgent
+    location: {
+        address: string;
+        coords: { lat: number, lng: number };
+    };
 };
+
+export type AppActivityApplication = OldActivityApplication;
+
 export type Role = "VOLUNTEER" | "NPO" | "CORPORATE";
 
 export interface OldUser {

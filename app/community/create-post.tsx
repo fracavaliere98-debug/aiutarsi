@@ -193,7 +193,7 @@ export default function CreatePostScreen() {
                             <Zap size={18} color="#f59e0b" />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontWeight: '800', color: '#92400e', fontSize: 13 }}>Storia effimera</Text>
-                                <Text style={{ fontSize: 12, color: '#78350f', marginTop: 2, lineHeight: 18 }}>Visibile per 24 ore. Perfetta per aggiornamenti in tempo reale dall'evento!</Text>
+                                <Text style={{ fontSize: 12, color: '#78350f', marginTop: 2, lineHeight: 18 }}>Visibile per 24 ore. Perfetta per aggiornamenti in tempo reale dall&apos;evento!</Text>
                             </View>
                         </View>
                     )}
@@ -206,7 +206,7 @@ export default function CreatePostScreen() {
                 <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '60%', paddingBottom: Platform.OS === 'ios' ? 34 : 24 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>Collega un'attività</Text>
+                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>Collega un&apos;attività</Text>
                             <TouchableOpacity onPress={() => setShowActivityPicker(false)}>
                                 <X size={20} color="#64748b" />
                             </TouchableOpacity>

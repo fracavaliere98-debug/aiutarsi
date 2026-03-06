@@ -1,41 +1,50 @@
-import { OldActivity, OldReview, OldActivityApplication, OldVolunteerReview } from '../types';
+import { AppActivity, AppActivityApplication, OldReview, OldVolunteerReview } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
 export class ActivityService {
 
-    // Helper: Map DB OldActivity to App OldActivity
-    private _mapDbActivityToApp(dbActivity: any): OldActivity {
-        return {
+    // Helper: Map DB Activity to AppActivity
+    private _mapDbActivityToApp(dbActivity: any): AppActivity {
+        const activity: AppActivity = {
+            ...dbActivity,
+            // Core mappings
             id: dbActivity.id,
+            npo_id: dbActivity.npo_id,
             npoId: dbActivity.npo_id,
             npoName: dbActivity.profiles?.npo_name || dbActivity.profiles?.full_name || "NPO Sconosciuta",
-            npoEmail: dbActivity.profiles?.public_email || dbActivity.profiles?.email || "",
             title: dbActivity.title,
             description: dbActivity.description,
             dateTime: dbActivity.date_start,
             endDateTime: dbActivity.date_end,
+            imageUrl: dbActivity.image_url,
+            slots: dbActivity.slots_total,
+            category: dbActivity.category,
+            status: dbActivity.status,
+            matchPercentage: dbActivity.match_percentage || 0,
+            isUrgent: dbActivity.is_urgent || false,
+
+            // Relational mappings
+            iscritti: dbActivity.activity_participants?.map((p: any) => p.user_id) || [],
+            skills: dbActivity.activity_skills?.map((s: any) => s.skill) || [],
+            profiles: dbActivity.profiles,
+            activity_participants: dbActivity.activity_participants,
+            activity_skills: dbActivity.activity_skills,
+
+            // Legacy location mapping
             location: {
                 address: dbActivity.location_address || "",
                 coords: {
                     lat: dbActivity.location_lat || 0,
                     lng: dbActivity.location_lng || 0
                 }
-            },
-            slots: dbActivity.slots_total,
-            category: dbActivity.category,
-            status: dbActivity.status,
-            matchPercentage: dbActivity.match_percentage || 0,
-            isUrgent: dbActivity.is_urgent || false,
-            skills: dbActivity.activity_skills?.map((s: any) => s.skill) || [],
-            iscritti: dbActivity.activity_participants?.map((p: any) => p.user_id) || [],
-            imageUrl: dbActivity.image_url,
-            recurrence: dbActivity.recurrence || 'NONE',
+            }
         };
+        return activity;
     }
 
-    async getActivitiesByRadius(userLat: number, userLng: number, radiusKm: number): Promise<(OldActivity & { distanceMeters: number })[]> {
+    async getActivitiesByRadius(userLat: number, userLng: number, radiusKm: number): Promise<(AppActivity & { distanceMeters: number })[]> {
         const { data, error } = await supabase.rpc('get_activities_near_me', {
             user_lat: userLat,
             user_lng: userLng,
@@ -72,7 +81,9 @@ export class ActivityService {
         }
 
         return (data || []).map((r: any) => ({
+            ...r,
             id: r.id,
+            npo_id: r.npo_id,
             npoId: r.npo_id,
             npoName: profilesMap[r.npo_id]?.npoName || 'NPO Sconosciuta',
             npoEmail: profilesMap[r.npo_id]?.email || '',
@@ -80,10 +91,7 @@ export class ActivityService {
             description: r.description,
             dateTime: r.date_start,
             endDateTime: r.date_end,
-            location: {
-                address: r.location_address || '',
-                coords: { lat: r.location_lat || 0, lng: r.location_lng || 0 }
-            },
+            imageUrl: r.image_url,
             slots: r.slots_total,
             category: r.category,
             status: r.status,
@@ -91,8 +99,15 @@ export class ActivityService {
             isUrgent: r.is_urgent || false,
             skills: skillsMap[r.id] || [],
             iscritti: partsMap[r.id] || [],
-            imageUrl: r.image_url,
             distanceMeters: r.distance_meters,
+            location: {
+                address: r.location_address || '',
+                coords: { lat: r.location_lat || 0, lng: r.location_lng || 0 }
+            },
+            // Relational mappings if needed by UI
+            profiles: { npo_name: profilesMap[r.npo_id]?.npoName, full_name: profilesMap[r.npo_id]?.npoName, avatar_url: null },
+            activity_participants: (partsMap[r.id] || []).map(uid => ({ user_id: uid })),
+            activity_skills: (skillsMap[r.id] || []).map(s => ({ skill: s }))
         }));
     }
 
@@ -116,7 +131,7 @@ export class ActivityService {
             radiusKm?: number;
         },
         signal?: AbortSignal
-    ): Promise<{ activities: OldActivity[], totalCount: number, hasMore: boolean }> {
+    ): Promise<{ activities: AppActivity[], totalCount: number, hasMore: boolean }> {
         // ── GEO-RADIUS path: delegate to RPC when center+radius are given ──────
         if (filter?.centerLat !== undefined && filter?.centerLng !== undefined && filter?.radiusKm) {
             try {
@@ -227,8 +242,8 @@ export class ActivityService {
                 .order('date_start', { ascending: true })
                 .order('created_at', { ascending: false });
 
-            // Pagination
-            const limit = filter?.limit || 20;
+            // Pagination - Increase default for "global" fetch
+            const limit = filter?.limit || (filter ? 20 : 1000);
             const offset = filter?.offset || 0;
             query = query.range(offset, offset + limit - 1);
 
@@ -253,7 +268,7 @@ export class ActivityService {
         }
     }
 
-    async getActivityById(id: string): Promise<OldActivity | null> {
+    async getActivityById(id: string): Promise<AppActivity | null> {
         try {
             const { data, error } = await supabase
                 .from('activities')
@@ -275,7 +290,7 @@ export class ActivityService {
         }
     }
 
-    async createActivity(activityData: Omit<OldActivity, 'id'>): Promise<OldActivity> {
+    async createActivity(activityData: Omit<AppActivity, 'id'>): Promise<AppActivity> {
         try {
             // --- NEW: Handle Image Upload ---
             if (activityData.imageUrl && activityData.imageUrl.startsWith('file://')) {
@@ -285,11 +300,11 @@ export class ActivityService {
                 }
             }
 
-            // 1. Insert OldActivity
+            // 1. Insert AppActivity
             const { data: activity, error } = await supabase
                 .from('activities')
                 .insert({
-                    npo_id: activityData.npoId,
+                    npo_id: activityData.npo_id,
                     title: activityData.title,
                     description: activityData.description,
                     date_start: activityData.dateTime,
@@ -301,7 +316,7 @@ export class ActivityService {
                     category: activityData.category,
                     status: activityData.status || 'APERTA',
                     match_percentage: activityData.matchPercentage,
-                    is_urgent: activityData.isUrgent || false,
+                    is_urgent: activityData.is_urgent || false,
                     image_url: activityData.imageUrl,
                     recurrence: activityData.recurrence || null,
                 })
@@ -312,7 +327,7 @@ export class ActivityService {
 
             // 2. Insert Skills (if any)
             if (activityData.skills && activityData.skills.length > 0) {
-                const skillsToInsert = activityData.skills.map(s => ({
+                const skillsToInsert = activityData.skills.map((s: string) => ({
                     activity_id: activity.id,
                     skill: s
                 }));
@@ -338,7 +353,7 @@ export class ActivityService {
         }
     }
 
-    async updateActivity(activity: OldActivity): Promise<OldActivity> {
+    async updateActivity(activity: AppActivity): Promise<AppActivity> {
         // --- NEW: Handle Image Upload if changed ---
         if (activity.imageUrl && activity.imageUrl.startsWith('file://')) {
             const uploadedUrl = await storageService.uploadActivityImage(activity.id, activity.imageUrl);
@@ -361,7 +376,7 @@ export class ActivityService {
                 slots_total: activity.slots,
                 category: activity.category,
                 status: activity.status,
-                is_urgent: activity.isUrgent,
+                is_urgent: activity.is_urgent,
                 image_url: activity.imageUrl,
                 recurrence: activity.recurrence || null,
             })
@@ -410,8 +425,8 @@ export class ActivityService {
                 const newSkills = activity.skills;
 
                 // 2. Calculate Diff
-                const skillsToAdd = newSkills.filter(s => !currentSkills.includes(s));
-                const skillsToRemove = currentSkills.filter(s => !newSkills.includes(s));
+                const skillsToAdd = newSkills.filter((s: string) => !currentSkills.includes(s));
+                const skillsToRemove = currentSkills.filter((s: string) => !newSkills.includes(s));
 
                 // 3. Remove Old
                 if (skillsToRemove.length > 0) {
@@ -453,7 +468,7 @@ export class ActivityService {
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
     }
 
-    async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<OldActivity> {
+    async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<AppActivity> {
         // Insert into participants
         const { error } = await supabase
             .from('activity_participants')
@@ -496,7 +511,7 @@ export class ActivityService {
         return updated!;
     }
 
-    async leaveActivity(activityId: string, userId: string): Promise<OldActivity> {
+    async leaveActivity(activityId: string, userId: string): Promise<AppActivity> {
         const { error } = await supabase
             .from('activity_participants')
             .delete()
@@ -577,8 +592,8 @@ export class ActivityService {
         };
     }
 
-    // --- Applications (OldActivity Specific) ---
-    async getActivityApplications(): Promise<OldActivityApplication[]> {
+    // --- Applications (AppActivity Specific) ---
+    async getActivityApplications(): Promise<AppActivityApplication[]> {
         const { data, error } = await supabase
             .from('activity_participants')
             .select(`
@@ -606,7 +621,7 @@ export class ActivityService {
         }));
     }
 
-    async submitActivityApplication(appData: Omit<OldActivityApplication, 'id'>): Promise<OldActivityApplication> {
+    async submitActivityApplication(appData: Omit<AppActivityApplication, 'id'>): Promise<AppActivityApplication> {
         const { error } = await supabase
             .from('activity_participants')
             .insert({
@@ -711,7 +726,7 @@ export class ActivityService {
         }));
     }
 
-    async refreshActivityStates(): Promise<OldActivity[]> {
+    async refreshActivityStates(): Promise<AppActivity[]> {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER
             // Bypasses RLS issues where Volunteers couldn't update NPO activities.

@@ -64,6 +64,12 @@ export class AuthService {
             website: metadata.website,
             public_email: metadata.publicEmail || metadata.public_email,
             profile_completed: metadata.profileCompleted || metadata.profile_completed,
+            // Legacy aliases
+            profileCompleted: metadata.profileCompleted || metadata.profile_completed,
+            isVerified: metadata.isVerified !== undefined ? metadata.isVerified : metadata.is_verified,
+            publicEmail: metadata.publicEmail || metadata.public_email,
+            lastSeenAt: metadata.lastSeenAt || metadata.last_seen_at,
+            createdAt: sbUser.created_at,
             created_at: sbUser.created_at,
             updated_at: sbUser.updated_at || new Date().toISOString(),
             // Non-schema fields for types compatibility
@@ -337,11 +343,18 @@ export class AuthService {
             name: profile.full_name || profile.npo_name || 'Utente',
             avatar: profile.avatar_url,
             impactPoints: profile.impact_points || 0,
-            npoName: profile.npo_name,
+            npoName: profile.npo_name || profile.full_name,
             companyName: profile.company_name,
             skills: profile.user_skills?.map((s: any) => s.skill) || [],
             interests: profile.user_interests?.map((i: any) => i.interest) || [],
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || [],
+            locationCoords: profile.location_coords,
+            // Legacy aliases for UI/Navigation
+            profileCompleted: profile.profile_completed,
+            isVerified: profile.is_verified,
+            publicEmail: profile.public_email,
+            lastSeenAt: profile.last_seen_at,
+            createdAt: profile.created_at,
         };
     }
 
