@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { Home, Compass, Calendar as CalendarIcon, Globe, User as UserIcon } from "lucide-react-native";
+import { Home, Compass, Calendar as CalendarIcon, Globe, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from "../../../context/AuthContext";
 import { TouchableOpacity, View, Text } from "react-native";
 import { Colors } from "../../../constants/Colors";

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { User as UserIcon } from "lucide-react-native";
+import { User as UserIcon } from 'lucide-react-native';
 import { Image } from "expo-image";
 import { useAuth } from "../context/AuthContext";
 

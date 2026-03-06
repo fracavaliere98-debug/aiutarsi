@@ -2,7 +2,7 @@ import React from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Settings, MessageCircle } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
-import { User, Application } from "../types";
+import { OldUser, OldApplication } from "../types";
 
 import { ProfileHeader } from "./profile/ProfileHeader";
 import { ProfileStats } from "./profile/ProfileStats";
@@ -34,7 +34,7 @@ interface VolunteerStats {
 }
 
 interface VolunteerProfileViewProps {
-    user: User | null;
+    user: OldUser | null;
     gamificationState: GamificationState;
     stats: VolunteerStats;
     levelProgress: number;
@@ -44,9 +44,9 @@ interface VolunteerProfileViewProps {
     onSettingsPress?: () => void;
     onMessagePress?: () => void;
     onBack?: () => void;
-    followedNPOs?: User[];
-    affiliatedNPOs: User[];
-    npoApplications: Application[];
+    followedNPOs?: OldUser[];
+    affiliatedNPOs: OldUser[];
+    npoApplications: OldApplication[];
     children?: React.ReactNode;
 }
 

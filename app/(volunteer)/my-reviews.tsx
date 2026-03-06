@@ -95,7 +95,7 @@ export default function MyReviewsScreen() {
                                     )}
                                 </View>
 
-                                {/* Activity Context */}
+                                {/* OldActivity Context */}
                                 {activity && (
                                     <View className="bg-slate-50 p-3 rounded-xl mb-4 flex-row items-center gap-2 border border-slate-100">
                                         <Building2 size={16} color={Colors.primary} />

@@ -1,12 +1,12 @@
-import { Activity, Review, ActivityApplication, VolunteerReview } from '../types';
+import { OldActivity, OldReview, OldActivityApplication, OldVolunteerReview } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
 export class ActivityService {
 
-    // Helper: Map DB Activity to App Activity
-    private _mapDbActivityToApp(dbActivity: any): Activity {
+    // Helper: Map DB OldActivity to App OldActivity
+    private _mapDbActivityToApp(dbActivity: any): OldActivity {
         return {
             id: dbActivity.id,
             npoId: dbActivity.npo_id,
@@ -35,7 +35,7 @@ export class ActivityService {
         };
     }
 
-    async getActivitiesByRadius(userLat: number, userLng: number, radiusKm: number): Promise<(Activity & { distanceMeters: number })[]> {
+    async getActivitiesByRadius(userLat: number, userLng: number, radiusKm: number): Promise<(OldActivity & { distanceMeters: number })[]> {
         const { data, error } = await supabase.rpc('get_activities_near_me', {
             user_lat: userLat,
             user_lng: userLng,
@@ -116,7 +116,7 @@ export class ActivityService {
             radiusKm?: number;
         },
         signal?: AbortSignal
-    ): Promise<{ activities: Activity[], totalCount: number, hasMore: boolean }> {
+    ): Promise<{ activities: OldActivity[], totalCount: number, hasMore: boolean }> {
         // ── GEO-RADIUS path: delegate to RPC when center+radius are given ──────
         if (filter?.centerLat !== undefined && filter?.centerLng !== undefined && filter?.radiusKm) {
             try {
@@ -253,7 +253,7 @@ export class ActivityService {
         }
     }
 
-    async getActivityById(id: string): Promise<Activity | null> {
+    async getActivityById(id: string): Promise<OldActivity | null> {
         try {
             const { data, error } = await supabase
                 .from('activities')
@@ -275,7 +275,7 @@ export class ActivityService {
         }
     }
 
-    async createActivity(activityData: Omit<Activity, 'id'>): Promise<Activity> {
+    async createActivity(activityData: Omit<OldActivity, 'id'>): Promise<OldActivity> {
         try {
             // --- NEW: Handle Image Upload ---
             if (activityData.imageUrl && activityData.imageUrl.startsWith('file://')) {
@@ -285,7 +285,7 @@ export class ActivityService {
                 }
             }
 
-            // 1. Insert Activity
+            // 1. Insert OldActivity
             const { data: activity, error } = await supabase
                 .from('activities')
                 .insert({
@@ -338,7 +338,7 @@ export class ActivityService {
         }
     }
 
-    async updateActivity(activity: Activity): Promise<Activity> {
+    async updateActivity(activity: OldActivity): Promise<OldActivity> {
         // --- NEW: Handle Image Upload if changed ---
         if (activity.imageUrl && activity.imageUrl.startsWith('file://')) {
             const uploadedUrl = await storageService.uploadActivityImage(activity.id, activity.imageUrl);
@@ -453,7 +453,7 @@ export class ActivityService {
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
     }
 
-    async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<Activity> {
+    async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<OldActivity> {
         // Insert into participants
         const { error } = await supabase
             .from('activity_participants')
@@ -496,7 +496,7 @@ export class ActivityService {
         return updated!;
     }
 
-    async leaveActivity(activityId: string, userId: string): Promise<Activity> {
+    async leaveActivity(activityId: string, userId: string): Promise<OldActivity> {
         const { error } = await supabase
             .from('activity_participants')
             .delete()
@@ -524,7 +524,7 @@ export class ActivityService {
     }
 
     // --- Reviews ---
-    async getReviews(): Promise<Review[]> {
+    async getReviews(): Promise<OldReview[]> {
         const { data, error } = await supabase
             .from('reviews')
             .select('*')
@@ -547,7 +547,7 @@ export class ActivityService {
         }));
     }
 
-    async submitReview(reviewData: Omit<Review, 'id'>): Promise<Review> {
+    async submitReview(reviewData: Omit<OldReview, 'id'>): Promise<OldReview> {
         const { data, error } = await supabase
             .from('reviews')
             .insert({
@@ -577,8 +577,8 @@ export class ActivityService {
         };
     }
 
-    // --- Applications (Activity Specific) ---
-    async getActivityApplications(): Promise<ActivityApplication[]> {
+    // --- Applications (OldActivity Specific) ---
+    async getActivityApplications(): Promise<OldActivityApplication[]> {
         const { data, error } = await supabase
             .from('activity_participants')
             .select(`
@@ -606,7 +606,7 @@ export class ActivityService {
         }));
     }
 
-    async submitActivityApplication(appData: Omit<ActivityApplication, 'id'>): Promise<ActivityApplication> {
+    async submitActivityApplication(appData: Omit<OldActivityApplication, 'id'>): Promise<OldActivityApplication> {
         const { error } = await supabase
             .from('activity_participants')
             .insert({
@@ -657,7 +657,7 @@ export class ActivityService {
     }
 
     // --- Volunteer Reviews (NPO -> Volunteer) ---
-    async getVolunteerReviews(): Promise<VolunteerReview[]> {
+    async getVolunteerReviews(): Promise<OldVolunteerReview[]> {
         const { data, error } = await supabase
             .from('volunteer_reviews')
             .select('*')
@@ -680,7 +680,7 @@ export class ActivityService {
         }));
     }
 
-    async submitVolunteerReviews(reviewsData: Omit<VolunteerReview, 'id' | 'date'>[]): Promise<VolunteerReview[]> {
+    async submitVolunteerReviews(reviewsData: Omit<OldVolunteerReview, 'id' | 'date'>[]): Promise<OldVolunteerReview[]> {
         const payloads = reviewsData.map(r => ({
             activity_id: r.activityId,
             npo_id: r.npoId,
@@ -711,7 +711,7 @@ export class ActivityService {
         }));
     }
 
-    async refreshActivityStates(): Promise<Activity[]> {
+    async refreshActivityStates(): Promise<OldActivity[]> {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER
             // Bypasses RLS issues where Volunteers couldn't update NPO activities.

@@ -195,7 +195,7 @@ export default function CreateActivityScreen() {
                         noScroll
                     >
                         <View className="gap-6 pb-12">
-                            {/* Activity Image */}
+                            {/* OldActivity Image */}
                             <View>
                                 <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Foto Attività</Text>
                                 <TouchableOpacity

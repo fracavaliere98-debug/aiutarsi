@@ -2,16 +2,16 @@ import React, { createContext, useContext, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
 import { useNotifications } from "./NotificationContext";
-import { Application } from "../types";
+import { OldApplication } from "../types";
 import { npoService } from "../services/NPOService";
 
 interface ApplicationContextType {
-    applications: Application[];
+    applications: OldApplication[];
     applyToNPO: (npoId: string, npoName: string, message: string) => Promise<boolean>;
     approveApplication: (applicationId: string) => Promise<boolean>;
     rejectApplication: (applicationId: string) => Promise<boolean>;
-    getNPOApplications: (npoId: string) => Application[];
-    getVolunteerApplications: (volunteerId: string) => Application[];
+    getNPOApplications: (npoId: string) => OldApplication[];
+    getVolunteerApplications: (volunteerId: string) => OldApplication[];
     hasAppliedToNPO: (volunteerId: string, npoId: string) => boolean;
     resetApplications: () => Promise<void>;
 }
@@ -53,7 +53,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const applyToNPOMutation = useMutation({
         mutationFn: async ({ npoId, npoName, message }: { npoId: string, npoName: string, message: string }) => {
             if (!user || user.role !== "VOLUNTEER") throw new Error("Unauthorized");
-            const newApplication: Application = {
+            const newApplication: OldApplication = {
                 id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 npoId,
                 npoName,

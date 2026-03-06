@@ -51,7 +51,7 @@ export function AddressAutocomplete({ onSelect, onChangeText: onTextChange, init
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
                 {
                     headers: {
-                        "User-Agent": "AiutarSiApp/1.0"
+                        "OldUser-Agent": "AiutarSiApp/1.0"
                     }
                 }
             );

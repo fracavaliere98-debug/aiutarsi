@@ -22,6 +22,24 @@ export class StorageService {
     }
 
     /**
+     * Uploads a community post image
+     */
+    async uploadCommunityImage(userId: string, uri: string): Promise<string | null> {
+        const timestamp = Date.now();
+        const fileName = `${userId}/${timestamp}.jpg`;
+        return this.uploadFile('community_media', fileName, uri);
+    }
+
+    /**
+     * Uploads a story image
+     */
+    async uploadStoryImage(userId: string, uri: string): Promise<string | null> {
+        const timestamp = Date.now();
+        const fileName = `stories/${userId}/${timestamp}.jpg`;
+        return this.uploadFile('community_media', fileName, uri);
+    }
+
+    /**
      * Generic upload helper using FileSystem and Base64 (Most Robust for Expo)
      */
     private async uploadFile(bucket: string, fileName: string, uri: string): Promise<string | null> {

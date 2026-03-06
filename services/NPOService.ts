@@ -1,4 +1,4 @@
-import { User, Application } from '../types';
+import { OldUser, OldApplication } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 
@@ -6,8 +6,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class NPOService {
 
-    // Helper to map Profile to User
-    private _mapProfileToUser(profile: any): User {
+    // Helper to map Profile to OldUser
+    private _mapProfileToUser(profile: any): OldUser {
         return {
             id: profile.id,
             email: profile.email || '',
@@ -34,8 +34,8 @@ export class NPOService {
         };
     }
 
-    // Helper map Application
-    private _mapDbAppToLocalApp(dbApp: any): Application {
+    // Helper map OldApplication
+    private _mapDbAppToLocalApp(dbApp: any): OldApplication {
         return {
             id: dbApp.id,
             npoId: dbApp.npo_id,
@@ -50,7 +50,7 @@ export class NPOService {
         };
     }
 
-    async getNPOProfile(npoId: string): Promise<User | null> {
+    async getNPOProfile(npoId: string): Promise<OldUser | null> {
         const { data, error } = await supabase
             .from('profiles')
             .select(`
@@ -105,7 +105,7 @@ export class NPOService {
 
     // --- Applications ---
 
-    async submitApplication(applicationData: Omit<Application, 'id'>): Promise<Application> {
+    async submitApplication(applicationData: Omit<OldApplication, 'id'>): Promise<OldApplication> {
         const { data, error } = await supabase
             .from('applications')
             .insert({
@@ -129,7 +129,7 @@ export class NPOService {
         };
     }
 
-    async getApplicationsForNPO(npoId: string): Promise<Application[]> {
+    async getApplicationsForNPO(npoId: string): Promise<OldApplication[]> {
         const { data, error } = await supabase
             .from('applications')
             .select(`
@@ -152,7 +152,7 @@ export class NPOService {
         return data.map(this._mapDbAppToLocalApp);
     }
 
-    async getApplicationsForVolunteer(volunteerId: string): Promise<Application[]> {
+    async getApplicationsForVolunteer(volunteerId: string): Promise<OldApplication[]> {
         const { data, error } = await supabase
             .from('applications')
             .select(`

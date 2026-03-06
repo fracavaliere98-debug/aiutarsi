@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { AppState } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Activity, Review, ActivityApplication, VolunteerReview } from "../types";
+import { OldActivity, OldReview, OldActivityApplication, OldVolunteerReview } from "../types";
 import { useAuth } from "./AuthContext";
 import { useNotifications } from "./NotificationContext";
 import { useGamification } from "./GamificationContext";
@@ -17,21 +17,21 @@ export interface VolunteerStats {
 }
 
 interface ActivityContextType {
-    activities: Activity[];
-    reviews: Review[];
-    userActivities: Activity[];
-    userReviews: Review[];
-    recommendedActivities: Activity[];
-    volunteerReviews: VolunteerReview[];
-    activityApplications: ActivityApplication[];
+    activities: OldActivity[];
+    reviews: OldReview[];
+    userActivities: OldActivity[];
+    userReviews: OldReview[];
+    recommendedActivities: OldActivity[];
+    volunteerReviews: OldVolunteerReview[];
+    activityApplications: OldActivityApplication[];
     volunteerStats: VolunteerStats;
     enrollInActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
     unenrollFromActivity: (activityId: string) => Promise<boolean>;
     applyToActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
-    createActivity: (activityData: Omit<Activity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage"> & { skills: string[] }) => Promise<string | null>;
-    submitReview: (reviewData: Omit<Review, "id" | "volunteerId" | "date">) => Promise<boolean>;
-    submitVolunteerReviews: (reviewsData: Omit<VolunteerReview, 'id' | 'date'>[]) => Promise<void>;
-    updateActivity: (activityId: string, activityData: Partial<Activity>) => Promise<boolean>;
+    createActivity: (activityData: Omit<OldActivity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage"> & { skills: string[] }) => Promise<string | null>;
+    submitReview: (reviewData: Omit<OldReview, "id" | "volunteerId" | "date">) => Promise<boolean>;
+    submitVolunteerReviews: (reviewsData: Omit<OldVolunteerReview, 'id' | 'date'>[]) => Promise<void>;
+    updateActivity: (activityId: string, activityData: Partial<OldActivity>) => Promise<boolean>;
     getNPORating: (npoId: string) => number;
     deleteActivity: (activityId: string) => Promise<boolean>;
     approveActivityApplication: (activityId: string, volunteerId: string) => Promise<boolean>;
@@ -39,7 +39,7 @@ interface ActivityContextType {
     resetData: () => Promise<void>;
     error: boolean;
     loadData: () => Promise<void>;
-    paginatedActivities: Activity[];
+    paginatedActivities: OldActivity[];
     hasMore: boolean;
     isLoadingMore: boolean;
     fetchPaginatedActivities: (params: {
@@ -88,7 +88,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     }, [rawActivities, user, handleActivityCompletion, gamificationLoaded]);
 
     // Pagination State
-    const [pageRawActivities, setPageRawActivities] = useState<Activity[]>([]);
+    const [pageRawActivities, setPageRawActivities] = useState<OldActivity[]>([]);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [offset, setOffset] = useState(0);
@@ -173,7 +173,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
         mutationFn: async ({ activityId, message, phone }: any) => {
             const updated = await activityService.joinActivity(activityId, user!.id, message, phone);
             // Optimistic update
-            queryClient.setQueryData(['activities_raw'], (old: Activity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
+            queryClient.setQueryData(['activities_raw'], (old: OldActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
             addNotification({ userId: updated.npoId, type: "VOLUNTEER_ENROLLED", title: "Nuovo Volontario Iscritto! 🎉", message: message ? `${user!.name} si è iscritto: "${message}"` : `${user!.name} si è iscritto all'attività "${updated.title}"`, activityId });
             return true;
@@ -185,7 +185,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
         mutationFn: async (activityId: string) => {
             await activityService.withdrawApplication(activityId, user!.id);
             // Optimistic update
-            queryClient.setQueryData(['activities_raw'], (old: Activity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
+            queryClient.setQueryData(['activities_raw'], (old: OldActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a));
             addNotification({ userId: user!.id, type: "INFO", title: "Iscrizione annullata", message: "La tua iscrizione è stata annullata con successo.", activityId });
             return true;

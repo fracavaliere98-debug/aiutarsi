@@ -1,6 +1,57 @@
+import { Database } from './supabase';
+
+// --- NEW SUPABASE DERIVED TYPES (Single Source of Truth) ---
+export type Activity = Database['public']['Tables']['activities']['Row'];
+export type InsertActivity = Database['public']['Tables']['activities']['Insert'];
+export type User = Database['public']['Tables']['profiles']['Row'];
+export type Review = Database['public']['Tables']['reviews']['Row'];
+export type VolunteerReview = Database['public']['Tables']['volunteer_reviews']['Row'];
+export type Application = Database['public']['Tables']['applications']['Row'];
+export type ActivityParticipant = Database['public']['Tables']['activity_participants']['Row'];
+export type CommunityPostRow = Database['public']['Tables']['community_posts']['Row'];
+export type PostReactionRow = Database['public']['Tables']['post_reactions']['Row'];
+export type StoryRow = Database['public']['Tables']['stories']['Row'];
+export type UserSkill = Database['public']['Tables']['user_skills']['Row'];
+export type UserInterest = Database['public']['Tables']['user_interests']['Row'];
+export type NPOFollower = Database['public']['Tables']['npo_followers']['Row'];
+
+// --- APP USER TYPE (Successor to OldUser) ---
+export type AppUser = User & {
+    user_skills?: UserSkill[];
+    user_interests?: UserInterest[];
+    followed_entities?: { npo_id: string }[];
+    // Backward compatibility for UI & convenience
+    name: string;
+    avatar?: string;
+    impactPoints: number;
+    npoName?: string;
+    companyName?: string;
+    skills: string[];
+    interests: string[];
+    followedNPOs: string[];
+    password?: string;
+};
+
+// Hybrid / Frontend-only Extended Types
+export type ActivityWithDistance = Activity & { distanceMeters?: number };
+
+// DTO from Supabase joins
+export type ExtendedActivity = Activity & {
+    profiles?: {
+        npo_name?: string | null;
+        full_name?: string | null;
+        public_email?: string | null;
+        email?: string | null;
+    } | null;
+    activity_participants?: { user_id: string }[] | null;
+    activity_skills?: { skill: string }[] | null;
+    // For backwards compatibility during migration or UI overrides
+    npoName?: string;
+    iscritti?: string[];
+};
 export type Role = "VOLUNTEER" | "NPO" | "CORPORATE";
 
-export interface User {
+export interface OldUser {
     id: string;
     email: string;
     password?: string;
@@ -34,7 +85,7 @@ export interface User {
     embedding?: number[];
 }
 
-export interface Activity {
+export interface OldActivity {
     id: string;
     npoId: string; // Autore_NPO
     npoName: string;
@@ -59,7 +110,7 @@ export interface Activity {
     recurrence?: 'NONE' | 'WEEKLY' | 'MONTHLY'; // Recurring activity
 }
 
-export interface Review {
+export interface OldReview {
     id: string;
     activityId: string;
     npoId: string;
@@ -70,7 +121,7 @@ export interface Review {
     date: string;
 }
 
-export interface VolunteerReview {
+export interface OldVolunteerReview {
     id: string;
     activityId: string;
     npoId: string;
@@ -81,7 +132,7 @@ export interface VolunteerReview {
     date: string;
 }
 
-export interface ActivityApplication {
+export interface OldActivityApplication {
     id: string;
     activityId: string;
     volunteerId: string;
@@ -93,7 +144,7 @@ export interface ActivityApplication {
     phone?: string;
 }
 
-export interface Application {
+export interface OldApplication {
     id: string;
     npoId: string;
     npoName: string;
@@ -107,7 +158,7 @@ export interface Application {
     reviewedDate?: string;
 }
 
-export interface Candidature {
+export interface OldCandidature {
     id: string;
     projectId: string;
     volunteerId: string;
@@ -118,7 +169,7 @@ export interface Candidature {
     message?: string;
 }
 
-export interface Employee {
+export interface OldEmployee {
     id: string;
     name: string;
     avatar: string;
@@ -127,9 +178,9 @@ export interface Employee {
     department: string;
 }
 
-export interface SmartMatchResult {
+export interface OldSmartMatchResult {
     id: string;
     score: number;
     reason: string;
-    activity?: Activity;
+    activity?: OldActivity;
 }

@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { SoftCard } from './SoftCard';
-import { Activity } from '../types';
+import { OldActivity } from '../types';
 import { useRouter } from 'expo-router';
 
 interface NPOActivityCardProps {
-    activity: Activity;
+    activity: OldActivity;
     onPress?: () => void;
 }
 

@@ -1,4 +1,4 @@
-import { Activity, User } from "../types";
+import { OldActivity, OldUser } from "../types";
 
 /**
  * Calculates the compatibility percentage between a volunteer and an activity.
@@ -8,7 +8,7 @@ import { Activity, User } from "../types";
  * - Proximity (Distance): 15%
  * - Urgency: 10%
  */
-export const calculateSmartMatch = (user: User | null, activity: Activity, semanticSimilarity?: number): number => {
+export const calculateSmartMatch = (user: OldUser | null, activity: OldActivity, semanticSimilarity?: number): number => {
     if (!user || user.role !== "VOLUNTEER") return 0;
 
     let score = 0;

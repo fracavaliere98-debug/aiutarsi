@@ -9,7 +9,7 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { SoftCard } from "../../../components/SoftCard";
 import { BadgePill } from "../../../components/BadgePill";
 import { useActivities } from "../../../context/ActivityContext";
-import { Activity } from "../../../types";
+import { OldActivity } from "../../../types";
 import { useState, useMemo } from "react";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarGrid } from "../../../components/CalendarGrid";
@@ -54,10 +54,10 @@ export default function VolunteerCalendar() {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const groups = {
-            today: [] as Activity[],
-            tomorrow: [] as Activity[],
-            future: [] as Activity[], // All upcoming after tomorrow
-            past: [] as Activity[],   // All past
+            today: [] as OldActivity[],
+            tomorrow: [] as OldActivity[],
+            future: [] as OldActivity[], // All upcoming after tomorrow
+            past: [] as OldActivity[],   // All past
         };
 
         filteredActivities.forEach(activity => {

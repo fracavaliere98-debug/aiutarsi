@@ -11,7 +11,7 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { activityService } from '../services/ActivityService';
-import { Activity } from '../types';
+import { OldActivity } from '../types';
 
 const PAGE_SIZE = 15;
 
@@ -31,9 +31,9 @@ export interface ActivityFilters {
 
 export function useActivities(filters: ActivityFilters = {}) {
     const query = useInfiniteQuery<
-        { activities: Activity[]; hasMore: boolean; totalCount: number },
+        { activities: OldActivity[]; hasMore: boolean; totalCount: number },
         Error,
-        { pages: { activities: Activity[]; hasMore: boolean; totalCount: number }[] },
+        { pages: { activities: OldActivity[]; hasMore: boolean; totalCount: number }[] },
         ['activities', ActivityFilters],
         number
     >({

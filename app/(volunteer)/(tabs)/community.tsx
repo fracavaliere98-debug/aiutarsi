@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, FlatList, TouchableOpacity, RefreshControl,
+    View, Text, TouchableOpacity, RefreshControl,
     ActivityIndicator, Modal, Image, Dimensions
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, Bell } from 'lucide-react-native';
@@ -14,12 +15,12 @@ import { StoriesRow } from '../../../components/StoriesRow';
 import { CommunityPostCard } from '../../../components/CommunityPostCard';
 import { CommunityPost } from '../../../types/community';
 import { Story } from '../../../types/stories';
-import { Activity } from '../../../types';
+import { OldActivity } from '../../../types';
 
 const SCREEN_W = Dimensions.get('window').width;
 
 // ── Weekend Events Banner ──────────────────────────────────────────────────────
-function WeekendEventsBanner({ activities }: { activities: Activity[] }) {
+function WeekendEventsBanner({ activities }: { activities: OldActivity[] }) {
     const router = useRouter();
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sun, 6=Sat
@@ -73,8 +74,8 @@ function WeekendEventsBanner({ activities }: { activities: Activity[] }) {
     );
 }
 
-// ── Suggested Activity Card (feed inline) ─────────────────────────────────────
-function SuggestedActivityInFeed({ activity }: { activity: Activity }) {
+// ── Suggested OldActivity Card (feed inline) ─────────────────────────────────────
+function SuggestedActivityInFeed({ activity }: { activity: OldActivity }) {
     const router = useRouter();
     return (
         <TouchableOpacity
@@ -135,7 +136,7 @@ export default function CommunityScreen() {
 
     type FeedItem =
         | { type: 'post'; data: CommunityPost; key: string }
-        | { type: 'activity'; data: Activity; key: string }
+        | { type: 'activity'; data: OldActivity; key: string }
         | { type: 'weekend'; key: string };
 
     const feedItems: FeedItem[] = [];
@@ -212,35 +213,38 @@ export default function CommunityScreen() {
                     <Text style={{ marginTop: 12, color: '#94a3b8', fontWeight: '600' }}>Caricamento Community...</Text>
                 </View>
             ) : (
-                <FlatList
-                    data={feedItems}
-                    keyExtractor={item => item.key}
-                    renderItem={renderItem}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 100 }}
-                    ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={setStoryPost} />}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
-                    ListEmptyComponent={
-                        <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
-                            <Text style={{ fontSize: 40 }}>🌱</Text>
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La community sta crescendo</Text>
-                            <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
-                                {isNPO
-                                    ? 'Pubblica il primo post per far sapere a tutti cosa sta succedendo!'
-                                    : 'Le NPO che segui non hanno ancora pubblicato nulla. Torna presto!'}
-                            </Text>
-                            {isNPO && (
-                                <TouchableOpacity
-                                    onPress={() => router.push('/community/create-post' as any)}
-                                    style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                                >
-                                    <Plus size={16} color="white" />
-                                    <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    }
-                />
+                <View style={{ flex: 1, height: '100%' }}>
+                    <FlashList<any>
+                        data={feedItems}
+                        keyExtractor={item => item.key}
+                        getItemType={(item) => item.type}
+                        renderItem={renderItem}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 100 }}
+                        ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={setStoryPost} />}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
+                        ListEmptyComponent={
+                            <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
+                                <Text style={{ fontSize: 40 }}>🌱</Text>
+                                <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La community sta crescendo</Text>
+                                <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
+                                    {isNPO
+                                        ? "Sii il primo a condividere un momento d'impatto!"
+                                        : 'Le NPO che segui non hanno ancora pubblicato nulla. Torna presto!'}
+                                </Text>
+                                {isNPO && (
+                                    <TouchableOpacity
+                                        onPress={() => router.push('/community/create-post' as any)}
+                                        style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                                    >
+                                        <Plus size={16} color="white" />
+                                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        }
+                    />
+                </View>
             )}
 
             {/* Story viewer modal */}

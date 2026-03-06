@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Clock } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
-import { Application } from "../../types";
+import { OldApplication } from "../../types";
 import { useRouter } from "expo-router";
 
 interface ApplicationSectionProps {
-    applications: Application[];
+    applications: OldApplication[];
 }
 
 export function ApplicationSection({ applications }: ApplicationSectionProps) {
@@ -15,7 +15,7 @@ export function ApplicationSection({ applications }: ApplicationSectionProps) {
     return (
         <View className="px-6 mb-8">
             <Text className="text-xl font-black text-primary mb-3">
-                Le Mie Candidature
+                Le Mie OldCandidature
             </Text>
             {applications && applications.length > 0 ? (
                 applications.map(app => {

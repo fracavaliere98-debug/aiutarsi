@@ -2,28 +2,28 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Alert, AppState, AppStateStatus } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
-import { User } from "../types";
+import { AppUser } from "../types";
 import { authService } from "../services/AuthService";
 import { npoService } from "../services/NPOService";
 import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
 import { supabase } from "../utils/supabase";
 
 interface AuthContextType {
-    user: User | null;
-    users: User[]; // All users in the system
+    user: AppUser | null;
+    users: AppUser[]; // All users in the system
     login: (email: string, password: string) => Promise<boolean>;
-    register: (userData: Partial<User>) => Promise<boolean>;
+    register: (userData: Partial<AppUser>) => Promise<boolean>;
     logout: () => void;
     isLoaded: boolean;
     isLoading: boolean;
     isLoggingOut: boolean;
-    updateUserProfile: (data: Partial<User>) => Promise<boolean>;
+    updateUserProfile: (data: Partial<AppUser>) => Promise<boolean>;
     // NPO Follower Management
     followNPO: (npoId: string) => Promise<boolean>;
     unfollowNPO: (npoId: string) => Promise<boolean>;
-    getNPOFollowers: (npoId: string) => User[];
+    getNPOFollowers: (npoId: string) => AppUser[];
     isFollowingNPO: (npoId: string) => boolean;
-    getUserById: (id: string) => User | undefined;
+    getUserById: (id: string) => AppUser | undefined;
     resetUsers: () => Promise<void>;
     refreshUsers: () => Promise<void>;
 }
@@ -50,11 +50,11 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AppUser | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [usersDB, setUsersDB] = useState<User[]>([]);
+    const [usersDB, setUsersDB] = useState<AppUser[]>([]);
 
     // Use ref to track logout intent immediately and synchronously across closures
     const isLoggingOutRef = React.useRef(false);
@@ -221,11 +221,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
-    const register = useCallback(async (userData: Partial<User>): Promise<boolean> => {
+    const register = useCallback(async (userData: Partial<AppUser>): Promise<boolean> => {
         // setIsLoading(true); // Don't trigger global loading
         try {
             // Check required fields (basic validation)
-            if (!userData.email || !userData.password || !userData.name) {
+            if (!userData.email || !userData.password || !userData.full_name) {
                 throw new Error("Missing required fields");
             }
 
@@ -241,7 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [refreshUsers]);
 
-    const updateUserProfile = useCallback(async (data: Partial<User>): Promise<boolean> => {
+    const updateUserProfile = useCallback(async (data: Partial<AppUser>): Promise<boolean> => {
         // PREVENTIVE BLOCK: Ignore updates if logout is in progress
         if (!user || isLoggingOutRef.current) return false;
 
@@ -368,8 +368,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             await npoService.followNPO(npoId, user.id);
             // Manually update local state since service returns void
-            const updatedFollowed = [...(user.followedNPOs || []), npoId];
-            const updatedUser = { ...user, followedNPOs: updatedFollowed };
+            const updatedFollowed = [...(user.followed_entities || []), { npo_id: npoId }];
+            const updatedUser = { ...user, followed_entities: updatedFollowed };
             setUser(updatedUser);
 
             // Background refresh to be sure
@@ -386,8 +386,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             await npoService.unfollowNPO(npoId, user.id);
             // Manually update local state
-            const updatedFollowed = (user.followedNPOs || []).filter(id => id !== npoId);
-            const updatedUser = { ...user, followedNPOs: updatedFollowed };
+            const updatedFollowed = (user.followed_entities || []).filter(e => e.npo_id !== npoId);
+            const updatedUser = { ...user, followed_entities: updatedFollowed };
             setUser(updatedUser);
 
             refreshUsers();
@@ -398,16 +398,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user, refreshUsers]);
 
-    const getNPOFollowers = useCallback((npoId: string): User[] => {
+    const getNPOFollowers = useCallback((npoId: string): AppUser[] => {
         return usersDB.filter(u =>
             u.role === "VOLUNTEER" &&
-            u.followedNPOs?.includes(npoId)
+            u.followed_entities?.some(e => e.npo_id === npoId)
         );
     }, [usersDB]);
 
     const isFollowingNPO = useCallback((npoId: string): boolean => {
         if (!user || user.role !== "VOLUNTEER") return false;
-        return user.followedNPOs?.includes(npoId) || false;
+        return user.followed_entities?.some(e => e.npo_id === npoId) || false;
     }, [user]);
 
     const getUserById = useCallback((id: string) => {

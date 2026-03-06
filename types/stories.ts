@@ -1,23 +1,19 @@
-export interface Story {
-    id: string;
-    author_id: string;
-    image_url: string;
-    caption: string | null;
-    linked_activity_id: string | null;
-    expires_at: string;
-    created_at: string;
+import { Database } from './supabase';
+
+export type Story = Database['public']['Tables']['stories']['Row'] & {
     // Joined
     author?: {
         id: string;
-        name: string;
+        full_name: string | null;
         npo_name: string | null;
-        avatar: string | null;
+        avatar_url: string | null;
         role: string;
-    };
+    } | null;
     linked_activity?: {
         id: string;
         title: string;
         date_start: string;
-        status: string;
+        status: string | null;
     } | null;
-}
+};
+

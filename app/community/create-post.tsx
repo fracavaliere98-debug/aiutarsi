@@ -201,7 +201,7 @@ export default function CreatePostScreen() {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Activity picker modal */}
+            {/* OldActivity picker modal */}
             {showActivityPicker && (
                 <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '60%', paddingBottom: Platform.OS === 'ios' ? 34 : 24 }}>

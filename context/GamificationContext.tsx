@@ -152,7 +152,7 @@ export const GamificationProvider = ({ children }: { children: ReactNode }) => {
 
     const dismissLevelUp = useCallback(() => setLevelUpData(null), []);
 
-    // 3. User Actions (Client-Driven)
+    // 3. OldUser Actions (Client-Driven)
     const handleActivityShare = useCallback(async (activityId: string) => {
         if (!user) return;
         // Backend RPC handles the logic and checks array_append

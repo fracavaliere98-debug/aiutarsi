@@ -15,7 +15,7 @@ import {
 } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Activity } from "../../../types";
+import { OldActivity } from "../../../types";
 import { useNotifications } from "../../../context/NotificationContext";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
@@ -31,7 +31,7 @@ async function fetchNominatim(text: string): Promise<{ id: number; label: string
     try {
         const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
-            { headers: { 'User-Agent': 'AiutarSiApp/1.0' } }
+            { headers: { 'OldUser-Agent': 'AiutarSiApp/1.0' } }
         );
         const data = await res.json();
         return data.map((item: any) => ({
@@ -175,7 +175,7 @@ const ActivityMarker = ({ activity, isSelected, isEnrolled, markerColor, CatIcon
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type ActivityWithDistance = Activity & { distanceMeters?: number };
+type ActivityWithDistance = OldActivity & { distanceMeters?: number };
 
 interface SearchCenter {
     lat: number;
@@ -413,7 +413,7 @@ export default function VolunteerMap() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [searchSuggestions, setSearchSuggestions] = useState<{ id: number; label: string; lat: number; lng: number }[]>([]);
-    const [suggestedActivities, setSuggestedActivities] = useState<Activity[]>([]);
+    const [suggestedActivities, setSuggestedActivities] = useState<OldActivity[]>([]);
     const [suggestedNpos, setSuggestedNpos] = useState<{ id: string; name: string }[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1095,7 +1095,7 @@ export default function VolunteerMap() {
                     </TouchableOpacity>
                 </View>
 
-                {/* ── Activity count badge ── */}
+                {/* ── OldActivity count badge ── */}
                 {!selectedActivity && (
                     <Animated.View
                         entering={FadeIn}
@@ -1112,7 +1112,7 @@ export default function VolunteerMap() {
                     </Animated.View>
                 )}
 
-                {/* ── Selected Activity Bottom Sheet ── */}
+                {/* ── Selected OldActivity Bottom Sheet ── */}
                 {selectedActivity && (() => {
                     const activity = filteredActivities.find(a => a.id === selectedActivity);
                     if (!activity) return null;

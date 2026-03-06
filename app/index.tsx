@@ -24,7 +24,7 @@ export default function LandingPage() {
                         scrollY.value,
                         [0, 100],
                         [100, 0], // Slide up when scrolling starts? Or just always visible? 
-                        // User said "persistent at the bottom", usually implies always there or appears after hero.
+                        // OldUser said "persistent at the bottom", usually implies always there or appears after hero.
                         // Let's make it appear after a short scroll to avoid cluttering the hero initially if that's preferred,
                         // BUT "sticky... facilitates conversion DURING scrolling". 
                         // Let's make it visible after the main hero CTA scrolls out (approx 300px).

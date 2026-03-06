@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
-import { User } from "../../types";
+import { OldUser } from "../../types";
 import { Trophy, Search, TrendingUp, ChevronRight } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";

@@ -6,7 +6,7 @@ import { Colors } from "../../../constants/Colors";
 import { ArrowLeft, Calendar, MapPin, Users, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, Trash2, Plus, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
-import { Activity } from "../../../types";
+import { OldActivity } from "../../../types";
 import * as ImagePicker from 'expo-image-picker';
 
 const SKILLS = [
@@ -44,7 +44,7 @@ export default function EditActivityScreen() {
     });
 
     useEffect(() => {
-        const activity = activities.find((a: Activity) => a.id === id);
+        const activity = activities.find((a: OldActivity) => a.id === id);
         if (activity) {
             setFormData({
                 title: activity.title,

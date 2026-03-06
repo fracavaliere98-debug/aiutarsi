@@ -10,7 +10,7 @@ import { useGamification } from "../../context/GamificationContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { activityService } from "../../services/ActivityService";
-import { Activity } from "../../types";
+import { OldActivity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
@@ -87,7 +87,7 @@ export default function ActivityDetail() {
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
 
-    const [fetchedActivity, setFetchedActivity] = useState<Activity | null>(null);
+    const [fetchedActivity, setFetchedActivity] = useState<OldActivity | null>(null);
     const [fetchLoading, setFetchLoading] = useState(false);
     const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
 

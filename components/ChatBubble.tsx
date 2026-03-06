@@ -16,7 +16,7 @@ export function ChatBubble({ message, isOwn, timestamp, senderName, avatarUrl, i
         <View className={`flex-row w-full mb-6 relative px-4 ${isOwn ? 'justify-end' : 'justify-start'}`}>
             {!isOwn && (
                 <View className="mr-2 justify-end pb-4">
-                    <UserAvatar name={senderName || "User"} size={32} fontSize={12} avatarUrl={avatarUrl} />
+                    <UserAvatar name={senderName || "OldUser"} size={32} fontSize={12} avatarUrl={avatarUrl} />
                 </View>
             )}
 

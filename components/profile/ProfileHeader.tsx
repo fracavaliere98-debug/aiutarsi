@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Award, Settings, Camera, Mail } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
-import { User } from "../../types";
+import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { saveImageToPermanentStorage } from "../../utils/FileStorage";
 
 interface ProfileHeaderProps {
-    user: User | null;
+    user: AppUser | null;
     level: number;
     isOwnProfile: boolean;
     onSettingsPress?: () => void;
@@ -37,7 +37,7 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const permanentUri = await saveImageToPermanentStorage(result.assets[0].uri);
-            await updateUserProfile({ avatar: permanentUri });
+            await updateUserProfile({ avatar_url: permanentUri });
         }
     };
 
@@ -53,8 +53,8 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                     <UserAvatar
                         size={90}
                         fontSize={32}
-                        name={user?.name}
-                        avatarUrl={user?.avatar}
+                        name={user?.full_name || undefined}
+                        avatarUrl={user?.avatar_url || undefined}
                     />
                 </View>
 
@@ -69,7 +69,7 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                     <Text className="text-white font-bold text-xs">Lv. {level}</Text>
                 </View>
             </TouchableOpacity>
-            <Text className="text-2xl font-black text-primary mb-1 text-center">{user?.name || "Utente"}</Text>
+            <Text className="text-2xl font-black text-primary mb-1 text-center">{user?.full_name || "Utente"}</Text>
 
 
             {/* Bio & Contacts */}
@@ -94,8 +94,8 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
 
             {/* Location & Email Display */}
             <View className="items-center mb-2 px-4">
-                {user?.locationString && (
-                    <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.locationString}</Text>
+                {user?.location_string && (
+                    <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.location_string}</Text>
                 )}
                 {(isOwnProfile || user?.show_email) && user?.email && (
                     <View className="flex-row items-center gap-1">

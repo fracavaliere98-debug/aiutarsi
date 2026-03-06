@@ -65,7 +65,7 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
                 {/* Active story bubbles */}
                 {stories.map(story => {
                     const isLive = story.linked_activity?.status === 'IN_CORSO';
-                    const name = story.author?.npo_name || story.author?.name || 'NPO';
+                    const name = story.author?.npo_name || story.author?.full_name || 'NPO';
                     const firstName = name.split(' ')[0];
 
                     // Time left until expiry
@@ -93,10 +93,10 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
                                     backgroundColor: '#f1f5f9',
                                     alignItems: 'center', justifyContent: 'center',
                                 }}>
-                                    {story.author?.avatar ? (
-                                        <Image source={{ uri: story.author.avatar }} style={{ width: '100%', height: '100%' }} />
-                                    ) : story.image_url ? (
+                                    {story.image_url ? (
                                         <Image source={{ uri: story.image_url }} style={{ width: '100%', height: '100%' }} />
+                                    ) : story.author?.avatar_url ? (
+                                        <Image source={{ uri: story.author.avatar_url }} style={{ width: '100%', height: '100%' }} />
                                     ) : (
                                         <Text style={{ fontSize: 22 }}>🏛️</Text>
                                     )}

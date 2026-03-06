@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Moda
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database } from "lucide-react-native";
+import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -287,7 +287,7 @@ export default function VolunteerSettings() {
                             await resetData();
                             await resetUsers();
                             await resetApplications();
-                            alert("Dati Utenti, Attività e Candidature resettati con successo!");
+                            alert("Dati Utenti, Attività e OldCandidature resettati con successo!");
                         }}
                         last
                     />

@@ -11,7 +11,7 @@ import * as Location from 'expo-location';
 import { supabase } from '../utils/supabase';
 import { activityService } from '../services/ActivityService';
 import { useAuth } from './AuthContext';
-import { Activity, User, SmartMatchResult } from '../types';
+import { OldActivity, OldUser, OldSmartMatchResult } from '../types';
 
 // Helper function for Haversine distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -28,7 +28,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SmartMatchContextType {
-    matches: SmartMatchResult[];
+    matches: OldSmartMatchResult[];
     isLoading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
@@ -49,7 +49,7 @@ export const useSmartMatch = () => useContext(SmartMatchContext);
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function SmartMatchProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [matches, setMatches] = useState<SmartMatchResult[]>([]);
+    const [matches, setMatches] = useState<OldSmartMatchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -72,7 +72,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         try {
             // Guard: check if user has an embedding (pgvector)
             if (!user.embedding) {
-                console.log('[SmartMatchContext] User has no embedding yet — waiting for auto-generation');
+                console.log('[SmartMatchContext] OldUser has no embedding yet — waiting for auto-generation');
                 setError('Analisi del profilo in corso... riprova tra pochi secondi.');
                 setIsLoading(false);
                 isFetchingRef.current = false;
@@ -93,7 +93,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             if (rpcError) throw rpcError;
 
             // 2. Map RPC results to match the UI interface
-            const mappedMatches: SmartMatchResult[] = (data || []).map((item: any) => {
+            const mappedMatches: OldSmartMatchResult[] = (data || []).map((item: any) => {
                 // ... same mapping logic as before ...
                 let reason = "Alta affinità semantica con il tuo profilo.";
                 const reasons: string[] = [];
@@ -149,7 +149,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                         iscritti: [],
                         slots: 0,
                         skills: []
-                    } as Activity
+                    } as OldActivity
                 };
             });
 
@@ -174,7 +174,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     .filter(Boolean)
             );
 
-            const finalMatches: SmartMatchResult[] = mappedMatches
+            const finalMatches: OldSmartMatchResult[] = mappedMatches
                 .filter(m => !enrolledIds.has(m.id))
                 .map(m => {
                     const activity = m.activity;
@@ -189,7 +189,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                             activity: {
                                 ...activity,
                                 matchPercentage: boostedScore
-                            } as Activity,
+                            } as OldActivity,
                             reason: `Visto il tuo interesse passato per ${activity.category} • ${m.reason}`
                         };
                     }

@@ -11,7 +11,7 @@ import {
     MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
     ChevronDown, CheckCircle2, Users, TreePine, SlidersHorizontal
 } from "lucide-react-native";
-import { Activity } from "../../../types";
+import { OldActivity } from "../../../types";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../hooks/useActivities";
@@ -73,7 +73,7 @@ async function fetchNominatim(text: string): Promise<{ id: number; label: string
     try {
         const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
-            { headers: { 'User-Agent': 'AiutarSiApp/1.0' } }
+            { headers: { 'OldUser-Agent': 'AiutarSiApp/1.0' } }
         );
         const data = await res.json();
         return data.map((item: any) => ({
@@ -273,7 +273,7 @@ export default function SearchScreen() {
     // Geo-center set when user picks a "Luogo" suggestion
     const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number; label: string } | null>(null);
     // Categorized search suggestions
-    const [suggestedActivities, setSuggestedActivities] = useState<Activity[]>([]);
+    const [suggestedActivities, setSuggestedActivities] = useState<OldActivity[]>([]);
     const [suggestedNpos, setSuggestedNpos] = useState<{ id: string; name: string }[]>([]);
     const [suggestedPlaces, setSuggestedPlaces] = useState<{ id: number; label: string; lat: number; lng: number }[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -374,7 +374,7 @@ export default function SearchScreen() {
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => { setFilters(pendingFilters); setIsFilterModalVisible(false); };
 
-    const renderActivityItem = ({ item }: { item: Activity }) => (
+    const renderActivityItem = ({ item }: { item: OldActivity }) => (
         <TouchableOpacity
             onPress={() => router.push(`/activity/${item.id}` as any)}
             activeOpacity={0.9}

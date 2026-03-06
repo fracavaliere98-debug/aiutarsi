@@ -2,7 +2,7 @@ import { View, Text, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter, Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { User } from "../../types";
+import { AppUser } from "../../types";
 
 /**
  * Generic profile screen for users found from chat (participants or header avatar).
@@ -14,7 +14,7 @@ export default function UserProfileRedirect() {
     const router = useRouter();
     const { users, getUserById } = useAuth();
 
-    const [targetUser, setTargetUser] = useState<User | null | undefined>(undefined); // undefined = loading
+    const [targetUser, setTargetUser] = useState<AppUser | null | undefined>(undefined); // undefined = loading
 
     useEffect(() => {
         if (!id) { setTargetUser(null); return; }
@@ -40,7 +40,7 @@ export default function UserProfileRedirect() {
     }
 
     if (!targetUser) {
-        // User not found — go back
+        // OldUser not found — go back
         router.back();
         return null;
     }

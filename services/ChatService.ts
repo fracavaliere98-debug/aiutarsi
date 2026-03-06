@@ -302,7 +302,7 @@ class ChatService {
             }
         });
 
-        // 2. Get Activity Groups (activities created by this NPO)
+        // 2. Get OldActivity Groups (activities created by this NPO)
         // We only want activities that have participants
         const { data: activities, error: aErr } = await supabase
             .from('activities')

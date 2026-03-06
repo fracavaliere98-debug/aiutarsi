@@ -100,7 +100,7 @@ function RootLayoutNav() {
 
     // 4. LANDING PAGE GUARD: Logged user trying to access landing
     if (onLandingPage) {
-      console.log("[DEBUG] RootLayoutNav: User present on Landing, going to App");
+      console.log("[DEBUG] RootLayoutNav: OldUser present on Landing, going to App");
       isRedirecting.current = true;
 
       const dest = user.role === "VOLUNTEER"
@@ -114,7 +114,7 @@ function RootLayoutNav() {
       return;
     }
 
-    // 5. ONBOARDING GUARD: User logged in but profile incomplete
+    // 5. ONBOARDING GUARD: OldUser logged in but profile incomplete
     if (user.role === "VOLUNTEER" && !hasCompletedOnboarding && !inOnboarding) {
       console.log("[DEBUG] RootLayoutNav: Incomplete profile, forcing onboarding to /onboarding/interests");
       isRedirecting.current = true;
@@ -123,7 +123,7 @@ function RootLayoutNav() {
       return;
     }
 
-    // 6. COMPLETION GUARD: User logged in, profile complete, but stuck in onboarding
+    // 6. COMPLETION GUARD: OldUser logged in, profile complete, but stuck in onboarding
     if (hasCompletedOnboarding && inOnboarding) {
       console.log("[DEBUG] RootLayoutNav: Profile complete, escaping onboarding to dashboard");
       isRedirecting.current = true;

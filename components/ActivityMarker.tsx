@@ -3,11 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Zap } from 'lucide-react-native';
-import { Activity } from '../types';
+import { OldActivity } from '../types';
 import { Colors } from '../constants/Colors';
 
 interface ActivityMarkerProps {
-    activity: Activity;
+    activity: OldActivity;
     isSelected: boolean;
     isEnrolled: boolean;
     markerColor: string;

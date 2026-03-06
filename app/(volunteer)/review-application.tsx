@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2, User } from "lucide-react-native";
+import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2, User } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
@@ -43,7 +43,7 @@ export default function ReviewApplication() {
             let success = false;
 
             if (isActivity && activity) {
-                // IMMEDIATE Enrollment for Activity
+                // IMMEDIATE Enrollment for OldActivity
                 success = await enrollInActivity(activity.id, notes, phoneNumber);
             } else if (npoUser) {
                 // Apply to NPO

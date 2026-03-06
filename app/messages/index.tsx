@@ -356,7 +356,7 @@ export default function MessagesListScreen() {
                                                             <UsersIcon size={24} color={Colors.primary} />
                                                         ) : (
                                                             <Image
-                                                                source={{ uri: item.avatar || `https://ui-avatars.com/api/?name=${item.name || item.full_name || 'User'}` }}
+                                                                source={{ uri: item.avatar || `https://ui-avatars.com/api/?name=${item.name || item.full_name || 'OldUser'}` }}
                                                                 className="w-full h-full rounded-full"
                                                             />
                                                         )}

@@ -6,7 +6,7 @@ import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } from "../../../context/GamificationContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
-import { User } from "../../../types";
+import { OldUser } from "../../../types";
 import ChatService from "../../../services/ChatService";
 
 export default function NPOVolunteerProfile() {
@@ -16,7 +16,7 @@ export default function NPOVolunteerProfile() {
     const { getVolunteerApplications } = useApplications();
     const { activities, reviews } = useActivities();
 
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<OldUser | null>(null);
     const [gamificationState, setGamificationState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -25,7 +25,7 @@ export default function NPOVolunteerProfile() {
             if (typeof id !== 'string') return;
 
             try {
-                // 1. Get User Data
+                // 1. Get OldUser Data
                 const userData = getUserById(id); // from AuthContext
                 setUser(userData || null);
 

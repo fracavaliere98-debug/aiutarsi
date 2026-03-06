@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { UserAvatar } from "./UserAvatar";
-import { User } from "../types";
+import { OldUser } from "../types";
 import { Colors } from "../constants/Colors";
 import { Mail, Award } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
@@ -9,7 +9,7 @@ import { getUserGamificationState } from "../context/GamificationContext";
 import { useRouter } from "expo-router";
 
 interface CompactFollowerCardProps {
-    volunteer: User;
+    volunteer: OldUser;
     onInvite: (volunteerId: string) => void;
 }
 

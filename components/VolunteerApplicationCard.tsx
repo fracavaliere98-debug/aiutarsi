@@ -8,10 +8,10 @@ import { getUserGamificationState } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 
-import { Application, ActivityApplication } from "../types";
+import { OldApplication, OldActivityApplication } from "../types";
 
 interface VolunteerApplicationCardProps {
-    application: (Application | ActivityApplication) & { metrics?: { matchScore: number }, phone?: string };
+    application: (OldApplication | OldActivityApplication) & { metrics?: { matchScore: number }, phone?: string };
     onApprove?: (id: string) => void;
     onReject?: (id: string) => void;
     showActions?: boolean;

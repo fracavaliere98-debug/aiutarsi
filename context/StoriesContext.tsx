@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { supabase } from '../utils/supabase';
 import { Story } from '../types/stories';
 import { useAuth } from './AuthContext';
+import { storageService } from '../services/StorageService';
 
 interface StoriesContextType {
     stories: Story[];
@@ -27,9 +28,9 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
                     *,
                     author:profiles!author_id (
                         id,
-                        name:full_name,
+                        full_name,
                         npo_name,
-                        avatar:avatar_url,
+                        avatar_url,
                         role
                     ),
                     linked_activity:activities!linked_activity_id (
@@ -48,25 +49,16 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    // Upload image to Supabase Storage
-    const uploadImage = async (imageUri: string): Promise<string | null> => {
+    // Upload image to Supabase Storage (Use StorageService for robustness)
+    const uploadImage = useCallback(async (imageUri: string): Promise<string | null> => {
+        if (!user) return null;
         try {
-            const fileName = `stories/${user?.id}/${Date.now()}.jpg`;
-            const response = await fetch(imageUri);
-            const blob = await response.blob();
-            const { data, error } = await supabase.storage
-                .from('community_media')
-                .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
-            if (error) throw error;
-            const { data: urlData } = supabase.storage
-                .from('community_media')
-                .getPublicUrl(data.path);
-            return urlData.publicUrl;
+            return await storageService.uploadStoryImage(user.id, imageUri);
         } catch (e) {
             console.error('Story image upload error:', e);
             return null;
         }
-    };
+    }, [user]);
 
     const createStory = async (imageUri: string, caption?: string, linkedActivityId?: string) => {
         if (!user) return;

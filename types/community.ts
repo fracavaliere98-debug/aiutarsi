@@ -1,38 +1,30 @@
 // types/community.ts
 
-export interface CommunityPost {
-    id: string;
-    author_id: string;
-    caption: string | null;
-    image_url: string | null;
-    linked_activity_id: string | null;
-    created_at: string;
+import { Database } from './supabase';
+import { Activity, User } from './index';
+
+export type PostReaction = Database['public']['Tables']['post_reactions']['Row'];
+
+export type CommunityPost = Database['public']['Tables']['community_posts']['Row'] & {
     // Joined fields
     author?: {
         id: string;
-        name: string;
+        full_name: string | null;
         npo_name: string | null;
-        avatar: string | null;
+        avatar_url: string | null;
         role: string;
-    };
+    } | null;
     linked_activity?: {
         id: string;
         title: string;
         date_start: string;
-        status: string;
+        status: string | null;
     } | null;
     reactions?: PostReaction[];
-}
-
-export interface PostReaction {
-    id: string;
-    post_id: string;
-    user_id: string;
-    reaction: 'heart' | 'clap' | 'muscle' | 'tree';
-    created_at: string;
-}
+};
 
 export type ReactionType = 'heart' | 'clap' | 'muscle' | 'tree';
+
 
 export const REACTION_EMOJI: Record<ReactionType, string> = {
     heart: '❤️',

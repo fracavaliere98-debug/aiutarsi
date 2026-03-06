@@ -22,12 +22,18 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
     const reactionCounts: Record<ReactionType, number> = { heart: 0, clap: 0, muscle: 0, tree: 0 };
     const userReactions = new Set<ReactionType>();
     for (const r of (post.reactions || [])) {
-        reactionCounts[r.reaction]++;
-        if (r.user_id === user?.id) userReactions.add(r.reaction);
+        if (r.reaction) {
+            const rType = r.reaction as ReactionType;
+            if (reactionCounts[rType] !== undefined) {
+                reactionCounts[rType]++;
+                if (r.user_id === user?.id) userReactions.add(rType);
+            }
+        }
     }
 
-    const authorName = post.author?.npo_name || post.author?.name || 'NPO';
+    const authorName = post.author?.npo_name || post.author?.full_name || 'NPO';
     const timeAgo = (() => {
+        if (!post.created_at) return '...';
         const diff = Date.now() - new Date(post.created_at).getTime();
         const mins = Math.floor(diff / 60000);
         if (mins < 60) return `${mins}m fa`;
@@ -54,8 +60,8 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                     onPress={() => router.push(`/npo-profile/${post.author_id}` as any)}
                     style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ede9fe', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}
                 >
-                    {post.author?.avatar
-                        ? <Image source={{ uri: post.author.avatar }} style={{ width: 40, height: 40 }} />
+                    {post.author?.avatar_url
+                        ? <Image source={{ uri: post.author.avatar_url }} style={{ width: 40, height: 40 }} />
                         : <Text style={{ fontSize: 18 }}>🏛️</Text>
                     }
                 </TouchableOpacity>
@@ -73,7 +79,7 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                         style={{ width: SCREEN_W - 32, height: (SCREEN_W - 32) * 1.1 }}
                         resizeMode="cover"
                     />
-                    {/* Activity anchor banner */}
+                    {/* OldActivity anchor banner */}
                     {post.linked_activity && (
                         <LinearGradient
                             colors={['transparent', 'rgba(0,0,0,0.75)']}

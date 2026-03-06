@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { CheckCircle2 } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
 import { UserAvatar } from "../UserAvatar";
-import { User } from "../../types";
+import { OldUser } from "../../types";
 import { useRouter } from "expo-router";
 
 interface NPOAffiliationSectionProps {
     isOwnProfile: boolean;
-    affiliatedNPOs: User[];
-    followedNPOs?: User[];
+    affiliatedNPOs: OldUser[];
+    followedNPOs?: OldUser[];
 }
 
 export function NPOAffiliationSection({ isOwnProfile, affiliatedNPOs, followedNPOs }: NPOAffiliationSectionProps) {

@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserAvatar } from './UserAvatar';
 import { SoftCard } from './SoftCard';
-import { User } from '../types';
+import { OldUser } from '../types';
 
 interface VolunteerCardProps {
-    volunteer: User;
+    volunteer: OldUser;
     onPress?: () => void;
     actions?: React.ReactNode;
 }

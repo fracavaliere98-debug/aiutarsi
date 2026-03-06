@@ -1,5 +1,5 @@
 import { Tabs, useRouter, useSegments, Redirect } from "expo-router";
-import { BarChart3, Users, Award, User } from "lucide-react-native";
+import { BarChart3, Users, Award, User } from 'lucide-react-native';
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect } from "react";

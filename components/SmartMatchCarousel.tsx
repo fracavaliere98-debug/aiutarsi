@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { Sparkles, MapPin, Calendar, ChevronRight, Bot, Zap } from 'lucide-react-native';
 import { useSmartMatch } from '../context/SmartMatchContext';
 import { Colors } from '../constants/Colors';
-import { SmartMatchResult } from '../types';
+import { OldSmartMatchResult } from '../types';
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -40,7 +40,7 @@ function SkeletonCard() {
 }
 
 // ─── Match Card ───────────────────────────────────────────────────────────────
-function MatchCard({ match, index }: { match: SmartMatchResult; index: number }) {
+function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number }) {
     const router = useRouter();
     const activity = match.activity;
     if (!activity) return null;
@@ -119,7 +119,7 @@ function MatchCard({ match, index }: { match: SmartMatchResult; index: number })
                 {activity.npoName}
             </Text>
 
-            {/* Activity Title */}
+            {/* OldActivity Title */}
             <Text
                 style={{
                     color: isTopMatch ? '#ffffff' : Colors.primary,

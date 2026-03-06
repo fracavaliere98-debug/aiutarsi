@@ -4,7 +4,7 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { Check, X, Clock, User, Filter, Search, Calendar, Sparkles } from "lucide-react-native";
+import { Check, X, Clock, User, Filter, Search, Calendar, Sparkles } from 'lucide-react-native';
 import { Card } from "../../../components/Card";
 import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -339,7 +339,7 @@ export default function VolunteersScreen() {
             {activeTab === "CANDIDATURE" && (
                 <View className="flex-1">
                     <View className="mb-3 px-1">
-                        <Text className="text-primary font-black text-lg">Nuove Candidature</Text>
+                        <Text className="text-primary font-black text-lg">Nuove OldCandidature</Text>
                     </View>
 
                     {displayPending.length > 0 ? (

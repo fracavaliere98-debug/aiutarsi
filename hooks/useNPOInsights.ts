@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useActivities } from "../context/ActivityContext";
 import { useApplications } from "../context/ApplicationContext";
 import { useAuth } from "../context/AuthContext";
-import { Activity, ActivityApplication } from "../types";
+import { OldActivity, OldActivityApplication } from "../types";
 import { useRouter } from "expo-router";
 
 export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE';
@@ -87,7 +87,7 @@ export const useNPOInsights = () => {
                 priority: 2,
                 title: "Revisione Profili 📋",
                 description: `Hai ${oldPending.length} candidature in attesa da più di 24 ore. Non far aspettare i tuoi volontari!`,
-                actionLabel: "Gestisci Candidature",
+                actionLabel: "Gestisci OldCandidature",
                 onAction: () => {
                     router.push("/(npo)/(tabs)/volunteers?tab=CANDIDATURE" as any);
                 }
@@ -112,7 +112,7 @@ export const useNPOInsights = () => {
 
         // 4. Stability (Priority 4)
         // Simulate "Sold-out in < 24h" by looking for full activities that were created recently
-        // Since we don't have created_at on Activity interface strictly, let's use a heuristic or just "Full" for now
+        // Since we don't have created_at on OldActivity interface strictly, let's use a heuristic or just "Full" for now
         const successfulActivity = myActivities.find(a => a.iscritti.length >= a.slots && a.status !== 'CANCELLATA');
         if (successfulActivity) {
             foundInsights.push({

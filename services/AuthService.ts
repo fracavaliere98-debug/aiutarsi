@@ -1,4 +1,4 @@
-import { User } from '../types';
+import { AppUser } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,8 +28,8 @@ export class AuthService {
         );
     }
 
-    // Helper to map Supabase User (with metadata) to our App User interface
-    private _mapSupabaseUserToAppUser(sbUser: any): User | null {
+    // Helper to map Supabase User (with metadata) to our AppUser type
+    private _mapSupabaseUserToAppUser(sbUser: any): AppUser | null {
         if (!sbUser) return null;
 
         const metadata = sbUser.user_metadata || {};
@@ -38,24 +38,44 @@ export class AuthService {
             id: sbUser.id,
             email: sbUser.email || '',
             role: metadata.role || 'VOLUNTEER',
-            name: metadata.name || 'Utente',
-            avatar: metadata.avatar,
-            impactPoints: metadata.impactPoints || 0,
+            full_name: metadata.name || metadata.full_name || metadata.npo_name || 'Utente',
+            avatar_url: metadata.avatar || metadata.avatar_url,
+            impact_points: metadata.impactPoints || metadata.impact_points || 0,
+            // Legacy mapping
+            name: metadata.name || metadata.full_name || metadata.npo_name || 'Utente',
+            avatar: metadata.avatar || metadata.avatar_url,
+            impactPoints: metadata.impactPoints || metadata.impact_points || 0,
+            npoName: metadata.npoName || metadata.npo_name,
+            companyName: metadata.companyName || metadata.company_name,
             skills: metadata.skills || [],
             interests: metadata.interests || [],
-            // Optional fields
-            npoName: metadata.npoName,
-            companyName: metadata.companyName,
-            isVerified: metadata.isVerified,
-            locationCoords: metadata.locationCoords,
-            locationString: metadata.locationString,
             followedNPOs: metadata.followedNPOs || [],
+            user_skills: (metadata.skills || []).map((s: string) => ({ skill: s })),
+            user_interests: (metadata.interests || []).map((i: string) => ({ interest: i })),
+            followed_entities: (metadata.followedNPOs || []).map((id: string) => ({ npo_id: id })),
+            npo_name: metadata.npoName || metadata.npo_name,
+            company_name: metadata.companyName || metadata.company_name,
+            is_verified: metadata.isVerified !== undefined ? metadata.isVerified : metadata.is_verified,
+            location_string: metadata.locationString || metadata.location_string,
+            location_lat: metadata.locationCoords?.lat || metadata.location_lat,
+            location_lng: metadata.locationCoords?.lng || metadata.location_lng,
             bio: metadata.bio,
             phone: metadata.phone,
             website: metadata.website,
-            publicEmail: metadata.publicEmail,
-            profileCompleted: metadata.profileCompleted,
-            createdAt: sbUser.created_at
+            public_email: metadata.publicEmail || metadata.public_email,
+            profile_completed: metadata.profileCompleted || metadata.profile_completed,
+            created_at: sbUser.created_at,
+            updated_at: sbUser.updated_at || new Date().toISOString(),
+            // Non-schema fields for types compatibility
+            embedding: metadata.embedding,
+            allow_calls: metadata.allow_calls,
+            expo_push_token: metadata.expo_push_token,
+            last_seen_at: metadata.last_seen_at,
+            location_coords: metadata.location_coords,
+            profile_public: metadata.profile_public,
+            show_email: metadata.show_email,
+            show_volunteering_history: metadata.show_volunteering_history,
+            volunteer_list_visible: metadata.volunteer_list_visible
         };
     }
 
@@ -86,7 +106,7 @@ export class AuthService {
         }
     }
 
-    async saveUserLocally(user: User): Promise<void> {
+    async saveUserLocally(user: AppUser): Promise<void> {
         try {
             await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
         } catch (e) {
@@ -94,7 +114,7 @@ export class AuthService {
         }
     }
 
-    async loadUserLocally(): Promise<User | null> {
+    async loadUserLocally(): Promise<AppUser | null> {
         try {
             const json = await AsyncStorage.getItem(this.STORAGE_KEY);
             return json ? JSON.parse(json) : null;
@@ -112,7 +132,7 @@ export class AuthService {
         }
     }
 
-    async login(email: string, password: string): Promise<User> {
+    async login(email: string, password: string): Promise<AppUser> {
         const cleanEmail = email.trim();
         if (!this._validateEmail(cleanEmail)) {
             throw new Error("Formato email non valido.");
@@ -177,6 +197,7 @@ export class AuthService {
 
             if (profile) {
                 const dbUser = this._mapProfileToUser(profile);
+                // Merge DB profile into user object, keeping sensitive credentials/role from auth
                 Object.assign(user, dbUser, { email: user.email, role: user.role });
                 console.log("[DEBUG] AuthService: Login - Profile merged from DB");
             }
@@ -190,7 +211,10 @@ export class AuthService {
         return user;
     }
 
-    async register(userData: Omit<User, 'id'>): Promise<User> {
+    async register(userData: Omit<AppUser, 'id'>): Promise<AppUser> {
+        if (!userData.email) {
+            throw new Error("L'email è obbligatoria.");
+        }
         const cleanEmail = userData.email.trim();
         // Validation
         if (!this._validateEmail(cleanEmail)) {
@@ -215,9 +239,9 @@ export class AuthService {
             options: {
                 data: {
                     ...metadata,
-                    impactPoints: metadata.impactPoints || 0,
-                    skills: metadata.skills || [],
-                    interests: metadata.interests || [],
+                    impact_points: (metadata as any).impact_points || 0,
+                    skills: (metadata as any).skills || [],
+                    interests: (metadata as any).interests || [],
                     followedNPOs: []
                 },
             },
@@ -306,39 +330,24 @@ export class AuthService {
         }
     }
 
-    // Helper: Map public profile to App User
-    private _mapProfileToUser(profile: any): User {
+    // Helper: Map public profile to AppUser
+    private _mapProfileToUser(profile: any): AppUser {
         return {
-            id: profile.id,
-            email: profile.email || '',
-            role: profile.role || 'VOLUNTEER',
-            name: profile.full_name || 'Utente',
-            avatar: profile.avatar_url || 'https://i.pravatar.cc/150?img=11',
+            ...profile, // Direct spread of schema-compliant fields including user_skills, user_interests, etc.
+            name: profile.full_name || profile.npo_name || 'Utente',
+            avatar: profile.avatar_url,
             impactPoints: profile.impact_points || 0,
-            skills: profile.user_skills?.map((s: any) => s.skill) || [],
-            interests: profile.user_interests?.map((i: any) => i.interest) || [],
             npoName: profile.npo_name,
             companyName: profile.company_name,
-            isVerified: profile.is_verified,
-            locationString: profile.location_string,
-            locationCoords: {
-                lat: profile.location_lat || 0,
-                lng: profile.location_lng || 0
-            },
-            bio: profile.bio,
-            phone: profile.phone,
-            website: profile.website,
-            publicEmail: profile.public_email,
-            profileCompleted: profile.profile_completed,
+            skills: profile.user_skills?.map((s: any) => s.skill) || [],
+            interests: profile.user_interests?.map((i: any) => i.interest) || [],
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || [],
-            lastSeenAt: profile.last_seen_at,
-            embedding: profile.embedding
         };
     }
 
     // NOTE: Fetches all public profiles. 
     // In a large app, this should be paginated or searched on demand.
-    async getAllUsers(): Promise<User[]> {
+    async getAllUsers(): Promise<AppUser[]> {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -365,12 +374,12 @@ export class AuthService {
         }
     }
 
-    async getCurrentUser(): Promise<User | null> {
+    async getCurrentUser(): Promise<AppUser | null> {
         // 1. Check Session (Basic Auth)
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return null;
 
-        let user: User | null = null;
+        let user: AppUser | null = null;
 
         // 2. FETCH PROFILE FROM DB (Primary Source of Truth)
         try {
@@ -411,16 +420,17 @@ export class AuthService {
         return user;
     }
 
-    async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
+    async updateProfile(userId: string, updates: Partial<AppUser>): Promise<AppUser> {
         console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId);
 
         // 1. Handle Avatar Upload first
-        if (updates.avatar && (updates.avatar.startsWith('file://') || updates.avatar.startsWith('content://') || updates.avatar.startsWith('data:'))) {
+        const avatarToUpload = updates.avatar_url;
+        if (avatarToUpload && (avatarToUpload.startsWith('file://') || avatarToUpload.startsWith('content://') || avatarToUpload.startsWith('data:'))) {
             try {
                 console.log("[DEBUG] AuthService: Uploading new avatar...");
-                const uploadedUrl = await storageService.uploadAvatar(userId, updates.avatar);
+                const uploadedUrl = await storageService.uploadAvatar(userId, avatarToUpload);
                 if (uploadedUrl) {
-                    updates.avatar = uploadedUrl;
+                    updates.avatar_url = uploadedUrl;
                 }
             } catch (uploadError: any) {
                 console.error("[DEBUG] Avatar upload FAILED:", uploadError);
@@ -429,69 +439,51 @@ export class AuthService {
         }
 
         // 2. Prepare Payload for 'profiles' table
+        // We filter the updates to only include fields present in the 'profiles' Table definition
+        const profileTableFields = [
+            'full_name', 'avatar_url', 'bio', 'npo_name', 'company_name',
+            'phone', 'website', 'location_string', 'location_lat', 'location_lng',
+            'public_email', 'profile_completed', 'impact_points', 'is_verified',
+            'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
+            'allow_calls', 'expo_push_token'
+        ];
+
         const payload: any = {
             id: userId,
             updated_at: new Date().toISOString(),
         };
 
-        // Map updates to DB columns
-        if (updates.name !== undefined) payload.full_name = updates.name;
-        if (updates.avatar !== undefined) payload.avatar_url = updates.avatar;
-        if (updates.bio !== undefined) payload.bio = updates.bio;
-        if (updates.npoName !== undefined) payload.npo_name = updates.npoName;
-        if (updates.companyName !== undefined) payload.company_name = updates.companyName;
-        if (updates.phone !== undefined) payload.phone = updates.phone;
-        if (updates.website !== undefined) payload.website = updates.website;
-        if (updates.locationString !== undefined) payload.location_string = updates.locationString;
-        if (updates.locationCoords?.lat !== undefined) payload.location_lat = updates.locationCoords.lat;
-        if (updates.locationCoords?.lng !== undefined) payload.location_lng = updates.locationCoords.lng;
-        if (updates.publicEmail !== undefined) payload.public_email = updates.publicEmail;
-        if (updates.profileCompleted !== undefined) payload.profile_completed = updates.profileCompleted;
-        // NOTE: We do not update 'role' or 'email' here usually, those are strictly auth-managed or separate flows.
+        // Map updates to DB columns, stripping non-schema fields
+        Object.keys(updates).forEach(key => {
+            if (profileTableFields.includes(key) && (updates as any)[key] !== undefined) {
+                payload[key] = (updates as any)[key];
+            }
+        });
+
+        const skillsToSync = (updates as any).skills || (updates as any).user_skills?.map((s: any) => s.skill);
+        const interestsToSync = (updates as any).interests || (updates as any).user_interests?.map((i: any) => i.interest);
 
         try {
-            // 3. Perform Upsert to Public Profiles
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update(payload) // Logic was to Use update first? No, lets use upsert to be safe.
-                .eq('id', userId);
-
-            // Wait, upsert needs all keys to be safe? 
-            // Actually, we want to UPDATE existing fields. 
-            // If we use upsert with partial data, it might overwrite other fields with null if we aren't careful?
-            // "Upsert" in supabase (postgres) with a primary key match will UPDATE the row. 
-            // However, existing columns NOT in the payload will be kept AS IS? 
-            // Yes, standard SQL UPDATE behaviour. 
-            // But `upsert`... if row exists, it updates. If we provide partial data, does it erase the rest?
-            // PostgreSQL ON CONFLICT DO UPDATE SET ... usually updates only specific columns.
-            // Supabase client `upsert`: "Performs an UPSERT on the table."
-            // If we want to be safe, `update` is better if we assume profile exists (which it should).
-            // Let's stick to `update` first. If it fails (row missing), we handle it?
-
-            // Actually, `AuthService` maps everything.
-            // Let's try `upsert` with `ignoreDuplicates: false` (default) means it updates.
-            // But to be safer with partial updates, `.update().eq()` is the standard way to PATCH.
-
+            // 3. Perform Update to Public Profiles
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update(payload)
                 .eq('id', userId);
 
             if (updateError) {
-                // If update fails, throw
                 throw new Error(updateError.message);
             }
 
             // 4. Sync Relationals (Skills/Interests)
-            if (updates.skills !== undefined) {
-                await this._syncRelationalList(userId, 'user_skills', 'skill', updates.skills);
+            if (skillsToSync !== undefined) {
+                await this._syncRelationalList(userId, 'user_skills', 'skill', skillsToSync);
             }
-            if (updates.interests !== undefined) {
-                await this._syncRelationalList(userId, 'user_interests', 'interest', updates.interests);
+            if (interestsToSync !== undefined) {
+                await this._syncRelationalList(userId, 'user_interests', 'interest', interestsToSync);
             }
 
             // 5. Return fresh user object
-            const updatedUser = await this.getCurrentUser(); // Re-fetch to ensure we have the full picture (including relational lists)
+            const updatedUser = await this.getCurrentUser();
 
             // 6. Persistence Fix: Force local storage sync
             if (updatedUser) {
@@ -519,7 +511,7 @@ export class AuthService {
         }
     }
 
-    async updateEmail(newEmail: string): Promise<User> {
+    async updateEmail(newEmail: string): Promise<AppUser> {
         const cleanEmail = newEmail.trim();
         if (!this._validateEmail(cleanEmail)) throw new Error("Email non valida.");
 
