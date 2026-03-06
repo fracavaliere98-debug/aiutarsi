@@ -126,3 +126,10 @@ export interface Employee {
     hoursVolunteered: number;
     department: string;
 }
+
+export interface SmartMatchResult {
+    id: string;
+    score: number;
+    reason: string;
+    activity?: Activity;
+}

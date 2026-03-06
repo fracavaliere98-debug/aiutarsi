@@ -9,10 +9,9 @@ import React, {
 } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../utils/supabase';
-import { GeminiMatch, geminiMatchService } from '../services/GeminiMatchService';
 import { activityService } from '../services/ActivityService';
 import { useAuth } from './AuthContext';
-import { Activity, User } from '../types';
+import { Activity, User, SmartMatchResult } from '../types';
 
 // Helper function for Haversine distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -29,7 +28,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SmartMatchContextType {
-    matches: GeminiMatch[];
+    matches: SmartMatchResult[];
     isLoading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
@@ -50,7 +49,7 @@ export const useSmartMatch = () => useContext(SmartMatchContext);
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function SmartMatchProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [matches, setMatches] = useState<GeminiMatch[]>([]);
+    const [matches, setMatches] = useState<SmartMatchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -94,7 +93,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             if (rpcError) throw rpcError;
 
             // 2. Map RPC results to match the UI interface
-            const mappedMatches: GeminiMatch[] = (data || []).map((item: any) => {
+            const mappedMatches: SmartMatchResult[] = (data || []).map((item: any) => {
                 // ... same mapping logic as before ...
                 let reason = "Alta affinità semantica con il tuo profilo.";
                 const reasons: string[] = [];
@@ -175,7 +174,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     .filter(Boolean)
             );
 
-            const finalMatches: GeminiMatch[] = mappedMatches
+            const finalMatches: SmartMatchResult[] = mappedMatches
                 .filter(m => !enrolledIds.has(m.id))
                 .map(m => {
                     const activity = m.activity;
@@ -212,11 +211,8 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
     // Invalidate cache and refetch on refresh
     const refresh = useCallback(async () => {
-        if (user?.id) {
-            await geminiMatchService.invalidateCache(user.id);
-        }
         await fetchMatches();
-    }, [user?.id, fetchMatches]);
+    }, [fetchMatches]);
 
     // Auto-fetch when a volunteer user loads the context
     useEffect(() => {
@@ -231,8 +227,6 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
     useEffect(() => {
         if (prevProfileKey.current !== profileKey && user?.role === 'VOLUNTEER') {
             prevProfileKey.current = profileKey;
-            // Invalidate cache so the update triggers a fresh AI call
-            if (user?.id) geminiMatchService.invalidateCache(user.id);
             fetchMatches();
         }
     }, [profileKey]);
