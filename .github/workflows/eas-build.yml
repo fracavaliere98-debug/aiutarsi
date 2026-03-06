@@ -43,7 +43,8 @@ jobs:
 
       # ── OTA Update sul branch production ──────────────────────────────────
       - name: EAS OTA Update → branch production
-        run: eas update --branch production --platform all --non-interactive --message "Release ${{ github.ref_name }}"
+        run: |
+          eas update --branch production --platform all --non-interactive --message "Release ${{ github.ref_name }}"
         working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
