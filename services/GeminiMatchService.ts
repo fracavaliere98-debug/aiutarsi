@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Activity, User } from '../types';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const GEMINI_API_KEY = 'AIzaSyA-Lnv-b-hU0HHio22xz75RzjMhYEec2T8';
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 const MODEL_NAME = 'gemini-2.0-flash-lite';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 5000; // 5s base delay for free-tier rate limiting
@@ -36,7 +36,10 @@ class GeminiMatchService {
     private genAI: GoogleGenerativeAI;
 
     constructor() {
-        this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        if (!GEMINI_API_KEY) {
+            console.error('[GeminiMatch] EXPO_PUBLIC_GEMINI_API_KEY is not set in the environment variables.');
+        }
+        this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY || 'missing_key');
     }
 
     // ── Public API ──────────────────────────────────────────────────────────
