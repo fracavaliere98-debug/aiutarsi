@@ -10,10 +10,10 @@ appId: com.aiutarsi.app
 # ── Login rapido ──────────────────────────────────────────────────────────────
 - tapOn:
     id: "input-email"
-- typeText: "test.maestro@aiutarsi.it"
+- inputText: "test.maestro@aiutarsi.it"
 - tapOn:
     id: "input-password"
-- typeText: "TestMaestro123!"
+- inputText: "TestMaestro123!"
 - tapOn:
     text: "Accedi"
 - waitForAnimationToEnd
