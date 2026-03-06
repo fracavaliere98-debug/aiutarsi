@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { AppState } from "react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Activity, Review, ActivityApplication, VolunteerReview } from "../types";
 import { useAuth } from "./AuthContext";
 import { useNotifications } from "./NotificationContext";
@@ -21,83 +22,70 @@ interface ActivityContextType {
     userActivities: Activity[];
     userReviews: Review[];
     recommendedActivities: Activity[];
-    volunteerReviews: VolunteerReview[]; // Added
-    activityApplications: ActivityApplication[]; // All applications
-    volunteerStats: VolunteerStats; // New stats object
+    volunteerReviews: VolunteerReview[];
+    activityApplications: ActivityApplication[];
+    volunteerStats: VolunteerStats;
     enrollInActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
     unenrollFromActivity: (activityId: string) => Promise<boolean>;
     applyToActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
     createActivity: (activityData: Omit<Activity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage"> & { skills: string[] }) => Promise<string | null>;
     submitReview: (reviewData: Omit<Review, "id" | "volunteerId" | "date">) => Promise<boolean>;
-    submitVolunteerReviews: (reviewsData: Omit<VolunteerReview, 'id' | 'date'>[]) => Promise<void>; // Added
+    submitVolunteerReviews: (reviewsData: Omit<VolunteerReview, 'id' | 'date'>[]) => Promise<void>;
     updateActivity: (activityId: string, activityData: Partial<Activity>) => Promise<boolean>;
     getNPORating: (npoId: string) => number;
     deleteActivity: (activityId: string) => Promise<boolean>;
     approveActivityApplication: (activityId: string, volunteerId: string) => Promise<boolean>;
     rejectActivityApplication: (activityId: string, volunteerId: string) => Promise<boolean>;
-    resetData: () => Promise<void>; // Debug function
+    resetData: () => Promise<void>;
     error: boolean;
     loadData: () => Promise<void>;
-    // Pagination & Search
     paginatedActivities: Activity[];
     hasMore: boolean;
     isLoadingMore: boolean;
     fetchPaginatedActivities: (params: {
-        reset?: boolean;
-        category?: string;
-        searchText?: string;
-        skills?: string[];
-        onlyAvailable?: boolean;
-        onlyUrgent?: boolean;
-        dateFrom?: string;
-        dateTo?: string;
-        centerLat?: number;
-        centerLng?: number;
-        radiusKm?: number;
-        statuses?: string[];
+        reset?: boolean; category?: string; searchText?: string; skills?: string[]; onlyAvailable?: boolean; onlyUrgent?: boolean; dateFrom?: string; dateTo?: string; centerLat?: number; centerLng?: number; radiusKm?: number; statuses?: string[];
     }) => Promise<void>;
 }
 
-const ActivityContext = createContext<ActivityContextType>({
-    activities: [],
-    reviews: [],
-    userActivities: [],
-    userReviews: [],
-    recommendedActivities: [],
-    volunteerReviews: [], // Added
-    activityApplications: [],
-    volunteerStats: { totalHours: 0, completedMissions: 0, activeMissions: 0, upcomingMissions: 0 },
-    enrollInActivity: async () => false,
-    unenrollFromActivity: async () => false,
-    applyToActivity: async () => false,
-    createActivity: async () => null,
-    submitReview: async () => false,
-    submitVolunteerReviews: async () => { }, // Added
-    updateActivity: async () => false,
-    getNPORating: () => 0,
-    deleteActivity: async () => false,
-    approveActivityApplication: async () => false,
-    rejectActivityApplication: async () => false,
-    resetData: async () => { },
-    error: false,
-    loadData: async () => { },
-    paginatedActivities: [],
-    hasMore: false,
-    isLoadingMore: false,
-    fetchPaginatedActivities: async () => { },
-});
+const ActivityContext = createContext<ActivityContextType>({} as ActivityContextType);
 
 export const useActivities = () => useContext(ActivityContext);
 
-function ActivityProviderInner({ children }: { children: React.ReactNode }) {
+export function ActivityProviderInner({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const { addNotification } = useNotifications();
-    const [rawActivities, setRawActivities] = useState<Activity[]>([]);
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [volunteerReviews, setVolunteerReviews] = useState<VolunteerReview[]>([]); // Added
-    const [activityApplications, setActivityApplications] = useState<ActivityApplication[]>([]);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const { handleActivityCompletion, handleReviewSubmission, isLoaded: gamificationLoaded } = useGamification();
+    const queryClient = useQueryClient();
+
     const [error, setError] = useState(false);
+
+    // Queries
+    const { data: rawActivities = [] } = useQuery({ queryKey: ['activities_raw'], queryFn: async () => (await activityService.getActivities()).activities, staleTime: 60_000 });
+    const { data: reviews = [] } = useQuery({ queryKey: ['reviews'], queryFn: () => activityService.getReviews(), staleTime: 60_000 });
+    const { data: volunteerReviews = [] } = useQuery({ queryKey: ['volunteer_reviews'], queryFn: () => activityService.getVolunteerReviews(), staleTime: 60_000 });
+    const { data: activityApplications = [] } = useQuery({ queryKey: ['activity_applications'], queryFn: () => activityService.getActivityApplications(), staleTime: 60_000 });
+
+    const loadData = useCallback(async () => {
+        setError(false);
+        try {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['activities_raw'] }),
+                queryClient.invalidateQueries({ queryKey: ['reviews'] }),
+                queryClient.invalidateQueries({ queryKey: ['volunteer_reviews'] }),
+                queryClient.invalidateQueries({ queryKey: ['activity_applications'] })
+            ]);
+        } catch (error) { setError(true); }
+    }, [queryClient]);
+
+    // Check gamification completion based on activities changes
+    useEffect(() => {
+        if (!user || user.role !== "VOLUNTEER" || !gamificationLoaded) return;
+        rawActivities.forEach(act => {
+            if (act.status === "COMPLETATA" && act.iscritti.includes(user.id)) {
+                handleActivityCompletion(act);
+            }
+        });
+    }, [rawActivities, user, handleActivityCompletion, gamificationLoaded]);
 
     // Pagination State
     const [pageRawActivities, setPageRawActivities] = useState<Activity[]>([]);
@@ -106,38 +94,17 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
     const [offset, setOffset] = useState(0);
     const [currentCategory, setCurrentCategory] = useState<string>("Tutti");
     const [currentSearch, setCurrentSearch] = useState<string>("");
-
     const abortControllerRef = React.useRef<AbortController | null>(null);
 
-    // Dynamic Activity Processing (Smart Match) - Global
-    const activities = useMemo(() => {
-        return rawActivities.map(act => ({
-            ...act,
-            matchPercentage: calculateSmartMatch(user, act)
-        }));
-    }, [rawActivities, user]);
+    const activities = useMemo(() => rawActivities.map(act => ({ ...act, matchPercentage: calculateSmartMatch(user, act) })), [rawActivities, user]);
+    const paginatedActivities = useMemo(() => pageRawActivities.map(act => ({ ...act, matchPercentage: calculateSmartMatch(user, act) })), [pageRawActivities, user]);
 
-    // Dynamic Activity Processing (Smart Match) - Paginated
-    const paginatedActivities = useMemo(() => {
-        return pageRawActivities.map(act => ({
-            ...act,
-            matchPercentage: calculateSmartMatch(user, act)
-        }));
-    }, [pageRawActivities, user]);
-
-    // Calculate Volunteer Stats
     const volunteerStats = useMemo(() => {
-        if (!user || user.role !== 'VOLUNTEER') {
-            return { totalHours: 0, completedMissions: 0, activeMissions: 0, upcomingMissions: 0 };
-        }
-
+        if (!user || user.role !== 'VOLUNTEER') return { totalHours: 0, completedMissions: 0, activeMissions: 0, upcomingMissions: 0 };
         const myActivities = activities.filter(a => a.iscritti.includes(user.id));
-
         const completed = myActivities.filter(a => a.status === 'COMPLETATA');
         const active = myActivities.filter(a => a.status === 'IN_CORSO');
         const upcoming = myActivities.filter(a => a.status === 'APERTA');
-
-        // Calculate total hours
         const hours = completed.reduce((acc, curr) => {
             const start = new Date(curr.dateTime).getTime();
             const end = new Date(curr.endDateTime).getTime();
@@ -145,79 +112,24 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
             const durationHours = durationMs / (1000 * 60 * 60);
             return acc + (isNaN(durationHours) ? 0 : durationHours);
         }, 0);
-
-        return {
-            totalHours: Math.round(hours),
-            completedMissions: completed.length,
-            activeMissions: active.length,
-            upcomingMissions: upcoming.length
-        };
+        return { totalHours: Math.round(hours), completedMissions: completed.length, activeMissions: active.length, upcomingMissions: upcoming.length };
     }, [activities, user]);
 
-    const loadData = useCallback(async () => {
-        setError(false);
-        try {
-            const [fetchedData, fetchedReviews, fetchedVolunteerReviews, fetchedApps] = await Promise.all([
-                activityService.getActivities(),
-                activityService.getReviews(),
-                activityService.getVolunteerReviews(), // Fetched volunteer reviews
-                activityService.getActivityApplications()
-            ]);
-            setRawActivities(fetchedData.activities);
-            setReviews(fetchedReviews);
-            setVolunteerReviews(fetchedVolunteerReviews); // Set volunteer reviews
-            setActivityApplications(fetchedApps);
-        } catch (error) {
-            console.error("Failed to load activity data", error);
-            setError(true);
-        } finally {
-            setIsInitialLoad(false);
-        }
-    }, []);
-
-    const fetchPaginatedActivities = useCallback(async ({
-        reset = false, category, searchText, skills, onlyAvailable, onlyUrgent, dateFrom, dateTo,
-        centerLat, centerLng, radiusKm, statuses
-    }: {
-        reset?: boolean; category?: string; searchText?: string;
-        skills?: string[]; onlyAvailable?: boolean; onlyUrgent?: boolean; dateFrom?: string; dateTo?: string;
-        centerLat?: number; centerLng?: number; radiusKm?: number; statuses?: string[];
-    }) => {
+    const fetchPaginatedActivities = useCallback(async (params: any) => {
         setIsLoadingMore(true);
         setError(false);
-
-        // Handle Race Condition: Abort previous request
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
+        if (abortControllerRef.current) abortControllerRef.current.abort();
         const controller = new AbortController();
         abortControllerRef.current = controller;
-
         try {
-            const newOffset = reset ? 0 : offset;
-            const targetCategory = category !== undefined ? category : currentCategory;
-            const targetSearch = searchText !== undefined ? searchText : currentSearch;
-
-            const result = await activityService.getActivities({
-                category: targetCategory,
-                searchText: targetSearch,
-                offset: newOffset,
-                limit: 15,
-                skills,
-                onlyUrgent,
-                dateFrom,
-                dateTo,
-                centerLat,
-                centerLng,
-                radiusKm,
-                statuses
-            }, controller.signal);
-
-            if (reset) {
+            const newOffset = params.reset ? 0 : offset;
+            const targetCategory = params.category !== undefined ? params.category : currentCategory;
+            const targetSearch = params.searchText !== undefined ? params.searchText : currentSearch;
+            const result = await activityService.getActivities({ ...params, offset: newOffset, limit: 15, category: targetCategory, searchText: targetSearch }, controller.signal);
+            if (params.reset) {
                 setPageRawActivities(result.activities);
                 setOffset(result.activities.length);
             } else {
-                // Deduplicate by ID to be safe
                 setPageRawActivities(prev => {
                     const existingIds = new Set(prev.map(a => a.id));
                     const uniqueNew = result.activities.filter(a => !existingIds.has(a.id));
@@ -225,18 +137,11 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
                 });
                 setOffset(prev => prev + result.activities.length);
             }
-
             setHasMore(result.hasMore);
-            if (category !== undefined) setCurrentCategory(category);
-            if (searchText !== undefined) setCurrentSearch(searchText);
-
+            if (params.category !== undefined) setCurrentCategory(params.category);
+            if (params.searchText !== undefined) setCurrentSearch(params.searchText);
         } catch (err: any) {
-            if (err.name === 'AbortError' || err.code === 'ABORTED') {
-                console.log("Fetch aborted");
-            } else {
-                console.error("Fetch paginated activities failed", err);
-                setError(true);
-            }
+            if (err.name !== 'AbortError' && err.code !== 'ABORTED') setError(true);
         } finally {
             if (abortControllerRef.current === controller) {
                 setIsLoadingMore(false);
@@ -245,279 +150,122 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
         }
     }, [offset, currentCategory, currentSearch]);
 
-    // Load from Service on mount & Listen for Sync Events
+    // Listeners
     useEffect(() => {
-        loadData();
-
-        const unsubActivities = eventEmitter.on(SyncEvents.SYNC_ACTIVITIES, () => {
-            console.log("ActivityContext: Syncing activities...");
-            loadData();
-        });
-
-        const unsubReviews = eventEmitter.on(SyncEvents.SYNC_REVIEWS, () => {
-            console.log("ActivityContext: Syncing reviews...");
-            loadData();
-        });
-
-        const unsubApps = eventEmitter.on(SyncEvents.SYNC_APPLICATIONS, () => {
-            console.log("ActivityContext: Syncing applications...");
-            loadData();
-        });
-
-        return () => {
-            unsubActivities();
-            unsubReviews();
-            unsubApps();
-        };
+        const unsubActivities = eventEmitter.on(SyncEvents.SYNC_ACTIVITIES, loadData);
+        const unsubReviews = eventEmitter.on(SyncEvents.SYNC_REVIEWS, loadData);
+        const unsubApps = eventEmitter.on(SyncEvents.SYNC_APPLICATIONS, loadData);
+        return () => { unsubActivities(); unsubReviews(); unsubApps(); };
     }, [loadData]);
 
-
-    const refreshActivityStates = useCallback(async () => {
-        try {
-            const updatedActivities = await activityService.refreshActivityStates();
-            setRawActivities(updatedActivities);
-        } catch (error) {
-            console.error("Refresh states failed", error);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (isInitialLoad) return;
-        refreshActivityStates();
-
-        const subscription = AppState.addEventListener("change", (nextAppState) => {
-            if (nextAppState === "active") {
-                refreshActivityStates();
-            }
-        });
-
-        return () => subscription.remove();
-    }, [refreshActivityStates, isInitialLoad]);
-
-    const { handleActivityCompletion, handleReviewSubmission, isLoaded: gamificationLoaded } = useGamification();
-
-    useEffect(() => {
-        if (!user || user.role !== "VOLUNTEER" || !gamificationLoaded) return;
-        activities.forEach(act => {
-            if (act.status === "COMPLETATA" && act.iscritti.includes(user.id)) {
-                handleActivityCompletion(act);
-            }
-        });
-    }, [activities, user, handleActivityCompletion, gamificationLoaded]);
-
-    const createActivity = useCallback(async (activityData: Omit<Activity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage"> & { skills: string[] }): Promise<string | null> => {
-        if (!user || user.role !== "NPO") return null;
-        try {
-            const newActivity = await activityService.createActivity({
-                ...activityData,
-                npoId: user.id,
-                npoName: user.npoName || "Ente Solidale",
-                status: "APERTA",
-                iscritti: [],
-                matchPercentage: 0,
-                skills: activityData.skills || [],
+    // MUTATIONS
+    const createMutation = useMutation({
+        mutationFn: async (activityData: any) => {
+            const newAct = await activityService.createActivity({
+                ...activityData, npoId: user!.id, npoName: user!.npoName || "Ente Solidale", status: "APERTA", iscritti: [], matchPercentage: 0, skills: activityData.skills || [],
             });
-            return newActivity.id;
-        } catch (error) {
-            console.error("Create activity failed:", error);
-            return null;
-        }
-    }, [user]);
+            return newAct.id as string;
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
+    });
 
-    const enrollInActivity = useCallback(async (activityId: string, message?: string, phone?: string): Promise<boolean> => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        try {
-            const updatedActivity = await activityService.joinActivity(activityId, user.id, message, phone);
-
-            // LOCAL UPDATE (aggiornamento locale per rendering immediato UI)
-            setRawActivities(prev => prev.map(a => {
-                if (a.id === activityId) {
-                    const newIscritti = new Set([...a.iscritti, user.id]);
-                    return { ...a, iscritti: Array.from(newIscritti) };
-                }
-                return a;
-            }));
-            setPageRawActivities(prev => prev.map(a => {
-                if (a.id === activityId) {
-                    const newIscritti = new Set([...a.iscritti, user.id]);
-                    return { ...a, iscritti: Array.from(newIscritti) };
-                }
-                return a;
-            }));
-
-            addNotification({
-                userId: updatedActivity.npoId,
-                type: "VOLUNTEER_ENROLLED",
-                title: "Nuovo Volontario Iscritto! 🎉",
-                message: message ? `${user.name} si è iscritto: "${message}"` : `${user.name} si è iscritto all'attività "${updatedActivity.title}"`,
-                activityId: activityId,
-            });
+    const enrollMutation = useMutation({
+        mutationFn: async ({ activityId, message, phone }: any) => {
+            const updated = await activityService.joinActivity(activityId, user!.id, message, phone);
+            // Optimistic update
+            queryClient.setQueryData(['activities_raw'], (old: Activity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
+            setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
+            addNotification({ userId: updated.npoId, type: "VOLUNTEER_ENROLLED", title: "Nuovo Volontario Iscritto! 🎉", message: message ? `${user!.name} si è iscritto: "${message}"` : `${user!.name} si è iscritto all'attività "${updated.title}"`, activityId });
             return true;
-        } catch (error) {
-            console.error("Enroll in activity failed:", error);
-            return false;
-        }
-    }, [user, addNotification]);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
+    });
 
-    const unenrollFromActivity = useCallback(async (activityId: string): Promise<boolean> => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        try {
-            await activityService.withdrawApplication(activityId, user.id);
-
-            // LOCAL UPDATE (aggiornamento locale per rendering immediato UI)
-            setRawActivities(prev => prev.map(a => {
-                if (a.id === activityId) {
-                    return { ...a, iscritti: a.iscritti.filter(id => id !== user.id) };
-                }
-                return a;
-            }));
-            setPageRawActivities(prev => prev.map(a => {
-                if (a.id === activityId) {
-                    return { ...a, iscritti: a.iscritti.filter(id => id !== user.id) };
-                }
-                return a;
-            }));
-
-            // ALSO FORCE update applications immediately locally to prevent `userActivities` from restoring dead associations
-            setActivityApplications(prev => prev.filter(app => !(app.activityId === activityId && app.volunteerId === user.id)));
-
-            addNotification({
-                userId: user.id,
-                type: "INFO",
-                title: "Iscrizione annullata",
-                message: "La tua iscrizione è stata annullata con successo.",
-                activityId: activityId,
-            });
-            // Force refresh of data
-            await loadData();
-            // Fire Sync event to make sure other subscribed components (like ActivityDetail fallbacks) catch it
-            eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
-            eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
+    const unenrollMutation = useMutation({
+        mutationFn: async (activityId: string) => {
+            await activityService.withdrawApplication(activityId, user!.id);
+            // Optimistic update
+            queryClient.setQueryData(['activities_raw'], (old: Activity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
+            setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a));
+            addNotification({ userId: user!.id, type: "INFO", title: "Iscrizione annullata", message: "La tua iscrizione è stata annullata con successo.", activityId });
             return true;
-        } catch (error) {
-            console.error("Unenroll from activity failed:", error);
-            return false;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['activities_raw'] });
+            queryClient.invalidateQueries({ queryKey: ['activity_applications'] });
         }
-    }, [user, addNotification, loadData]);
+    });
 
-    const applyToActivity = useCallback(async (activityId: string, message?: string, phone?: string): Promise<boolean> => {
-        if (!user) return false;
-        try {
-            const appData: Omit<ActivityApplication, "id"> = {
-                activityId,
-                volunteerId: user.id,
-                volunteerName: user.name,
-                status: "PENDING",
-                appliedDate: new Date().toISOString(),
-                message
-            };
-            await activityService.submitActivityApplication(appData);
+    const applyMutation = useMutation({
+        mutationFn: async ({ activityId, message, phone }: any) => {
+            await activityService.submitActivityApplication({ activityId, volunteerId: user!.id, volunteerName: user!.name, status: "PENDING", appliedDate: new Date().toISOString(), message });
             return true;
-        } catch (error) {
-            return false;
-        }
-    }, [user]);
+        },
+    });
 
-    const submitReview = useCallback(async (reviewData: Omit<Review, "id" | "volunteerId" | "date">): Promise<boolean> => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        try {
-            await activityService.submitReview({
-                ...reviewData,
-                volunteerId: user.id,
-                date: new Date().toISOString(),
-            });
-
-            // Trigger gamification
+    const reviewMutation = useMutation({
+        mutationFn: async (reviewData: any) => {
+            await activityService.submitReview({ ...reviewData, volunteerId: user!.id, date: new Date().toISOString() });
             handleReviewSubmission(reviewData.npoId);
-
             return true;
-        } catch (error) {
-            return false;
-        }
-    }, [user, handleReviewSubmission]);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    });
 
-    // --- Volunteer Reviews (NPO -> Volunteer) ---
-    const submitVolunteerReviews = useCallback(async (reviewsData: Omit<VolunteerReview, 'id' | 'date'>[]) => {
-        try {
+    const volunteerReviewsMutation = useMutation({
+        mutationFn: async (reviewsData: any) => {
             await activityService.submitVolunteerReviews(reviewsData);
-            // Optionally, refresh data to show new reviews
-            await loadData();
-        } catch (error) {
-            console.error("Failed to submit volunteer reviews", error);
-            throw error;
-        }
-    }, [loadData]);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['volunteer_reviews'] })
+    });
 
-    const updateActivity = useCallback(async (activityId: string, activityData: Partial<Activity>): Promise<boolean> => {
-        if (!user || user.role !== "NPO") return false;
-        try {
-            const currentActivity = activities.find(a => a.id === activityId);
-            if (!currentActivity) return false;
-            const updated = { ...currentActivity, ...activityData };
-            await activityService.updateActivity(updated);
-
-            // Refresh data to ensure all components see the update (especially images/status)
-            await loadData();
+    const updateMutation = useMutation({
+        mutationFn: async ({ activityId, activityData }: any) => {
+            const act = rawActivities.find(a => a.id === activityId);
+            if (!act) return false;
+            await activityService.updateActivity({ ...act, ...activityData });
             return true;
-        } catch (error) {
-            console.error("Update activity failed:", error);
-            return false;
-        }
-    }, [user, activities, loadData]);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
+    });
 
-    const deleteActivity = useCallback(async (activityId: string): Promise<boolean> => {
-        if (!user || user.role !== "NPO") return false;
-        try {
+    const deleteMutation = useMutation({
+        mutationFn: async (activityId: string) => {
             await activityService.deleteActivity(activityId);
             return true;
-        } catch (error) {
-            return false;
-        }
-    }, [user]);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
+    });
 
-    const approveActivityApplication = useCallback(async (activityId: string, volunteerId: string): Promise<boolean> => {
-        if (!user || user.role !== "NPO") return false;
-        try {
+    const approveMutation = useMutation({
+        mutationFn: async ({ activityId, volunteerId }: any) => {
             await activityService.updateActivityApplicationStatus(activityId, volunteerId, 'APPROVED');
-
-            // Send notification to volunteer
-            const act = activities.find(a => a.id === activityId);
-            addNotification({
-                userId: volunteerId,
-                type: "APPLICATION_APPROVED",
-                title: "Iscrizione Approvata! 🎉",
-                message: `La tua richiesta per "${act?.title || 'Attività'}" è stata accettata`,
-                activityId
-            });
-
+            const act = rawActivities.find(a => a.id === activityId);
+            addNotification({ userId: volunteerId, type: "APPLICATION_APPROVED", title: "Iscrizione Approvata! 🎉", message: `La tua richiesta per "${act?.title || 'Attività'}" è stata accettata`, activityId });
             return true;
-        } catch (error) {
-            console.error("Approve activity application failed:", error);
-            return false;
-        }
-    }, [user, activities, addNotification]);
+        },
+    });
 
-    const rejectActivityApplication = useCallback(async (activityId: string, volunteerId: string): Promise<boolean> => {
-        if (!user || user.role !== "NPO") return false;
-        try {
+    const rejectMutation = useMutation({
+        mutationFn: async ({ activityId, volunteerId }: any) => {
             await activityService.updateActivityApplicationStatus(activityId, volunteerId, 'REJECTED');
-
-            // Send notification to volunteer
-            const act = activities.find(a => a.id === activityId);
-            addNotification({
-                userId: volunteerId,
-                type: "APPLICATION_REJECTED",
-                title: "Iscrizione Rifiutata",
-                message: `La tua richiesta per "${act?.title || 'Attività'}" è stata rifiutata`,
-                activityId
-            });
-
+            const act = rawActivities.find(a => a.id === activityId);
+            addNotification({ userId: volunteerId, type: "APPLICATION_REJECTED", title: "Iscrizione Rifiutata", message: `La tua richiesta per "${act?.title || 'Attività'}" è stata rifiutata`, activityId });
             return true;
-        } catch (error) {
-            console.error("Reject activity application failed:", error);
-            return false;
-        }
-    }, [user, activities, addNotification]);
+        },
+    });
+
+    // Callback Wrappers
+    const createActivity = useCallback(async (activityData: any) => { if (user?.role !== 'NPO') return null; try { return await createMutation.mutateAsync(activityData); } catch { return null; } }, [user, createMutation]);
+    const enrollInActivity = useCallback(async (activityId: string, message?: string, phone?: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await enrollMutation.mutateAsync({ activityId, message, phone }); } catch { return false; } }, [user, enrollMutation]);
+    const unenrollFromActivity = useCallback(async (activityId: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await unenrollMutation.mutateAsync(activityId); } catch { return false; } }, [user, unenrollMutation]);
+    const applyToActivity = useCallback(async (activityId: string, message?: string, phone?: string) => { if (!user) return false; try { return await applyMutation.mutateAsync({ activityId, message, phone }); } catch { return false; } }, [user, applyMutation]);
+    const submitReview = useCallback(async (reviewData: any) => { if (user?.role !== 'VOLUNTEER') return false; try { return await reviewMutation.mutateAsync(reviewData); } catch { return false; } }, [user, reviewMutation]);
+    const submitVolunteerReviews = useCallback(async (reviewsData: any) => { try { await volunteerReviewsMutation.mutateAsync(reviewsData); } catch (error) { throw error; } }, [volunteerReviewsMutation]);
+    const updateActivity = useCallback(async (activityId: string, activityData: any) => { if (user?.role !== 'NPO') return false; try { return await updateMutation.mutateAsync({ activityId, activityData }); } catch { return false; } }, [user, updateMutation]);
+    const deleteActivity = useCallback(async (activityId: string) => { if (user?.role !== 'NPO') return false; try { return await deleteMutation.mutateAsync(activityId); } catch { return false; } }, [user, deleteMutation]);
+    const approveActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { return await approveMutation.mutateAsync({ activityId, volunteerId }); } catch { return false; } }, [user, approveMutation]);
+    const rejectActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { return await rejectMutation.mutateAsync({ activityId, volunteerId }); } catch { return false; } }, [user, rejectMutation]);
 
     const getNPORating = useCallback((npoId: string): number => {
         const npoReviews = reviews.filter(r => r.npoId === npoId);
@@ -533,79 +281,15 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
         return [];
     }, [activities, user]);
 
-    const userReviews = useMemo(() => {
-        if (!user || user.role !== "VOLUNTEER") return [];
-        return reviews.filter(r => r.volunteerId === user.id);
-    }, [reviews, user]);
+    const userReviews = useMemo(() => (!user || user.role !== "VOLUNTEER") ? [] : reviews.filter(r => r.volunteerId === user.id), [reviews, user]);
+    const recommendedActivities = useMemo(() => (!user || user.role !== "VOLUNTEER") ? [] : activities.filter(act => (act.status === "APERTA" || act.status === "IN_CORSO") && !act.iscritti.includes(user.id)).map(act => ({ ...act, matchPercentage: 85 })).sort((a, b) => b.matchPercentage - a.matchPercentage), [activities, user]);
 
-    const recommendedActivities = useMemo(() => {
-        if (!user || user.role !== "VOLUNTEER") return [];
-        return activities
-            .filter(act => (act.status === "APERTA" || act.status === "IN_CORSO") && !act.iscritti.includes(user.id))
-            .map(act => ({ ...act, matchPercentage: 85 })) // Simplified match for reconstruction
-            .sort((a, b) => b.matchPercentage - a.matchPercentage);
-    }, [activities, user]);
-
-    const resetData = useCallback(async () => {
-        // No-op for now in Supabase mode
-        console.warn("Reset data not supported in Supabase mode");
-    }, []);
+    const resetData = useCallback(async () => { console.warn("Reset not supported"); }, []);
 
     const value = useMemo(() => ({
-        activities,
-        reviews,
-        userActivities,
-        userReviews,
-        volunteerReviews,
-        recommendedActivities,
-        activityApplications,
-        volunteerStats,
-        enrollInActivity,
-        unenrollFromActivity,
-        applyToActivity,
-        createActivity,
-        submitReview,
-        submitVolunteerReviews,
-        updateActivity,
-        getNPORating,
-        deleteActivity,
-        approveActivityApplication,
-        rejectActivityApplication,
-        resetData,
-        error,
-        loadData,
-        paginatedActivities,
-        hasMore,
-        isLoadingMore,
-        fetchPaginatedActivities
-    }), [
-        activities,
-        reviews,
-        userActivities,
-        userReviews,
-        volunteerReviews,
-        recommendedActivities,
-        activityApplications,
-        volunteerStats,
-        enrollInActivity,
-        unenrollFromActivity,
-        applyToActivity,
-        createActivity,
-        submitReview,
-        submitVolunteerReviews,
-        updateActivity,
-        getNPORating,
-        deleteActivity,
-        approveActivityApplication,
-        rejectActivityApplication,
-        resetData,
-        error,
-        loadData,
-        paginatedActivities,
-        hasMore,
-        isLoadingMore,
-        fetchPaginatedActivities
-    ]);
+        activities, reviews, userActivities, userReviews, volunteerReviews, recommendedActivities, activityApplications, volunteerStats,
+        enrollInActivity, unenrollFromActivity, applyToActivity, createActivity, submitReview, submitVolunteerReviews, updateActivity, getNPORating, deleteActivity, approveActivityApplication, rejectActivityApplication, resetData, error, loadData, paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities
+    }), [activities, reviews, userActivities, userReviews, volunteerReviews, recommendedActivities, activityApplications, volunteerStats, enrollInActivity, unenrollFromActivity, applyToActivity, createActivity, submitReview, submitVolunteerReviews, updateActivity, getNPORating, deleteActivity, approveActivityApplication, rejectActivityApplication, resetData, error, loadData, paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities]);
 
     return (
         <ActivityContext.Provider value={value}>
@@ -614,6 +298,4 @@ function ActivityProviderInner({ children }: { children: React.ReactNode }) {
     );
 }
 
-export const ActivityProvider = ({ children }: { children: React.ReactNode }) => {
-    return <ActivityProviderInner>{children}</ActivityProviderInner>;
-};
+export const ActivityProvider = ({ children }: { children: React.ReactNode }) => <ActivityProviderInner>{children}</ActivityProviderInner>;
