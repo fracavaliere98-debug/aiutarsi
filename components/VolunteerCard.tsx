@@ -142,6 +142,27 @@ export function VolunteerCard({ volunteer, onPress, actions }: VolunteerCardProp
                     </Text>
                 </View>
 
+                {/* XP and Badges Summary */}
+                <View className="flex-row items-center mt-2 gap-3">
+                    <View className="flex-row items-center bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                        <Text className="text-indigo-600 text-[10px] font-black mr-1">XP</Text>
+                        <Text className="text-indigo-700 text-[11px] font-bold">{volunteer.xp || volunteer.impactPoints || 0}</Text>
+                    </View>
+
+                    {volunteer.badges && volunteer.badges.length > 0 && (
+                        <View className="flex-row items-center gap-1">
+                            {volunteer.badges.slice(0, 3).map((badge, idx) => (
+                                <View key={`${volunteer.id}-badge-${idx}`} className="bg-slate-100 w-5 h-5 rounded-full items-center justify-center border border-white">
+                                    <Text style={{ fontSize: 10 }}>{badge.icon}</Text>
+                                </View>
+                            ))}
+                            {volunteer.badges.length > 3 && (
+                                <Text className="text-slate-400 text-[10px] font-bold">+{volunteer.badges.length - 3}</Text>
+                            )}
+                        </View>
+                    )}
+                </View>
+
                 {actions && (
                     <View className="flex-row mt-3 items-center">
                         {actions}

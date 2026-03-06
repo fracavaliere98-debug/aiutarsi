@@ -100,14 +100,14 @@ function RootLayoutNav() {
 
     // 4. LANDING PAGE GUARD: Logged user trying to access landing
     if (onLandingPage) {
-      console.log("[DEBUG] RootLayoutNav: OldUser present on Landing, going to App");
+      console.log("[DEBUG] RootLayoutNav: User present on Landing, going to App");
       isRedirecting.current = true;
 
       const dest = user.role === "VOLUNTEER"
-        ? (user.profileCompleted ? "/(volunteer)/(tabs)" : "/onboarding/interests")
+        ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/interests")
         : user.role === "NPO"
-          ? "/(npo)/(tabs)"
-          : "/(corporate)"; // Assuming corporate also has a default path
+          ? "/(npo)/(tabs)/community" // Landing on Community by default for NPOs
+          : "/(corporate)";
 
       router.replace(dest as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
@@ -123,12 +123,12 @@ function RootLayoutNav() {
       return;
     }
 
-    // 6. COMPLETION GUARD: OldUser logged in, profile complete, but stuck in onboarding
+    // 6. COMPLETION GUARD: User logged in, profile complete, but stuck in onboarding
     if (hasCompletedOnboarding && inOnboarding) {
-      console.log("[DEBUG] RootLayoutNav: Profile complete, escaping onboarding to dashboard");
+      console.log("[DEBUG] RootLayoutNav: Profile complete, escaping onboarding to community");
       isRedirecting.current = true;
-      if (user.role === "VOLUNTEER") router.replace("/(volunteer)/(tabs)" as any);
-      else if (user.role === "NPO") router.replace("/(npo)/(tabs)" as any);
+      if (user.role === "VOLUNTEER") router.replace("/(volunteer)/(tabs)/community" as any);
+      else if (user.role === "NPO") router.replace("/(npo)/(tabs)/community" as any);
       else if (user.role === "CORPORATE") router.replace("/(corporate)" as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
       return;

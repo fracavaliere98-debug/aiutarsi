@@ -81,7 +81,9 @@ export class AuthService {
             profile_public: metadata.profile_public,
             show_email: metadata.show_email,
             show_volunteering_history: metadata.show_volunteering_history,
-            volunteer_list_visible: metadata.volunteer_list_visible
+            volunteer_list_visible: metadata.volunteer_list_visible,
+            badges: metadata.badges || [],
+            xp: metadata.impactPoints || metadata.impact_points || 0
         };
     }
 
@@ -355,6 +357,8 @@ export class AuthService {
             publicEmail: profile.public_email,
             lastSeenAt: profile.last_seen_at,
             createdAt: profile.created_at,
+            badges: profile.badges || [],
+            xp: profile.impact_points || 0,
         };
     }
 

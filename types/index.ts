@@ -15,6 +15,15 @@ export type UserSkill = Database['public']['Tables']['user_skills']['Row'];
 export type UserInterest = Database['public']['Tables']['user_interests']['Row'];
 export type NPOFollower = Database['public']['Tables']['npo_followers']['Row'];
 
+export interface Badge {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+    dateEarned: string;
+    color: string;
+}
+
 // --- APP USER TYPE (Successor to OldUser) ---
 export type AppUser = Omit<User,
     'email' | 'bio' | 'phone' | 'website' | 'public_email' | 'location_string' |
@@ -51,6 +60,22 @@ export type AppUser = Omit<User,
     profileCompleted?: boolean;
     lastSeenAt?: string;
     createdAt?: string;
+    badges?: Badge[];
+    xp?: number;
+    // Database field aliases (for mappings)
+    npo_name?: string | null;
+    company_name?: string | null;
+    is_verified?: boolean | null;
+    location_string?: string | null;
+    location_lat?: number | null;
+    location_lng?: number | null;
+    public_email?: string | null;
+    profile_completed?: boolean | null;
+    last_seen_at?: string | null;
+    expo_push_token?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    embedding?: number[] | null;
 };
 
 // Hybrid / Frontend-only Extended Types
@@ -126,6 +151,8 @@ export interface OldUser {
     profileCompleted?: boolean;
     lastSeenAt?: string;
     createdAt?: string;
+    badges?: Badge[];
+    xp?: number;
     embedding?: number[];
 }
 
