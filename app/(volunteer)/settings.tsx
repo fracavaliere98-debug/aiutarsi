@@ -113,7 +113,7 @@ export default function VolunteerSettings() {
                 setLocationInput("Errore rilevamento posizione");
             }
         })();
-    }, []);
+    }, [updateUserProfile]);
 
     const saveProfile = async () => {
         setIsSaving(true);

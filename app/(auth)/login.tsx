@@ -4,7 +4,7 @@ import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { useState } from "react";
-import { ArrowLeft, Mail, Lock, LogIn } from "lucide-react-native";
+import { ArrowLeft, Mail, Lock } from "lucide-react-native";
 import { Button } from "../../components/Button";
 
 export default function LoginScreen() {

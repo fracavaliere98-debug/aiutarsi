@@ -407,7 +407,7 @@ export default function VolunteersScreen() {
                         <View className="mb-6 px-1">
                             <View className="flex-row items-center gap-2 mb-4">
                                 <Sparkles size={18} color={Colors.accent} />
-                                <Text className="text-secondary font-black text-xs uppercase tracking-widest">Top matches per l'attività</Text>
+                                <Text className="text-secondary font-black text-xs uppercase tracking-widest">Top matches per l&apos;attività</Text>
                             </View>
                             {matchedFollowers.map((f) => (
                                 <View key={`match-${f.id}`} className="mb-4">

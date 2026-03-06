@@ -28,7 +28,7 @@ interface ActivityContextType {
     enrollInActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
     unenrollFromActivity: (activityId: string) => Promise<boolean>;
     applyToActivity: (activityId: string, message?: string, phone?: string) => Promise<boolean>;
-    createActivity: (activityData: Omit<AppActivity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage"> & { skills: string[] }) => Promise<string | null>;
+    createActivity: (activityData: Omit<AppActivity, "id" | "iscritti" | "npoId" | "npoName" | "status" | "matchPercentage" | "profiles" | "activity_participants" | "activity_skills">) => Promise<string | null>;
     submitReview: (reviewData: Omit<OldReview, "id" | "volunteerId" | "date">) => Promise<boolean>;
     submitVolunteerReviews: (reviewsData: Omit<OldVolunteerReview, 'id' | 'date'>[]) => Promise<void>;
     updateActivity: (activityId: string, activityData: Partial<AppActivity>) => Promise<boolean>;
@@ -163,7 +163,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
         mutationFn: async (activityData: any) => {
             const newAct = await activityService.createActivity({
                 ...activityData,
-                npo_id: user!.id,
+                npoId: user!.id,
                 npoName: user!.npoName || "Ente Solidale",
                 status: "APERTA",
                 iscritti: [],
@@ -182,7 +182,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
             addNotification({
-                userId: updated.npo_id || "",
+                userId: updated.npoId || "",
                 type: "VOLUNTEER_ENROLLED",
                 title: "Nuovo Volontario Iscritto! 🎉",
                 message: message ? `${user!.name} si è iscritto: "${message}"` : `${user!.name} si è iscritto all'attività "${updated.title}"`,
@@ -289,7 +289,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const userActivities = useMemo(() => {
         if (!user) return [];
         if (user.role === "VOLUNTEER") return activities.filter(act => act.iscritti.includes(user.id));
-        if (user.role === "NPO") return activities.filter(act => act.npo_id === user.id || act.npoName === user.npoName);
+        if (user.role === "NPO") return activities.filter(act => act.npoId === user.id || act.npoName === user.npoName);
         return [];
     }, [activities, user]);
 

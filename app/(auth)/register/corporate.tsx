@@ -4,8 +4,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { useState } from "react";
 
-import { Colors } from "../../../constants/Colors";
-import { ArrowLeft } from "lucide-react-native";
+
+
 
 export default function CorporateRegister() {
     const router = useRouter();

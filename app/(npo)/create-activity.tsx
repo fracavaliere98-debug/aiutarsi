@@ -58,7 +58,7 @@ export default function CreateActivityScreen() {
                     lat: original.location.coords.lat,
                     lng: original.location.coords.lng,
                     slots: original.slots.toString(),
-                    description: original.description,
+                    description: original.description || "",
                     skills: original.skills,
                     imageUrl: original.imageUrl
                 }));
@@ -93,7 +93,7 @@ export default function CreateActivityScreen() {
                 }));
             }
         }
-    }, [params.duplicate, params.ai_draft, activities, user]);
+    }, [params.duplicate, params.ai_draft, params.recurrence, activities, user]);
 
     const urgentCount = activities.filter(a => a.npoId === user?.id && a.isUrgent && (a.status === 'APERTA' || a.status === 'IN_CORSO')).length;
     const [coordsConfirmed, setCoordsConfirmed] = useState(false);
@@ -167,7 +167,7 @@ export default function CreateActivityScreen() {
             skills: formData.skills,
             isUrgent: formData.isUrgent,
             imageUrl: formData.imageUrl,
-            recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,
+            recurrence: formData.recurrence === 'NONE' ? undefined : (formData.recurrence as any),
         });
 
         if (success) {

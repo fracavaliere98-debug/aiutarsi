@@ -16,33 +16,72 @@ export type UserInterest = Database['public']['Tables']['user_interests']['Row']
 export type NPOFollower = Database['public']['Tables']['npo_followers']['Row'];
 
 // --- APP USER TYPE (Successor to OldUser) ---
-export type AppUser = User & {
+export type AppUser = Omit<User,
+    'email' | 'bio' | 'phone' | 'website' | 'public_email' | 'location_string' |
+    'npo_name' | 'company_name' | 'is_verified' | 'profile_public' |
+    'show_email' | 'allow_calls' | 'show_volunteering_history' | 'volunteer_list_visible' |
+    'embedding' | 'updated_at' | 'created_at' | 'last_seen_at' | 'expo_push_token'
+> & {
+    email: string;
     user_skills?: UserSkill[];
     user_interests?: UserInterest[];
     followed_entities?: { npo_id: string }[];
     // Backward compatibility for UI & convenience
     name: string;
-    avatar?: string;
+    avatar: string;
     impactPoints: number;
+    bio?: string;
+    phone?: string;
+    website?: string;
     npoName?: string;
     companyName?: string;
+    isVerified?: boolean;
+    locationString?: string;
+    publicEmail?: string;
+    profile_public?: boolean;
+    show_email?: boolean;
+    allow_calls?: boolean;
+    show_volunteering_history?: boolean;
+    volunteer_list_visible?: boolean;
     skills: string[];
     interests: string[];
     followedNPOs: string[];
     password?: string;
     locationCoords?: { lat: number; lng: number };
     profileCompleted?: boolean;
-    isVerified?: boolean;
-    publicEmail?: string;
     lastSeenAt?: string;
     createdAt?: string;
 };
 
 // Hybrid / Frontend-only Extended Types
-export type ActivityWithDistance = Activity & { distanceMeters?: number };
+export type ActivityWithDistance = AppActivity & { distanceMeters?: number };
 
 // --- APP ACTIVITY TYPE (Successor to OldActivity) ---
-export type AppActivity = Activity & {
+export type AppActivity = Omit<Activity,
+    'date_end' | 'date_start' | 'image_url' | 'location_address' | 'location_coords' |
+    'location_lat' | 'location_lng' | 'npo_id' | 'slots_total' | 'status' | 'recurrence' |
+    'created_at' | 'embedding' | 'updated_at' | 'match_percentage' | 'npo_name' | 'is_urgent' | 'description' | 'category' | 'title'
+> & {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    npoId: string;
+    npoName: string;
+    status: string;
+    iscritti: string[];
+    location: {
+        coords: { lat: number; lng: number };
+        address: string;
+    };
+    dateTime: string;
+    endDateTime: string;
+    slots: number;
+    imageUrl?: string;
+    skills: string[];
+    isUrgent: boolean;
+    matchPercentage?: number;
+    recurrence?: 'NONE' | 'WEEKLY' | 'MONTHLY';
     profiles?: {
         npo_name?: string | null;
         full_name?: string | null;
@@ -50,23 +89,6 @@ export type AppActivity = Activity & {
     } | null;
     activity_participants?: { user_id: string }[] | null;
     activity_skills?: { skill: string }[] | null;
-
-    // Legacy mapping for UI
-    npoName: string;
-    npoId: string;         // maps to npo_id
-    dateTime: string;      // maps to date_start
-    endDateTime: string;   // maps to date_end
-    imageUrl?: string;     // maps to image_url
-    iscritti: string[];    // maps to user_ids from activity_participants
-    skills: string[];      // maps to skills from activity_skills
-    matchPercentage?: number;
-    slots: number;         // maps to total_slots
-    category: string;      // maps to category
-    isUrgent: boolean;     // maps to is_urgent
-    location: {
-        address: string;
-        coords: { lat: number, lng: number };
-    };
 };
 
 export type AppActivityApplication = OldActivityApplication;

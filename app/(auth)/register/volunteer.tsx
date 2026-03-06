@@ -3,12 +3,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
-import { Colors } from "../../../constants/Colors";
+
+
 import { useState } from "react";
 
 export default function VolunteerRegister() {
     const router = useRouter();
-    const { login, register } = useAuth();
+    const { register } = useAuth();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({

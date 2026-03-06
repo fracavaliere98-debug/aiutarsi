@@ -167,7 +167,7 @@ function RootLayoutNav() {
       checkUpdates();
     }
 
-  }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage]);
+  }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router]);
 
   // Loading spinner (Combined: Initial Load + Ongoing Auth actions + Logout Guard + Redirection Guard)
   if (!isLoaded || isAuthLoading || isLoggingOut || (!user && inProtectedGroup)) {

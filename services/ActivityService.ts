@@ -304,7 +304,7 @@ export class ActivityService {
             const { data: activity, error } = await supabase
                 .from('activities')
                 .insert({
-                    npo_id: activityData.npo_id,
+                    npo_id: activityData.npoId,
                     title: activityData.title,
                     description: activityData.description,
                     date_start: activityData.dateTime,
@@ -316,7 +316,7 @@ export class ActivityService {
                     category: activityData.category,
                     status: activityData.status || 'APERTA',
                     match_percentage: activityData.matchPercentage,
-                    is_urgent: activityData.is_urgent || false,
+                    is_urgent: activityData.isUrgent || false,
                     image_url: activityData.imageUrl,
                     recurrence: activityData.recurrence || null,
                 })
@@ -376,7 +376,7 @@ export class ActivityService {
                 slots_total: activity.slots,
                 category: activity.category,
                 status: activity.status,
-                is_urgent: activity.is_urgent,
+                is_urgent: activity.isUrgent,
                 image_url: activity.imageUrl,
                 recurrence: activity.recurrence || null,
             })

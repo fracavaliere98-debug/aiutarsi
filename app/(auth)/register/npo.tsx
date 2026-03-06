@@ -5,8 +5,8 @@ import { useToast } from "../../../context/ToastContext";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { useState } from "react";
 
-import { Colors } from "../../../constants/Colors";
-import { ArrowLeft } from "lucide-react-native";
+
+
 
 export default function NPORegister() {
     const router = useRouter();
