@@ -22,11 +22,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: AiutarSiApp/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: AiutarSiApp
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -52,7 +51,6 @@ jobs:
           disable-animations: true
           script: |
             # Avvia Metro bundler in background
-            cd AiutarSiApp
             npx expo start --android --no-dev --minify &
             sleep 30
             # Esegui tutti i flow Maestro
@@ -62,6 +60,5 @@ jobs:
       - name: EAS OTA Update → branch preview
         run: |
           eas update --branch preview --platform all --non-interactive --message "CI: ${{ github.sha }}"
-        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
