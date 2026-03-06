@@ -14,7 +14,7 @@ import {
 import { Activity } from "../../../types";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
-import { useActivities } from "../../../context/ActivityContext";
+import { useActivities } from "../../../hooks/useActivities";
 import { activityService } from "../../../services/ActivityService";
 import { supabase } from "../../../utils/supabase";
 import { UserAvatar } from "../../../components/UserAvatar";
@@ -264,7 +264,6 @@ function FilterModal({
 export default function SearchScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities } = useActivities();
     const { showToast } = useToast();
 
     // Search state
@@ -289,6 +288,29 @@ export default function SearchScreen() {
 
     // Date picker visibility (for quick Date chip)
     const [showDatePicker, setShowDatePicker] = useState(false);
+
+    // ── React Query: fetch activities whenever filters change ─────────────────
+    // No manual useEffect needed — queryKey change triggers refetch automatically.
+    const {
+        activities: paginatedActivities,
+        hasNextPage: hasMore,
+        isFetchingNextPage: isLoadingMore,
+        isFetching: isLoadingActivities,
+        isLoading,
+        fetchNextPage,
+        refetch,
+    } = useActivities({
+        category: filters.interests.length === 1 ? filters.interests[0] : undefined,
+        searchText: debouncedSearch,
+        skills: filters.skills.length > 0 ? filters.skills : undefined,
+        onlyUrgent: filters.onlyUrgent || undefined,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        centerLat: searchCenter?.lat,
+        centerLng: searchCenter?.lng,
+        radiusKm: searchCenter ? filters.radiusKm : undefined,
+        statuses: ['APERTA', 'IN_CORSO'],
+    });
 
     // Active filter count
     const activeFilterCount = [
@@ -342,34 +364,9 @@ export default function SearchScreen() {
         }, 500);
     }, [searchText]);
 
-    // Fetch activities on filter/search/geo change — pass ALL filter params
-    useEffect(() => {
-        fetchPaginatedActivities({
-            reset: true,
-            category: filters.interests.length === 1 ? filters.interests[0] : undefined,
-            searchText: debouncedSearch,
-            skills: filters.skills.length > 0 ? filters.skills : undefined,
-            onlyUrgent: filters.onlyUrgent || undefined,
-            dateFrom: filters.dateFrom || undefined,
-            dateTo: filters.dateTo || undefined,
-            // Geo-radius params — only if a place was selected from the dropdown
-            centerLat: searchCenter?.lat,
-            centerLng: searchCenter?.lng,
-            radiusKm: searchCenter ? filters.radiusKm : undefined,
-            statuses: ['APERTA', 'IN_CORSO']
-        });
-    }, [filters, debouncedSearch, searchCenter]);
-
     const onRefresh = async () => {
         setRefreshing(true);
-        await fetchPaginatedActivities({
-            reset: true,
-            searchText: debouncedSearch,
-            centerLat: searchCenter?.lat,
-            centerLng: searchCenter?.lng,
-            radiusKm: searchCenter ? filters.radiusKm : undefined,
-            statuses: ['APERTA', 'IN_CORSO']
-        });
+        await refetch();
         showToast('success', 'Risultati aggiornati!');
         setRefreshing(false);
     };
@@ -703,7 +700,7 @@ export default function SearchScreen() {
                 data={paginatedActivities}
                 keyExtractor={(item) => item.id}
                 renderItem={renderActivityItem}
-                onEndReached={() => { if (!isLoadingMore && hasMore) fetchPaginatedActivities({ reset: false }); }}
+                onEndReached={() => { if (!isLoadingMore && hasMore) fetchNextPage(); }}
                 onEndReachedThreshold={0.5}
                 // @ts-ignore estimatedItemSize is a valid FlashList prop
                 estimatedItemSize={260}
@@ -725,7 +722,7 @@ export default function SearchScreen() {
                     </View>
                 )}
                 ListEmptyComponent={
-                    !isLoadingMore ? (
+                    !isLoading && !isLoadingActivities ? (
                         <EmptyState
                             emoji="🔍"
                             title="Nessun'attività trovata"

@@ -23,6 +23,7 @@ import { activityService } from "../../../services/ActivityService";
 import * as Location from "expo-location";
 import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-native-reanimated';
 import { supabase } from "../../../utils/supabase";
+import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
@@ -407,10 +408,6 @@ export default function VolunteerMap() {
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [searchCenter, setSearchCenter] = useState<SearchCenter | null>(null);
     const [loading, setLoading] = useState(true);
-    const [loadingActivities, setLoadingActivities] = useState(false);
-
-    // Activities
-    const [activities, setActivities] = useState<ActivityWithDistance[]>([]);
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("");
@@ -478,25 +475,22 @@ export default function VolunteerMap() {
     const centerLng = searchCenter?.lng ?? location?.coords.longitude ?? 9.1900;
     const centerLabel = searchCenter?.label ?? "Posizione attuale";
 
-    // ── Fetch activities when center or radius changes ──────────────────────
-    const fetchActivities = useCallback(async (lat: number, lng: number, radius: number) => {
-        setLoadingActivities(true);
-        try {
-            const results = await activityService.getActivitiesByRadius(lat, lng, radius);
-            const activeResults = results.filter(act => ['APERTA', 'IN_CORSO'].includes(act.status));
-            setActivities(activeResults);
-        } catch (e) {
-            console.error('[Map] Fetch error:', e);
-        } finally {
-            setLoadingActivities(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!loading) {
-            fetchActivities(centerLat, centerLng, filters.radiusKm);
-        }
-    }, [loading, centerLat, centerLng, filters.radiusKm]);
+    // ── Activities via useQuery (keyed on center + radius) ───────────────────
+    // Placed AFTER centerLat/centerLng/filters are declared so TypeScript is happy.
+    // Automatically re-fetches when center or radius changes. staleTime: 60s.
+    const {
+        data: rawActivities = [],
+        isFetching: loadingActivities,
+    } = useQuery({
+        queryKey: ['map-activities', centerLat, centerLng, filters.radiusKm],
+        enabled: !loading,
+        staleTime: 60_000,
+        queryFn: async () => {
+            const results = await activityService.getActivitiesByRadius(centerLat, centerLng, filters.radiusKm);
+            return results.filter(act => ['APERTA', 'IN_CORSO'].includes(act.status));
+        },
+    });
+    const activities = rawActivities as ActivityWithDistance[];
 
     // ── Filter logic ────────────────────────────────────────────────────────
     const filteredActivities = useMemo(() => {
@@ -529,9 +523,9 @@ export default function VolunteerMap() {
 
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => {
+        // Updating filters updates the queryKey, which auto-triggers a re-fetch.
         setFilters(pendingFilters);
         setIsFilterModalVisible(false);
-        fetchActivities(centerLat, centerLng, pendingFilters.radiusKm);
     };
 
     // ── Map helpers ─────────────────────────────────────────────────────────
