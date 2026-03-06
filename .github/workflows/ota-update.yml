@@ -74,7 +74,8 @@ jobs:
 
       # ── OTA Update (solo se i test passano) ───────────────────────────────
       - name: EAS OTA Update → branch preview
-        run: eas update --branch preview --platform all --non-interactive --message "CI: ${{ github.sha }}"
         working-directory: AiutarSiApp
+        run: |
+          eas update --branch preview --platform all --non-interactive --message "CI Update"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
