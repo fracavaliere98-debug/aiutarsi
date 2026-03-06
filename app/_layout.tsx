@@ -17,6 +17,7 @@ import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Alert } from "react-native";
 import * as Updates from "expo-updates";
@@ -220,31 +221,33 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <ToastProvider>
-          <GamificationProvider>
-            <NotificationProvider>
-              <ActivityProvider>
-                <SmartMatchProvider>
-                  <ApplicationProvider>
-                    <ChatProvider>
-                      <CommunityProvider>
-                        <StoriesProvider>
-                          <StatusBar style="dark" />
-                          <RootLayoutNav />
-                          <ToastContainer />
-                          <LevelUpOverlay />
-                        </StoriesProvider>
-                      </CommunityProvider>
-                    </ChatProvider>
-                  </ApplicationProvider>
-                </SmartMatchProvider>
-              </ActivityProvider>
-            </NotificationProvider>
-          </GamificationProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <QueryProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <ToastProvider>
+            <GamificationProvider>
+              <NotificationProvider>
+                <ActivityProvider>
+                  <SmartMatchProvider>
+                    <ApplicationProvider>
+                      <ChatProvider>
+                        <CommunityProvider>
+                          <StoriesProvider>
+                            <StatusBar style="dark" />
+                            <RootLayoutNav />
+                            <ToastContainer />
+                            <LevelUpOverlay />
+                          </StoriesProvider>
+                        </CommunityProvider>
+                      </ChatProvider>
+                    </ApplicationProvider>
+                  </SmartMatchProvider>
+                </ActivityProvider>
+              </NotificationProvider>
+            </GamificationProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </QueryProvider>
   );
 }
