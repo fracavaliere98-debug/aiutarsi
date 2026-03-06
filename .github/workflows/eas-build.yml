@@ -1,0 +1,58 @@
+# Trigger: tag vX.Y.Z → build production + OTA su branch production
+name: EAS Build (Production)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    name: EAS Build + OTA Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: AiutarSiApp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: AiutarSiApp
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # ── Build APK + IPA per gli store ─────────────────────────────────────
+      - name: EAS Build (Android + iOS) — profilo production
+        run: eas build --platform all --profile production --non-interactive
+        working-directory: AiutarSiApp
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # ── OTA Update sul branch production ──────────────────────────────────
+      - name: EAS OTA Update → branch production
+        run: eas update --branch production --platform all --non-interactive --message "Release ${{ github.ref_name }}"
+        working-directory: AiutarSiApp
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+# ── GitHub Secrets necessari ──────────────────────────────────────────────────
+# Vai su: GitHub → repo → Settings → Secrets & Variables → Actions
+#
+# Secret           | Quando aggiungere | Come ottenerlo
+# -----------------|--------------------|------------------------------------------------
+# EXPO_TOKEN       | Subito             | expo.dev/accounts/fracava/settings/access-tokens
+# SENTRY_AUTH_TOKEN| Quando integri Sentry | sentry.io → Settings → API → Auth Tokens
+# GOOGLE_PLAY_KEY  | Quando attivi eas submit | Google Play Console → API access

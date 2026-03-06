@@ -1,0 +1,40 @@
+# Maestro Smoke Test — Login Flow
+# Prerequisiti: app installata sul device/emulatore, account test creato
+#
+# Account di test consigliato — da creare su Supabase Dashboard:
+#   email: test.maestro@aiutarsi.it
+#   password: TestMaestro123!
+#   role: VOLUNTEER
+
+appId: com.aiutarsi.app
+
+---
+
+- launchApp
+
+# Attendi che la schermata di login sia visibile
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Accedi"
+
+# Inserisci le credenziali
+- tapOn:
+    id: "input-email"
+- typeText: "test.maestro@aiutarsi.it"
+
+- tapOn:
+    id: "input-password"
+- typeText: "TestMaestro123!"
+
+# Tap su Accedi
+- tapOn:
+    text: "Accedi"
+
+# Attendi il caricamento della Home
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Ciao"
+
+# Verifica che il tab bar sia visibile (segno di login riuscito)
+- assertVisible:
+    id: "tab-home"

@@ -1,50 +1,108 @@
-# Welcome to your Expo app 👋
+# AiutarSi — App Volontariato 🤝
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile per connettere volontari e NPO in Italia. Costruita con React Native + Expo.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Sviluppo locale
 
 ```bash
-npm run reset-project
+cd AiutarSiApp
+npm install
+npx expo start        # Avvia Metro
+npx expo start --android
+npx expo start --ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## Ambienti (Environments)
 
-To learn more about developing your project with Expo, look at the following resources:
+L'app usa tre ambienti distinti gestiti da EAS:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Ambiente | Profilo `eas.json` | Canale OTA | Trigger |
+|---|---|---|---|
+| **Development** | `development` | — | manuale (`expo start`) |
+| **Preview** | `preview` | `preview` | push su `main` → GitHub Actions |
+| **Production** | `production` | `production` | tag `v*.*.*` → GitHub Actions |
 
-## Join the community
+### Configurare EAS Secrets (primo deploy)
 
-Join our community of developers creating universal apps.
+I secret **non vanno nel codice**. Impostarli una volta via CLI:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+# Preview
+eas secret:create --name SUPABASE_URL       --value <url>  --environment preview
+eas secret:create --name SUPABASE_ANON_KEY  --value <key>  --environment preview
+
+# Production
+eas secret:create --name SUPABASE_URL       --value <url>  --environment production
+eas secret:create --name SUPABASE_ANON_KEY  --value <key>  --environment production
+```
+
+### Configurare GitHub Secrets
+
+Andare su GitHub → repo → **Settings → Secrets & Variables → Actions**:
+
+| Secret | Quando | Come ottenerlo |
+|---|---|---|
+| `EXPO_TOKEN` | Subito | [expo.dev/accounts/fracava/settings/access-tokens](https://expo.dev/accounts/fracava/settings/access-tokens) |
+| `SENTRY_AUTH_TOKEN` | Quando integri Sentry | sentry.io → Settings → API → Auth Tokens |
+| `GOOGLE_PLAY_KEY` | Quando attivi `eas submit` | Google Play Console → API access |
+
+---
+
+## CI/CD Pipeline
+
+```
+push to main
+  └─► Maestro smoke tests (emulatore Android)
+        ├─ PASS → eas update --branch preview
+        └─ FAIL → pipeline bloccata, NO OTA update
+
+git tag v1.2.3 && git push --tags
+  └─► eas build --profile production (APK + IPA)
+        └─► eas update --branch production
+```
+
+---
+
+## Rollback OTA (Emergenza)
+
+Se un aggiornamento OTA causa problemi in produzione:
+
+```bash
+# 1. Lista gli update recenti
+eas update:list --branch production
+
+# 2. Rollback all'ID precedente
+eas update:rollback --branch production --update-id <ID>
+```
+
+---
+
+## Test con Maestro
+
+I flow di smoke test sono in `.maestro/flows/`:
+
+```bash
+# Esegui localmente (richiede device/emulatore connesso)
+maestro test .maestro/flows/login.yaml
+maestro test .maestro/flows/enroll_activity.yaml
+
+# Tutti i flow
+maestro test .maestro/flows/
+```
+
+> ⚠️ Creare un account di test su Supabase Dashboard:
+> - email: `test.maestro@aiutarsi.it`
+> - password: `TestMaestro123!`
+> - role: `VOLUNTEER`
+
+---
+
+## Stack
+
+- React Native 0.81 / Expo SDK 54
+- TypeScript · Expo Router · NativeWind
+- Supabase (Postgres + Auth + Realtime + Storage)
+- Google Gemini API
+- EAS Build + EAS Update

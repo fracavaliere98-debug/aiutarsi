@@ -1,0 +1,47 @@
+# Maestro Smoke Test — Esplora + Candidatura
+# Prerequisito: login.yaml deve essere passato prima (flow separato)
+
+appId: com.aiutarsi.app
+
+---
+
+- launchApp
+
+# ── Login rapido ──────────────────────────────────────────────────────────────
+- tapOn:
+    id: "input-email"
+- typeText: "test.maestro@aiutarsi.it"
+- tapOn:
+    id: "input-password"
+- typeText: "TestMaestro123!"
+- tapOn:
+    text: "Accedi"
+- waitForAnimationToEnd
+
+# ── Naviga al tab Esplora ─────────────────────────────────────────────────────
+- tapOn:
+    id: "tab-explore"
+- waitForAnimationToEnd
+
+# Verifica che la lista attività sia caricata
+- assertVisible:
+    id: "activity-list"
+
+# Tap sulla prima card attività
+- tapOn:
+    id: "activity-card-0"
+- waitForAnimationToEnd
+
+# ── Pagina Dettaglio: verifica presenza pulsante Candidati ───────────────────
+- assertVisible:
+    text: "CANDIDATI"
+
+# Tap Candidati
+- tapOn:
+    text: "CANDIDATI"
+- waitForAnimationToEnd
+
+# Verifica che il modal di candidatura si apra
+# (verifica la presenza del campo messaggio o della scritta "Candidatura")
+- assertVisible:
+    text: "Candidatura"
