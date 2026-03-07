@@ -22,11 +22,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: AiutarSiApp/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: AiutarSiApp
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -38,6 +37,5 @@ jobs:
       - name: EAS OTA Update → branch preview
         run: |
           eas update --branch preview --platform all --non-interactive --message "Fast OTA: ${{ github.sha }}"
-        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
