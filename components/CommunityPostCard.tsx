@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Dimensions, Alert, Animated } from 'react-native';
+import { MoreHorizontal } from 'lucide-react-native';
 import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community';
 import { Colors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
+import { useToast } from '../context/ToastContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -16,7 +18,47 @@ interface CommunityPostCardProps {
 export function CommunityPostCard({ post }: CommunityPostCardProps) {
     const router = useRouter();
     const { user } = useAuth();
-    const { toggleReaction } = useCommunity();
+    const { toggleReaction, deletePost, reportPost } = useCommunity();
+    const { showToast } = useToast();
+
+    const handleMenuPress = () => {
+        if (!user) return;
+        if (user.id === post.author_id) {
+            Alert.alert('Gestisci Post', 'Scegli l\'azione da eseguire:', [
+                {
+                    text: 'Modifica', onPress: () => {
+                        router.push(`/community/create-post?mode=edit&postId=${post.id}` as any);
+                    }
+                },
+                {
+                    text: 'Elimina', style: 'destructive', onPress: async () => {
+                        try {
+                            await deletePost(post.id);
+                            showToast('success', 'Post eliminato con successo');
+                        } catch (e) {
+                            showToast('error', 'Errore durante l\'eliminazione del post');
+                        }
+                    }
+                },
+                { text: 'Annulla', style: 'cancel' }
+            ]);
+        } else {
+            const handleReport = async (reason: string) => {
+                try {
+                    await reportPost(post.id, reason);
+                    showToast('success', 'Segnalazione inviata! Grazie per il tuo feedback.');
+                } catch (e) {
+                    showToast('error', 'Impossibile inviare la segnalazione. Riprova più tardi.');
+                }
+            };
+
+            Alert.alert('Segnala Post', 'Scegli il motivo della segnalazione:', [
+                { text: 'Contenuto offensivo o inappropriato', onPress: () => handleReport('Inappropriato') },
+                { text: 'Spam o pubblicità', onPress: () => handleReport('Spam') },
+                { text: 'Annulla', style: 'cancel' }
+            ]);
+        }
+    };
 
     // Count reactions per type
     const reactionCounts: Record<ReactionType, number> = { heart: 0, clap: 0, muscle: 0, tree: 0 };
@@ -41,6 +83,12 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
         if (hrs < 24) return `${hrs}h fa`;
         return `${Math.floor(hrs / 24)}g fa`;
     })();
+
+    const scrollX = React.useRef(new Animated.Value(0)).current;
+
+    const imageUrls = post.images_urls && post.images_urls.length > 0
+        ? post.images_urls
+        : (post.image_url ? [post.image_url] : []);
 
     return (
         <View style={{
@@ -69,16 +117,65 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                     <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{authorName}</Text>
                     <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
                 </View>
+                {user && (
+                    <TouchableOpacity onPress={handleMenuPress} style={{ padding: 4 }}>
+                        <MoreHorizontal size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+                )}
             </View>
 
-            {/* Image */}
-            {post.image_url && (
-                <View style={{ position: 'relative' }}>
-                    <Image
-                        source={{ uri: post.image_url }}
-                        style={{ width: SCREEN_W - 32, height: (SCREEN_W - 32) * 1.1 }}
-                        resizeMode="cover"
-                    />
+            {/* Images */}
+            {imageUrls.length > 0 && (
+                <View style={{ position: 'relative', width: SCREEN_W - 32, maxHeight: 500, overflow: 'hidden' }}>
+                    {imageUrls.length === 1 ? (
+                        <Image
+                            source={{ uri: imageUrls[0] }}
+                            style={{ width: SCREEN_W - 32, height: Math.min((SCREEN_W - 32) * 1.1, 500) }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View>
+                            <Animated.ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                onScroll={Animated.event(
+                                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                                    { useNativeDriver: false }
+                                )}
+                                scrollEventThrottle={16}
+                            >
+                                {imageUrls.map((uri, index) => (
+                                    <Image
+                                        key={index}
+                                        source={{ uri }}
+                                        style={{ width: SCREEN_W - 32, height: Math.min((SCREEN_W - 32) * 1.1, 500) }}
+                                        resizeMode="cover"
+                                    />
+                                ))}
+                            </Animated.ScrollView>
+
+                            {/* Pagination Dots */}
+                            <View style={{ position: 'absolute', bottom: post.linked_activity ? 80 : 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                                {imageUrls.map((_, i) => {
+                                    const inputRange = [(i - 1) * (SCREEN_W - 32), i * (SCREEN_W - 32), (i + 1) * (SCREEN_W - 32)];
+                                    const opacity = scrollX.interpolate({
+                                        inputRange,
+                                        outputRange: [0.5, 1, 0.5],
+                                        extrapolate: 'clamp'
+                                    });
+                                    const scale = scrollX.interpolate({
+                                        inputRange,
+                                        outputRange: [0.8, 1.2, 0.8],
+                                        extrapolate: 'clamp'
+                                    });
+                                    return (
+                                        <Animated.View key={`dot_${i}`} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.8)', opacity, transform: [{ scale }] }} />
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    )}
                     {/* OldActivity anchor banner */}
                     {post.linked_activity && (
                         <LinearGradient

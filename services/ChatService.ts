@@ -360,16 +360,13 @@ class ChatService {
         if (initiatorId) participantIds.add(initiatorId);
 
         if (participantIds.size > 0) {
-            const upsertData = Array.from(participantIds).map(uid => ({
-                conversation_id: convId,
-                user_id: uid
-            }));
+            const { error: pErr } = await supabase.rpc('sync_group_conversation_participants', {
+                p_conversation_id: convId,
+                p_activity_id: activityId,
+                p_initiator_id: initiatorId || null
+            });
 
-            const { error: pErr } = await supabase
-                .from('conversation_participants')
-                .upsert(upsertData, { onConflict: 'conversation_id,user_id' });
-
-            if (pErr) console.error("Error syncing participants to group conversation:", pErr);
+            if (pErr) console.error("Error syncing participants to group conversation via RPC:", pErr);
         }
 
         return convId;

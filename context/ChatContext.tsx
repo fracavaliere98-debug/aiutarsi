@@ -73,9 +73,19 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             )
             .subscribe();
 
+        // Subscribe to conversations UPDATE (last_message_content updates)
+        const convsChannel = supabase.channel('public:conversations:context')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'conversations' },
+                () => { refreshConversations(); }
+            )
+            .subscribe();
+
         return () => {
             supabase.removeChannel(msgsChannel);
             supabase.removeChannel(participantsChannel);
+            supabase.removeChannel(convsChannel);
         };
     }, [user]);
 

@@ -7,8 +7,11 @@ import { storageService } from '../services/StorageService';
 interface CommunityContextType {
     posts: CommunityPost[];
     isLoading: boolean;
-    fetchFeed: () => Promise<void>;
-    createPost: (caption: string, imageUri: string | null, linkedActivityId?: string) => Promise<void>;
+    fetchFeed: (lastCreatedAt?: string) => Promise<void>;
+    createPost: (caption: string, imageUris: string[], linkedActivityId?: string) => Promise<void>;
+    updatePost: (postId: string, caption: string, newLocalUris: string[], retainedExistingUrls: string[], linkedActivityId?: string) => Promise<void>;
+    deletePost: (postId: string) => Promise<void>;
+    reportPost: (postId: string, reason: string) => Promise<void>;
     toggleReaction: (postId: string, reaction: ReactionType) => Promise<void>;
 }
 
@@ -19,10 +22,10 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const fetchFeed = useCallback(async () => {
+    const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('community_posts')
                 .select(`
                     *,
@@ -46,8 +49,23 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                 .order('created_at', { ascending: false })
                 .limit(30);
 
+            if (lastCreatedAt) {
+                query = query.lt('created_at', lastCreatedAt);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
-            setPosts((data as unknown as CommunityPost[]) || []);
+
+            const newPosts = (data as unknown as CommunityPost[]) || [];
+            if (lastCreatedAt) {
+                setPosts(prev => {
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const uniqueNew = newPosts.filter(p => !existingIds.has(p.id));
+                    return [...prev, ...uniqueNew];
+                });
+            } else {
+                setPosts(newPosts);
+            }
         } catch (e) {
             console.error('Community fetchFeed error:', e);
         } finally {
@@ -66,23 +84,63 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         }
     }, [user]);
 
-    const createPost = async (caption: string, imageUri: string | null, linkedActivityId?: string) => {
+    const createPost = async (caption: string, imageUris: string[], linkedActivityId?: string) => {
         if (!user) return;
 
-        let imageUrl: string | null = null;
-        if (imageUri) {
-            imageUrl = await uploadImage(imageUri);
+        let imageUrls: string[] = [];
+        if (imageUris.length > 0) {
+            imageUrls = await storageService.uploadCommunityImages(user.id, imageUris);
         }
 
         const { error } = await supabase.from('community_posts').insert({
             author_id: user.id,
             caption: caption || null,
-            image_url: imageUrl,
+            image_url: imageUrls[0] || null,
+            images_urls: imageUrls.length > 0 ? imageUrls : null,
             linked_activity_id: linkedActivityId || null,
         });
 
         if (error) throw error;
         await fetchFeed();
+    };
+
+    const updatePost = async (postId: string, caption: string, newLocalUris: string[], retainedExistingUrls: string[], linkedActivityId?: string) => {
+        if (!user) return;
+
+        let newUploadedUrls: string[] = [];
+        if (newLocalUris.length > 0) {
+            newUploadedUrls = await storageService.uploadCommunityImages(user.id, newLocalUris);
+        }
+
+        const finalImageUrls = [...retainedExistingUrls, ...newUploadedUrls];
+
+        const { error } = await supabase.from('community_posts').update({
+            caption: caption || null,
+            image_url: finalImageUrls[0] || null,
+            images_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
+            linked_activity_id: linkedActivityId || null,
+        }).eq('id', postId).eq('author_id', user.id);
+
+        if (error) throw error;
+        await fetchFeed();
+    };
+
+    const deletePost = async (postId: string) => {
+        if (!user) return;
+        const { error } = await supabase.from('community_posts').delete().eq('id', postId).eq('author_id', user.id);
+        if (error) throw error;
+        setPosts(prev => prev.filter(p => p.id !== postId));
+    };
+
+    const reportPost = async (postId: string, reason: string) => {
+        if (!user) return;
+        const { error } = await supabase.from('community_reports').insert({
+            post_id: postId,
+            reporter_id: user.id,
+            reason: reason,
+            status: 'pending' // Default value in DB, defined here for clarity
+        });
+        if (error) throw error;
     };
 
     const toggleReaction = async (postId: string, reaction: ReactionType) => {
@@ -94,37 +152,55 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
             r => r.user_id === user.id && r.reaction === reaction
         );
 
-        if (existingReaction) {
-            // Remove reaction
-            await supabase
-                .from('post_reactions')
-                .delete()
-                .eq('id', existingReaction.id);
+        // Fast Optimistic Update using previous state for rollback capability
+        const previousPosts = [...posts];
 
-            setPosts(prev => prev.map(p => {
-                if (p.id !== postId) return p;
-                return {
-                    ...p,
-                    reactions: p.reactions?.filter(r => r.id !== existingReaction.id) || []
-                };
-            }));
-        } else {
-            // Add reaction
-            const { data } = await supabase
-                .from('post_reactions')
-                .insert({ post_id: postId, user_id: user.id, reaction })
-                .select()
-                .single();
-
-            if (data) {
-                setPosts(prev => prev.map(p => {
-                    if (p.id !== postId) return p;
-                    return {
-                        ...p,
-                        reactions: [...(p.reactions || []), data as PostReaction]
-                    };
+        try {
+            if (existingReaction) {
+                // Optimistic Remove
+                setPosts(prev => prev.map(p => p.id !== postId ? p : {
+                    ...p, reactions: p.reactions?.filter(r => r.id !== existingReaction.id) || []
                 }));
+
+                // Network request
+                const { error } = await supabase.from('post_reactions').delete().eq('id', existingReaction.id);
+                if (error) throw error;
+
+            } else {
+                // Optimistic Add (with temporary ID)
+                const tempReaction: PostReaction = {
+                    id: `temp_${Date.now()}`,
+                    post_id: postId,
+                    user_id: user.id,
+                    reaction: reaction,
+                    created_at: new Date().toISOString()
+                };
+
+                setPosts(prev => prev.map(p => p.id !== postId ? p : {
+                    ...p, reactions: [...(p.reactions || []), tempReaction]
+                }));
+
+                // Network request
+                const { data, error } = await supabase
+                    .from('post_reactions')
+                    .insert({ post_id: postId, user_id: user.id, reaction })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Replace temp reaction with the real one from DB to get the correct ID
+                if (data) {
+                    setPosts(prev => prev.map(p => p.id !== postId ? p : {
+                        ...p, reactions: p.reactions?.map(r => r.id === tempReaction.id ? data as PostReaction : r) || []
+                    }));
+                }
             }
+        } catch (error) {
+            console.error('Error toggling reaction:', error);
+            // Rollback optimistic update
+            setPosts(previousPosts);
+            throw error; // Let the UI catch indicating failure
         }
     };
 
@@ -150,7 +226,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     }, [fetchFeed]);
 
     return (
-        <CommunityContext.Provider value={{ posts, isLoading, fetchFeed, createPost, toggleReaction }}>
+        <CommunityContext.Provider value={{ posts, isLoading, fetchFeed, createPost, updatePost, deletePost, reportPost, toggleReaction }}>
             {children}
         </CommunityContext.Provider>
     );

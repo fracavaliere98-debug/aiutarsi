@@ -1,9 +1,4 @@
-/**
- * StoriesRow.tsx – updated to use the dedicated `stories` table via StoriesContext.
- * NPO users see a '+' add-story bubble first (calls onAddStory).
- * Volunteers only see the active stories.
- */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,13 +8,34 @@ import { Story } from '../types/stories';
 interface StoriesRowProps {
     isNPO?: boolean;
     onAddStory?: () => void;
-    onStoryPress?: (story: Story) => void;
+    onStoryPress?: (allStories: Story[], initialIndex: number) => void;
 }
 
 export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps) {
     const { stories } = useStories();
 
-    const hasContent = isNPO || stories.length > 0;
+    // Group stories by author
+    const { authorGroups, flatOrderedStories } = useMemo(() => {
+        const groups = new Map<string, Story[]>();
+        for (const story of stories) {
+            if (!story.author_id) continue;
+            const existing = groups.get(story.author_id) || [];
+            existing.push(story);
+            groups.set(story.author_id, existing);
+        }
+
+        // Sort stories within each group (oldest first to watch in chronological order)
+        const sortedGroups = Array.from(groups.values()).map(group =>
+            group.sort((a, b) => new Date(a.created_at as string).getTime() - new Date(b.created_at as string).getTime())
+        );
+
+        // Flatten back for the global viewer so we can seamlessly jump to the next NPO's stories
+        const flatOrderedStories = sortedGroups.flat();
+
+        return { authorGroups: sortedGroups, flatOrderedStories };
+    }, [stories]);
+
+    const hasContent = isNPO || authorGroups.length > 0;
     if (!hasContent) return null;
 
     return (
@@ -62,21 +78,26 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
                     </TouchableOpacity>
                 )}
 
-                {/* Active story bubbles */}
-                {stories.map(story => {
-                    const isLive = story.linked_activity?.status === 'IN_CORSO';
-                    const name = story.author?.npo_name || story.author?.full_name || 'NPO';
+                {/* Active story bubbles for each NPO author */}
+                {authorGroups.map(group => {
+                    const firstStory = group[0];
+                    const latestStory = group[group.length - 1]; // To find expiry of latest update
+                    const isLive = group.some(s => s.linked_activity?.status === 'IN_CORSO');
+                    const name = firstStory.author?.npo_name || firstStory.author?.full_name || 'NPO';
                     const firstName = name.split(' ')[0];
 
-                    // Time left until expiry
-                    const msLeft = new Date(story.expires_at).getTime() - Date.now();
+                    // Find index in the global flat array for viewer transition
+                    const initialGroupIndex = flatOrderedStories.findIndex(s => s.id === firstStory.id);
+
+                    // Time left until expiry based on the latesst story
+                    const msLeft = new Date(latestStory.expires_at as string).getTime() - Date.now();
                     const hLeft = Math.max(0, Math.floor(msLeft / (1000 * 60 * 60)));
                     const expiryLabel = hLeft < 1 ? '<1h' : `${hLeft}h`;
 
                     return (
                         <TouchableOpacity
-                            key={story.id}
-                            onPress={() => onStoryPress?.(story)}
+                            key={firstStory.author_id}
+                            onPress={() => onStoryPress?.(flatOrderedStories, initialGroupIndex)}
                             activeOpacity={0.85}
                             style={{ alignItems: 'center', width: 72 }}
                         >
@@ -93,10 +114,10 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
                                     backgroundColor: '#f1f5f9',
                                     alignItems: 'center', justifyContent: 'center',
                                 }}>
-                                    {story.image_url ? (
-                                        <Image source={{ uri: story.image_url }} style={{ width: '100%', height: '100%' }} />
-                                    ) : story.author?.avatar_url ? (
-                                        <Image source={{ uri: story.author.avatar_url }} style={{ width: '100%', height: '100%' }} />
+                                    {firstStory.image_url ? (
+                                        <Image source={{ uri: firstStory.image_url }} style={{ width: '100%', height: '100%' }} />
+                                    ) : firstStory.author?.avatar_url ? (
+                                        <Image source={{ uri: firstStory.author.avatar_url }} style={{ width: '100%', height: '100%' }} />
                                     ) : (
                                         <Text style={{ fontSize: 22 }}>🏛️</Text>
                                     )}

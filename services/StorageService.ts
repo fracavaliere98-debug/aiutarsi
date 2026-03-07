@@ -31,6 +31,19 @@ export class StorageService {
     }
 
     /**
+     * Uploads multiple community post images concurrently
+     */
+    async uploadCommunityImages(userId: string, uris: string[]): Promise<string[]> {
+        const timestamp = Date.now();
+        const uploadPromises = uris.map((uri, index) => {
+            const fileName = `${userId}/${timestamp}_${index}.jpg`;
+            return this.uploadFile('community_media', fileName, uri);
+        });
+        const results = await Promise.all(uploadPromises);
+        return results.filter((url): url is string => url !== null);
+    }
+
+    /**
      * Uploads a story image
      */
     async uploadStoryImage(userId: string, uri: string): Promise<string | null> {

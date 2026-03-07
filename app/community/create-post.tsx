@@ -16,19 +16,32 @@ import { useToast } from '../../context/ToastContext';
 
 export default function CreatePostScreen() {
     const router = useRouter();
-    const { mode } = useLocalSearchParams<{ mode?: string }>();
+    const { mode, postId } = useLocalSearchParams<{ mode?: string, postId?: string }>();
     const isStoryMode = mode === 'story';
+    const isEditMode = mode === 'edit';
     const { user } = useAuth();
-    const { createPost } = useCommunity();
+    const { posts, createPost, updatePost } = useCommunity();
     const { createStory } = useStories();
     const { activities } = useActivities();
     const { showToast } = useToast();
 
     const [caption, setCaption] = useState('');
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageUris, setImageUris] = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
     const [linkedActivityId, setLinkedActivityId] = useState<string | undefined>(undefined);
     const [showActivityPicker, setShowActivityPicker] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    React.useEffect(() => {
+        if (isEditMode && postId) {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                setCaption(post.caption || '');
+                setExistingImages(post.images_urls || (post.image_url ? [post.image_url] : []));
+                setLinkedActivityId(post.linked_activity_id || undefined);
+            }
+        }
+    }, [isEditMode, postId, posts]);
 
     const myActivities = activities.filter(a => a.npoId === user?.id);
     const linkedActivity = myActivities.find(a => a.id === linkedActivityId);
@@ -42,36 +55,47 @@ export default function CreatePostScreen() {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.85,
-            allowsEditing: true,
-            aspect: [4, 5],
+            allowsMultipleSelection: !isStoryMode,
+            allowsEditing: isStoryMode, // Only allow cropping for stories
+            aspect: isStoryMode ? [4, 5] : undefined,
         });
-        if (!result.canceled && result.assets[0]) {
-            setImageUri(result.assets[0].uri);
+        if (!result.canceled && result.assets) {
+            if (isStoryMode) {
+                setImageUris([result.assets[0].uri]);
+            } else {
+                setImageUris(prev => [...prev, ...result.assets.map(a => a.uri)]);
+            }
         }
     };
 
+    const removeExistingImage = (index: number) => setExistingImages(prev => prev.filter((_, i) => i !== index));
+    const removeLocalImage = (index: number) => setImageUris(prev => prev.filter((_, i) => i !== index));
+
     const handleSubmit = async () => {
-        if (!caption.trim() && !imageUri) {
+        if (!caption.trim() && existingImages.length === 0 && imageUris.length === 0) {
             showToast('warning', 'Aggiungi almeno una foto o una descrizione.');
             return;
         }
-        if (isStoryMode && !imageUri) {
+        if (isStoryMode && imageUris.length === 0) {
             showToast('warning', 'Le storie richiedono almeno una foto.');
             return;
         }
         setIsSubmitting(true);
         try {
             if (isStoryMode) {
-                await createStory(imageUri!, caption.trim() || undefined, linkedActivityId);
+                await createStory(imageUris[0], caption.trim() || undefined, linkedActivityId);
                 showToast('success', 'Storia pubblicata! Sparirà tra 24h ✨');
+            } else if (isEditMode && postId) {
+                await updatePost(postId, caption.trim(), imageUris, existingImages, linkedActivityId);
+                showToast('success', 'Post aggiornato con successo! 🎉');
             } else {
-                await createPost(caption.trim(), imageUri, linkedActivityId);
+                await createPost(caption.trim(), imageUris, linkedActivityId);
                 showToast('success', 'Post pubblicato nella Community! 🎉');
             }
             router.back();
         } catch (e) {
             console.error(e);
-            showToast('error', 'Errore durante la pubblicazione.');
+            showToast('error', 'Errore durante l\'operazione.');
         } finally {
             setIsSubmitting(false);
         }
@@ -85,7 +109,7 @@ export default function CreatePostScreen() {
                         <ArrowLeft size={18} color={Colors.primary} />
                     </TouchableOpacity>
                     <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>
-                        {isStoryMode ? '✨ Nuova Storia (24h)' : 'Nuovo Post Community'}
+                        {isStoryMode ? '✨ Nuova Storia (24h)' : (isEditMode ? 'Modifica Post' : 'Nuovo Post Community')}
                     </Text>
                     <TouchableOpacity
                         onPress={handleSubmit}
@@ -104,45 +128,54 @@ export default function CreatePostScreen() {
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
                 <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} showsVerticalScrollIndicator={false}>
 
-                    {/* Image picker */}
-                    <TouchableOpacity
-                        onPress={pickImage}
-                        activeOpacity={0.8}
-                        style={{
-                            height: imageUri ? undefined : 220,
-                            backgroundColor: imageUri ? 'transparent' : '#f1f5f9',
-                            borderRadius: 20,
-                            overflow: 'hidden',
-                            borderWidth: imageUri ? 0 : 2,
-                            borderColor: '#e2e8f0',
-                            borderStyle: 'dashed',
-                            alignItems: 'center', justifyContent: 'center',
-                        }}
-                    >
-                        {imageUri ? (
-                            <View>
-                                <Image
-                                    source={{ uri: imageUri }}
-                                    style={{ width: '100%', aspectRatio: 4 / 5, borderRadius: 20 }}
-                                    resizeMode="cover"
-                                />
+                    {/* Images Picker Row */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 16 }}>
+                        {existingImages.map((uri, index) => (
+                            <View key={`existing_${index}`} style={{ width: 140, height: 180, borderRadius: 16, overflow: 'hidden' }}>
+                                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                                 <TouchableOpacity
-                                    onPress={() => setImageUri(null)}
-                                    style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.55)', width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }}
+                                    onPress={() => removeExistingImage(index)}
+                                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                    <X size={15} color="white" />
+                                    <X size={14} color="white" />
                                 </TouchableOpacity>
                             </View>
-                        ) : (
-                            <View style={{ alignItems: 'center', gap: 10 }}>
-                                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-                                    <ImageIcon size={28} color={Colors.primary} />
-                                </View>
-                                <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 15 }}>Aggiungi una foto</Text>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Tocca per scegliere dalla galleria</Text>
+                        ))}
+                        {imageUris.map((uri, index) => (
+                            <View key={`local_${index}`} style={{ width: 140, height: 180, borderRadius: 16, overflow: 'hidden' }}>
+                                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                                <TouchableOpacity
+                                    onPress={() => removeLocalImage(index)}
+                                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <X size={14} color="white" />
+                                </TouchableOpacity>
                             </View>
+                        ))}
+
+                        {/* Add Button */}
+                        {(!isStoryMode || (imageUris.length === 0 && existingImages.length === 0)) && (
+                            <TouchableOpacity
+                                onPress={pickImage}
+                                activeOpacity={0.8}
+                                style={{
+                                    width: 140, height: 180,
+                                    backgroundColor: '#f1f5f9',
+                                    borderRadius: 16,
+                                    borderWidth: 2,
+                                    borderColor: '#e2e8f0',
+                                    borderStyle: 'dashed',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    gap: 8
+                                }}
+                            >
+                                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
+                                    <ImageIcon size={22} color={Colors.primary} />
+                                </View>
+                                <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 13, textAlign: 'center' }}>Aggiungi{'\n'}Foto</Text>
+                            </TouchableOpacity>
                         )}
-                    </TouchableOpacity>
+                    </ScrollView>
 
                     {/* Caption */}
                     <View style={{ backgroundColor: 'white', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#e2e8f0' }}>

@@ -1,12 +1,12 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { MessageSquare, Bell } from "lucide-react-native";
+import { MessageSquare, Bell, Plus } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { UserAvatar } from "./UserAvatar";
 import { useNotifications } from "../context/NotificationContext";
 import { useChat } from "../context/ChatContext";
 
-export function NPOHeaderActions() {
+export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const router = useRouter();
     const { unreadCount: notifUnreadCount } = useNotifications();
     const { unreadCount: chatUnreadCount } = useChat();
@@ -37,12 +37,22 @@ export function NPOHeaderActions() {
                 )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-                onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
-                className="w-11 h-11 rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
-            >
-                <UserAvatar size={44} fontSize={15} useAuthFallback={true} />
-            </TouchableOpacity>
+            {showAddPost ? (
+                <TouchableOpacity
+                    onPress={() => router.push('/community/create-post' as any)}
+                    className="bg-white/20 p-2.5 rounded-2xl border border-white/20 active:scale-90"
+                    activeOpacity={0.85}
+                >
+                    <Plus size={22} color="white" />
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity
+                    onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
+                    className="w-11 h-11 rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
+                >
+                    <UserAvatar size={44} fontSize={15} useAuthFallback={true} />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }

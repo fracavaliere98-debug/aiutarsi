@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
     View, Text, TouchableOpacity, RefreshControl,
     ActivityIndicator, Modal, Image, Dimensions
@@ -16,6 +16,9 @@ import { CommunityPostCard } from '../../../components/CommunityPostCard';
 import { CommunityPost } from '../../../types/community';
 import { Story } from '../../../types/stories';
 import { AppActivity } from '../../../types';
+import { StandardLayout } from '../../../components/StandardLayout';
+import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
+import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActions';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -123,56 +126,66 @@ export default function CommunityScreen() {
     const { posts, isLoading, fetchFeed } = useCommunity();
     const { activities } = useActivities();
     const [refreshing, setRefreshing] = useState(false);
-    const [storyPost, setStoryPost] = useState<Story | null>(null);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [storyViewer, setStoryViewer] = useState<{ stories: Story[], index: number } | null>(null);
 
     const isNPO = user?.role === 'NPO';
-
-    // Build hybrid feed items: 2 posts → 1 suggested activity → repeat
-    // Weekend banner always appended at the end (or after 4 items if feed is long)
-    const suggestedActivities = activities
-        .filter(a => a.status === 'APERTA')
-        .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
-        .slice(0, 10);
 
     type FeedItem =
         | { type: 'post'; data: CommunityPost; key: string }
         | { type: 'activity'; data: AppActivity; key: string }
         | { type: 'weekend'; key: string };
 
-    const feedItems: FeedItem[] = [];
-    let actIdx = 0;
-    let weekendInserted = false;
+    // ── Feed Construction (Optimized with useMemo) ───────────────────────────
+    const feedItems = useMemo(() => {
+        const suggestedActs = activities
+            .filter(a => a.status === 'APERTA')
+            .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
+            .slice(0, 10);
 
-    for (let i = 0; i < posts.length; i++) {
-        feedItems.push({ type: 'post', data: posts[i], key: `post_${posts[i].id}` });
-        // Every 2 posts, inject a suggested activity
-        if ((i + 1) % 2 === 0 && actIdx < suggestedActivities.length) {
-            feedItems.push({ type: 'activity', data: suggestedActivities[actIdx], key: `act_${suggestedActivities[actIdx].id}` });
-            actIdx++;
+        const items: FeedItem[] = [];
+        let actIdx = 0;
+        let weekendInserted = false;
+
+        for (let i = 0; i < posts.length; i++) {
+            items.push({ type: 'post', data: posts[i], key: `post_${posts[i].id}` });
+            // Every 2 posts, inject a suggested activity
+            if ((i + 1) % 2 === 0 && actIdx < suggestedActs.length) {
+                items.push({ type: 'activity', data: suggestedActs[actIdx], key: `act_${suggestedActs[actIdx].id}` });
+                actIdx++;
+            }
+            // Insert weekend banner inline once the feed reaches 4 items
+            if (!weekendInserted && items.length >= 4) {
+                items.push({ type: 'weekend', key: 'weekend_banner' });
+                weekendInserted = true;
+            }
         }
-        // Insert weekend banner inline once the feed reaches 4 items
-        if (!weekendInserted && feedItems.length >= 4) {
-            feedItems.push({ type: 'weekend', key: 'weekend_banner' });
-            weekendInserted = true;
+
+        if (!weekendInserted) {
+            items.push({ type: 'weekend', key: 'weekend_banner' });
         }
-    }
 
-    // Always ensure the weekend banner appears (even with 0–3 posts)
-    if (!weekendInserted) {
-        feedItems.push({ type: 'weekend', key: 'weekend_banner' });
-    }
+        const remainingActs = suggestedActs.slice(actIdx, actIdx + Math.max(3, suggestedActs.length - actIdx));
+        remainingActs.forEach(a => {
+            items.push({ type: 'activity', data: a, key: `act_${a.id}` });
+        });
 
-    // Always show at least 3 suggested activities after the posts / banner
-    const remainingActs = suggestedActivities.slice(actIdx, actIdx + Math.max(3, suggestedActivities.length - actIdx));
-    remainingActs.forEach(a => {
-        feedItems.push({ type: 'activity', data: a, key: `act_${a.id}` });
-    });
+        return items;
+    }, [posts, activities]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await fetchFeed();
         setRefreshing(false);
     }, [fetchFeed]);
+
+    const onLoadMore = useCallback(async () => {
+        if (isLoadingMore || posts.length === 0) return;
+        setIsLoadingMore(true);
+        const oldestPost = posts[posts.length - 1];
+        await fetchFeed(oldestPost.created_at || undefined);
+        setIsLoadingMore(false);
+    }, [isLoadingMore, posts, fetchFeed]);
 
     const renderItem = ({ item }: { item: FeedItem }) => {
         if (item.type === 'post') return <CommunityPostCard post={item.data} />;
@@ -181,31 +194,17 @@ export default function CommunityScreen() {
         return null;
     };
 
+    const rightElement = isNPO ? <NPOHeaderActions showAddPost={true} /> : <VolunteerHeaderActions />;
+
     return (
-        <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-            <SafeAreaView edges={['top']}>
-                {/* Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 }}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 26, fontWeight: '900', color: Colors.primary }}>Community</Text>
-                        <Text style={{ fontSize: 13, color: '#94a3b8', fontWeight: '600' }}>Storie di impatto condivise</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                        {isNPO && (
-                            <TouchableOpacity
-                                onPress={() => router.push('/community/create-post' as any)}
-                                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
-                                activeOpacity={0.85}
-                            >
-                                <Plus size={20} color="white" />
-                            </TouchableOpacity>
-                        )}
-                        <TouchableOpacity style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
-                            <Bell size={18} color={Colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </SafeAreaView>
+        <StandardLayout
+            label="Storie di impatto condivise"
+            title="Community"
+            bg="bg-slate-50"
+            noScroll={true}
+            noPadding={true}
+            rightElement={rightElement}
+        >
 
             {isLoading && posts.length === 0 ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -221,7 +220,10 @@ export default function CommunityScreen() {
                         renderItem={renderItem}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 100 }}
-                        ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={setStoryPost} />}
+                        onEndReached={onLoadMore}
+                        onEndReachedThreshold={0.5}
+                        ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
+                        ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={(stories, index) => setStoryViewer({ stories, index })} />}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
                         ListEmptyComponent={
                             <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
@@ -248,29 +250,78 @@ export default function CommunityScreen() {
             )}
 
             {/* Story viewer modal */}
-            <Modal visible={!!storyPost} animationType="fade" transparent onRequestClose={() => setStoryPost(null)}>
-                <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setStoryPost(null)} activeOpacity={1}>
-                    {storyPost?.image_url && (
-                        <Image
-                            source={{ uri: storyPost.image_url }}
-                            style={{ width: SCREEN_W, height: SCREEN_W * 1.4 }}
-                            resizeMode="contain"
-                        />
-                    )}
-                    {storyPost?.caption && (
-                        <View style={{ position: 'absolute', bottom: 60, left: 0, right: 0, padding: 20, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600', lineHeight: 24 }}>{storyPost.caption}</Text>
+            {storyViewer && (() => {
+                const currentStory = storyViewer.stories[storyViewer.index];
+                if (!currentStory) return null;
+                const authorData = currentStory.author;
+                const topName = authorData?.npo_name || authorData?.full_name || 'NPO';
+
+                const advanceStory = () => {
+                    if (storyViewer.index < storyViewer.stories.length - 1) {
+                        setStoryViewer({ ...storyViewer, index: storyViewer.index + 1 });
+                    } else {
+                        setStoryViewer(null);
+                    }
+                };
+
+                const rewindStory = () => {
+                    if (storyViewer.index > 0) {
+                        setStoryViewer({ ...storyViewer, index: storyViewer.index - 1 });
+                    } else {
+                        setStoryViewer(null);
+                    }
+                };
+
+                return (
+                    <Modal visible={!!storyViewer} animationType="fade" transparent onRequestClose={() => setStoryViewer(null)}>
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' }}>
+                            <SafeAreaView style={{ flex: 1 }}>
+                                {/* Top Progress Bar & Header */}
+                                <View style={{ paddingHorizontal: 10, paddingTop: 10, paddingBottom: 10 }}>
+                                    <View style={{ flexDirection: 'row', gap: 4, marginBottom: 12 }}>
+                                        {storyViewer.stories.map((s, idx) => (
+                                            <View key={s.id} style={{ flex: 1, height: 2, backgroundColor: idx <= storyViewer.index ? 'white' : 'rgba(255,255,255,0.3)', borderRadius: 1 }} />
+                                        ))}
+                                    </View>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
+                                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ede9fe', overflow: 'hidden', marginRight: 10 }}>
+                                            {authorData?.avatar_url && <Image source={{ uri: authorData.avatar_url }} style={{ width: 36, height: 36 }} />}
+                                        </View>
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, flex: 1 }}>{topName}</Text>
+                                        <TouchableOpacity onPress={() => setStoryViewer(null)} style={{ padding: 10 }}>
+                                            <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', lineHeight: 24 }}>×</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {/* Media & Tap Zones */}
+                                <View style={{ flex: 1, justifyContent: 'center' }}>
+                                    {currentStory.image_url && (
+                                        <Image
+                                            source={{ uri: currentStory.image_url }}
+                                            style={{ width: SCREEN_W, height: SCREEN_W * 1.4 }}
+                                            resizeMode="contain"
+                                        />
+                                    )}
+
+                                    {/* Transparent Tap Zones Overlay */}
+                                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, flexDirection: 'row' }}>
+                                        <TouchableOpacity style={{ flex: 0.3 }} onPress={rewindStory} activeOpacity={1} />
+                                        <TouchableOpacity style={{ flex: 0.7 }} onPress={advanceStory} activeOpacity={1} />
+                                    </View>
+
+                                    {/* Caption overlay */}
+                                    {currentStory.caption && (
+                                        <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, padding: 20, backgroundColor: 'rgba(0,0,0,0.4)', pointerEvents: 'none' }}>
+                                            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600', lineHeight: 24 }}>{currentStory.caption}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </SafeAreaView>
                         </View>
-                    )}
-                    {storyPost?.expires_at && (
-                        <View style={{ position: 'absolute', top: 60, right: 20, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 }}>
-                            <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>
-                                Scade tra {Math.max(0, Math.floor((new Date(storyPost.expires_at).getTime() - Date.now()) / 3600000))}h
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
-            </Modal>
-        </View>
+                    </Modal>
+                );
+            })()}
+        </StandardLayout>
     );
 }
