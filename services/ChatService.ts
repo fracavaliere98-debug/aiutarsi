@@ -35,19 +35,10 @@ class ChatService {
                             npo_name,
                             avatar:avatar_url
                         )
-                    ),
-                    last_message:messages (
-                        id,
-                        content,
-                        sender_id,
-                        created_at
-                    )
                 )
             `)
             .eq('user_id', userId)
-            .order('last_message_at', { foreignTable: 'conversations', ascending: false })
-            .order('created_at', { foreignTable: 'conversations.messages', ascending: false })
-            .limit(1, { foreignTable: 'conversations.messages' });
+            .order('last_message_at', { foreignTable: 'conversations', ascending: false, nullsFirst: false });
 
         if (error) {
             console.error('Error fetching conversations:', error);

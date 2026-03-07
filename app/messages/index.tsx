@@ -157,8 +157,11 @@ export default function MessagesListScreen() {
         if (aUnread && !bUnread) return -1;
         if (!aUnread && bUnread) return 1;
 
-        // Then sort by most recent message
-        return (bConv?.last_message_at || '').localeCompare(aConv?.last_message_at || '');
+        // Using Date().getTime() for bulletproof sorting as requested by user
+        const aTime = new Date(aConv?.last_message_at || aConv?.created_at || 0).getTime();
+        const bTime = new Date(bConv?.last_message_at || bConv?.created_at || 0).getTime();
+
+        return bTime - aTime;
     });
 
     return (
@@ -237,12 +240,10 @@ export default function MessagesListScreen() {
                             const conv = item.conversations;
                             if (!conv) return null;
 
-                            // Use actual last message from the join – always fresh from the DB
-                            const lastMsgArr = conv.last_message;
-                            const lastMsg = Array.isArray(lastMsgArr) ? lastMsgArr[0] : lastMsgArr;
-                            const lastMessageContent = lastMsg?.content || '';
-                            const lastMessageAt = lastMsg?.created_at || conv.last_message_at;
-                            const lastMessageSenderId = lastMsg?.sender_id || conv.last_message_sender_id;
+                            // Use denormalized fields directly from the parent conversation
+                            const lastMessageContent = conv.last_message_content || '';
+                            const lastMessageAt = conv.last_message_at || conv.created_at;
+                            const lastMessageSenderId = conv.last_message_sender_id;
 
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
                             const isUnread = lastMessageAt && lastMessageAt > item.last_read_at && lastMessageSenderId !== user?.id;
