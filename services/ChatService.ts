@@ -25,6 +25,7 @@ class ChatService {
                     type,
                     activity_id,
                     created_at,
+                    last_message_content,
                     last_message_at,
                     last_message_sender_id,
                     activities (title),
@@ -35,6 +36,7 @@ class ChatService {
                             npo_name,
                             avatar:avatar_url
                         )
+                    )
                 )
             `)
             .eq('user_id', userId)
