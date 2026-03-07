@@ -1,0 +1,120 @@
+# Trigger: Pull Request verso main oppure esecuzione manuale
+# Flusso: Path Filter → [Native Build] → Maestro smoke tests
+name: Full QA Check
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  qa-check:
+    name: Build & Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: AiutarSiApp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: AiutarSiApp
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # ── Verifica cosa è cambiato (Smart Build Strategy) ───────────────────
+      # Se i cambiamenti riguardano solo cartelle JS (app, components, hooks, types),
+      # la build nativa verrà saltata. Qualsiasi altra modifica scatenerà la build nativa.
+      - name: Check for JS-Only Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            native:
+              - '!AiutarSiApp/app/**'
+              - '!AiutarSiApp/components/**'
+              - '!AiutarSiApp/hooks/**'
+              - '!AiutarSiApp/types/**'
+              - '!AiutarSiApp/utils/**'
+              - '!AiutarSiApp/services/**'
+              - '!AiutarSiApp/constants/**'
+
+      # ── Download Artefatto Precedente ───────
+      - name: Download previous APK artifact
+        if: steps.filter.outputs.native != 'true'
+        uses: dawidd6/action-download-artifact@v3
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: full-qa-check.yml
+          name: app-release-apk
+          path: AiutarSiApp/android/app/build/outputs/apk/release/
+          search_artifacts: true
+
+      # ── Costruisci il file .env ───────────────────────────────────────────
+      - name: Inject Environment Variables
+        working-directory: AiutarSiApp
+        run: |
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+
+      # ── Setup Gradle Caching Aggressivo ──────────────────────────────────
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+
+      # ── Build Nativa Completa (Solo se necessario) ────────────────────────
+      - name: Build Android Release APK
+        if: steps.filter.outputs.native == 'true' || hashFiles('AiutarSiApp/android/app/build/outputs/apk/release/app-release.apk') == ''
+        working-directory: AiutarSiApp
+        run: |
+          npx expo prebuild --platform android --clean
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # ── Salva Artefatto per run future (se ricompilato) ───────────────────
+      - name: Upload APK Artifact
+        if: steps.filter.outputs.native == 'true' || hashFiles('AiutarSiApp/android/app/build/outputs/apk/release/app-release.apk') == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: AiutarSiApp/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
+
+      # ── Setup & Run Maestro E2E Tests ─────────────────────────────────────
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Run Maestro smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        timeout-minutes: 45
+        with:
+          api-level: 33
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb install AiutarSiApp/android/app/build/outputs/apk/release/app-release.apk
+            cd AiutarSiApp
+            maestro test .maestro/flows/
