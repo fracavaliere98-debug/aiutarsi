@@ -27,10 +27,16 @@ Deno.serve(async (req) => {
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        // Preparation for multimodal analysis
+        // Prompt più severo e specifico per UGC
         const prompt = `Sei un moderatore AI per l'app "AiutarSi", una piattaforma di volontariato. 
-    Analizza il seguente post (testo e/o immagine) e determina se viola le regole della community (contenuti espliciti, odio, spam, violenza).
-    Restituisci Solo un JSON nel formato: {"safe": boolean, "reason": string, "category": string}`;
+    Analizza il seguente post (testo e/o immagine) e determina se viola le regole della community.
+    Cerca specificamente:
+    1. Nudità o contenuti sessualmente espliciti.
+    2. Linguaggio d'odio, discriminazione o bullismo.
+    3. Spam di Criptovalute, schemi Ponzi o pubblicità non autorizzata.
+    4. Violenza gratuita o immagini disturbanti.
+
+    Restituisci Solo un JSON nel formato: {"safe": boolean, "reason": string, "category": "sexual" | "hate" | "spam" | "violence" | "none"}`;
 
         let result;
         if (record.image_url) {
