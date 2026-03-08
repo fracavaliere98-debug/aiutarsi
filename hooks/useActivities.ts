@@ -11,7 +11,7 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { activityService } from '../services/ActivityService';
-import { OldActivity } from '../types';
+import { AppActivity } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 const PAGE_SIZE = 15;
@@ -33,9 +33,9 @@ export interface ActivityFilters {
 export function useActivities(filters: ActivityFilters = {}) {
     const { user } = useAuth();
     const query = useInfiniteQuery<
-        { activities: OldActivity[]; hasMore: boolean; totalCount: number },
+        { activities: AppActivity[]; hasMore: boolean; totalCount: number },
         Error,
-        { pages: { activities: OldActivity[]; hasMore: boolean; totalCount: number }[] },
+        { pages: { activities: AppActivity[]; hasMore: boolean; totalCount: number }[] },
         ['activities', ActivityFilters],
         number
     >({

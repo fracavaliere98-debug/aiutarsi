@@ -70,90 +70,17 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         setError(null);
 
         try {
-            // Guard: check if user has an embedding (pgvector)
-            if (!user.embedding) {
-                console.log('[SmartMatchContext] OldUser has no embedding yet — waiting for auto-generation');
-                setError('Analisi del profilo in corso... riprova tra pochi secondi.');
-                setIsLoading(false);
-                isFetchingRef.current = false;
-                return;
-            }
+            console.log('[SmartMatchContext] Fetching matches via unified ActivityService...');
 
-            console.log('[SmartMatchContext] Fetching matches via pgvector RPC...');
-
-            // 1. Chiamata all'RPC match_activities del database
-            const { data, error: rpcError } = await supabase.rpc('match_activities', {
-                query_embedding: user.embedding,
-                match_threshold: 0.35,
-                match_count: 5,
-                user_lat: user.locationCoords?.lat || null,
-                user_lng: user.locationCoords?.lng || null
+            // 1. Chiamata al servizio (che usa get_activities_with_match sotto cofano)
+            const { activities } = await activityService.getActivities({
+                userId: user.id,
+                limit: 15, // buffer in caso alcune siano già prenotate
+                centerLat: user.locationCoords?.lat || undefined,
+                centerLng: user.locationCoords?.lng || undefined,
             });
 
-            if (rpcError) throw rpcError;
-
-            // 2. Map RPC results to match the UI interface
-            const mappedMatches: OldSmartMatchResult[] = (data || []).map((item: any) => {
-                // ... same mapping logic as before ...
-                let reason = "Alta affinità semantica con il tuo profilo.";
-                const reasons: string[] = [];
-                // ... (rest of the mapping logic) ...
-                if (user.skills && item.description) {
-                    const matchingSkill = user.skills.find(s =>
-                        item.title.toLowerCase().includes(s.toLowerCase()) ||
-                        item.description.toLowerCase().includes(s.toLowerCase())
-                    );
-                    if (matchingSkill) reasons.push(`Match per la tua competenza in ${matchingSkill}`);
-                }
-                if (user.interests && item.description && reasons.length < 2) {
-                    const matchingInterest = user.interests.find(i =>
-                        item.title.toLowerCase().includes(i.toLowerCase()) ||
-                        item.description.toLowerCase().includes(i.toLowerCase())
-                    );
-                    if (matchingInterest) reasons.push(`Affinità con il tuo interesse per ${matchingInterest}`);
-                }
-                if (user.locationCoords && item.location_lat && item.location_lng) {
-                    const dist = calculateDistance(user.locationCoords.lat, user.locationCoords.lng, item.location_lat, item.location_lng);
-                    if (dist < 5) reasons.push("A pochi passi da te");
-                    else if (dist < 15) reasons.push(`A soli ${dist.toFixed(1)} km da te`);
-                }
-                if (item.date_start) {
-                    const start = new Date(item.date_start);
-                    const now = new Date();
-                    const diffDays = (start.getTime() - now.getTime()) / (1000 * 3600 * 24);
-                    if (diffDays > 0 && diffDays < 3) reasons.push("Ideale per questa settimana");
-                }
-                if (reasons.length > 0) reason = reasons.slice(0, 2).join(" • ");
-
-                return {
-                    id: item.id,
-                    score: item.match_percentage,
-                    reason: reason,
-                    activity: {
-                        id: item.id,
-                        npoId: item.npo_id,
-                        npoName: item.npo_name || "Organizzazione",
-                        title: item.title,
-                        description: item.description,
-                        category: item.category,
-                        dateTime: item.date_start,
-                        endDateTime: item.date_end,
-                        location: {
-                            address: item.location_address,
-                            coords: { lat: item.location_lat, lng: item.location_lng }
-                        },
-                        imageUrl: item.image_url,
-                        isUrgent: item.is_urgent,
-                        status: item.status,
-                        matchPercentage: Math.round(item.similarity * 100),
-                        iscritti: [],
-                        slots: 0,
-                        skills: []
-                    } as OldActivity
-                };
-            });
-
-            // 3. Filter out activities the user is already enrolled in
+            // 2. Filtriamo le attività a cui è già iscritto
             const { data: enrollments } = await supabase
                 .from('activity_participants')
                 .select('activity_id')
@@ -161,44 +88,44 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
             const enrolledIds = new Set((enrollments || []).map(e => e.activity_id));
 
-            // 4. Get completed categories for weighting boost
-            const { data: completedActivities } = await supabase
-                .from('activity_participants')
-                .select('activities(category)')
-                .eq('user_id', user.id)
-                .eq('status', 'COMPLETATA');
+            // 3. Mappiamo nel formato atteso dalla UI (generando la 'reason')
+            const mappedMatches: OldSmartMatchResult[] = activities
+                .filter(a => !enrolledIds.has(a.id))
+                .slice(0, 5) // prendiamo le migliori 5
+                .map((a: any) => {
+                    let reason = "Alta affinità con il tuo profilo.";
+                    const reasons: string[] = [];
 
-            const completedCategories = new Set(
-                (completedActivities || [])
-                    .map((ca: any) => ca.activities?.category)
-                    .filter(Boolean)
-            );
-
-            const finalMatches: OldSmartMatchResult[] = mappedMatches
-                .filter(m => !enrolledIds.has(m.id))
-                .map(m => {
-                    const activity = m.activity;
-                    if (!activity) return m;
-
-                    // Boost similarity if category matches a completed one
-                    let boostedScore = activity.matchPercentage || 50;
-                    if (activity.category && completedCategories.has(activity.category)) {
-                        boostedScore = Math.min(99, Math.round(boostedScore * 1.15));
-                        return {
-                            ...m,
-                            activity: {
-                                ...activity,
-                                matchPercentage: boostedScore
-                            } as OldActivity,
-                            reason: `Visto il tuo interesse passato per ${activity.category} • ${m.reason}`
-                        };
+                    if (user.skills && a.description) {
+                        const matchingSkill = user.skills.find(s =>
+                            a.title.toLowerCase().includes(s.toLowerCase()) ||
+                            a.description.toLowerCase().includes(s.toLowerCase())
+                        );
+                        if (matchingSkill) reasons.push(`Competenza in ${matchingSkill}`);
                     }
-                    return m;
-                })
-                .sort((a, b) => (b.activity?.matchPercentage || 0) - (a.activity?.matchPercentage || 0));
+                    if (user.interests && user.interests.includes(a.category) && reasons.length < 2) {
+                        reasons.push(`Interesse per ${a.category}`);
+                    }
+                    if (user.locationCoords && a.location?.coords?.lat) {
+                        const dist = calculateDistance(user.locationCoords.lat, user.locationCoords.lng, a.location.coords.lat, a.location.coords.lng);
+                        if (dist < 5) reasons.push("A pochi passi");
+                        else if (dist < 15) reasons.push(`A ${dist.toFixed(0)} km`);
+                    }
+                    if (a.isUrgent) reasons.push("Ubicazione Urgente");
 
-            console.log(`[SmartMatchContext] Found ${mappedMatches.length} semantic matches, boosted ${completedCategories.size} categories, filtered to ${finalMatches.length}`);
-            setMatches(finalMatches);
+                    if (reasons.length > 0) reason = reasons.slice(0, 2).join(" • ");
+
+                    return {
+                        id: a.id,
+                        score: a.matchPercentage || 0,
+                        reason: reason,
+                        // AppActivity is backwards compatible enough for what SmartMatchCarousel needs
+                        activity: a as any
+                    };
+                });
+
+            console.log(`[SmartMatchContext] Found ${mappedMatches.length} unified matches.`);
+            setMatches(mappedMatches);
             setLastUpdated(new Date());
         } catch (err: any) {
             console.error('[SmartMatchContext] Error fetching matches:', err);
