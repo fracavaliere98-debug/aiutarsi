@@ -397,12 +397,6 @@ export default function SearchScreen() {
         const isDimmed = isFocusedMode && !isExpanded;
         const catColors = getCategoryColors(item.category);
 
-        const scoreColor =
-            (item.matchPercentage || 0) >= 85
-                ? '#cd057f' // accent pink
-                : (item.matchPercentage || 0) >= 70
-                    ? '#7c3aed' // violet
-                    : '#2563eb'; // blue
 
         return (
             <TouchableOpacity
@@ -427,21 +421,22 @@ export default function SearchScreen() {
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 alignSelf: 'flex-start',
-                                backgroundColor: isExpanded ? `${scoreColor}20` : `${scoreColor}15`,
+                                backgroundColor: '#1e1b4b',
                                 paddingHorizontal: 10,
                                 paddingVertical: 5,
                                 borderRadius: 999,
                                 gap: 5,
-                            }} className="shadow-sm backdrop-blur-md bg-white/90 border border-white/50">
-                                <Sparkles size={12} color={scoreColor} />
+                            }} className="shadow-md border border-white/20">
+                                <Sparkles size={12} color="#ffffff" fill="#ffffff" />
                                 <Text
                                     style={{
-                                        color: scoreColor,
+                                        color: '#ffffff',
                                         fontSize: 12,
                                         fontWeight: '800',
+                                        textTransform: 'uppercase'
                                     }}
                                 >
-                                    {item.matchPercentage}% Match
+                                    {item.matchPercentage}% MATCH
                                 </Text>
                             </View>
                             {item.isUrgent && (
