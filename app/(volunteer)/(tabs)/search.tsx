@@ -7,11 +7,11 @@ import { Colors } from "../../../constants/Colors";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Search, MapPin, Calendar, X, Map as MapIcon,
-    Bell, Zap, Globe, BookOpen, Dog, Palette, Heart, Code,
+    Bell, Globe, BookOpen, Dog, Palette, Heart, Code,
     MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
-    ChevronDown, CheckCircle2, Users, TreePine, SlidersHorizontal
+    ChevronDown, CheckCircle2, Users, TreePine, SlidersHorizontal, Share2, Sparkles, Zap
 } from "lucide-react-native";
-import { OldActivity } from "../../../types";
+import { OldActivity, AppActivity } from "../../../types";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../hooks/useActivities";
@@ -273,7 +273,7 @@ export default function SearchScreen() {
     // Geo-center set when user picks a "Luogo" suggestion
     const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number; label: string } | null>(null);
     // Categorized search suggestions
-    const [suggestedActivities, setSuggestedActivities] = useState<OldActivity[]>([]);
+    const [suggestedActivities, setSuggestedActivities] = useState<AppActivity[]>([]);
     const [suggestedNpos, setSuggestedNpos] = useState<{ id: string; name: string }[]>([]);
     const [suggestedPlaces, setSuggestedPlaces] = useState<{ id: number; label: string; lat: number; lng: number }[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -285,6 +285,8 @@ export default function SearchScreen() {
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
     const [pendingFilters, setPendingFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     // Date picker visibility (for quick Date chip)
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -374,47 +376,140 @@ export default function SearchScreen() {
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => { setFilters(pendingFilters); setIsFilterModalVisible(false); };
 
-    const renderActivityItem = ({ item }: { item: OldActivity }) => (
-        <TouchableOpacity
-            onPress={() => router.push(`/activity/${item.id}` as any)}
-            activeOpacity={0.9}
-            className="mb-4"
-        >
-            <SoftCard className="w-full relative overflow-hidden p-0">
-                <View className="h-[120px] bg-slate-200 w-full relative">
-                    <View className="absolute top-3 right-3 bg-accent px-4 py-1.5 rounded-full shadow-xl z-20 flex-row items-center gap-1.5 border border-white/20">
-                        <Zap size={14} color="white" fill="white" />
-                        <Text className="text-white font-black text-xs">{item.matchPercentage}% Match</Text>
-                    </View>
-                    {item.isUrgent && (
-                        <View className="absolute top-3 left-3 bg-red-500 px-3 py-1 rounded-full z-20 shadow-lg">
-                            <Text className="text-white text-[10px] font-black uppercase">Urgente</Text>
-                        </View>
-                    )}
-                    <Image
-                        source={{ uri: item.imageUrl || `https://dummyimage.com/600x300/e2e8f0/462282&text=${item.category}` }}
-                        className="w-full h-full"
-                    />
-                </View>
-                <View className="p-4 flex-1">
-                    <Text className="text-secondary/70 font-bold uppercase text-[9px] mb-0.5">{item.npoName}</Text>
-                    <Text className="text-lg font-black text-primary leading-tight mb-1" numberOfLines={1}>{item.title}</Text>
-                    <View className="flex-row items-center gap-4 mb-2">
-                        <View className="flex-row items-center gap-1.5">
-                            <MapPin size={12} color={Colors.secondary} />
-                            <Text className="text-secondary font-medium text-[10px]">{item.location.address}</Text>
-                        </View>
-                        <View className="flex-row items-center gap-1.5">
-                            <Calendar size={12} color={Colors.secondary} />
-                            <Text className="text-secondary font-medium text-[10px]">{new Date(item.dateTime).toLocaleDateString("it-IT")}</Text>
-                        </View>
-                    </View>
-                    <Text numberOfLines={2} className="text-secondary/60 text-xs leading-4">{item.description}</Text>
-                </View>
-            </SoftCard>
-        </TouchableOpacity>
-    );
+    // Ordine crescente in base a start date (dalla più vicina/imminente alla più lontana)
+    const sortedActivities = [...paginatedActivities].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
+    const getCategoryColors = (cat?: string) => {
+        switch ((cat || '').toUpperCase()) {
+            case 'AMBIENTE': return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
+            case 'SOCIALE': return { bg: 'bg-blue-100', text: 'text-blue-700' };
+            case 'ANIMALI': return { bg: 'bg-orange-100', text: 'text-orange-700' };
+            case 'SALUTE': return { bg: 'bg-rose-100', text: 'text-rose-700' };
+            case 'EDUCAZIONE': return { bg: 'bg-purple-100', text: 'text-purple-700' };
+            case 'ARTE & CULTURA': return { bg: 'bg-indigo-100', text: 'text-indigo-700' };
+            default: return { bg: 'bg-slate-100', text: 'text-slate-700' };
+        }
+    };
+
+    const renderActivityItem = ({ item }: { item: AppActivity }) => {
+        const isExpanded = expandedId === item.id;
+        const isFocusedMode = expandedId !== null;
+        const isDimmed = isFocusedMode && !isExpanded;
+        const catColors = getCategoryColors(item.category);
+
+        const scoreColor =
+            (item.matchPercentage || 0) >= 85
+                ? '#cd057f' // accent pink
+                : (item.matchPercentage || 0) >= 70
+                    ? '#7c3aed' // violet
+                    : '#2563eb'; // blue
+
+        return (
+            <TouchableOpacity
+                onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                activeOpacity={0.9}
+                className="mb-5"
+                style={{ opacity: isDimmed ? 0.35 : 1, transform: [{ scale: isExpanded ? 1.02 : 1 }] }}
+            >
+                <View className={`w-full bg-white rounded-3xl relative overflow-hidden p-0 border border-slate-100 ${isExpanded ? 'shadow-2xl' : 'shadow-md'}`}>
+                    {/* Image section */}
+                    <View className={`${isExpanded ? 'h-[180px]' : 'h-[150px]'} bg-slate-200 w-full relative`}>
+                        <Image
+                            source={{ uri: item.imageUrl || `https://dummyimage.com/600x300/e2e8f0/462282&text=${item.category}` }}
+                            className="w-full h-full"
+                        />
+                        {/* Dark gradient overlay at top for badge readability */}
+                        <View className="absolute top-0 left-0 right-0 h-24 bg-black/30" />
+
+                        {/* Top Badges */}
+                        <View className="absolute top-4 left-4 flex-col gap-2 z-20">
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                alignSelf: 'flex-start',
+                                backgroundColor: isExpanded ? `${scoreColor}20` : `${scoreColor}15`,
+                                paddingHorizontal: 10,
+                                paddingVertical: 5,
+                                borderRadius: 999,
+                                gap: 5,
+                            }} className="shadow-sm backdrop-blur-md bg-white/90 border border-white/50">
+                                <Sparkles size={12} color={scoreColor} />
+                                <Text
+                                    style={{
+                                        color: scoreColor,
+                                        fontSize: 12,
+                                        fontWeight: '800',
+                                    }}
+                                >
+                                    {item.matchPercentage}% Match
+                                </Text>
+                            </View>
+                            {item.isUrgent && (
+                                <View className="bg-rose-600 px-2.5 py-1 rounded-full self-start shadow-md">
+                                    <Text className="text-white text-[10px] font-black uppercase">URGENTE</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Heart Icon */}
+                        <TouchableOpacity className="absolute top-4 right-4 bg-black/20 p-2.5 rounded-full z-20 backdrop-blur-md">
+                            <Heart size={16} color="white" strokeWidth={2.5} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Content section */}
+                    <View className="p-4">
+                        <View className="flex-row items-center justify-between mb-2">
+                            <View className={`${catColors.bg} px-2 py-0.5 rounded-md`}>
+                                <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                            </View>
+                        </View>
+
+                        <Text className={`font-black text-[#1e1b4b] leading-tight mb-1.5 ${isExpanded ? 'text-xl' : 'text-lg'}`} numberOfLines={isExpanded ? undefined : 2}>
+                            {item.title}
+                        </Text>
+
+                        <View className="flex-row items-center gap-1.5 mb-2.5">
+                            <Text className="text-indigo-800 font-bold text-xs">{item.npoName}</Text>
+                            {isExpanded && <CheckCircle2 size={13} color="#4f46e5" strokeWidth={2.5} />}
+                        </View>
+
+                        <View className="gap-1.5 mb-1">
+                            <View className="flex-row items-center gap-2">
+                                <MapPin size={12} color="#64748b" />
+                                <Text className="text-slate-500 font-medium text-[11px] flex-1" numberOfLines={1}>{item.location?.address || 'Indirizzo non specificato'}</Text>
+                            </View>
+                            <View className="flex-row items-center gap-2">
+                                <Calendar size={12} color="#64748b" />
+                                <Text className="text-slate-500 font-medium text-[11px]">
+                                    {new Date(item.dateTime).toLocaleDateString("it-IT", { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, c => c.toUpperCase())} • {new Date(item.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Expanded Content */}
+                        {isExpanded && (
+                            <View className="mt-3 pt-3 border-t border-slate-100">
+                                <Text className="text-slate-500 text-xs leading-5 mb-4" numberOfLines={3}>
+                                    {item.description}
+                                </Text>
+                                <View className="flex-row items-center gap-3">
+                                    <TouchableOpacity
+                                        onPress={() => router.push(`/activity/${item.id}` as any)}
+                                        className="bg-indigo-900 flex-1 py-3.5 rounded-2xl items-center shadow-md">
+                                        <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
+                                        <Share2 size={18} color="#1e1b4b" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <StandardLayout label="Scopri" title="Esplora Attività" rightElement={<VolunteerHeaderActions />} bg="bg-background-light">
@@ -697,7 +792,7 @@ export default function SearchScreen() {
 
             {/* Activities List */}
             <FlashList
-                data={paginatedActivities}
+                data={sortedActivities}
                 keyExtractor={(item) => item.id}
                 renderItem={renderActivityItem}
                 onEndReached={() => { if (!isLoadingMore && hasMore) fetchNextPage(); }}
