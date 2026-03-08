@@ -7,6 +7,7 @@ import { authService } from "../services/AuthService";
 import { npoService } from "../services/NPOService";
 import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
 import { supabase } from "../utils/supabase";
+import { profileService } from "../services/ProfileService";
 
 interface AuthContextType {
     user: AppUser | null;
@@ -26,6 +27,8 @@ interface AuthContextType {
     getUserById: (id: string) => AppUser | undefined;
     resetUsers: () => Promise<void>;
     refreshUsers: () => Promise<void>;
+    requestAccountDeletion: () => Promise<void>;
+    cancelAccountDeletion: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -45,6 +48,8 @@ const AuthContext = createContext<AuthContextType>({
     getUserById: () => undefined,
     resetUsers: async () => { },
     refreshUsers: async () => { },
+    requestAccountDeletion: async () => { },
+    cancelAccountDeletion: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -404,6 +409,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return usersDB.find(u => u.id === id);
     }, [usersDB]);
 
+    const requestAccountDeletion = useCallback(async () => {
+        if (!user) return;
+        try {
+            await profileService.requestAccountDeletion(user.id);
+            // The service calls authService.getCurrentUser() which should sync local user if needed,
+            // but for immediate UI response we update locally too.
+            setUser(prev => prev ? { ...prev, deletionRequestedAt: new Date().toISOString() } : null);
+        } catch (error) {
+            console.error("Request account deletion failed:", error);
+            throw error;
+        }
+    }, [user]);
+
+    const cancelAccountDeletion = useCallback(async () => {
+        if (!user) return;
+        try {
+            await profileService.cancelAccountDeletion(user.id);
+            setUser(prev => prev ? { ...prev, deletionRequestedAt: null } : null);
+        } catch (error) {
+            console.error("Cancel account deletion failed:", error);
+            throw error;
+        }
+    }, [user]);
+
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
     const resetUsers = useCallback(async () => {
         try {
@@ -431,8 +460,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isFollowingNPO,
         getUserById,
         resetUsers,
-        refreshUsers
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers]);
+        refreshUsers,
+        requestAccountDeletion,
+        cancelAccountDeletion
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion]);
 
     return (
         <AuthContext.Provider value={value}>

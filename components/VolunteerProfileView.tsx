@@ -2,7 +2,7 @@ import React from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Settings, MessageCircle } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
-import { OldUser, OldApplication } from "../types";
+import { AppUser, OldApplication } from "../types";
 
 import { ProfileHeader } from "./profile/ProfileHeader";
 import { ProfileStats } from "./profile/ProfileStats";
@@ -10,6 +10,7 @@ import { BadgeSection } from "./profile/BadgeSection";
 import { ApplicationSection } from "./profile/ApplicationSection";
 import { NPOAffiliationSection } from "./profile/NPOAffiliationSection";
 import { SkillInterestSection } from "./profile/SkillInterestSection";
+import { AccountDeletionAlert } from "./AccountDeletionAlert";
 
 // Prop Types
 interface Badge {
@@ -34,7 +35,7 @@ interface VolunteerStats {
 }
 
 interface VolunteerProfileViewProps {
-    user: OldUser | null;
+    user: AppUser | null;
     gamificationState: GamificationState;
     stats: VolunteerStats;
     levelProgress: number;
@@ -44,8 +45,8 @@ interface VolunteerProfileViewProps {
     onSettingsPress?: () => void;
     onMessagePress?: () => void;
     onBack?: () => void;
-    followedNPOs?: OldUser[];
-    affiliatedNPOs: OldUser[];
+    followedNPOs?: AppUser[];
+    affiliatedNPOs: AppUser[];
     npoApplications: OldApplication[];
     children?: React.ReactNode;
 }
@@ -97,6 +98,9 @@ export function VolunteerProfileView({
             onBack={onBack}
         >
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                {/* Account Deletion Warning */}
+                {isOwnProfile && <AccountDeletionAlert />}
+
                 {/* 1. Header Section */}
                 <ProfileHeader
                     user={user}
@@ -136,8 +140,8 @@ export function VolunteerProfileView({
                 {/* 6. Affiliations & Following */}
                 <NPOAffiliationSection
                     isOwnProfile={isOwnProfile}
-                    affiliatedNPOs={affiliatedNPOs}
-                    followedNPOs={followedNPOs}
+                    affiliatedNPOs={affiliatedNPOs as any}
+                    followedNPOs={followedNPOs as any}
                 />
 
                 {children}

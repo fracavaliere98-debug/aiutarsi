@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
+import { Alert } from 'react-native';
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database } from 'lucide-react-native';
@@ -16,7 +17,7 @@ import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 
 export default function VolunteerSettings() {
-    const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading } = useAuth();
+    const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion } = useAuth();
     const { showToast } = useToast();
     const { resetData } = useActivities();
     const { resetApplications } = useApplications();
@@ -316,7 +317,31 @@ export default function VolunteerSettings() {
                 </SoftCard>
 
                 {/* Info and Versioning */}
-                <TouchableOpacity className="mb-8 items-center">
+                <TouchableOpacity
+                    className="mb-8 items-center"
+                    onPress={() => {
+                        Alert.alert(
+                            "Elimina Account",
+                            "Sei sicuro di voler eliminare il tuo account? Avrai 30 giorni per cambiare idea e annullare la richiesta dal tuo profilo.",
+                            [
+                                { text: "Annulla", style: "cancel" },
+                                {
+                                    text: "Elimina",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                        try {
+                                            await requestAccountDeletion();
+                                            showToast('success', 'Richiesta di eliminazione inviata correttamente.');
+                                            router.back();
+                                        } catch (error: any) {
+                                            Alert.alert("Errore", error.message);
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }}
+                >
                     <Text className="text-red-400 font-bold">Elimina Account</Text>
                 </TouchableOpacity>
 

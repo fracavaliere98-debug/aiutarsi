@@ -83,7 +83,10 @@ export class AuthService {
             show_volunteering_history: metadata.show_volunteering_history,
             volunteer_list_visible: metadata.volunteer_list_visible,
             badges: metadata.badges || [],
-            xp: metadata.impactPoints || metadata.impact_points || 0
+            xp: metadata.impactPoints || metadata.impact_points || 0,
+            deletionRequestedAt: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
+            deletion_requested_at: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
+            shortId: metadata.shortId || metadata.id?.substring(0, 8).toUpperCase(),
         };
     }
 
@@ -359,6 +362,8 @@ export class AuthService {
             createdAt: profile.created_at,
             badges: profile.badges || [],
             xp: profile.impact_points || 0,
+            deletionRequestedAt: profile.deletion_requested_at,
+            shortId: profile.id?.substring(0, 8).toUpperCase(),
         };
     }
 
@@ -462,7 +467,7 @@ export class AuthService {
             'phone', 'website', 'location_string', 'location_lat', 'location_lng',
             'public_email', 'profile_completed', 'impact_points', 'is_verified',
             'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
-            'allow_calls', 'expo_push_token'
+            'allow_calls', 'expo_push_token', 'deletion_requested_at'
         ];
 
         const payload: any = {

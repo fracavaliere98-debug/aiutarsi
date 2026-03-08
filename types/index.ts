@@ -62,6 +62,8 @@ export type AppUser = Omit<User,
     createdAt?: string;
     badges?: Badge[];
     xp?: number;
+    shortId?: string;
+    deletionRequestedAt: string | null;
     // Database field aliases (for mappings)
     npo_name?: string | null;
     company_name?: string | null;
@@ -76,6 +78,7 @@ export type AppUser = Omit<User,
     created_at?: string;
     updated_at?: string;
     embedding?: number[] | null;
+    deletion_requested_at?: string | null;
 };
 
 // Hybrid / Frontend-only Extended Types

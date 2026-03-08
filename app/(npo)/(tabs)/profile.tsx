@@ -29,9 +29,13 @@ import { useAuth } from "../../../context/AuthContext";
 import { UserAvatar } from "../../../components/UserAvatar";
 import EditProfileScreen from "../edit-profile";
 import SecurityScreen from "../security";
+import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
+import { Alert } from "react-native";
+import { useToast } from "../../../context/ToastContext";
 
 export default function NPOProfileScreen() {
-    const { user, logout, isLoading: isAuthLoading, updateUserProfile } = useAuth();
+    const { user, logout, isLoading: isAuthLoading, updateUserProfile, requestAccountDeletion } = useAuth();
+    const { showToast } = useToast();
     const { getNPOApplications } = useApplications();
     const router = useRouter();
     const { unreadCount } = useNotifications();
@@ -118,6 +122,9 @@ export default function NPOProfileScreen() {
                 title="Impostazioni"
                 rightElement={HeaderActions}
             >
+                {/* Account Deletion Warning */}
+                <AccountDeletionAlert />
+
                 {/* Profile Info Card */}
                 <SoftCard className="mb-8 items-center p-6 mt-2">
                     <TouchableOpacity
@@ -229,7 +236,30 @@ export default function NPOProfileScreen() {
                 </SoftCard>
 
                 {/* Elimina Account */}
-                <TouchableOpacity className="mb-8 items-center">
+                <TouchableOpacity
+                    className="mb-8 items-center"
+                    onPress={() => {
+                        Alert.alert(
+                            "Elimina Account",
+                            "Sei sicuro di voler eliminare il tuo account? Avrai 30 giorni per cambiare idea e annullare la richiesta dal tuo profilo.",
+                            [
+                                { text: "Annulla", style: "cancel" },
+                                {
+                                    text: "Elimina",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                        try {
+                                            await requestAccountDeletion();
+                                            showToast('success', 'Richiesta di eliminazione inviata correttamente.');
+                                        } catch (error: any) {
+                                            Alert.alert("Errore", error.message);
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }}
+                >
                     <Text className="text-red-400 font-bold">Elimina Account</Text>
                 </TouchableOpacity>
 
