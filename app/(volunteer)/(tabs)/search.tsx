@@ -421,12 +421,11 @@ export default function SearchScreen() {
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 alignSelf: 'flex-start',
-                                backgroundColor: '#1e1b4b',
                                 paddingHorizontal: 10,
                                 paddingVertical: 5,
                                 borderRadius: 999,
                                 gap: 5,
-                            }} className="shadow-md border border-white/20">
+                            }} className="bg-primary shadow-md border border-white/20">
                                 <Sparkles size={12} color="#ffffff" fill="#ffffff" />
                                 <Text
                                     style={{
@@ -491,7 +490,7 @@ export default function SearchScreen() {
                                 <View className="flex-row items-center gap-3">
                                     <TouchableOpacity
                                         onPress={() => router.push(`/activity/${item.id}` as any)}
-                                        className="bg-indigo-900 flex-1 py-3.5 rounded-2xl items-center shadow-md">
+                                        className="bg-primary flex-1 py-3.5 rounded-2xl items-center shadow-md">
                                         <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
