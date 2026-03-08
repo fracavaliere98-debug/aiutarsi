@@ -78,6 +78,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 limit: 15, // buffer in caso alcune siano già prenotate
                 centerLat: user.locationCoords?.lat || undefined,
                 centerLng: user.locationCoords?.lng || undefined,
+                statuses: ['APERTA', 'IN_CORSO'],
             });
 
             // 2. Filtriamo le attività a cui è già iscritto

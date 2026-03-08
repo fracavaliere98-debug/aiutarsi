@@ -9,7 +9,7 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { SoftCard } from "../../../components/SoftCard";
 import { BadgePill } from "../../../components/BadgePill";
 import { useActivities } from "../../../context/ActivityContext";
-import { OldActivity } from "../../../types";
+import { AppActivity } from "../../../types";
 import { useState, useMemo } from "react";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarGrid } from "../../../components/CalendarGrid";
@@ -54,10 +54,10 @@ export default function VolunteerCalendar() {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const groups = {
-            today: [] as OldActivity[],
-            tomorrow: [] as OldActivity[],
-            future: [] as OldActivity[], // All upcoming after tomorrow
-            past: [] as OldActivity[],   // All past
+            today: [] as AppActivity[],
+            tomorrow: [] as AppActivity[],
+            future: [] as AppActivity[], // All upcoming after tomorrow
+            past: [] as AppActivity[],   // All past
         };
 
         filteredActivities.forEach(activity => {
@@ -122,7 +122,7 @@ export default function VolunteerCalendar() {
             }
         >
             {/* View Mode Toggle */}
-            <View className="flex-row bg-slate-100 rounded-2xl p-1 mb-6">
+            <View className={`flex-row bg-slate-100 rounded-2xl p-1 ${viewMode === 'list' ? 'mb-6' : 'mb-2'}`}>
                 <TouchableOpacity
                     onPress={() => setViewMode("list")}
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "list" ? "bg-white shadow-sm" : ""
@@ -258,13 +258,25 @@ export default function VolunteerCalendar() {
             ) : (
                 // Calendar View
                 <View className="pb-28">
+                    {/* Legend */}
+                    <View className="flex-row justify-center gap-6 mb-4">
+                        <View className="flex-row items-center gap-2">
+                            <View className="w-2.5 h-2.5 bg-[#a855f7] rounded-full" />
+                            <Text className="text-secondary text-xs font-bold uppercase tracking-wider">In arrivo</Text>
+                        </View>
+                        <View className="flex-row items-center gap-2">
+                            <View className="w-2.5 h-2.5 bg-[#22c55e] rounded-full" />
+                            <Text className="text-secondary text-xs font-bold uppercase tracking-wider">Completata</Text>
+                        </View>
+                    </View>
+
                     <CalendarGrid
                         activities={enrolledActivities}
                         selectedDate={selectedDate}
                         onSelectDate={setSelectedDate}
                     />
 
-                    <Text className="text-xl font-black text-primary mb-4">
+                    <Text className="text-xl font-black text-primary mb-4 mt-4">
                         {
                             selectedDate.toDateString() === new Date().toDateString()
                                 ? "Oggi"

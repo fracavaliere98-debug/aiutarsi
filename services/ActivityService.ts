@@ -131,8 +131,9 @@ export class ActivityService {
         },
         signal?: AbortSignal
     ): Promise<{ activities: AppActivity[], totalCount: number, hasMore: boolean }> {
-        // ── UNIFIED VECTOR MATCH path: use new RPC when userId is provided ──────
-        if (filter?.userId) {
+        // ── UNIFIED VECTOR MATCH path: use new RPC when userId is provided (and we are NOT querying a specific NPO's activities) ──────
+        // We do this because the RPC does not filter by npo_id, and NPOs need to see all their own activities directly.
+        if (filter?.userId && !filter?.npoId) {
             try {
                 const { data, error, count } = await supabase.rpc('get_activities_with_match', {
                     p_user_id: filter.userId,
@@ -141,13 +142,13 @@ export class ActivityService {
                     p_center_lat: filter.centerLat || null,
                     p_center_lng: filter.centerLng || null,
                     p_radius_km: filter.radiusKm || 50,
-                    p_limit: filter.limit || 20,
+                    p_limit: filter.limit || 50,
                     p_offset: filter.offset || 0,
                     p_skills: filter.skills || [],
                     p_only_urgent: filter.onlyUrgent || false,
                     p_date_from: filter.dateFrom || null,
                     p_date_to: filter.dateTo || null,
-                    p_statuses: filter.statuses || ['APERTA']
+                    p_statuses: filter.statuses || ['APERTA', 'IN_CORSO', 'COMPLETATA']
                 }, { count: 'exact' });
 
                 if (error) throw error;

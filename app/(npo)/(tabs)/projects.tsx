@@ -23,6 +23,7 @@ export default function NPOCalendarScreen() {
     const { showToast } = useToast();
 
     const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+    const [listFilter, setListFilter] = useState<"aperte" | "completate">("aperte");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [refreshing, setRefreshing] = useState(false);
 
@@ -124,21 +125,54 @@ export default function NPOCalendarScreen() {
             ) : (
                 /* List View */
                 <View>
-                    {myProjects.length === 0 ? (
+                    {/* List Filter Toggle */}
+                    <View className="flex-row gap-4 mb-6">
+                        <TouchableOpacity onPress={() => setListFilter("aperte")}>
+                            <View className="flex-row items-center gap-2">
+                                <Text className={`font-black text-base ${listFilter === "aperte" ? "text-primary" : "text-secondary/40"}`}>
+                                    Aperte
+                                </Text>
+                                {listFilter === "aperte" && (
+                                    <View className="w-2 h-2 bg-accent rounded-full" />
+                                )}
+                            </View>
+                            {listFilter === "aperte" && (
+                                <View className="h-1 bg-accent rounded-full mt-1" />
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setListFilter("completate")}>
+                            <View className="flex-row items-center gap-2">
+                                <Text className={`font-black text-base ${listFilter === "completate" ? "text-primary" : "text-secondary/40"}`}>
+                                    Completate
+                                </Text>
+                                {listFilter === "completate" && (
+                                    <View className="w-2 h-2 bg-accent rounded-full" />
+                                )}
+                            </View>
+                            {listFilter === "completate" && (
+                                <View className="h-1 bg-accent rounded-full mt-1" />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    {myProjects.filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA").length === 0 ? (
                         <EmptyState
-                            emoji="📋"
-                            title="Nessun Progetto"
-                            description="Crea la tua prima attività per iniziare a coinvolgere volontari"
-                            actionLabel="Crea Attività"
-                            onAction={() => router.push("/(npo)/create-activity")}
+                            emoji={listFilter === "aperte" ? "📋" : "✅"}
+                            title={listFilter === "aperte" ? "Nessun Progetto Aperto" : "Nessun Progetto Completato"}
+                            description={listFilter === "aperte" ? "Crea la tua prima attività per iniziare a coinvolgere volontari" : "Non hai ancora completato nessuna attività."}
+                            actionLabel={listFilter === "aperte" ? "Crea Attività" : undefined}
+                            onAction={listFilter === "aperte" ? () => router.push("/(npo)/create-activity") : undefined}
                         />
                     ) : (
                         <View>
-                            {myProjects.map((project) => (
-                                <View key={project.id} className="mb-4">
-                                    <ActivityCard activity={project} onPress={() => router.push(`/activity/${project.id}` as any)} />
-                                </View>
-                            ))}
+                            {myProjects
+                                .filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA")
+                                .map((project) => (
+                                    <View key={project.id} className="mb-4">
+                                        <ActivityCard activity={project} onPress={() => router.push(`/activity/${project.id}` as any)} />
+                                    </View>
+                                ))}
                         </View>
                     )}
                 </View>

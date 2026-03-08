@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
-import { OldActivity } from "../types";
+import { AppActivity } from "../types";
 
 interface CalendarGridProps {
-    activities: OldActivity[];
+    activities: AppActivity[];
     onSelectDate: (date: Date) => void;
     selectedDate: Date;
 }
@@ -73,9 +73,8 @@ export function CalendarGrid({ activities, onSelectDate, selectedDate }: Calenda
                     <View className="flex-row gap-0.5 mt-1 h-1.5">
                         {dayActivities.slice(0, 3).map((act, idx) => {
                             let dotColor = "bg-gray-300";
-                            if (act.status === 'APERTA') dotColor = "bg-green-500";
-                            if (act.status === 'IN_CORSO') dotColor = "bg-yellow-500";
-                            if (act.status === 'COMPLETATA') dotColor = "bg-emerald-600";
+                            if (act.status === 'APERTA' || act.status === 'IN_CORSO') dotColor = "bg-purple-500";
+                            if (act.status === 'COMPLETATA') dotColor = "bg-green-500";
                             if (act.status === 'CANCELLATA') dotColor = "bg-red-500";
 
                             return (
