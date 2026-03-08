@@ -48,29 +48,7 @@ export function ProfileStats({
         return (sum / myReviews.length).toFixed(1);
     }, [volunteerReviews, userId]);
 
-    // Format hours
-    const formatHours = (hours: number) => {
-        if (!hours) return "0";
 
-        const totalMinutes = hours * 60;
-        const days = Math.floor(totalMinutes / (24 * 60));
-        const remainingMinutesAfterDays = totalMinutes % (24 * 60);
-        const hoursPart = Math.floor(remainingMinutesAfterDays / 60);
-        const minutesPart = Math.round(remainingMinutesAfterDays % 60);
-
-        let formattedString = "";
-        if (days > 0) {
-            formattedString += `${days}g `;
-        }
-        if (hoursPart > 0) {
-            formattedString += `${hoursPart}h `;
-        }
-        if (minutesPart > 0) {
-            formattedString += `${minutesPart}m`;
-        }
-
-        return formattedString.trim() || "0";
-    };
 
     return (
         <View>
@@ -96,8 +74,8 @@ export function ProfileStats({
                 <View className="flex-row gap-2">
                     <View className="flex-1 h-24">
                         <StatCard
-                            value={formatHours(stats.totalHours)}
-                            label="ORE"
+                            value={Math.round(stats.totalHours).toString()}
+                            label="ORE DONATE"
                             valueColor="text-indigo-900"
                             icon={<Clock size={14} color="#312e81" style={{ marginBottom: 2 }} />}
                         />
@@ -105,9 +83,10 @@ export function ProfileStats({
                     <View className="flex-1 h-24">
                         <StatCard
                             value={stats.completedMissions.toString()}
-                            label="MISSIONI"
+                            label="ATTIVITÀ"
                             valueColor="text-pink-600"
                             icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
+                            onPress={isOwnProfile ? () => router.push("/(volunteer)/calendar?view=list&filter=completed" as any) : undefined}
                         />
                     </View>
                     <View className="flex-1 h-24">

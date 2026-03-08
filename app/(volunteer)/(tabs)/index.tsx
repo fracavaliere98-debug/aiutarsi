@@ -101,7 +101,7 @@ export default function VolunteerDashboard() {
                 <View className="flex-1 h-24">
                     <StatCard
                         value={volunteerStats.totalHours.toString()}
-                        label="ORE"
+                        label="ORE DONATE"
                         valueColor="text-indigo-900"
                         icon={<Clock size={14} color="#312e81" style={{ marginBottom: 2 }} />}
                     />
@@ -112,7 +112,7 @@ export default function VolunteerDashboard() {
                         label="ATTIVITÀ"
                         valueColor="text-pink-600"
                         icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
-                        onPress={() => router.push("/(volunteer)/calendar" as any)}
+                        onPress={() => router.push("/(volunteer)/calendar?view=list&filter=completed" as any)}
                     />
                 </View>
                 <View className="flex-1 h-24">
@@ -121,6 +121,7 @@ export default function VolunteerDashboard() {
                         label="ATTIVE"
                         valueColor="text-accent"
                         icon={<Clock size={14} color={Colors.accent} style={{ marginBottom: 2 }} />}
+                        onPress={() => router.push("/(volunteer)/calendar?view=list&filter=upcoming" as any)}
                     />
                 </View>
             </View>

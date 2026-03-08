@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
 import { Colors } from "../../../constants/Colors";
 import { useAuth } from "../../../context/AuthContext";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar as CalendarIcon, List, Bell, Clock, MapPin, Building2 } from "lucide-react-native";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -10,7 +10,7 @@ import { SoftCard } from "../../../components/SoftCard";
 import { BadgePill } from "../../../components/BadgePill";
 import { useActivities } from "../../../context/ActivityContext";
 import { AppActivity } from "../../../types";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarGrid } from "../../../components/CalendarGrid";
 import { ActivityCard } from "../../../components/ActivityCard";
@@ -26,8 +26,14 @@ export default function VolunteerCalendar() {
     const { showToast } = useToast();
 
 
+    const params = useLocalSearchParams<{ view?: ViewMode; filter?: FilterMode }>();
     const [viewMode, setViewMode] = useState<ViewMode>("list");
     const [filterMode, setFilterMode] = useState<FilterMode>("upcoming");
+
+    useEffect(() => {
+        if (params.view) setViewMode(params.view);
+        if (params.filter) setFilterMode(params.filter);
+    }, [params.view, params.filter]);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
 
