@@ -122,12 +122,14 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
                                 <Text className="text-secondary text-center text-base font-medium leading-6 mb-4">
                                     {ALL_BADGES.find(b => b.id === selectedBadge.id)?.criteria ?? selectedBadge.description}
                                 </Text>
-                                <View className="flex-row items-center justify-center gap-2 pt-4 border-t border-slate-200/50">
-                                    <Clock size={16} color={Colors.secondary} />
-                                    <Text className="text-secondary font-bold text-sm">
-                                        Ottenuto il {new Date(selectedBadge.dateEarned).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                    </Text>
-                                </View>
+                                {selectedBadge.dateEarned && (
+                                    <View className="flex-row items-center justify-center gap-2 pt-4 border-t border-slate-200/50">
+                                        <Clock size={16} color={Colors.secondary} />
+                                        <Text className="text-secondary font-bold text-sm">
+                                            Ottenuto il {new Date(selectedBadge.dateEarned).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
 
                             <TouchableOpacity
