@@ -60,7 +60,11 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const [error, setError] = useState(false);
 
     // Queries
-    const { data: rawActivities = [] } = useQuery({ queryKey: ['activities_raw'], queryFn: async () => (await activityService.getActivities()).activities, staleTime: 60_000 });
+    const { data: rawActivities = [] } = useQuery({
+        queryKey: ['activities_raw', user?.id],
+        queryFn: async () => (await activityService.getActivities({ userId: user?.id })).activities,
+        staleTime: 60_000
+    });
     const { data: reviews = [] } = useQuery({ queryKey: ['reviews'], queryFn: () => activityService.getReviews(), staleTime: 60_000 });
     const { data: volunteerReviews = [] } = useQuery({ queryKey: ['volunteer_reviews'], queryFn: () => activityService.getVolunteerReviews(), staleTime: 60_000 });
     const { data: activityApplications = [] } = useQuery({ queryKey: ['activity_applications'], queryFn: () => activityService.getActivityApplications(), staleTime: 60_000 });
@@ -96,8 +100,8 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const [currentSearch, setCurrentSearch] = useState<string>("");
     const abortControllerRef = React.useRef<AbortController | null>(null);
 
-    const activities = useMemo(() => rawActivities.map(act => ({ ...act, matchPercentage: calculateSmartMatch(user, act) })), [rawActivities, user]);
-    const paginatedActivities = useMemo(() => pageRawActivities.map(act => ({ ...act, matchPercentage: calculateSmartMatch(user, act) })), [pageRawActivities, user]);
+    const activities = useMemo(() => rawActivities, [rawActivities]);
+    const paginatedActivities = useMemo(() => pageRawActivities, [pageRawActivities]);
 
     const volunteerStats = useMemo(() => {
         if (!user || user.role !== 'VOLUNTEER') return { totalHours: 0, completedMissions: 0, activeMissions: 0, upcomingMissions: 0 };
@@ -125,7 +129,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             const newOffset = params.reset ? 0 : offset;
             const targetCategory = params.category !== undefined ? params.category : currentCategory;
             const targetSearch = params.searchText !== undefined ? params.searchText : currentSearch;
-            const result = await activityService.getActivities({ ...params, offset: newOffset, limit: 15, category: targetCategory, searchText: targetSearch }, controller.signal);
+            const result = await activityService.getActivities({ ...params, userId: user?.id, offset: newOffset, limit: 15, category: targetCategory, searchText: targetSearch }, controller.signal);
             if (params.reset) {
                 setPageRawActivities(result.activities);
                 setOffset(result.activities.length);

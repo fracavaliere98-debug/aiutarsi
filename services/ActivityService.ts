@@ -113,26 +113,93 @@ export class ActivityService {
 
     async getActivities(
         filter?: {
+            userId?: string;
             category?: string;
             npoId?: string;
             searchText?: string;
             limit?: number;
             offset?: number;
-            // New filter params
             skills?: string[];
             onlyAvailable?: boolean;
             onlyUrgent?: boolean;
             dateFrom?: string;
             dateTo?: string;
             statuses?: string[];
-            // Geo-radius filter (uses get_activities_near_me RPC)
             centerLat?: number;
             centerLng?: number;
             radiusKm?: number;
         },
         signal?: AbortSignal
     ): Promise<{ activities: AppActivity[], totalCount: number, hasMore: boolean }> {
-        // ── GEO-RADIUS path: delegate to RPC when center+radius are given ──────
+        // ── UNIFIED VECTOR MATCH path: use new RPC when userId is provided ──────
+        if (filter?.userId) {
+            try {
+                const { data, error, count } = await supabase.rpc('get_activities_with_match', {
+                    p_user_id: filter.userId,
+                    p_category: filter.category || null,
+                    p_search: filter.searchText || null,
+                    p_center_lat: filter.centerLat || null,
+                    p_center_lng: filter.centerLng || null,
+                    p_radius_km: filter.radiusKm || 50,
+                    p_limit: filter.limit || 20,
+                    p_offset: filter.offset || 0,
+                    p_skills: filter.skills || [],
+                    p_only_urgent: filter.onlyUrgent || false,
+                    p_date_from: filter.dateFrom || null,
+                    p_date_to: filter.dateTo || null,
+                    p_statuses: filter.statuses || ['APERTA']
+                }, { count: 'exact' });
+
+                if (error) throw error;
+
+                // The RPC returns a flat structure, we need to enrich it with participants and skills
+                // if we want a fully hydrated AppActivity object (iscritti, skills arrays etc)
+                const ids = (data || []).map((r: any) => r.id);
+                if (ids.length === 0) return { activities: [], totalCount: 0, hasMore: false };
+
+                const [{ data: skillRows }, { data: partRows }] = await Promise.all([
+                    supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
+                    supabase.from('activity_participants').select('activity_id, user_id').in('activity_id', ids),
+                ]);
+
+                const skillsMap: Record<string, string[]> = {};
+                for (const r of skillRows || []) {
+                    if (!skillsMap[r.activity_id]) skillsMap[r.activity_id] = [];
+                    skillsMap[r.activity_id].push(r.skill);
+                }
+                const partsMap: Record<string, string[]> = {};
+                for (const r of partRows || []) {
+                    if (!partsMap[r.activity_id]) partsMap[r.activity_id] = [];
+                    partsMap[r.activity_id].push(r.user_id);
+                }
+
+                const activities = (data || []).map((r: any) => ({
+                    ...this._mapDbActivityToApp({
+                        ...r,
+                        date_start: r.date_start,
+                        date_end: r.date_end,
+                        image_url: r.image_url,
+                        slots_total: r.slots_total,
+                        is_urgent: r.is_urgent,
+                        location_address: r.location_address,
+                        location_lat: r.location_lat,
+                        location_lng: r.location_lng,
+                    }),
+                    matchPercentage: r.match_percentage,
+                    skills: skillsMap[r.id] || [],
+                    iscritti: partsMap[r.id] || []
+                }));
+
+                const totalCount = count || activities.length; // Approximate if count not supported
+                const hasMore = (filter.offset || 0) + activities.length < totalCount;
+
+                return { activities, totalCount, hasMore };
+            } catch (e: any) {
+                console.error('[ActivityService] Unified match RPC failed, falling back:', e.message);
+            }
+        }
+
+        // ── GEO-RADIUS path: delegate to RPC when center+radius are given (legacy fallback) ──────
         if (filter?.centerLat !== undefined && filter?.centerLng !== undefined && filter?.radiusKm) {
             try {
                 let results = await this.getActivitiesByRadius(filter.centerLat, filter.centerLng, filter.radiusKm);
