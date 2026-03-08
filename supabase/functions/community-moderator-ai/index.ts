@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.2.1";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.22.0";
 
 interface CommunityPost {
     id: string;
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
         console.log(`[Moderator] Analyzing post ${record.id} by user ${record.author_id}`);
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         // Preparation for multimodal analysis
         const prompt = `Sei un moderatore AI per l'app "AiutarSi", una piattaforma di volontariato. 
