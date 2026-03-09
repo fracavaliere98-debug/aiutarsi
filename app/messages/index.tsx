@@ -147,17 +147,10 @@ export default function MessagesListScreen() {
         if (activeTab === 'Privati') return conv.type === 'PRIVATE';
         return true;
     }).sort((a: any, b: any) => {
-        // Put unread conversations at the top
         const aConv = a.conversations;
         const bConv = b.conversations;
 
-        const aUnread = aConv && aConv.last_message_at > a.last_read_at && aConv.last_message_sender_id !== user?.id;
-        const bUnread = bConv && bConv.last_message_at > b.last_read_at && bConv.last_message_sender_id !== user?.id;
-
-        if (aUnread && !bUnread) return -1;
-        if (!aUnread && bUnread) return 1;
-
-        // Using Date().getTime() for bulletproof sorting as requested by user
+        // Pure date-based sorting: most recent first (Standard behavior)
         const aTime = new Date(aConv?.last_message_at || aConv?.created_at || 0).getTime();
         const bTime = new Date(bConv?.last_message_at || bConv?.created_at || 0).getTime();
 

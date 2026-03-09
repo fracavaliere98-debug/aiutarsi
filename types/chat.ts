@@ -3,6 +3,9 @@ export interface Conversation {
     type: 'PRIVATE' | 'ACTIVITY_GROUP';
     activity_id?: string;
     created_at: string;
+    last_message_content?: string | null;
+    last_message_at?: string | null;
+    last_message_sender_id?: string | null;
 }
 
 export interface ConversationParticipant {
