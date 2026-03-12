@@ -20,10 +20,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: AiutarSiApp/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: AiutarSiApp
         run: npm ci
 
       - name: Setup EAS CLI
@@ -31,7 +30,6 @@ jobs:
 
       - name: Build Android APK (Preview)
         id: build
-        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
@@ -41,7 +39,6 @@ jobs:
 
       - name: Get Build URL
         id: get_url
-        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
