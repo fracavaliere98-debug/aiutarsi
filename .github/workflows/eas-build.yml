@@ -56,7 +56,7 @@ jobs:
         uses: mobile-dev-inc/action-maestro-cloud@v2.0.2
         with:
           api-key: ${{ secrets.MAESTRO_CLOUD_API_KEY }}
-          project-id: proj_01kkhvnd1jft48rz62j2twa952
+          project-id: ${{ secrets.MAESTRO_PROJECT_ID }}
           app-file: app.apk
           workspace: .maestro/
           name: "${{ github.workflow }} #${{ github.run_number }} - ${{ github.ref_name }}"
