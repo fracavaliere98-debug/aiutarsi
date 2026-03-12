@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, Linking, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, Linking, Alert, Clipboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff } from 'lucide-react-native';
+import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff, AlertCircle, ShieldOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
@@ -16,7 +16,7 @@ export default function ChatDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth();
-    const { markAsRead } = useChat();
+    const { markAsRead, updateConversationPreview } = useChat();
     const { showToast } = useToast();
 
     const [conversation, setConversation] = useState<any>(null);
@@ -25,6 +25,13 @@ export default function ChatDetailScreen() {
     const [showMenu, setShowMenu] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
+    const typingTimeoutRef = useRef<any>(null);
+    const presenceChannelRef = useRef<any>(null);
     const flatListRef = useRef<FlatList>(null);
 
     // Helper: format date to Italian day label
@@ -122,37 +129,110 @@ export default function ChatDetailScreen() {
     };
 
     const handleSend = async () => {
-        if (!inputText.trim()) return;
+        if (!inputText.trim() || isSending) return;
         const text = inputText.trim();
-        setInputText(''); // Optimistically clear
+        setInputText('');
+        setIsSending(true);
+
+        // Create optimistic message (pending state)
+        const tempId = `pending-${Date.now()}`;
+        const pendingMsg = {
+            id: tempId,
+            content: text,
+            sender_id: user!.id,
+            conversation_id: id,
+            created_at: new Date().toISOString(),
+            __pending: true,
+            __failed: false,
+        };
+        setMessages(prev => [pendingMsg, ...prev]);
+
         try {
             const newMsg = await ChatService.sendMessage(id as string, user!.id, text);
-            // Merge into state — realtime will also deliver this, mergeMessages handles the dedup
-            setMessages(prev => mergeMessages(prev, [newMsg]));
+            // Replace pending message with real message from DB
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg } : m));
+            // Optimistically update the conversation list preview immediately
+            updateConversationPreview(id as string, text, user!.id);
         } catch (e) {
             if (e instanceof ChatFilterError) {
+                // Remove pending, restore input
+                setMessages(prev => prev.filter(m => m.id !== tempId));
                 setInputText(text);
                 showToast('warning', e.message);
             } else {
-                console.error('Send error', e);
-                setInputText(text);
-                showToast('error', 'Errore durante l\'invio del messaggio.');
+                // Mark as failed with retry option
+                setMessages(prev => prev.map(m => m.id === tempId ? { ...m, __failed: true } : m));
+                showToast('error', 'Invio fallito. Premi ↺ per riprovare.');
             }
+        } finally {
+            setIsSending(false);
         }
     };
 
-    const loadData = useCallback(async () => {
-        if (!id) return;
-        const conv = await ChatService.getConversationDetails(id as string);
-        setConversation(conv);
-        const msgs = await ChatService.getMessages(id as string);
-        // Merge instead of replacing, so optimistic messages aren't duplicated
-        setMessages(prev => mergeMessages(prev, msgs));
-        if (user?.id) {
-            // Mark as read via context so the global unread badge resets immediately
-            markAsRead(id as string).catch(() => { });
+    const handleRetry = async (failedMsg: any) => {
+        // Mark as pending again
+        setMessages(prev => prev.map(m => m.id === failedMsg.id ? { ...m, __failed: false, __pending: true } : m));
+        try {
+            const newMsg = await ChatService.sendMessage(id as string, user!.id, failedMsg.content);
+            setMessages(prev => prev.filter(m => m.id !== failedMsg.id));
+            setMessages(prev => mergeMessages(prev, [newMsg]));
+        } catch (e) {
+            setMessages(prev => prev.map(m => m.id === failedMsg.id ? { ...m, __failed: true, __pending: false } : m));
         }
-    }, [id, user?.id]);
+    };
+
+    // Broadcast typing presence
+    const handleTyping = (text: string) => {
+        setInputText(text);
+        if (presenceChannelRef.current && user?.id) {
+            presenceChannelRef.current.track({ typing: true, user_id: user.id });
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                presenceChannelRef.current?.track({ typing: false, user_id: user.id });
+            }, 2000);
+        }
+    };
+
+    const loadData = useCallback(async (isInitial = true) => {
+        if (!id) return;
+        if (isInitial) setIsRefreshing(true);
+        else setIsLoadingMore(true);
+
+        try {
+            if (isInitial) {
+                const conv = await ChatService.getConversationDetails(id as string);
+                setConversation(conv);
+            }
+
+            const oldestTimestamp = !isInitial && messages.length > 0
+                ? messages[messages.length - 1].created_at
+                : undefined;
+
+            const newMsgs = await ChatService.getMessages(id as string, oldestTimestamp);
+
+            if (newMsgs.length < 20) {
+                setHasMore(false);
+            } else {
+                setHasMore(true);
+            }
+
+            setMessages(prev => mergeMessages(prev, newMsgs));
+
+            if (isInitial && user?.id) {
+                markAsRead(id as string).catch(() => { });
+            }
+        } catch (error) {
+            console.error('Error loading chat data:', error);
+        } finally {
+            setIsRefreshing(false);
+            setIsLoadingMore(false);
+        }
+    }, [id, user?.id, messages]);
+
+    const handleLoadMore = () => {
+        if (!hasMore || isLoadingMore || isRefreshing) return;
+        loadData(false);
+    };
 
     useEffect(() => {
         loadData();
@@ -176,6 +256,21 @@ export default function ChatDetailScreen() {
             })
             .subscribe();
 
+        // Supabase Presence: typing indicators (zero DB writes)
+        const presenceChannel = supabase.channel(`presence_chat_${id}`, {
+            config: { presence: { key: user?.id || 'anon' } }
+        });
+        presenceChannelRef.current = presenceChannel;
+        presenceChannel
+            .on('presence', { event: 'sync' }, () => {
+                const state = presenceChannel.presenceState();
+                const typingUsers = Object.values(state)
+                    .flat()
+                    .filter((s: any) => s.typing && s.user_id !== user?.id);
+                setIsOtherTyping(typingUsers.length > 0);
+            })
+            .subscribe();
+
         // Poll online status every 30s (does NOT re-fetch messages to avoid duplicates)
         const timer = setInterval(() => {
             // Only refresh conversation metadata (online status, etc.), not messages
@@ -188,9 +283,78 @@ export default function ChatDetailScreen() {
 
         return () => {
             supabase.removeChannel(channel);
+            supabase.removeChannel(presenceChannel);
             clearInterval(timer);
+            clearTimeout(typingTimeoutRef.current);
         };
     }, [id, loadData]);
+
+    const handleReportUser = async () => {
+        if (!otherParticipant?.user_id) return;
+        Alert.alert(
+            'Segnala Utente',
+            'Vuoi segnalare questo utente per comportamento inappropriato in chat?',
+            [
+                { text: 'Annulla', style: 'cancel' },
+                {
+                    text: 'Segnala',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase.from('community_reports').insert({
+                                reported_user_id: otherParticipant.user_id,
+                                reporter_id: user!.id,
+                                reason: `Segnalazione utente da chat privata (conv: ${id})`,
+                                status: 'pending',
+                            });
+                            if (error) throw error;
+                            showToast('success', 'Segnalazione inviata. Grazie per aver contribuito a mantenere la community sicura.');
+                            setShowMenu(false);
+                        } catch (e) {
+                            showToast('error', 'Errore durante la segnalazione. Riprova.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleBlockUser = async () => {
+        if (!otherParticipant?.user_id || !user?.id) return;
+        const targetId = otherParticipant.user_id;
+        Alert.alert(
+            'Blocca Utente',
+            `Bloccando questo utente non potrete più scrivervi e non vedrete i vostri post reciproci nella community.\n\nPuoi sbloccare l'utente in qualsiasi momento dal suo profilo.`,
+            [
+                { text: 'Annulla', style: 'cancel' },
+                {
+                    text: 'Blocca',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await ChatService.blockUser(user.id, targetId);
+                            setShowMenu(false);
+                            showToast(
+                                'info',
+                                'Utente bloccato',
+                                8000,
+                                {
+                                    label: 'Annulla',
+                                    onPress: async () => {
+                                        await ChatService.unblockUser(user.id, targetId);
+                                        showToast('success', 'Utente sbloccato');
+                                    }
+                                }
+                            );
+                        } catch (e) {
+                            showToast('error', 'Errore durante il blocco. Riprova.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
 
     // Header display name
     const displayTitle = headerProfile
@@ -291,18 +455,138 @@ export default function ChatDetailScreen() {
                                 </View>
                             );
                         }
+                        const isOwn = item.sender_id === user?.id;
+                        const isRead = isOwn
+                            ? conversation?.participants?.some((p: any) => p.user_id !== user?.id && p.last_read_at && new Date(p.last_read_at) >= new Date(item.created_at))
+                            : true;
+
+                        const canDelete = isOwn && (Date.now() - new Date(item.created_at).getTime()) < 2 * 60 * 1000;
+
+                        // Pending (optimistic) or failed message
+                        if (item.__pending || item.__failed) {
+                            return (
+                                <View className="flex-row justify-end items-end mb-4 px-4">
+                                    <View style={{ maxWidth: '75%' }}>
+                                        <View className={`p-4 rounded-2xl rounded-br-sm ${item.__failed ? 'bg-red-50 border border-red-200' : 'bg-primary/60'}`}>
+                                            <Text className={`text-[15px] leading-5 ${item.__failed ? 'text-red-600' : 'text-white'}`}>{item.content}</Text>
+                                        </View>
+                                        <View className="flex-row items-center justify-end mt-1 gap-1">
+                                            {item.__failed ? (
+                                                <TouchableOpacity onPress={() => handleRetry(item)} className="flex-row items-center gap-1">
+                                                    <AlertCircle size={13} color="#ef4444" />
+                                                    <Text className="text-[11px] text-red-500 font-bold">Riprova</Text>
+                                                </TouchableOpacity>
+                                            ) : (
+                                                <Text className="text-[11px] text-slate-400">Invio...</Text>
+                                            )}
+                                        </View>
+                                    </View>
+                                </View>
+                            );
+                        }
+
+                        const handleLongPress = () => {
+                            // Always show copy. Show delete only within 2-min window for own messages.
+                            const buttons: any[] = [
+                                {
+                                    text: 'Copia',
+                                    onPress: () => Clipboard.setString(item.content || ''),
+                                },
+                            ];
+
+                            if (canDelete) {
+                                buttons.push({
+                                    text: 'Elimina',
+                                    style: 'destructive',
+                                    onPress: () => {
+                                        // Optimistic: hide message immediately
+                                        setMessages(prev => prev.filter(m => m.id !== item.id));
+
+                                        // Update conversation preview optimistically to previous message
+                                        const prevMsg = messages.find(m => m.id !== item.id && !m.__pending && !m.__failed);
+                                        if (prevMsg) {
+                                            updateConversationPreview(id as string, prevMsg.content, prevMsg.sender_id);
+                                        } else {
+                                            updateConversationPreview(id as string, '', '');
+                                        }
+
+                                        let cancelled = false;
+                                        const deleteTimeout = setTimeout(async () => {
+                                            if (cancelled) return;
+                                            try {
+                                                await ChatService.deleteMessage(item.id, user!.id);
+                                            } catch (e: any) {
+                                                // Restore message on failure
+                                                // Restore message on failure using mergeMessages to avoid duplicates
+                                                setMessages(prev => mergeMessages(prev, [item]));
+                                                showToast('error', e.message || 'Errore durante l\'eliminazione');
+                                            }
+                                        }, 5000);
+
+                                        showToast(
+                                            'error',
+                                            'Messaggio eliminato',
+                                            5000,
+                                            {
+                                                label: 'Annulla',
+                                                onPress: () => {
+                                                    cancelled = true;
+                                                    clearTimeout(deleteTimeout);
+                                                    // Restore message to local state safely
+                                                    setMessages(prev => mergeMessages(prev, [item]));
+                                                }
+                                            }
+                                        );
+                                    }
+                                });
+                            }
+
+                            buttons.push({ text: 'Annulla', style: 'cancel' });
+
+                            Alert.alert(
+                                canDelete ? 'Messaggio' : 'Copia',
+                                canDelete ? 'Cosa vuoi fare con questo messaggio?' : '',
+                                buttons,
+                                { cancelable: true }
+                            );
+                        };
+
                         return (
-                            <ChatBubble
-                                message={item.content}
-                                isOwn={item.sender_id === user?.id}
-                                senderName={item.sender_id === user?.id ? 'Tu' : (item.profiles?.name || 'Utente')}
-                                avatarUrl={item.profiles?.avatar}
-                                timestamp={new Date(item.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                                isRead={item.is_read}
-                            />
+                            <TouchableOpacity
+                                activeOpacity={canDelete ? 0.85 : 1}
+                                onLongPress={handleLongPress}
+                                delayLongPress={400}
+                            >
+                                <ChatBubble
+                                    message={item.content}
+                                    isOwn={isOwn}
+                                    senderName={isOwn ? 'Tu' : (item.profiles?.name || 'Utente')}
+                                    avatarUrl={item.profiles?.avatar}
+                                    timestamp={new Date(item.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    isRead={isRead}
+                                />
+                            </TouchableOpacity>
                         );
                     }}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={isLoadingMore ? (
+                        <View className="py-4 items-center">
+                            <Text className="text-slate-400 text-xs">Caricamento messaggi precedenti...</Text>
+                        </View>
+                    ) : null}
                 />
+
+                {/* Typing Indicator */}
+                {isOtherTyping && (
+                    <View className="px-6 pb-1">
+                        <View className="flex-row items-center gap-2">
+                            <View className="bg-slate-100 px-4 py-2 rounded-2xl rounded-bl-sm">
+                                <Text className="text-slate-400 text-sm">sta scrivendo...</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 {/* Input Area */}
                 <View className="p-4 bg-white border-t border-gray-100">
@@ -316,7 +600,7 @@ export default function ChatDetailScreen() {
                             placeholderTextColor="#94a3b8"
                             multiline
                             value={inputText}
-                            onChangeText={setInputText}
+                            onChangeText={handleTyping}
                         />
                         <TouchableOpacity
                             onPress={handleSend}
@@ -347,6 +631,24 @@ export default function ChatDetailScreen() {
                             <Users size={20} color="#64748b" />
                             <Text className="ml-3 text-primary font-medium">Partecipanti</Text>
                         </TouchableOpacity>
+                        {conversation?.type === 'PRIVATE' && otherParticipant?.user_id && (
+                            <>
+                                <TouchableOpacity
+                                    className="flex-row items-center px-4 py-3 border-t border-gray-100 active:bg-red-50"
+                                    onPress={handleReportUser}
+                                >
+                                    <AlertCircle size={20} color="#ef4444" />
+                                    <Text className="ml-3 text-red-500 font-medium">Segnala utente</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="flex-row items-center px-4 py-3 border-t border-gray-100 active:bg-red-50"
+                                    onPress={handleBlockUser}
+                                >
+                                    <ShieldOff size={20} color="#dc2626" />
+                                    <Text className="ml-3 text-red-600 font-medium">Blocca utente</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 </TouchableOpacity>
             </Modal>

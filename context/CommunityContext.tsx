@@ -25,10 +25,30 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
         setIsLoading(true);
         try {
+            // Bidirectional block filter: exclude posts from users I blocked AND users who blocked me
+            let blockedAuthorIds: string[] = [];
+            if (user?.id) {
+                const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
+                    supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
+                    supabase.from('blocked_users').select('blocker_id').eq('blocked_id', user.id),
+                ]);
+                const blockSet = new Set<string>();
+                iBlocked?.forEach((r: any) => blockSet.add(r.blocked_id));
+                blockedMe?.forEach((r: any) => blockSet.add(r.blocker_id));
+                blockedAuthorIds = Array.from(blockSet);
+            }
+
             let query = supabase
                 .from('community_posts')
                 .select(`
-                    *,
+                    id,
+                    caption,
+                    image_url,
+                    images_urls,
+                    author_id,
+                    linked_activity_id,
+                    created_at,
+                    status,
                     author:profiles!author_id (
                         id,
                         full_name,
@@ -46,8 +66,14 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                         id, post_id, user_id, reaction, created_at
                     )
                 `)
+                .not('status', 'in', '("shadow_banned","removed")')
                 .order('created_at', { ascending: false })
                 .limit(30);
+
+            // Apply bidirectional block filter
+            if (blockedAuthorIds.length > 0) {
+                query = query.not('author_id', 'in', `(${blockedAuthorIds.join(',')})`);
+            }
 
             if (lastCreatedAt) {
                 query = query.lt('created_at', lastCreatedAt);
@@ -66,12 +92,15 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
             } else {
                 setPosts(newPosts);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Community fetchFeed error:', e);
+            if (e && typeof e === 'object') {
+                console.error('Error details:', JSON.stringify(e, null, 2));
+            }
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [user?.id]);
 
     // Upload image to Supabase Storage and return public URL (Use StorageService for robustness)
     const uploadImage = useCallback(async (imageUri: string): Promise<string | null> => {

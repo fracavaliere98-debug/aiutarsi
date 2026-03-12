@@ -8,30 +8,14 @@ const { width } = Dimensions.get('window');
 const getToastConfig = (type: ToastType) => {
     switch (type) {
         case 'success':
-            return {
-                bgColor: 'bg-emerald-500',
-                icon: CheckCircle2,
-                iconColor: 'white',
-            };
+            return { bgColor: '#10b981', icon: CheckCircle2 };
         case 'error':
-            return {
-                bgColor: 'bg-red-500',
-                icon: XCircle,
-                iconColor: 'white',
-            };
+            return { bgColor: '#ef4444', icon: XCircle };
         case 'warning':
-            return {
-                bgColor: 'bg-amber-500',
-                icon: AlertTriangle,
-                iconColor: 'white',
-            };
+            return { bgColor: '#f59e0b', icon: AlertTriangle };
         case 'info':
         default:
-            return {
-                bgColor: 'bg-blue-500',
-                icon: Info,
-                iconColor: 'white',
-            };
+            return { bgColor: '#3b82f6', icon: Info };
     }
 };
 
@@ -39,13 +23,14 @@ export const ToastContainer: React.FC = () => {
     const { toasts, hideToast } = useToast();
 
     return (
-        <View className="absolute top-20 left-0 right-0 z-50 px-4" pointerEvents="box-none">
+        <View style={{ position: 'absolute', top: 80, left: 0, right: 0, zIndex: 9999, paddingHorizontal: 16 }} pointerEvents="box-none">
             {toasts.map((toast) => (
                 <ToastItem
                     key={toast.id}
                     id={toast.id}
                     type={toast.type}
                     message={toast.message}
+                    action={toast.action}
                     onDismiss={hideToast}
                 />
             ))}
@@ -57,17 +42,17 @@ interface ToastItemProps {
     id: string;
     type: ToastType;
     message: string;
+    action?: { label: string; onPress: () => void };
     onDismiss: (id: string) => void;
 }
 
-const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, onDismiss }) => {
+const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, action, onDismiss }) => {
     const slideAnim = React.useRef(new Animated.Value(-100)).current;
     const opacityAnim = React.useRef(new Animated.Value(0)).current;
     const config = getToastConfig(type);
     const Icon = config.icon;
 
     useEffect(() => {
-        // Slide down and fade in
         Animated.parallel([
             Animated.spring(slideAnim, {
                 toValue: 0,
@@ -84,21 +69,10 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, onDismiss }) =
     }, []);
 
     const handleDismiss = () => {
-        // Slide up and fade out
         Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: -100,
-                duration: 200,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
-            onDismiss(id);
-        });
+            Animated.timing(slideAnim, { toValue: -100, duration: 200, useNativeDriver: true }),
+            Animated.timing(opacityAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        ]).start(() => onDismiss(id));
     };
 
     return (
@@ -109,14 +83,65 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, onDismiss }) =
                 marginBottom: 8,
             }}
         >
-            <View className={`${config.bgColor} rounded-2xl shadow-lg flex-row items-center p-4 mx-auto`} style={{ maxWidth: width - 32 }}>
-                <Icon size={24} color={config.iconColor} />
-                <Text className="text-white font-semibold text-sm flex-1 ml-3" numberOfLines={2}>
-                    {message}
-                </Text>
-                <TouchableOpacity onPress={handleDismiss} className="ml-2" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <X size={20} color="white" />
-                </TouchableOpacity>
+            <View
+                style={{
+                    backgroundColor: config.bgColor,
+                    borderRadius: 16,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 8,
+                    elevation: 6,
+                    maxWidth: width - 32,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                }}
+            >
+                {/* Icon and Message */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <Icon size={20} color="white" />
+                    <Text
+                        style={{
+                            color: 'white',
+                            fontWeight: '600',
+                            fontSize: 14,
+                            flex: 1,
+                            flexShrink: 1,
+                            marginLeft: 10
+                        }}
+                        numberOfLines={2}
+                    >
+                        {message}
+                    </Text>
+                </View>
+
+                {/* Action button (e.g. Annulla) */}
+                {action && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}>
+                        <View style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.4)', marginHorizontal: 12 }} />
+                        <TouchableOpacity
+                            onPress={() => { action.onPress(); handleDismiss(); }}
+                            hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>
+                                {action.label.toUpperCase()}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Dismiss X button (only when no action, to keep it clean) */}
+                {!action && (
+                    <TouchableOpacity
+                        onPress={handleDismiss}
+                        style={{ marginLeft: 10 }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <X size={18} color="white" />
+                    </TouchableOpacity>
+                )}
             </View>
         </Animated.View>
     );

@@ -8,11 +8,12 @@ export interface ToastMessage {
     type: ToastType;
     message: string;
     duration?: number;
+    action?: { label: string; onPress: () => void };
 }
 
 interface ToastContextType {
     toasts: ToastMessage[];
-    showToast: (type: ToastType, message: string, duration?: number) => void;
+    showToast: (type: ToastType, message: string, duration?: number, action?: { label: string; onPress: () => void }) => void;
     hideToast: (id: string) => void;
 }
 
@@ -27,7 +28,7 @@ export const useToast = () => useContext(ToastContext);
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-    const showToast = useCallback((type: ToastType, message: string, duration: number = 3000) => {
+    const showToast = useCallback((type: ToastType, message: string, duration: number = 3000, action?: { label: string; onPress: () => void }) => {
         const id = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 
         // Trigger haptic feedback based on toast type
@@ -46,7 +47,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 break;
         }
 
-        const newToast: ToastMessage = { id, type, message, duration };
+        const newToast: ToastMessage = { id, type, message, duration, action };
         setToasts(prev => [...prev, newToast]);
 
         // Auto-dismiss after duration

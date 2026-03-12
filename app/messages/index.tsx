@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, RefreshControl } from 'react-native';
-import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X } from 'lucide-react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, RefreshControl, Animated, Clipboard } from 'react-native';
+import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useChat } from '../../context/ChatContext';
 import { useRouter, Stack } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import ChatService from '../../services/ChatService';
+import { useToast } from '../../context/ToastContext';
 
-import { StandardLayout } from '../../components/StandardLayout'; // Ensure StandardLayout is imported
+import { StandardLayout } from '../../components/StandardLayout';
 
 const formatRelativeDate = (dateString: string | null) => {
     if (!dateString) return '';
@@ -35,17 +36,90 @@ const formatRelativeDate = (dateString: string | null) => {
     }
 };
 
+// Swipeable wrapper with smooth right-to-left swipe revealing delete button
+function SwipeableConversationItem({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
+    const translateX = useRef(new Animated.Value(0)).current;
+    const SWIPE_THRESHOLD = 40;
+    const MAX_SWIPE = -80;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, g) => {
+                // Only capture horizontal swipes starting to the left
+                return Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && g.dx < -4;
+            },
+            onPanResponderGrant: () => {
+                // Stop any in-progress animation and capture current value
+                (translateX as any).stopAnimation();
+            },
+            onPanResponderMove: (_, g) => {
+                const newVal = Math.max(MAX_SWIPE, Math.min(0, g.dx));
+                translateX.setValue(newVal);
+            },
+            onPanResponderRelease: (_, g) => {
+                const vel = g.vx;
+                if (g.dx < SWIPE_THRESHOLD || vel < -0.3) {
+                    // Snap open
+                    Animated.spring(translateX, {
+                        toValue: MAX_SWIPE,
+                        useNativeDriver: true,
+                        bounciness: 0,
+                        speed: 30,
+                    }).start();
+                } else {
+                    // Snap closed
+                    Animated.spring(translateX, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 0,
+                        speed: 30,
+                    }).start();
+                }
+            },
+            onPanResponderTerminate: () => {
+                Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+            },
+        })
+    ).current;
+
+    const handleDelete = () => {
+        // Snap back then call delete
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(() => onDelete());
+    };
+
+    return (
+        <View style={{ overflow: 'hidden' }}>
+            {/* Delete button revealed on swipe */}
+            <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }} onPress={handleDelete}>
+                    <Trash2 size={22} color="white" />
+                    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold', marginTop: 3 }}>Elimina</Text>
+                </TouchableOpacity>
+            </View>
+            <Animated.View style={{ transform: [{ translateX }], backgroundColor: 'white' }} {...panResponder.panHandlers}>
+                {children}
+            </Animated.View>
+        </View>
+    );
+}
+
 export default function MessagesListScreen() {
     const router = useRouter();
     const { conversations, refreshConversations } = useChat();
     const { user, getUserById } = useAuth();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'Tutti' | 'Gruppi Attività' | 'Privati'>('Tutti');
     const [showNpoPicker, setShowNpoPicker] = useState(false);
-    const [myNpos, setMyNpos] = useState<any[]>([]); // For volunteers: NPOs. For NPOs: combined volunteers + groups
+    const [myNpos, setMyNpos] = useState<any[]>([]);
     const [loadingNpos, setLoadingNpos] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const panY = React.useRef(new RNAnimated.Value(0)).current;
+    const [localConversations, setLocalConversations] = useState<any[]>([]);
+    const undoTimeoutRef = useRef<any>(null);
+    const pendingDeleteRef = useRef<{ convId: string; userId: string } | null>(null);
+    const isUndoActiveRef = useRef(false);
+    const panY = useRef(new RNAnimated.Value(0)).current;
 
     const panResponder = React.useRef(
         PanResponder.create({
@@ -74,6 +148,57 @@ export default function MessagesListScreen() {
             }
         })
     ).current;
+
+    useEffect(() => {
+        // Skip overwrite while undo window is active — otherwise Annulla would immediately
+        // be undone by the conversation list refresh that follows refreshConversations().
+        if (!isUndoActiveRef.current) {
+            setLocalConversations(conversations || []);
+        }
+    }, [conversations]);
+
+    // Delete a conversation with 15s undo window
+    const handleDeleteConversation = useCallback((convId: string) => {
+        if (!user?.id) return;
+
+        // Optimistically remove from list
+        setLocalConversations(prev => prev.filter((c: any) => c.conversation_id !== convId));
+
+        // Store pending delete and lock the sync effect
+        pendingDeleteRef.current = { convId, userId: user.id };
+        isUndoActiveRef.current = true;
+        clearTimeout(undoTimeoutRef.current);
+
+        showToast(
+            'error',
+            'Conversazione eliminata',
+            15000,
+            {
+                label: 'Annulla',
+                onPress: () => {
+                    // Cancel the pending delete
+                    clearTimeout(undoTimeoutRef.current);
+                    pendingDeleteRef.current = null;
+                    isUndoActiveRef.current = false;
+                    refreshConversations(); // Full restore from DB
+                }
+            }
+        );
+
+        undoTimeoutRef.current = setTimeout(async () => {
+            const pending = pendingDeleteRef.current;
+            isUndoActiveRef.current = false;
+            if (!pending) return;
+            try {
+                await ChatService.leaveConversation(pending.convId, pending.userId);
+                pendingDeleteRef.current = null;
+                refreshConversations();
+            } catch (e) {
+                console.error('[Delete conv]', e);
+                refreshConversations(); // Restore on error
+            }
+        }, 15000);
+    }, [user?.id, showToast, refreshConversations]);
 
     useEffect(() => {
         if (!showNpoPicker) {
@@ -120,7 +245,7 @@ export default function MessagesListScreen() {
     };
 
     // Filter logic
-    const filteredConversations = (conversations || []).filter((c: any) => {
+    const filteredConversations = (localConversations || []).filter((c: any) => {
         const conv = c.conversations;
         if (!conv) return false;
 
@@ -256,17 +381,19 @@ export default function MessagesListScreen() {
                             }
 
                             return (
-                                <ConversationListItem
-                                    title={displayTitle}
-                                    avatarUrl={displayAvatar}
-                                    lastMessage={lastMessageContent}
-                                    timestamp={formatRelativeDate(lastMessageAt)}
-                                    unreadCount={isUnread ? 1 : 0}
-                                    isGroup={isGroup}
-                                    lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessageSenderId || '')?.name || 'Utente') : undefined)}
-                                    isOwnLastMessage={lastMessageSenderId === user?.id}
-                                    onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
-                                />
+                                <SwipeableConversationItem onDelete={() => handleDeleteConversation(item.conversation_id)}>
+                                    <ConversationListItem
+                                        title={displayTitle}
+                                        avatarUrl={displayAvatar}
+                                        lastMessage={lastMessageContent}
+                                        timestamp={formatRelativeDate(lastMessageAt)}
+                                        unreadCount={isUnread ? 1 : 0}
+                                        isGroup={isGroup}
+                                        lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessageSenderId || '')?.name || 'Utente') : undefined)}
+                                        isOwnLastMessage={lastMessageSenderId === user?.id}
+                                        onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
+                                    />
+                                </SwipeableConversationItem>
                             );
                         }}
                         ListEmptyComponent={

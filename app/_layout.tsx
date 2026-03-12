@@ -21,6 +21,7 @@ import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Alert } from "react-native";
 import * as Updates from "expo-updates";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,6 +40,9 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const isRedirecting = useRef(false);
+
+  // Register for push notifications and keep last_seen_at updated
+  usePushNotifications();
 
   // Notification listeners
   useEffect(() => {

@@ -1,19 +1,18 @@
-# Trigger: tag vX.Y.Z → build production + OTA su branch production
-name: EAS Build (Production)
+name: EAS Build & Maestro Cloud
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build-and-release:
-    name: EAS Build + OTA Production
+  build_and_test:
+    name: Build Android & Run Maestro
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -21,36 +20,43 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: AiutarSiApp/package-lock.json
 
       - name: Install dependencies
+        working-directory: AiutarSiApp
         run: npm ci
 
-      - name: Setup Expo + EAS
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
 
-      # ── Build APK + IPA per gli store ─────────────────────────────────────
-      - name: EAS Build (Android + iOS) — profilo production
-        run: eas build --platform all --profile production --non-interactive
+      - name: Build Android APK (Preview)
+        id: build
+        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      # ── OTA Update sul branch production ──────────────────────────────────
-      - name: EAS OTA Update → branch production
         run: |
-          eas update --branch production --platform all --non-interactive --message "Release ${{ github.ref_name }}"
+          # Esegue la build su EAS Cloud e cattura l'ID della build
+          BUILD_ID=$(eas build --platform android --profile preview --non-interactive --json | jq -r '.[0].id')
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+
+      - name: Get Build URL
+        id: get_url
+        working-directory: AiutarSiApp
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          # Recupera l'URL dell'artifact (APK) usando l'ID della build
+          URL=$(eas build:view ${{ steps.build.outputs.build_id }} --json | jq -r '.artifacts.buildUrl')
+          echo "build_url=$URL" >> $GITHUB_OUTPUT
 
-# ── GitHub Secrets necessari ──────────────────────────────────────────────────
-# Vai su: GitHub → repo → Settings → Secrets & Variables → Actions
-#
-# Secret           | Quando aggiungere | Come ottenerlo
-# -----------------|--------------------|------------------------------------------------
-# EXPO_TOKEN       | Subito             | expo.dev/accounts/fracava/settings/access-tokens
-# SENTRY_AUTH_TOKEN| Quando integri Sentry | sentry.io → Settings → API → Auth Tokens
-# GOOGLE_PLAY_KEY  | Quando attivi eas submit | Google Play Console → API access
+      - name: Download APK
+        run: curl -L "${{ steps.get_url.outputs.build_url }}" -o app.apk
+
+      - name: Run Maestro Cloud flows
+        uses: mobile-dev-inc/action-maestro-cloud@v2.0.2
+        with:
+          api-key: ${{ secrets.MAESTRO_CLOUD_API_KEY }}
+          project-id: proj_01kkhvnd1jft48rz62j2twa952
+          app-file: app.apk
+          workspace: .maestro/
+          name: "${{ github.workflow }} #${{ github.run_number }} - ${{ github.ref_name }}"

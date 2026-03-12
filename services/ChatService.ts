@@ -186,16 +186,6 @@ class ChatService {
         // Record successful send for rate-limit window
         recordMessageSent();
 
-        // Update conversation preview
-        await supabase
-            .from('conversations')
-            .update({
-                last_message_content: content,
-                last_message_at: data.created_at,
-                last_message_sender_id: senderId
-            })
-            .eq('id', conversationId);
-
         return data;
     }
 
@@ -212,11 +202,8 @@ class ChatService {
         if (error) throw error;
     }
 
-    /**
-     * Get messages for a specific conversation
-     */
-    async getMessages(conversationId: string) {
-        const { data, error } = await supabase
+    async getMessages(conversationId: string, before?: string, limit: number = 20) {
+        let query = supabase
             .from('messages')
             .select(`
                 *,
@@ -226,11 +213,53 @@ class ChatService {
                 )
             `)
             .eq('conversation_id', conversationId)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (before) {
+            query = query.lt('created_at', before);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         return data;
     }
+
+    /** Delete a single message. Only the sender can delete. Enforces a 2-minute window. */
+    async deleteMessage(messageId: string, senderId: string) {
+        // First verify ownership and time constraint client-side
+        const { data: msg, error: fetchErr } = await supabase
+            .from('messages')
+            .select('id, sender_id, created_at')
+            .eq('id', messageId)
+            .single();
+
+        if (fetchErr || !msg) throw new Error('Messaggio non trovato');
+        if (msg.sender_id !== senderId) throw new Error('Non puoi eliminare messaggi altrui');
+
+        const ageMs = Date.now() - new Date(msg.created_at).getTime();
+        if (ageMs > 2 * 60 * 1000) throw new Error('Puoi eliminare solo messaggi inviati negli ultimi 2 minuti');
+
+        const { error } = await supabase
+            .from('messages')
+            .delete()
+            .eq('id', messageId);
+
+        if (error) throw error;
+    }
+
+    /** Remove the current user from a conversation (soft-delete from their perspective) */
+    async leaveConversation(conversationId: string, userId: string) {
+        const { error } = await supabase
+            .from('conversation_participants')
+            .delete()
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    }
+
     /**
      * Get NPOs available for chat (where user is participant/approved)
      */
@@ -385,6 +414,41 @@ class ChatService {
         if (error) throw error;
         return true;
     }
+
+    /** Block a user. Inserts into blocked_users. */
+    async blockUser(blockerId: string, targetId: string) {
+        const { error } = await supabase
+            .from('blocked_users')
+            .insert({ blocker_id: blockerId, blocked_id: targetId });
+        if (error) throw error;
+    }
+
+    /** Unblock a user. */
+    async unblockUser(blockerId: string, targetId: string) {
+        const { error } = await supabase
+            .from('blocked_users')
+            .delete()
+            .eq('blocker_id', blockerId)
+            .eq('blocked_id', targetId);
+        if (error) throw error;
+    }
+
+    /**
+     * Get all user IDs to filter out — both directions:
+     * - users I blocked (I don't see them)
+     * - users who blocked me (they don't see me)
+     */
+    async getBlockedUserIds(userId: string): Promise<string[]> {
+        const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
+            supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId),
+            supabase.from('blocked_users').select('blocker_id').eq('blocked_id', userId),
+        ]);
+        const ids = new Set<string>();
+        iBlocked?.forEach((r: any) => ids.add(r.blocked_id));
+        blockedMe?.forEach((r: any) => ids.add(r.blocker_id));
+        return Array.from(ids);
+    }
 }
 
 export default new ChatService();
+
