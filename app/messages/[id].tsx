@@ -28,6 +28,7 @@ export default function ChatDetailScreen() {
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef<any>(null);
     const presenceChannelRef = useRef<any>(null);
