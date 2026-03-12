@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Dimensions, PanResponder } from 'react-native';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react-native';
 import { useToast, ToastType } from '../context/ToastContext';
 
@@ -52,6 +52,31 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, action, onDism
     const config = getToastConfig(type);
     const Icon = config.icon;
 
+    const panResponder = React.useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy < 0) {
+                    // Pulling up
+                    slideAnim.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy < -20 || gestureState.vy < -0.5) {
+                    // Swiped up fast or far enough -> dismiss
+                    handleDismiss();
+                } else {
+                    // Snap back
+                    Animated.spring(slideAnim, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            }
+        })
+    ).current;
+
     useEffect(() => {
         Animated.parallel([
             Animated.spring(slideAnim, {
@@ -77,6 +102,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, action, onDism
 
     return (
         <Animated.View
+            {...panResponder.panHandlers}
             style={{
                 transform: [{ translateY: slideAnim }],
                 opacity: opacityAnim,

@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, SafeAreaView, TextInput, Modal,
 import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useChat } from '../../context/ChatContext';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import ChatService from '../../services/ChatService';
@@ -157,7 +157,7 @@ export default function MessagesListScreen() {
         }
     }, [conversations]);
 
-    // Delete a conversation with 15s undo window
+    // Delete a conversation with 5s undo window
     const handleDeleteConversation = useCallback((convId: string) => {
         if (!user?.id) return;
 
@@ -172,7 +172,7 @@ export default function MessagesListScreen() {
         showToast(
             'error',
             'Conversazione eliminata',
-            15000,
+            5000,
             {
                 label: 'Annulla',
                 onPress: () => {
@@ -197,8 +197,23 @@ export default function MessagesListScreen() {
                 console.error('[Delete conv]', e);
                 refreshConversations(); // Restore on error
             }
-        }, 15000);
+        }, 5000);
     }, [user?.id, showToast, refreshConversations]);
+
+    // Force commit deletion when user leaves the screen
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                if (pendingDeleteRef.current) {
+                    const pending = pendingDeleteRef.current;
+                    ChatService.leaveConversation(pending.convId, pending.userId).catch(console.error);
+                    pendingDeleteRef.current = null;
+                    isUndoActiveRef.current = false;
+                    clearTimeout(undoTimeoutRef.current);
+                }
+            };
+        }, [])
+    );
 
     useEffect(() => {
         if (!showNpoPicker) {
