@@ -19,6 +19,7 @@ import { AppActivity } from '../../../types';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
 import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActions';
+import { AlertCircle } from 'lucide-react-native';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -119,6 +120,43 @@ function SuggestedActivityInFeed({ activity }: { activity: AppActivity }) {
     );
 }
 
+// ── Deletion Request Banner ──────────────────────────────────────────────────
+function DeletionBanner() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    if (!user?.deletionRequestedAt) return null;
+
+    const requestDate = new Date(user.deletionRequestedAt);
+    const now = new Date();
+    const diffTime = now.getTime() - requestDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, 30 - diffDays);
+
+    return (
+        <TouchableOpacity
+            onPress={() => router.push('/(volunteer)/(tabs)/profile')}
+            activeOpacity={0.9}
+            style={{
+                backgroundColor: '#fee2e2',
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderBottomWidth: 1,
+                borderBottomColor: '#fecaca',
+                gap: 8
+            }}
+        >
+            <AlertCircle size={14} color="#b91c1c" />
+            <Text style={{ color: '#b91c1c', fontSize: 13, fontWeight: '700' }}>
+                Account in eliminazione ({daysRemaining}gg). Per annullare clicca qui
+            </Text>
+        </TouchableOpacity>
+    );
+}
+
 // ── Main Community Screen ─────────────────────────────────────────────────────
 export default function CommunityScreen() {
     const router = useRouter();
@@ -205,6 +243,7 @@ export default function CommunityScreen() {
             noPadding={true}
             rightElement={rightElement}
         >
+            {user?.deletionRequestedAt && <DeletionBanner />}
 
             {isLoading && posts.length === 0 ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

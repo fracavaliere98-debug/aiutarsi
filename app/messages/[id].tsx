@@ -28,7 +28,6 @@ export default function ChatDetailScreen() {
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [isSending, setIsSending] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef<any>(null);
     const presenceChannelRef = useRef<any>(null);
@@ -185,7 +184,11 @@ export default function ChatDetailScreen() {
     const handleTyping = (text: string) => {
         setInputText(text);
         if (presenceChannelRef.current && user?.id) {
+            // Instantly broadcast that we are typing (Presence handles throttling internally to some extent,
+            // but we ensure we set it to true immediately on first keystroke)
             presenceChannelRef.current.track({ typing: true, user_id: user.id });
+
+            // Reset the timeout that will set typing to false
             clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = setTimeout(() => {
                 presenceChannelRef.current?.track({ typing: false, user_id: user.id });

@@ -41,24 +41,12 @@ serve(async (req) => {
             .single();
 
         const senderName = senderProfile?.full_name || 'Nuovo Messaggio';
-
         const recipientIds = participants.map((p) => p.user_id);
 
-        // Also save a notification in DB
-        const internalNotifications = recipientIds.map(userId => ({
-            user_id: userId,
-            type: 'INFO',
-            title: `Nuovo messaggio da ${senderName}`,
-            message: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
-            read: false
-        }));
-
-        await supabaseClient.from('notifications').insert(internalNotifications);
-
-        // Now get the Expo tokens for sending actual Push Notifications
+        // 4. Get recipient profiles and calculate badge counts
         const { data: profiles, error: profilesError } = await supabaseClient
             .from("profiles")
-            .select("expo_push_token")
+            .select("id, expo_push_token")
             .in("id", recipientIds)
             .not("expo_push_token", "is", null);
 
@@ -67,17 +55,40 @@ serve(async (req) => {
             return new Response("Error fetching profiles", { status: 500 });
         }
 
-        // 4. Send Expo Push Notifications
-        const pushMessages = profiles
-            .filter((profile) => profile.expo_push_token)
-            .map((profile) => ({
+        // 5. Build push messages with individual badge counts
+        const pushMessages = [];
+
+        for (const profile of profiles) {
+            // A. Count unread messages (across all conversations for this user)
+            // Logic: Count messages in conversations where I am a participant and created_at > my last_read_at
+            // Alternatively, a simpler approach if last_read_at is well maintained:
+            const { data: unreadMsgs, error: unreadMsgsError } = await supabaseClient
+                .rpc('get_unread_messages_count', { p_user_id: profile.id });
+
+            // B. Count unread notifications
+            const { count: unreadNotifs, error: unreadNotifsError } = await supabaseClient
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', profile.id)
+                .eq('read', false);
+
+            const badgeCount = (unreadMsgs || 0) + (unreadNotifs || 0);
+
+            pushMessages.push({
                 to: profile.expo_push_token,
                 sound: "default",
                 title: senderName,
+                priority: 'high',
                 body: message.content.substring(0, 100),
-                data: { conversationId: message.conversation_id },
-            }));
+                badge: badgeCount,
+                data: {
+                    conversationId: message.conversation_id,
+                    type: 'chat_message'
+                },
+            });
+        }
 
+        // 6. Send Expo Push Notifications
         if (pushMessages.length > 0) {
             const expoRes = await fetch(EXPO_PUSH_URL, {
                 method: "POST",
@@ -93,7 +104,7 @@ serve(async (req) => {
             console.log("Expo Push Response:", expoData);
         }
 
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, recipients: pushMessages.length }), {
             headers: { "Content-Type": "application/json" },
             status: 200,
         });
