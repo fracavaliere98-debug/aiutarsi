@@ -252,7 +252,7 @@ export function SmartMatchCarousel() {
                         Consigliato per te
                     </Text>
                     <Text style={{ fontSize: 10, color: Colors.secondary, fontWeight: '500' }}>
-                        Proposta AI con Gemini
+                        Proposta AI con Gemma
                     </Text>
                 </View>
             </View>
@@ -287,7 +287,7 @@ export function SmartMatchCarousel() {
                 >
                     <ActivityIndicator size="small" color={Colors.accent} />
                     <Text style={{ fontSize: 12, color: Colors.accent, fontWeight: '600' }}>
-                        Gemini sta analizzando il tuo profilo…
+                        Gemma sta analizzando il tuo profilo…
                     </Text>
                 </View>
                 <ScrollView
@@ -335,7 +335,7 @@ export function SmartMatchCarousel() {
                             Quota AI esaurita per oggi
                         </Text>
                         <Text style={{ fontSize: 12, color: Colors.secondary, lineHeight: 17 }}>
-                            I suggerimenti Gemini si ricaricano ogni 24h. Ricontrolla domani! ✨
+                            I suggerimenti Gemma si ricaricano ogni 24h. Ricontrolla domani! ✨
                         </Text>
                     </View>
                 </View>

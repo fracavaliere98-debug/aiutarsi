@@ -616,6 +616,9 @@ export type Database = {
           updated_at: string | null
           volunteer_list_visible: boolean | null
           website: string | null
+          is_banned: boolean | null
+          ban_reason: string | null
+          ban_report_id: string | null
         }
         Insert: {
           allow_calls?: boolean | null

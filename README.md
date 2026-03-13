@@ -104,5 +104,5 @@ maestro test .maestro/flows/
 - React Native 0.81 / Expo SDK 54
 - TypeScript · Expo Router · NativeWind
 - Supabase (Postgres + Auth + Realtime + Storage)
-- Google Gemini API
+- Google Gemini / Gemma AI
 - EAS Build + EAS Update

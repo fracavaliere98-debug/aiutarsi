@@ -220,7 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }, async (payload) => {
                 if (payload.new) {
                     console.log(`[AuthContext] Stato ban aggiornato tramite Realtime a: ${payload.new.is_banned}`);
-                    setUser(prev => prev ? { ...prev, is_banned: !!payload.new.is_banned, ban_reason: payload.new.ban_reason } : null);
+                    setUser(prev => prev ? { ...prev, is_banned: !!payload.new.is_banned, ban_reason: payload.new.ban_reason, ban_report_id: payload.new.ban_report_id } : null);
                 }
             }).subscribe();
 

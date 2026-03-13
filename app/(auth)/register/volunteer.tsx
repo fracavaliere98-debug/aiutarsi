@@ -35,7 +35,7 @@ export default function VolunteerRegister() {
                 profileCompleted: false
             });
 
-            router.replace("/onboarding/interests");
+            router.replace("/onboarding/intro");
 
         } catch (error: any) {
             showToast("error", error.message || "Errore durante la registrazione.");

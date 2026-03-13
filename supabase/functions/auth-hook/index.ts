@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error } = await supabaseAdmin
       .from('profiles')
-      .select('role, is_banned')
+      .select('role, is_banned, ban_reason, ban_report_id')
       .eq('id', user.id)
       .single()
 
@@ -31,7 +31,9 @@ Deno.serve(async (req) => {
           user_metadata: {
             ...user.user_metadata,
             role: profile.role,
-            is_banned: profile.is_banned
+            is_banned: profile.is_banned,
+            ban_reason: profile.ban_reason,
+            ban_report_id: profile.ban_report_id
           }
         }),
         { headers: { "Content-Type": "application/json" } },

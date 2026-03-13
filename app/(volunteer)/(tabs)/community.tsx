@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, memo } from 'react';
 import {
     View, Text, TouchableOpacity, RefreshControl,
     ActivityIndicator, Modal, Image, Dimensions
@@ -24,7 +24,7 @@ import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActio
 const SCREEN_W = Dimensions.get('window').width;
 
 // ── Weekend Events Banner ──────────────────────────────────────────────────────
-function WeekendEventsBanner({ activities }: { activities: AppActivity[] }) {
+const WeekendEventsBanner = memo(({ activities }: { activities: AppActivity[] }) => {
     const router = useRouter();
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sun, 6=Sat
@@ -76,10 +76,10 @@ function WeekendEventsBanner({ activities }: { activities: AppActivity[] }) {
             ))}
         </View>
     );
-}
+});
 
 // ── Suggested OldActivity Card (feed inline) ─────────────────────────────────────
-function SuggestedActivityInFeed({ activity }: { activity: AppActivity }) {
+const SuggestedActivityInFeed = memo(({ activity }: { activity: AppActivity }) => {
     const router = useRouter();
     return (
         <TouchableOpacity
@@ -118,7 +118,7 @@ function SuggestedActivityInFeed({ activity }: { activity: AppActivity }) {
             </View>
         </TouchableOpacity>
     );
-}
+});
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {

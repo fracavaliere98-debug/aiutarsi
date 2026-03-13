@@ -87,6 +87,9 @@ export class AuthService {
             deletionRequestedAt: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             deletion_requested_at: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             shortId: metadata.shortId || metadata.id?.substring(0, 8).toUpperCase(),
+            is_banned: metadata.is_banned,
+            ban_reason: metadata.ban_reason,
+            ban_report_id: metadata.ban_report_id,
         };
     }
 
@@ -364,6 +367,7 @@ export class AuthService {
             xp: profile.impact_points || 0,
             deletionRequestedAt: profile.deletion_requested_at,
             shortId: profile.id?.substring(0, 8).toUpperCase(),
+            ban_report_id: profile.ban_report_id,
         };
     }
 

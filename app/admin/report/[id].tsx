@@ -95,7 +95,11 @@ export default function AdminReportDetail() {
       if (action === 'banned') {
         const { error: banError } = await supabase
           .from('profiles')
-          .update({ is_banned: true, ban_reason: reason })
+          .update({ 
+            is_banned: true, 
+            ban_reason: reason,
+            ban_report_id: id // L'ID della segnalazione corrente
+          })
           .eq('id', report.reported_id);
         if (banError) throw banError;
       }

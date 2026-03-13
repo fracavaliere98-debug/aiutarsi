@@ -81,6 +81,7 @@ export type AppUser = Omit<User,
     deletion_requested_at?: string | null;
     is_banned?: boolean | null;
     ban_reason?: string | null;
+    ban_report_id?: string | null;
 };
 
 // Hybrid / Frontend-only Extended Types

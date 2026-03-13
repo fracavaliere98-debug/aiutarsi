@@ -12,7 +12,8 @@
     "test:services": "npx -y tsx scripts/test_services.ts",
     "test:match": "npx -y tsx scripts/test_smart_match.ts",
     "test:integration": "npx -y tsx scripts/test_integration.ts",
-    "test:regression": "npm run test:match && npm run test:integration"
+    "test:regression": "npm run test:match && npm run test:integration",
+    "generate-audit": "npx -y tsx scripts/generate-audit.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

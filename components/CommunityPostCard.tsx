@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, Dimensions, Alert, Animated } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, Alert, Animated } from 'react-native';
+import { Image } from 'expo-image';
 import { MoreHorizontal } from 'lucide-react-native';
 import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community';
 import { Colors } from '../constants/Colors';
@@ -15,7 +16,7 @@ interface CommunityPostCardProps {
     post: CommunityPost;
 }
 
-export function CommunityPostCard({ post }: CommunityPostCardProps) {
+export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) => {
     const router = useRouter();
     const { user } = useAuth();
     const { toggleReaction, deletePost, reportPost } = useCommunity();
@@ -84,7 +85,7 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
         return `${Math.floor(hrs / 24)}g fa`;
     })();
 
-    const scrollX = React.useRef(new Animated.Value(0)).current;
+    const scrollX = useRef(new Animated.Value(0)).current;
 
     const imageUrls = post.images_urls && post.images_urls.length > 0
         ? post.images_urls
@@ -246,4 +247,4 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
             </View>
         </View>
     );
-}
+});

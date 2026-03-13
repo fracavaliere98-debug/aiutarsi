@@ -197,7 +197,7 @@ function RootLayoutNav() {
   // BANNED USER GUARD 
   // Rende la schermata fissa di account sospeso invece di navigare
   if (user?.is_banned) {
-    return <BannedScreen reason={user.ban_reason || undefined} onLogout={logout} />;
+    return <BannedScreen reason={user.ban_reason || undefined} reportId={user.ban_report_id || undefined} onLogout={logout} />;
   }
 
   // No other conditional returns that prevent the Stack from rendering

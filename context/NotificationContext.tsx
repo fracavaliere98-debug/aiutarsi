@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { useRouter } from "expo-router";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 
@@ -33,6 +34,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
+    const router = useRouter();
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -219,6 +221,48 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, [userNotifications]);
 
     const getUnreadCount = useCallback(() => unreadCount, [unreadCount]);
+
+    // 2. Register Notification Listeners
+    useEffect(() => {
+        // This listener is fired whenever a notification is received while the app is foregrounded
+        const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+            console.log('Notification received in foreground:', notification);
+            // Optionally: you can trigger a local state refresh or show a custom UI toast here
+        });
+
+        // This listener is fired whenever a user taps on or interacts with a notification 
+        // (works when app is foreground, background, or killed)
+        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+            const data = response.notification.request.content.data;
+            console.log('Notification interaction:', data);
+
+            if (data?.conversationId) {
+                // Navigate to specific chat if applicable
+                router.push(`/chat/${data.conversationId}` as any);
+            } else if (data?.activityId) {
+                // Navigate to activity details
+                router.push(`/activity/${data.activityId}` as any);
+            }
+        });
+
+        return () => {
+            notificationListener.remove();
+            responseListener.remove();
+        };
+    }, []);
+
+    useEffect(() => {
+        // Global configuration for how notifications should behave when the app is in foreground
+        Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+                shouldShowAlert: true,
+                shouldPlaySound: true,
+                shouldSetBadge: true,
+                shouldShowBanner: true,
+                shouldShowList: true,
+            }),
+        });
+    }, []);
 
     return (
         <NotificationContext.Provider
