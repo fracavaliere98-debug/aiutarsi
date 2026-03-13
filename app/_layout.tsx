@@ -22,6 +22,7 @@ import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Alert } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
+import BannedScreen from "../components/BannedScreen";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,7 +37,7 @@ Notifications.setNotificationHandler({
 });
 
 function RootLayoutNav() {
-  const { user, isLoaded, isLoading: isAuthLoading, isLoggingOut } = useAuth();
+  const { user, isLoaded, isLoading: isAuthLoading, isLoggingOut, logout } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const isRedirecting = useRef(false);
@@ -107,11 +108,13 @@ function RootLayoutNav() {
       console.log("[DEBUG] RootLayoutNav: User present on Landing, going to App");
       isRedirecting.current = true;
 
-      const dest = user.role === "VOLUNTEER"
-        ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/interests")
-        : user.role === "NPO"
-          ? "/(npo)/(tabs)/community" // Landing on Community by default for NPOs
-          : "/(corporate)";
+      const dest = user.role === "ADMIN"
+        ? "/admin"
+        : user.role === "VOLUNTEER"
+          ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/interests")
+          : user.role === "NPO"
+            ? "/(npo)/(tabs)/community" // Landing on Community by default for NPOs
+            : "/(corporate)";
 
       router.replace(dest as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
@@ -128,13 +131,20 @@ function RootLayoutNav() {
     }
 
     // 6. COMPLETION GUARD: User logged in, profile complete, but stuck in onboarding
-    if (hasCompletedOnboarding && inOnboarding) {
-      console.log("[DEBUG] RootLayoutNav: Profile complete, escaping onboarding to community");
+    if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding) {
+      console.log("[DEBUG] RootLayoutNav: Escalating from onboarding");
       isRedirecting.current = true;
-      if (user.role === "VOLUNTEER") router.replace("/(volunteer)/(tabs)/community" as any);
+      if (user.role === "ADMIN") router.replace("/admin" as any);
+      else if (user.role === "VOLUNTEER") router.replace("/(volunteer)/(tabs)/community" as any);
       else if (user.role === "NPO") router.replace("/(npo)/(tabs)/community" as any);
       else if (user.role === "CORPORATE") router.replace("/(corporate)" as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
+      return;
+    }
+
+    // 6.5. BANNED USER GUARD -> BannedScreen is rendered in the return below
+    if (user?.is_banned) {
+      // Non reindirizziamo, lasceremo che il componente React ritorni la BannedScreen a livello radice
       return;
     }
 
@@ -184,6 +194,12 @@ function RootLayoutNav() {
 
   console.log("[DEBUG] RootLayoutNav Rendering key:", segmentKey || "root", "user:", user ? user.role : "NULL");
 
+  // BANNED USER GUARD 
+  // Rende la schermata fissa di account sospeso invece di navigare
+  if (user?.is_banned) {
+    return <BannedScreen reason={user.ban_reason || undefined} onLogout={logout} />;
+  }
+
   // No other conditional returns that prevent the Stack from rendering
   // unless we want to show a generic unauthorized state, but the sub-layouts handle it.
 
@@ -195,6 +211,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(volunteer)" />
       <Stack.Screen name="(npo)" />
       <Stack.Screen name="(corporate)" />
+      <Stack.Screen name="admin" />
 
       {/* Shared Routes */}
       <Stack.Screen name="activity/[id]" />

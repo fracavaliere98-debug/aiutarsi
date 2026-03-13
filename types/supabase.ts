@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -1973,7 +1973,7 @@ export type Database = {
       | "PENDING"
       | "APPROVED"
       | "REJECTED"
-      user_role: "VOLUNTEER" | "NPO" | "CORPORATE"
+      user_role: "VOLUNTEER" | "NPO" | "CORPORATE" | "ADMIN"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -2120,7 +2120,7 @@ export const Constants = {
         "APPROVED",
         "REJECTED",
       ],
-      user_role: ["VOLUNTEER", "NPO", "CORPORATE"],
+      user_role: ["VOLUNTEER", "NPO", "CORPORATE", "ADMIN"],
     },
   },
 } as const

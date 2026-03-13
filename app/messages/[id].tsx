@@ -11,6 +11,7 @@ import { useChat } from '../../context/ChatContext';
 import { supabase } from '../../utils/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import { useToast } from '../../context/ToastContext';
+import ReportModal from '../../components/ReportModal';
 
 export default function ChatDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -24,6 +25,7 @@ export default function ChatDetailScreen() {
     const [inputText, setInputText] = useState('');
     const [showMenu, setShowMenu] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -295,32 +297,8 @@ export default function ChatDetailScreen() {
 
     const handleReportUser = async () => {
         if (!otherParticipant?.user_id) return;
-        Alert.alert(
-            'Segnala Utente',
-            'Vuoi segnalare questo utente per comportamento inappropriato in chat?',
-            [
-                { text: 'Annulla', style: 'cancel' },
-                {
-                    text: 'Segnala',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const { error } = await supabase.from('community_reports').insert({
-                                reported_user_id: otherParticipant.user_id,
-                                reporter_id: user!.id,
-                                reason: `Segnalazione utente da chat privata (conv: ${id})`,
-                                status: 'pending',
-                            });
-                            if (error) throw error;
-                            showToast('success', 'Segnalazione inviata. Grazie per aver contribuito a mantenere la community sicura.');
-                            setShowMenu(false);
-                        } catch (e) {
-                            showToast('error', 'Errore durante la segnalazione. Riprova.');
-                        }
-                    }
-                }
-            ]
-        );
+        setShowMenu(false);
+        setShowReportModal(true);
     };
 
     const handleBlockUser = async () => {
@@ -691,6 +669,22 @@ export default function ChatDetailScreen() {
                     />
                 </View>
             </Modal>
+
+            {/* Modal Avanzato di Segnalazione */}
+            {otherUserId && (
+                <ReportModal
+                    visible={showReportModal}
+                    onClose={() => setShowReportModal(false)}
+                    reportedUser={{ id: otherUserId, name: displayTitle } as any}
+                    contentType="message"
+                    contentId={id as string}
+                    evidenceSnapshot={messages.slice(0, 10).map(m => ({
+                        content: m.content,
+                        sender_id: m.sender_id,
+                        created_at: m.created_at
+                    }))}
+                />
+            )}
         </SafeAreaView>
     );
 }

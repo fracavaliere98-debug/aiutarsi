@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
-import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle } from "lucide-react-native";
+import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { UserAvatar } from "../../components/UserAvatar";
 import { SoftCard } from "../../components/SoftCard";
@@ -15,6 +15,7 @@ import { ActivityCard } from "../../components/ActivityCard";
 import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import ChatService from "../../services/ChatService";
+import ReportModal from "../../components/ReportModal";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
@@ -24,6 +25,7 @@ export default function NPOProfileScreen() {
     const { applyToNPO, hasAppliedToNPO } = useApplications();
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni">("attivita");
+    const [showReportModal, setShowReportModal] = useState(false);
 
     // Get NPO data
     const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
@@ -115,6 +117,14 @@ export default function NPOProfileScreen() {
                     className="p-2 bg-white/20 rounded-full"
                 >
                     <MessageCircle size={20} color="white" />
+                </TouchableOpacity>
+            )}
+            {user?.role === "VOLUNTEER" && (
+                <TouchableOpacity
+                    onPress={() => setShowReportModal(true)}
+                    className="p-2 bg-white/20 rounded-full bg-red-500/20"
+                >
+                    <AlertTriangle size={20} color="white" />
                 </TouchableOpacity>
             )}
             <TouchableOpacity className="p-2 bg-white/20 rounded-full">
@@ -430,6 +440,14 @@ export default function NPOProfileScreen() {
                     </View>
                 )}
             </View>
+
+            {/* Modal di Segnalazione */}
+            <ReportModal
+                visible={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                reportedUser={npoUser as any}
+                contentType="profile"
+            />
         </StandardLayout>
     );
 }

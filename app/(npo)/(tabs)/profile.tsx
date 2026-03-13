@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal , Alert } from "react-native";
 import Constants from 'expo-constants';
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -16,7 +16,8 @@ import {
     FileText,
     Pencil,
     Camera,
-    X
+    X,
+    ShieldBan
 } from "lucide-react-native";
 import { SoftCard } from "../../../components/SoftCard";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -30,7 +31,7 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import EditProfileScreen from "../edit-profile";
 import SecurityScreen from "../security";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
-import { Alert } from "react-native";
+
 import { useToast } from "../../../context/ToastContext";
 
 export default function NPOProfileScreen() {
@@ -176,11 +177,10 @@ export default function NPOProfileScreen() {
                         onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
                     />
                     <MenuItem
-                        icon={Bell}
-                        badge={unreadCount > 0 ? unreadCount : undefined}
-                        label="Notifiche"
+                        icon={ShieldBan}
+                        label="Account bloccati"
                         color={Colors.accent}
-                        onPress={() => router.push("/(npo)/notifications" as any)}
+                        onPress={() => router.push("/blocked-users" as any)}
                     />
                     <MenuItem
                         icon={Key}
@@ -190,6 +190,21 @@ export default function NPOProfileScreen() {
                         last
                     />
                 </SoftCard>
+
+                {user && (user.role as string) === 'ADMIN' && (
+                    <>
+                        <SectionHeader title="Amministrazione" />
+                        <SoftCard className="mb-8 px-5">
+                            <MenuItem
+                                icon={ShieldBan}
+                                label="Area Admin"
+                                color="#8B5CF6"
+                                onPress={() => router.push("/admin" as any)}
+                                last
+                            />
+                        </SoftCard>
+                    </>
+                )}
 
                 {/* SUPPORTO Section */}
                 <SectionHeader title="Supporto" />

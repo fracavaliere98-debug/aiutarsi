@@ -6,7 +6,7 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, Bell } from 'lucide-react-native';
+import { Plus, Bell , AlertCircle } from 'lucide-react-native';
 import { Colors } from '../../../constants/Colors';
 import { useCommunity } from '../../../context/CommunityContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -19,7 +19,7 @@ import { AppActivity } from '../../../types';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
 import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActions';
-import { AlertCircle } from 'lucide-react-native';
+
 
 const SCREEN_W = Dimensions.get('window').width;
 

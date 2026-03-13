@@ -79,6 +79,8 @@ export type AppUser = Omit<User,
     updated_at?: string;
     embedding?: number[] | null;
     deletion_requested_at?: string | null;
+    is_banned?: boolean | null;
+    ban_reason?: string | null;
 };
 
 // Hybrid / Frontend-only Extended Types
@@ -121,7 +123,7 @@ export type AppActivity = Omit<Activity,
 
 export type AppActivityApplication = OldActivityApplication;
 
-export type Role = "VOLUNTEER" | "NPO" | "CORPORATE";
+export type Role = "VOLUNTEER" | "NPO" | "CORPORATE" | "ADMIN";
 
 export interface OldUser {
     id: string;

@@ -47,6 +47,24 @@ class ChatService {
             throw error;
         }
 
+        // Filter out conversations with blocked users
+        try {
+            const blockedIds = await this.getBlockedUserIds(userId);
+            if (blockedIds.length > 0) {
+                return data.filter((p: any) => {
+                    if (p.conversations?.type === 'PRIVATE') {
+                        const other = p.conversations.participants?.find((part: any) => part.user_id !== userId);
+                        if (other && blockedIds.includes(other.user_id)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+            }
+        } catch (e) {
+            console.error('Error filtering blocked users in conversations:', e);
+        }
+
         return data;
     }
 

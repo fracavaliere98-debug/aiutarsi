@@ -8,6 +8,7 @@ import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } fro
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { OldUser } from "../../../types";
 import ChatService from "../../../services/ChatService";
+import ReportModal from "../../../components/ReportModal";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
@@ -19,6 +20,7 @@ export default function NPOVolunteerProfile() {
     const [user, setUser] = useState<OldUser | null>(null);
     const [gamificationState, setGamificationState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -137,18 +139,29 @@ export default function NPOVolunteerProfile() {
     };
 
     return (
-        <VolunteerProfileView
-            user={user}
-            gamificationState={gamificationState}
-            stats={enrichedStats}
-            levelProgress={levelProgress}
-            xpInLevel={xpInLevel}
-            xpNeededForLevel={xpNeededForLevel}
-            onBack={() => router.back()}
-            onMessagePress={handleMessageVolunteer}
-            followedNPOs={followedNPOs}
-            affiliatedNPOs={affiliatedNPOs}
-            npoApplications={userApplications}
-        />
+        <>
+            <VolunteerProfileView
+                user={user}
+                gamificationState={gamificationState}
+                stats={enrichedStats}
+                levelProgress={levelProgress}
+                xpInLevel={xpInLevel}
+                xpNeededForLevel={xpNeededForLevel}
+                onBack={() => router.back()}
+                onMessagePress={handleMessageVolunteer}
+                onReportPress={() => setShowReportModal(true)}
+                followedNPOs={followedNPOs}
+                affiliatedNPOs={affiliatedNPOs}
+                npoApplications={userApplications}
+            />
+
+            {/* Modal di Segnalazione */}
+            <ReportModal
+                visible={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                reportedUser={user as any}
+                contentType="profile"
+            />
+        </>
     );
 }

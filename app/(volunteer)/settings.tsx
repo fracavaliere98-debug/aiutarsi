@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView , Alert } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
+
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database } from 'lucide-react-native';
+import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -248,13 +248,28 @@ export default function VolunteerSettings() {
                         onPress={() => router.push("/(volunteer)/interests-skills" as any)}
                     />
                     <MenuItem
-                        icon={Bell}
-                        label="Notifiche"
+                        icon={ShieldBan}
+                        label="Account bloccati"
                         color={Colors.accent}
-                        onPress={() => router.push("/(volunteer)/notifications" as any)}
+                        onPress={() => router.push("/blocked-users" as any)}
                         last
                     />
                 </SoftCard>
+
+                {user && (user.role as string) === 'ADMIN' && (
+                    <>
+                        <SectionHeader title="Amministrazione" />
+                        <SoftCard className="mb-8 px-5">
+                            <MenuItem
+                                icon={ShieldBan}
+                                label="Area Admin"
+                                color="#8B5CF6"
+                                onPress={() => router.push("/admin" as any)}
+                                last
+                            />
+                        </SoftCard>
+                    </>
+                )}
 
                 <SectionHeader title="Dati & Privacy" />
                 <SoftCard className="mb-8 px-5">

@@ -194,18 +194,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const interval = setInterval(updateStatus, 180000);
 
         // IMMEDIATE UPDATE ON APP FOCUS
-        const handleAppStateChange = (nextAppState: AppStateStatus) => {
+        const handleAppStateChange = async (nextAppState: AppStateStatus) => {
             if (nextAppState === 'active') {
                 console.log("[Heartbeat] App returned to active. Immediate status update...");
                 updateStatus();
+                try {
+                    const { data } = await supabase.auth.refreshSession();
+                    if (data?.session?.user?.user_metadata?.is_banned) {
+                        // Aggiorniamo lo user in locale così scatta la UI BannedScreen
+                        setUser(prev => prev ? { ...prev, is_banned: true } : null);
+                    }
+                } catch(e) {}
             }
         };
 
         const subscription = AppState.addEventListener('change', handleAppStateChange);
 
+        // REALTIME SUBSCRIPTION PER IL BAN ISTANTANEO
+        const profileSubscription = supabase.channel('public:profiles:is_banned')
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'profiles', 
+                filter: `id=eq.${user.id}` 
+            }, async (payload) => {
+                if (payload.new) {
+                    console.log(`[AuthContext] Stato ban aggiornato tramite Realtime a: ${payload.new.is_banned}`);
+                    setUser(prev => prev ? { ...prev, is_banned: !!payload.new.is_banned, ban_reason: payload.new.ban_reason } : null);
+                }
+            }).subscribe();
+
         return () => {
             clearInterval(interval);
             subscription.remove();
+            profileSubscription.unsubscribe();
         };
     }, [user?.id]);
 
