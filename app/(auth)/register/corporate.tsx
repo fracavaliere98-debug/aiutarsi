@@ -17,8 +17,10 @@ export default function CorporateRegister() {
         email: "",
         password: "",
     });
+    const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
     const handleRegister = async () => {
+        if (!acceptedPrivacy) return;
         setIsLoading(true);
         try {
             await register({
@@ -93,10 +95,22 @@ export default function CorporateRegister() {
                     </View>
                 </View>
 
+                <TouchableOpacity 
+                    onPress={() => setAcceptedPrivacy(!acceptedPrivacy)}
+                    className="flex-row items-center mt-6 px-1"
+                >
+                    <View className={`w-6 h-6 rounded-md border-2 mr-3 items-center justify-center ${acceptedPrivacy ? 'bg-primary border-primary' : 'border-primary/20'}`}>
+                        {acceptedPrivacy && <Text className="text-white text-xs">✓</Text>}
+                    </View>
+                    <Text className="text-sm text-secondary flex-1">
+                        Accetto la <Text className="text-primary font-bold">Privacy Policy</Text> e i <Text className="text-primary font-bold">Termini di Servizio</Text>
+                    </Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     onPress={handleRegister}
-                    disabled={isLoading}
-                    className={`bg-primary mt-8 py-4 rounded-xl shadow-lg active:scale-95 transition-transform items-center ${isLoading ? 'opacity-70' : ''}`}
+                    disabled={isLoading || !acceptedPrivacy}
+                    className={`bg-primary mt-8 py-4 rounded-xl shadow-lg active:scale-95 transition-transform items-center ${isLoading || !acceptedPrivacy ? 'opacity-50' : ''}`}
                 >
                     <Text className="text-white text-lg font-bold">{isLoading ? "Registrazione..." : "Crea Account Corporate"}</Text>
                 </TouchableOpacity>
