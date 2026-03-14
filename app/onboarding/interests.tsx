@@ -1,113 +1,538 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
-import { useRouter } from "expo-router";
-import { ScreenWrapper } from "../../components/ScreenWrapper";
-import { useAuth } from "../../context/AuthContext";
-import { Colors } from "../../constants/Colors";
-import { useState } from "react";
-import { Heart, Globe, BookOpen, Users, Dog, Palette, ArrowLeft } from "lucide-react-native";
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    Image,
+    Dimensions,
+    StyleSheet,
+    SafeAreaView,
+    PanResponder,
+    Animated as RNAnimated,
+    StatusBar,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { X, Heart } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width, height } = Dimensions.get('window');
+const SWIPE_THRESHOLD = width * 0.3;
+const ROTATION_FACTOR = 8;
 
 const INTERESTS = [
-    { id: "social", label: "Sociale", icon: Users },
-    { id: "environment", label: "Ambiente", icon: Globe },
-    { id: "education", label: "Educazione", icon: BookOpen },
-    { id: "animals", label: "Animali", icon: Dog },
-    { id: "art", label: "Arte & Cultura", icon: Palette },
-    { id: "health", label: "Salute", icon: Heart },
+    {
+        id: 'ambiente',
+        label: 'Ambiente',
+        emoji: '🌿',
+        description: 'Salvaguardia del territorio e natura',
+        uri: 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop',
+    },
+    {
+        id: 'sociale',
+        label: 'Sociale',
+        emoji: '🤝',
+        description: 'Inclusione e supporto alla comunità',
+        uri: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=800&auto=format&fit=crop',
+    },
+    {
+        id: 'educazione',
+        label: 'Educazione',
+        emoji: '📚',
+        description: 'Supporto scolastico e formazione',
+        uri: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=800&auto=format&fit=crop',
+    },
+    {
+        id: 'animali',
+        label: 'Animali',
+        emoji: '🐶',
+        description: 'Cura e tutela dei nostri amici',
+        uri: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=800&auto=format&fit=crop',
+    },
+    {
+        id: 'arte',
+        label: 'Arte & Cultura',
+        emoji: '🎨',
+        description: 'Promozione della bellezza e storia',
+        uri: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop',
+    },
+    {
+        id: 'salute',
+        label: 'Salute',
+        emoji: '💚',
+        description: 'Prevenzione e assistenza sanitaria',
+        uri: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop',
+    },
 ];
 
 export default function OnboardingInterests() {
     const router = useRouter();
-    const [selected, setSelected] = useState<string[]>([]);
+    const { updateUserProfile, user } = useAuth();
+    const { showToast } = useToast();
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [likedInterests, setLikedInterests] = useState<string[]>([]);
+    const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null);
 
-    const toggleInterest = (label: string) => {
-        if (selected.includes(label)) {
-            setSelected(selected.filter((item) => item !== label));
+    // Refs for PanResponder and other closures to avoid stale state
+    const currentIndexRef = useRef(0);
+    const likedInterestsRef = useRef<string[]>([]);
+
+    // Sync refs with state
+    useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+    useEffect(() => { likedInterestsRef.current = likedInterests; }, [likedInterests]);
+
+    // Persistence: Load saved index
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const loadProgress = async () => {
+            try {
+                const key = `onboarding_interest_index_${user.id}`;
+                const savedIndex = await AsyncStorage.getItem(key);
+                console.log("[DEBUG] Interests: Loading progress for user", user.id, "Index:", savedIndex);
+                if (savedIndex !== null) {
+                    const idx = parseInt(savedIndex);
+                    if (idx < INTERESTS.length) {
+                        setCurrentIndex(idx);
+                    }
+                }
+                setIsLoaded(true);
+            } catch (e) {
+                console.error("Failed to load persistence", e);
+                setIsLoaded(true);
+            }
+        };
+        loadProgress();
+    }, [user?.id]);
+
+    // Persistence: Save index
+    useEffect(() => {
+        if (isLoaded && user?.id) {
+            const key = `onboarding_interest_index_${user.id}`;
+            AsyncStorage.setItem(key, currentIndex.toString());
+        }
+    }, [currentIndex, isLoaded, user?.id]);
+
+    const position = useRef(new RNAnimated.ValueXY()).current;
+    const rotate = position.x.interpolate({
+        inputRange: [-width / 2, 0, width / 2],
+        outputRange: ['-10deg', '0deg', '10deg'],
+        extrapolate: 'clamp',
+    });
+    const likeOpacity = position.x.interpolate({
+        inputRange: [0, SWIPE_THRESHOLD],
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+    });
+    const dislikeOpacity = position.x.interpolate({
+        inputRange: [-SWIPE_THRESHOLD, 0],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+    });
+
+    const nextCard = (updatedInterests?: string[]) => {
+        position.setValue({ x: 0, y: 0 });
+        setSwipeDir(null);
+        
+        const currentIdx = currentIndexRef.current;
+        console.log("[DEBUG] nextCard: Current Index", currentIdx, "Array Length", INTERESTS.length);
+
+        if (currentIdx < INTERESTS.length - 1) {
+            setCurrentIndex(prev => prev + 1);
         } else {
-            setSelected([...selected, label]);
-        }
-    };
+            // FINISHED: Proceed to skills
+            const finalInterests = updatedInterests || likedInterestsRef.current;
+            console.log("[DEBUG] Interests finished. Navigating to skills with:", finalInterests);
+            
+            // Clear persistence
+            if (user?.id) {
+                AsyncStorage.removeItem(`onboarding_interest_index_${user.id}`).catch(() => {});
+            }
 
-    const { updateUserProfile, logout } = useAuth();
-
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleContinue = async () => {
-        console.log("[DEBUG] Interests: handleContinue pressed");
-
-        // DEFERRED UPDATE: We do NOT save here. We pass to next screen.
-        try {
-            console.log("[DEBUG] Interests: navigating to /onboarding/skills with params", selected);
-            router.push({
+            router.replace({
                 pathname: "/onboarding/skills",
-                params: { interests: JSON.stringify(selected) }
-            });
-        } catch (e) {
-            console.error("[DEBUG] Interests: navigation error", e);
+                params: {
+                    interests: JSON.stringify(finalInterests)
+                }
+            } as any);
         }
     };
+
+    const handleLike = async () => {
+        const currentIdx = currentIndexRef.current;
+        const interest = INTERESTS[currentIdx];
+        if (!interest) return nextCard();
+        
+        const updated = [...likedInterestsRef.current, interest.label];
+        setLikedInterests(updated);
+        
+        try {
+            await updateUserProfile({ interests: updated });
+        } catch (e) {
+            console.error("Save interest failed", e);
+        }
+        nextCard(updated);
+    };
+
+    const handleDislike = () => {
+        nextCard();
+    };
+
+    const swipeRight = () => {
+        RNAnimated.timing(position, {
+            toValue: { x: width * 1.5, y: 0 },
+            duration: 300,
+            useNativeDriver: false,
+        }).start(() => handleLike());
+    };
+
+    const swipeLeft = () => {
+        RNAnimated.timing(position, {
+            toValue: { x: -width * 1.5, y: 0 },
+            duration: 300,
+            useNativeDriver: false,
+        }).start(() => handleDislike());
+    };
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) =>
+                Math.abs(gestureState.dx) > 5,
+            onPanResponderMove: (_, gestureState) => {
+                position.setValue({ x: gestureState.dx, y: gestureState.dy });
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dx > SWIPE_THRESHOLD) {
+                    RNAnimated.timing(position, {
+                        toValue: { x: width * 1.5, y: gestureState.dy },
+                        duration: 250,
+                        useNativeDriver: false,
+                    }).start(() => handleLike());
+                } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+                    RNAnimated.timing(position, {
+                        toValue: { x: -width * 1.5, y: gestureState.dy },
+                        duration: 250,
+                        useNativeDriver: false,
+                    }).start(() => handleDislike());
+                } else {
+                    RNAnimated.spring(position, {
+                        toValue: { x: 0, y: 0 },
+                        useNativeDriver: false,
+                        friction: 5,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    const currentInterest = INTERESTS[currentIndex] || INTERESTS[0];
+    const progress = (currentIndex + 1) / INTERESTS.length;
+
+    if (!isLoaded) return <View style={styles.container} />;
 
     return (
-        <ScreenWrapper className="px-0 bg-background-light">
-            <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View className="px-6 py-4 flex-row items-center justify-between">
-                    <View className="w-6" />
-                    <Text className="text-lg font-bold text-primary">Onboarding - Interessi</Text>
-                    {/* Hiding logout to prevent accidental exits during critical flow */}
-                    <View className="w-6" />
-                </View>
-
-                {/* Progress Dots */}
-                <View className="flex-row justify-center gap-2 mb-8">
-                    <View className="w-8 h-2 rounded-full bg-primary" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                </View>
-
-                <View className="px-6">
-                    <Text className="text-3xl font-black text-primary mb-2">Cosa ti appassiona?</Text>
-                    <Text className="text-secondary mb-8">
-                        Seleziona le cause che ti stanno a cuore per ricevere suggerimenti personalizzati.
-                    </Text>
-
-                    <View className="flex-row flex-wrap gap-4 justify-center">
-                        {INTERESTS.map((item) => {
-                            const isSelected = selected.includes(item.label);
-                            const Icon = item.icon;
-                            return (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    onPress={() => toggleInterest(item.label)}
-                                    className={`w-[45%] aspect-square rounded-2xl p-4 justify-between border-2 ${isSelected ? "bg-primary/5 border-primary" : "bg-white border-primary/5 shadow-sm"
-                                        }`}
-                                >
-                                    <Icon size={32} color={isSelected ? Colors.primary : Colors.secondary} />
-                                    <View>
-                                        <Text className={`font-bold text-lg ${isSelected ? "text-primary" : "text-secondary"}`}>
-                                            {item.label}
-                                        </Text>
-                                        {isSelected && <Text className="text-xs text-primary">Selezionato</Text>}
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                </View>
-            </ScrollView>
-
-            <View className="p-6 border-t border-primary/5 bg-background-light">
-                <TouchableOpacity
-                    onPress={handleContinue}
-                    disabled={selected.length === 0 || isLoading}
-                    className={`py-4 rounded-xl shadow-lg items-center ${selected.length > 0 ? "bg-accent" : "bg-gray-300"
-                        }`}
-                >
-                    <Text className="text-white text-lg font-bold">
-                        {isLoading ? "Salvataggio..." : "Continua"}
-                    </Text>
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" />
+            {/* Top Nav */}
+            <View style={styles.topNav}>
+                <Text style={styles.logo}>AiutarSì</Text>
+                <TouchableOpacity onPress={() => router.replace('/onboarding/skills')}>
+                    <Text style={styles.skipText}>Salta</Text>
                 </TouchableOpacity>
             </View>
-        </ScreenWrapper>
+
+            {/* Progress */}
+            <View style={styles.progressContainer}>
+                <View style={styles.progressRow}>
+                    <Text style={styles.progressLabel}>PROGRESSO INTERESSI</Text>
+                    <Text style={styles.progressLabel}>{currentIndex + 1} DI {INTERESTS.length}</Text>
+                </View>
+                <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                </View>
+            </View>
+
+            {/* Header Text */}
+            <View style={styles.headerSection}>
+                <Text style={styles.title}>Cosa ti appassiona?</Text>
+                <Text style={styles.subtitle}>
+                    Scorri o clicca per scegliere i tuoi interessi.{'\n'}Gemma userà queste info per i tuoi match.
+                </Text>
+            </View>
+
+            {/* Card Area */}
+            <View style={styles.cardArea}>
+                {/* Background card (next) */}
+                {currentIndex < INTERESTS.length - 1 && (
+                    <View style={styles.backgroundCard}>
+                        <Image
+                            source={{ uri: INTERESTS[currentIndex + 1].uri }}
+                            style={styles.cardImage}
+                            resizeMode="cover"
+                        />
+                    </View>
+                )}
+
+                {/* Foreground card (current) */}
+                <RNAnimated.View
+                    style={[
+                        styles.foregroundCard,
+                        {
+                            transform: [
+                                { translateX: position.x },
+                                { translateY: position.y },
+                                { rotate },
+                            ],
+                        },
+                    ]}
+                    {...panResponder.panHandlers}
+                >
+                    <Image
+                        source={{ uri: currentInterest.uri }}
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                    />
+                    <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.85)']}
+                        style={styles.cardGradient}
+                    >
+                        {/* Like / Nope indicators */}
+                        <RNAnimated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
+                            <Text style={styles.likeStampText}>💚 MI INTERESSA</Text>
+                        </RNAnimated.View>
+                        <RNAnimated.View style={[styles.nopeStamp, { opacity: dislikeOpacity }]}>
+                            <Text style={styles.nopeStampText}>✕ SALTA</Text>
+                        </RNAnimated.View>
+
+                        <Text style={styles.cardLabel}>
+                            {currentInterest.label} {currentInterest.emoji}
+                        </Text>
+                        <Text style={styles.cardDesc}>{currentInterest.description}</Text>
+                    </LinearGradient>
+                </RNAnimated.View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.buttons}>
+                <TouchableOpacity style={styles.btnDislike} onPress={swipeLeft} activeOpacity={0.8}>
+                    <X size={32} color={Colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnLike} onPress={swipeRight} activeOpacity={0.8}>
+                    <Heart size={38} color="white" fill="white" />
+                </TouchableOpacity>
+            </View>
+
+            {/* Bottom hint */}
+            <View style={styles.hint}>
+                <Text style={styles.hintText}>SCORRI PER DECIDERE</Text>
+            </View>
+        </SafeAreaView>
     );
 }
+
+const CARD_HEIGHT = height * 0.48;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F6FF',
+    },
+    topNav: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    logo: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: Colors.primary,
+    },
+    skipText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: Colors.primary,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+    },
+    progressContainer: {
+        paddingHorizontal: 24,
+        marginBottom: 12,
+    },
+    progressRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    progressLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: `${Colors.primary}66`,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+    },
+    progressTrack: {
+        height: 6,
+        backgroundColor: `${Colors.primary}18`,
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: Colors.primary,
+        borderRadius: 3,
+    },
+    headerSection: {
+        paddingHorizontal: 24,
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: '900',
+        color: '#2d1b69',
+        textAlign: 'center',
+        marginBottom: 6,
+    },
+    subtitle: {
+        fontSize: 13,
+        color: Colors.secondary,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    cardArea: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 24,
+    },
+    backgroundCard: {
+        position: 'absolute',
+        width: '100%',
+        height: CARD_HEIGHT,
+        borderRadius: 36,
+        overflow: 'hidden',
+        opacity: 0.45,
+        transform: [{ scale: 0.95 }, { translateY: 10 }],
+        backgroundColor: '#ddd',
+    },
+    foregroundCard: {
+        width: '100%',
+        height: CARD_HEIGHT,
+        borderRadius: 36,
+        overflow: 'hidden',
+        backgroundColor: '#eee',
+        elevation: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+    },
+    cardImage: {
+        width: '100%',
+        height: '100%',
+    },
+    cardGradient: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        top: 0,
+        borderRadius: 36,
+        justifyContent: 'flex-end',
+        padding: 28,
+    },
+    likeStamp: {
+        position: 'absolute',
+        top: 28,
+        left: 20,
+        backgroundColor: 'rgba(0,200,100,0.85)',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+    },
+    likeStampText: {
+        color: 'white',
+        fontWeight: '900',
+        fontSize: 15,
+        letterSpacing: 1,
+    },
+    nopeStamp: {
+        position: 'absolute',
+        top: 28,
+        right: 20,
+        backgroundColor: 'rgba(220,50,50,0.85)',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+    },
+    nopeStampText: {
+        color: 'white',
+        fontWeight: '900',
+        fontSize: 15,
+        letterSpacing: 1,
+    },
+    cardLabel: {
+        fontSize: 30,
+        fontWeight: '900',
+        color: 'white',
+        marginBottom: 6,
+    },
+    cardDesc: {
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.8)',
+        fontWeight: '500',
+    },
+    buttons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 32,
+        paddingTop: 20,
+        paddingBottom: 12,
+    },
+    btnDislike: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+    },
+    btnLike: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#e31b5d',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 8,
+        shadowColor: '#e31b5d',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+    },
+    hint: {
+        alignItems: 'center',
+        paddingBottom: 20,
+    },
+    hintText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: `${Colors.primary}40`,
+        letterSpacing: 4,
+    },
+});

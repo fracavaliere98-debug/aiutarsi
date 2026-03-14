@@ -22,7 +22,7 @@ export default function CorporateRegister() {
         setIsLoading(true);
         try {
             await register({
-                name: formData.companyName,
+                full_name: formData.companyName,
                 email: formData.email,
                 password: formData.password,
                 role: "CORPORATE",

@@ -12,8 +12,8 @@ export default function OnboardingLayout() {
             <Stack.Screen name="intro" />
             <Stack.Screen name="interests" />
             <Stack.Screen name="skills" />
-            <Stack.Screen name="verification" />
             <Stack.Screen name="profile" />
+            <Stack.Screen name="welcome" />
         </Stack>
     );
 }

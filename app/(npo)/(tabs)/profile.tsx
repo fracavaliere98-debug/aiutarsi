@@ -63,7 +63,7 @@ export default function NPOProfileScreen() {
         });
 
         if (!result.canceled) {
-            await updateUserProfile({ avatar: result.assets[0].uri });
+            await updateUserProfile({ avatar_url: result.assets[0].uri });
         }
     };
 

@@ -79,6 +79,7 @@ let PROVIDER_DEFAULT: any;
 let Circle: any;
 let UrlTile: any;
 
+/*
 if (Platform.OS !== 'web') {
     try {
         const MapModule = require("react-native-maps");
@@ -91,6 +92,7 @@ if (Platform.OS !== 'web') {
         console.warn("Native MapView could not be loaded");
     }
 }
+*/
 
 // ─── Local Marker Component (to handle stable state) ──────────────────────────
 const ActivityMarker = ({ activity, isSelected, isEnrolled, markerColor, CatIcon, onPress, MarkerComp }: any) => {

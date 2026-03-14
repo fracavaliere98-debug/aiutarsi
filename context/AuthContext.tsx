@@ -254,7 +254,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // setIsLoading(true); // Don't trigger global loading
         try {
             // Check required fields (basic validation)
-            if (!userData.email || !userData.password || !userData.full_name) {
+            if (!userData.email || !userData.password || (!userData.full_name && !userData.name)) {
                 throw new Error("Missing required fields");
             }
 
@@ -282,9 +282,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 Object.entries(data).filter(([, v]) => v !== undefined)
             );
 
-            // If updating skills/interests/followedNPOs, ensure we don't break the object structure
-            // In theory, if the component sends { skills: ['A'] }, it replaces the flat array.
+            // Ensure both snake_case and camelCase for profile completion and avatar are synced
             const updatedUser = { ...user, ...cleanData };
+            
+            // Sync Profile Completion keys
+            if (cleanData.profile_completed !== undefined) {
+                (updatedUser as any).profileCompleted = cleanData.profile_completed;
+            } else if ((cleanData as any).profileCompleted !== undefined) {
+                updatedUser.profile_completed = (cleanData as any).profileCompleted;
+            }
+
+            // Sync Avatar keys
+            if (cleanData.avatar_url !== undefined) {
+                (updatedUser as any).avatar = cleanData.avatar_url;
+            } else if ((cleanData as any).avatar !== undefined) {
+                updatedUser.avatar_url = (cleanData as any).avatar;
+            }
 
             // 2. Update Local State Immediately (Optimistic)
             setUser(updatedUser);

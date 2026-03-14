@@ -111,7 +111,7 @@ function RootLayoutNav() {
       const dest = user.role === "ADMIN"
         ? "/admin"
         : user.role === "VOLUNTEER"
-          ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/interests")
+          ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/intro")
           : user.role === "NPO"
             ? "/(npo)/(tabs)/community" // Landing on Community by default for NPOs
             : "/(corporate)";
@@ -131,7 +131,7 @@ function RootLayoutNav() {
     }
 
     // 6. COMPLETION GUARD: User logged in, profile complete, but stuck in onboarding
-    if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding) {
+    if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding && !segmentKey.includes("welcome")) {
       console.log("[DEBUG] RootLayoutNav: Escalating from onboarding");
       isRedirecting.current = true;
       if (user.role === "ADMIN") router.replace("/admin" as any);

@@ -98,7 +98,7 @@ export default function NPOReviewsScreen() {
                                     {relatedActivity && (
                                         <View className="flex-row items-center gap-1.5 mb-3 bg-indigo-50/50 self-start px-2 py-1 rounded-md">
                                             <Calendar size={10} color={Colors.primary} />
-                                            <Text className="text-[10px] font-bold text-indigo-900 line-clamp-1" numberOfLines={1}>
+                                            <Text className="text-[10px] font-bold text-indigo-900" numberOfLines={1}>
                                                 Missione: {relatedActivity.title}
                                             </Text>
                                         </View>

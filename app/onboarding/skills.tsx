@@ -45,7 +45,7 @@ export default function OnboardingSkills() {
     const handleContinue = async () => {
         // DEFERRED UPDATE: Pass everything to next screen
         router.push({
-            pathname: "/onboarding/verification",
+            pathname: "/onboarding/profile",
             params: {
                 interests: interestsJson,
                 skills: JSON.stringify(selected)
@@ -61,7 +61,7 @@ export default function OnboardingSkills() {
                     <TouchableOpacity onPress={() => router.back()}>
                         <ArrowLeft size={24} color={Colors.primary} />
                     </TouchableOpacity>
-                    <Text className="text-lg font-bold text-primary">Onboarding - Competenze</Text>
+                    <Text className="text-lg font-bold text-primary">Competenze</Text>
                     <TouchableOpacity onPress={() => logout()}>
                         <Text className="text-primary font-medium text-sm text-red-500">Esci</Text>
                     </TouchableOpacity>
@@ -71,7 +71,6 @@ export default function OnboardingSkills() {
                 <View className="flex-row justify-center gap-2 mb-8">
                     <View className="w-2 h-2 rounded-full bg-primary/20" />
                     <View className="w-8 h-2 rounded-full bg-primary" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
                     <View className="w-2 h-2 rounded-full bg-primary/20" />
                 </View>
 

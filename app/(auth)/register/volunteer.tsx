@@ -28,7 +28,7 @@ export default function VolunteerRegister() {
         setIsLoading(true);
         try {
             await register({
-                name: `${formData.firstName} ${formData.lastName}`,
+                full_name: `${formData.firstName} ${formData.lastName}`,
                 email: formData.email,
                 password: formData.password,
                 role: "VOLUNTEER",

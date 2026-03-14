@@ -41,25 +41,21 @@ export default function OnboardingProfile() {
 
         const interests = params.interests ? JSON.parse(params.interests as string) : [];
         const skills = params.skills ? JSON.parse(params.skills as string) : [];
-        const isVerified = params.isVerified === "true";
 
-        // FINAL SAVE
         // FINAL SAVE
         setIsUploading(true);
         try {
             const success = await updateUserProfile({
                 interests,
                 skills,
-                isVerified,
                 bio,
-                avatar: avatar || undefined,
-                profileCompleted: true
+                avatar_url: avatar || undefined
             });
 
             if (success) {
-                console.log("[DEBUG] Onboarding Profile: SAVE SUCCESS. Router should redirect.");
-                showToast('success', 'Benvenuto! Profilo creato.');
-                router.replace("/(volunteer)/(tabs)" as any);
+                console.log("[DEBUG] Onboarding Profile: SAVE SUCCESS. Redirecting to welcome.");
+                showToast('success', 'Profilo completato!');
+                router.replace("/onboarding/welcome" as any);
             }
         } catch (error: any) {
             console.error("[DEBUG] Onboarding Profile: SAVE FAILED", error);
@@ -85,7 +81,6 @@ export default function OnboardingProfile() {
 
                 {/* Progress Dots */}
                 <View className="flex-row justify-center gap-2 mb-6">
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
                     <View className="w-2 h-2 rounded-full bg-primary/20" />
                     <View className="w-2 h-2 rounded-full bg-primary/20" />
                     <View className="w-8 h-2 rounded-full bg-primary" />

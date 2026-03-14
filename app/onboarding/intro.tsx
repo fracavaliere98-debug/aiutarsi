@@ -3,34 +3,34 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Dimensio
 import { useRouter } from 'expo-router';
 import { X, ArrowRight } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
 export default function OnboardingIntro() {
     const router = useRouter();
+    const { logout } = useAuth();
 
     const handleStart = () => {
         router.push('/onboarding/interests');
     };
 
-    const handleClose = () => {
-        router.replace('/');
+    const handleClose = async () => {
+        await logout();
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                     <X size={20} color={Colors.primary} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>AiutarSì</Text>
-                <View style={{ width: 40 }} /> {/* Spacer to balance header */}
+                <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.content}>
-                {/* Robot Image */}
                 <Animated.View 
                     entering={FadeInUp.delay(200).springify()}
                     style={styles.imageContainer}
@@ -42,18 +42,16 @@ export default function OnboardingIntro() {
                     />
                 </Animated.View>
 
-                {/* Text Content */}
                 <Animated.View 
                     entering={FadeInDown.delay(400).springify()}
                     style={styles.textContent}
                 >
-                    <Text style={styles.title}>Ciao! Io sono Gemma, la tua assistente di bordo.</Text>
+                    <Text style={styles.title}>Ciao! Io sono <Text style={{ color: Colors.accent }}>Gemma</Text>, la tua assistente di bordo.</Text>
                     <Text style={styles.subtitle}>
                         Ti aiuterò a trovare il modo migliore per fare la differenza oggi.
                     </Text>
                 </Animated.View>
 
-                {/* Pagination Dots */}
                 <View style={styles.pagination}>
                     <View style={[styles.dot, styles.dotActive]} />
                     <View style={styles.dot} />
@@ -61,7 +59,6 @@ export default function OnboardingIntro() {
                 </View>
             </View>
 
-            {/* Footer */}
             <View style={styles.footer}>
                 <TouchableOpacity 
                     onPress={handleStart} 

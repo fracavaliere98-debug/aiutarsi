@@ -7,7 +7,7 @@ import { storageService } from './StorageService';
 export class AuthService {
 
     private _validateEmail(email: string): boolean {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return emailRegex.test(email);
     }
 
@@ -274,7 +274,14 @@ export class AuthService {
 
         if (error) {
             console.error("Supabase Register Error:", error.message);
-            throw new Error(error.message);
+            // Map common technical errors to user-friendly Italian messages
+            let msg = error.message;
+            if (msg.includes("Unable to validate email address") || msg.includes("invalid format")) {
+                msg = "Indirizzo email non valido. Controlla il formato.";
+            } else if (msg.includes("User already registered") || msg.includes("already exists")) {
+                msg = "Questo indirizzo email è già registrato.";
+            }
+            throw new Error(msg);
         }
 
         if (!data.user) throw new Error("Registrazione fallita: nessun utente restituito");
@@ -450,13 +457,16 @@ export class AuthService {
         console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId);
 
         // 1. Handle Avatar Upload first
-        const avatarToUpload = updates.avatar_url;
+        // Add resilience: check both 'avatar' and 'avatar_url'
+        const avatarToUpload = updates.avatar_url || (updates as any).avatar;
         if (avatarToUpload && (avatarToUpload.startsWith('file://') || avatarToUpload.startsWith('content://') || avatarToUpload.startsWith('data:'))) {
             try {
                 console.log("[DEBUG] AuthService: Uploading new avatar...");
                 const uploadedUrl = await storageService.uploadAvatar(userId, avatarToUpload);
                 if (uploadedUrl) {
                     updates.avatar_url = uploadedUrl;
+                    // Also update legacy key if present to avoid confusion
+                    if ((updates as any).avatar) (updates as any).avatar = uploadedUrl;
                 }
             } catch (uploadError: any) {
                 console.error("[DEBUG] Avatar upload FAILED:", uploadError);
@@ -479,10 +489,29 @@ export class AuthService {
             updated_at: new Date().toISOString(),
         };
 
+        // Add resilience: Map legacy camelCase keys to snake_case DB columns
+        const legacyMapping: Record<string, string> = {
+            'profileCompleted': 'profile_completed',
+            'isVerified': 'is_verified',
+            'npoName': 'npo_name',
+            'companyName': 'company_name',
+            'locationString': 'location_string',
+            'publicEmail': 'public_email',
+            'avatar': 'avatar_url',
+            'name': 'full_name'
+        };
+
+        const finalUpdates = { ...updates };
+        Object.entries(legacyMapping).forEach(([legacy, standard]) => {
+            if ((updates as any)[legacy] !== undefined && (updates as any)[standard] === undefined) {
+                (finalUpdates as any)[standard] = (updates as any)[legacy];
+            }
+        });
+
         // Map updates to DB columns, stripping non-schema fields
-        Object.keys(updates).forEach(key => {
-            if (profileTableFields.includes(key) && (updates as any)[key] !== undefined) {
-                payload[key] = (updates as any)[key];
+        Object.keys(finalUpdates).forEach(key => {
+            if (profileTableFields.includes(key) && (finalUpdates as any)[key] !== undefined) {
+                payload[key] = (finalUpdates as any)[key];
             }
         });
 

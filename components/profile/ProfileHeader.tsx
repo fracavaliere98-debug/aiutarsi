@@ -53,8 +53,8 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                     <UserAvatar
                         size={90}
                         fontSize={32}
-                        name={user?.full_name || undefined}
-                        avatarUrl={user?.avatar_url || undefined}
+                        name={user?.full_name || user?.name || undefined}
+                        avatarUrl={user?.avatar_url || user?.avatar || undefined}
                     />
                 </View>
 

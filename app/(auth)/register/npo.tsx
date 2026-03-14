@@ -24,7 +24,7 @@ export default function NPORegister() {
         setIsLoading(true);
         try {
             await register({
-                name: formData.orgName,
+                full_name: formData.orgName,
                 email: formData.email,
                 password: formData.password,
                 role: "NPO",

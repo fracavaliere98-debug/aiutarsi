@@ -83,38 +83,63 @@ export default function VolunteerSettings() {
 
     // Automatic location fetching
     useEffect(() => {
-        (async () => {
-            setLocationInput("Rilevamento in corso...");
+        let isMounted = true;
+        
+        const fetchLocation = async () => {
+            // Avoid redundant fetching if we already have it in this session 
+            // or if it's already "Posizione attuale"
+            if (user?.locationString?.includes("Posizione attuale")) {
+                setLocationInput(user.locationString);
+                return;
+            }
+
             try {
                 let { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
-                    setLocationInput("Posizione non consentita");
+                    if (isMounted) setLocationInput("Posizione non consentita");
                     return;
                 }
 
-                let location = await Location.getCurrentPositionAsync({});
+                if (isMounted) setLocationInput("Rilevamento in corso...");
+                
+                let location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+                
                 const { latitude, longitude } = location.coords;
 
-                // Reverse geocode
-                let address = await Location.reverseGeocodeAsync({ latitude, longitude });
-                if (address && address.length > 0) {
-                    const city = address[0].city || address[0].region || "Sconosciuta";
-                    const formattedLocation = `Posizione attuale - ${city}`;
+                // Reverse geocode with error handling
+                try {
+                    let address = await Location.reverseGeocodeAsync({ latitude, longitude });
+                    if (address && address.length > 0 && isMounted) {
+                        const city = address[0].city || address[0].region || "Sconosciuta";
+                        const formattedLocation = `Posizione attuale - ${city}`;
 
-                    setLocationInput(formattedLocation);
+                        setLocationInput(formattedLocation);
 
-                    // Update user profile automatically
-                    updateUserProfile({
-                        locationCoords: { lat: latitude, lng: longitude },
-                        locationString: formattedLocation
-                    });
+                        // Update user profile automatically - only if different
+                        if (user?.locationString !== formattedLocation) {
+                            updateUserProfile({
+                                location_lat: latitude,
+                                location_lng: longitude,
+                                locationString: formattedLocation
+                            });
+                        }
+                    }
+                } catch (geoError: any) {
+                    console.warn("Geocoding failed:", geoError.message);
+                    if (isMounted) setLocationInput("Località non disponibile");
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error fetching location", error);
-                setLocationInput("Errore rilevamento posizione");
+                if (isMounted) setLocationInput("Errore rilevamento");
             }
-        })();
-    }, [updateUserProfile]);
+        };
+
+        fetchLocation();
+        
+        return () => { isMounted = false; };
+    }, []); // Only run once on mount
 
     const saveProfile = async () => {
         setIsSaving(true);
@@ -125,7 +150,7 @@ export default function VolunteerSettings() {
                 phone,
             };
             if (avatar) {
-                profileUpdates.avatar = avatar;
+                profileUpdates.avatar_url = avatar;
             }
 
             await updateUserProfile(profileUpdates);
