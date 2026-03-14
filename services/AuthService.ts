@@ -253,6 +253,7 @@ export class AuthService {
             options: {
                 data: {
                     ...metadata,
+                    name: (metadata as any).full_name || (metadata as any).name,
                     impact_points: (metadata as any).impact_points || 0,
                     skills: (metadata as any).skills || [],
                     interests: (metadata as any).interests || [],

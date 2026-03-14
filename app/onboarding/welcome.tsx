@@ -94,7 +94,7 @@ export default function WelcomeScreen() {
                             <View className="relative">
                                 <View className="w-40 h-40 rounded-full border-4 border-white/30 p-2">
                                     <View className="w-full h-full rounded-full overflow-hidden bg-white/10 shadow-2xl">
-                                        <UserAvatar size={144} />
+                                        <UserAvatar size={144} useAuthFallback={true} />
                                     </View>
                                 </View>
                                 <View className="absolute top-4 right-4 w-6 h-6 bg-green-500 rounded-full border-2 border-white" />
@@ -130,13 +130,13 @@ export default function WelcomeScreen() {
                         </View>
 
                         {/* Gemma Transition Info */}
-                        <View className="absolute bottom-24 bg-white/10 px-6 py-5 rounded-[32px] border border-white/20 flex-row items-center gap-4 w-full">
-                            <View className="w-12 h-12 bg-white/20 rounded-2xl items-center justify-center">
-                                <Sparkles size={24} color="white" />
+                        <View className="absolute bottom-24 bg-white/10 px-4 py-2 rounded-2xl border border-white/20 flex-row items-center w-full">
+                            <View className="w-9 h-9 bg-white/20 rounded-xl items-center justify-center mr-3">
+                                <Sparkles size={16} color="white" />
                             </View>
                             <View className="flex-1">
-                                <Text className="text-white font-bold text-base">Gemma sta arrivando</Text>
-                                <Text className="text-white/70 text-xs">Connettendo i nodi di assistenza locale</Text>
+                                <Text className="text-white font-bold text-[12px]">Gemma sta arrivando</Text>
+                                <Text className="text-white/70 text-[10px]">Connettendo i nodi di assistenza locale</Text>
                             </View>
                         </View>
                     </Animated.View>
