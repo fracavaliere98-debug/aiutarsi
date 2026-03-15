@@ -54,11 +54,12 @@
 | /community/create-post | Standard | Page |
 | /feedback/[id] | Standard | Page |
 | / | Standard | Page |
-| /messages/ | Standard | Page |
 | /messages/[id] | Standard | Page |
+| /messages/ | Standard | Page |
 | /npo-profile/[id] | Standard | Page |
 | /onboarding/interests | Standard | Page |
+| /onboarding/intro | Standard | Page |
 | /onboarding/profile | Standard | Page |
 | /onboarding/skills | Standard | Page |
-| /onboarding/verification | Standard | Page |
+| /onboarding/welcome | Standard | Page |
 | /user-profile/[id] | Standard | Page |
