@@ -10,9 +10,10 @@ interface OrganizerCardProps {
     npoId: string;
     npoName: string;
     avatarUrl?: string;
+    isVerified?: boolean;
 }
 
-export const OrganizerCard = ({ npoId, npoName, avatarUrl }: OrganizerCardProps) => {
+export const OrganizerCard = ({ npoId, npoName, avatarUrl, isVerified }: OrganizerCardProps) => {
     return (
         <Link href={`/npo-profile/${npoId}`} asChild>
             <TouchableOpacity className="bg-slate-50 p-4 rounded-[24px] flex-row items-center gap-4 border border-slate-200/60 mb-8 active:bg-slate-100">
@@ -21,6 +22,8 @@ export const OrganizerCard = ({ npoId, npoName, avatarUrl }: OrganizerCardProps)
                     fontSize={16}
                     name={npoName}
                     avatarUrl={avatarUrl}
+                    role="NPO"
+                    isVerified={isVerified}
                 />
                 <View className="flex-1">
                     <Text className="text-secondary text-[10px] font-bold uppercase tracking-widest mb-0.5">Organizzato da</Text>
@@ -28,7 +31,6 @@ export const OrganizerCard = ({ npoId, npoName, avatarUrl }: OrganizerCardProps)
                         <Text className="font-black text-primary text-base" numberOfLines={1}>
                             {npoName}
                         </Text>
-                        <CheckCircle2 size={16} color={Colors.primary} fill={Colors.accent} />
                     </View>
                 </View>
                 <View className="bg-white p-2 rounded-full shadow-sm">

@@ -10,10 +10,16 @@ const { width } = Dimensions.get('window');
 
 export default function OnboardingIntro() {
     const router = useRouter();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+
+    const isNPO = user?.role === "NPO";
 
     const handleStart = () => {
-        router.push('/onboarding/interests');
+        if (isNPO) {
+            router.push('/onboarding/npo-category');
+        } else {
+            router.push('/onboarding/interests');
+        }
     };
 
     const handleClose = async () => {
@@ -46,9 +52,19 @@ export default function OnboardingIntro() {
                     entering={FadeInDown.delay(400).springify()}
                     style={styles.textContent}
                 >
-                    <Text style={styles.title}>Ciao! Io sono <Text style={{ color: Colors.accent }}>Gemma</Text>, la tua assistente di bordo.</Text>
+                    <Text style={styles.title}>
+                        {isNPO ? (
+                            <>Benvenuti su <Text style={{ color: Colors.accent }}>AiutarSì</Text>. Sono Gemma, la vostra consulente.</>
+                        ) : (
+                            <>Ciao! Io sono <Text style={{ color: Colors.accent }}>Gemma</Text>, la tua assistente di bordo.</>
+                        )}
+                    </Text>
                     <Text style={styles.subtitle}>
-                        Ti aiuterò a trovare il modo migliore per fare la differenza oggi.
+                        {isNPO ? (
+                            "Vi aiuterò a rendere visibile il vostro impegno e a trovare i volontari giusti per le vostre missioni."
+                        ) : (
+                            "Ti aiuterò a trovare il modo migliore per fare la differenza oggi."
+                        )}
                     </Text>
                 </Animated.View>
 
@@ -56,6 +72,7 @@ export default function OnboardingIntro() {
                     <View style={[styles.dot, styles.dotActive]} />
                     <View style={styles.dot} />
                     <View style={styles.dot} />
+                    {isNPO && <View style={styles.dot} />}
                 </View>
             </View>
 
@@ -65,7 +82,7 @@ export default function OnboardingIntro() {
                     style={styles.button}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.buttonText}>Inizia</Text>
+                    <Text style={styles.buttonText}>{isNPO ? "Configura Ente" : "Inizia"}</Text>
                     <ArrowRight size={22} color="#FFFFFF" strokeWidth={2.5} />
                 </TouchableOpacity>
             </View>

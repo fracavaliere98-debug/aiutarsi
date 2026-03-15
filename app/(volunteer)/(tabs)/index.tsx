@@ -30,7 +30,9 @@ export default function VolunteerDashboard() {
 
 
     // Filter activities
-    const openActivities = activities.filter(a => a.status === "APERTA" || a.status === "IN_CORSO");
+    const openActivities = activities
+        .filter(a => a.status === "APERTA" || a.status === "IN_CORSO")
+        .filter(a => !a.iscritti.includes(user?.id || ""));
     const enrolledActivities = activities.filter(a => a.iscritti.includes(user?.id || ""));
     const activeEnrolled = useMemo(() => {
         const now = new Date();
@@ -251,6 +253,9 @@ export default function VolunteerDashboard() {
                         onPress={() => router.push(`/activity/${activity.id}` as any)}
                     />
                 ))}
+                
+                {/* Bottom Spacer to separate from footer/pills */}
+                <View style={{ height: 50 }} />
             </View>
         </StandardLayout>
     );

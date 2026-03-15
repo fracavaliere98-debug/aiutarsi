@@ -48,7 +48,11 @@ export default function WelcomeScreen() {
 
             const timer = setTimeout(async () => {
                 await updateUserProfile({ profile_completed: true });
-                router.replace("/(volunteer)/(tabs)/community" as any);
+                if (user?.role === "NPO") {
+                    router.replace("/(npo)/(tabs)/community" as any);
+                } else {
+                    router.replace("/(volunteer)/(tabs)/community" as any);
+                }
             }, 5500);
 
             return () => {
@@ -213,7 +217,9 @@ export default function WelcomeScreen() {
                             </View>
                             <View className="flex-1 mr-2">
                                 <Text className="text-sm font-bold text-[#2d1b69]">Localizzazione</Text>
-                                <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>Trova opportunità vicino a te</Text>
+                                <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>
+                                    {user?.role === "NPO" ? "Permetti ai volontari di trovarti sulla mappa" : "Trova opportunità vicino a te"}
+                                </Text>
                             </View>
                             <Switch 
                                 value={locationEnabled} 
@@ -230,7 +236,9 @@ export default function WelcomeScreen() {
                             </View>
                             <View className="flex-1 mr-2">
                                 <Text className="text-sm font-bold text-[#2d1b69]">Notifiche Push</Text>
-                                <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>Ricevi avvisi per nuovi match</Text>
+                                <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>
+                                    {user?.role === "NPO" ? "Ricevi avvisi per nuove candidature" : "Ricevi avvisi per nuovi match"}
+                                </Text>
                             </View>
                             <Switch 
                                 value={notificationsEnabled} 

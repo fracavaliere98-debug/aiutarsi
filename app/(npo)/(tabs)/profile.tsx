@@ -12,7 +12,10 @@ import {
     LifeBuoy,
     FileText,
     Camera,
-    ShieldBan
+    ShieldBan,
+    User,
+    Target,
+    UserCircle
 } from "lucide-react-native";
 import { SoftCard } from "../../../components/SoftCard";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -24,6 +27,8 @@ import { useApplications } from "../../../context/ApplicationContext";
 import { useAuth } from "../../../context/AuthContext";
 import { UserAvatar } from "../../../components/UserAvatar";
 import EditProfileScreen from "../edit-profile";
+import InterestsSkillsScreen from "../interests-skills";
+import ReferentDetailsScreen from "../referent-details";
 import SecurityScreen from "../security";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
 
@@ -37,6 +42,8 @@ export default function NPOProfileScreen() {
 
     // Modal States
     const [showEditProfile, setShowEditProfile] = useState(false);
+    const [showInterestsSkills, setShowInterestsSkills] = useState(false);
+    const [showReferentDetails, setShowReferentDetails] = useState(false);
     const [showSecurity, setShowSecurity] = useState(false);
 
     const appVersion = Constants.expoConfig?.version || "1.0.0";
@@ -127,7 +134,13 @@ export default function NPOProfileScreen() {
                         activeOpacity={0.8}
                         className="relative"
                     >
-                        <UserAvatar size={100} fontSize={32} useAuthFallback={true} />
+                        <UserAvatar 
+                            size={100} 
+                            fontSize={32} 
+                            useAuthFallback={true} 
+                            role="NPO" 
+                            isVerified={user?.is_verified} 
+                        />
                         <View
                             className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white"
                             style={{ backgroundColor: Colors.primary }}
@@ -162,6 +175,18 @@ export default function NPOProfileScreen() {
                         icon={CreditCard}
                         label="Dati Fatturazione"
                         color={Colors.primary}
+                    />
+                    <MenuItem
+                        icon={Target}
+                        label="Categorie e Competenze"
+                        color={Colors.primary}
+                        onPress={() => setShowInterestsSkills(true)}
+                    />
+                    <MenuItem
+                        icon={UserCircle}
+                        label="Referente Principale"
+                        color={Colors.primary}
+                        onPress={() => setShowReferentDetails(true)}
                     />
                     <MenuItem
                         icon={Users}
@@ -299,6 +324,28 @@ export default function NPOProfileScreen() {
             >
                 <View style={{ flex: 1 }}>
                     <SecurityScreen onClose={() => setShowSecurity(false)} />
+                </View>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                presentationStyle="pageSheet"
+                visible={showInterestsSkills}
+                onRequestClose={() => setShowInterestsSkills(false)}
+            >
+                <View style={{ flex: 1 }}>
+                    <InterestsSkillsScreen />
+                </View>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                presentationStyle="pageSheet"
+                visible={showReferentDetails}
+                onRequestClose={() => setShowReferentDetails(false)}
+            >
+                <View style={{ flex: 1 }}>
+                    <ReferentDetailsScreen />
                 </View>
             </Modal>
         </View>

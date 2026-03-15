@@ -22,11 +22,12 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
 
     // Form State
     const [name, setName] = useState(user?.npoName || user?.name || "");
-    const [publicEmail, setPublicEmail] = useState(user?.publicEmail || "");
+    const [publicEmail, setPublicEmail] = useState(user?.public_email || user?.publicEmail || "");
     const [website, setWebsite] = useState(user?.website || "");
     const [phone, setPhone] = useState(user?.phone || "");
     const [bio, setBio] = useState(user?.bio || "");
-    const [location, setLocation] = useState(user?.locationString || "");
+    const [location, setLocation] = useState(user?.address_full || user?.locationString || "");
+    const [vatId, setVatId] = useState(user?.npo_vat_id || "");
     const [avatar, setAvatar] = useState(user?.avatar || "");
 
     const pickImage = async () => {
@@ -52,13 +53,15 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
         setIsLoading(true);
         try {
             await updateUserProfile({
+                npo_vat_id: vatId,
                 npoName: name,
-                name: name, // Sync both for simplicity if needed, or just npoName
+                name: name,
                 publicEmail,
                 website,
                 phone,
                 bio,
-                locationString: location,
+                locationString: location, // Legacy
+                address_full: location, // Standard
                 avatar
             });
             showToast("success", "Profilo aggiornato con successo!");
@@ -125,6 +128,14 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
                         placeholder="+39 02 1234567"
                         icon={Phone}
                         keyboardType="phone-pad"
+                    />
+
+                    <InputField
+                        label="P.IVA / Codice Fiscale"
+                        value={vatId}
+                        onChangeText={setVatId}
+                        placeholder="Es. 12345678901"
+                        icon={Globe}
                     />
 
                     <InputField

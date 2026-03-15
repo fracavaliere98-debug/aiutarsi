@@ -65,6 +65,16 @@ export type AppUser = Omit<User,
     shortId?: string;
     deletionRequestedAt: string | null;
     // Database field aliases (for mappings)
+    verification_status?: 'none' | 'pending' | 'verified' | 'rejected';
+    npo_vat_id?: string | null;
+    npo_website?: string | null;
+    referent_name?: string | null;
+    referent_role?: string | null;
+    referent_avatar_url?: string | null;
+    auto_welcome_message?: string | null;
+    address_full?: string | null;
+    sought_skills?: string[] | null;
+    verification_doc_url?: string | null;
     npo_name?: string | null;
     company_name?: string | null;
     is_verified?: boolean | null;
@@ -117,6 +127,7 @@ export type AppActivity = Omit<Activity,
         npo_name?: string | null;
         full_name?: string | null;
         avatar_url?: string | null;
+        is_verified?: boolean | null;
     } | null;
     activity_participants?: { user_id: string }[] | null;
     activity_skills?: { skill: string }[] | null;

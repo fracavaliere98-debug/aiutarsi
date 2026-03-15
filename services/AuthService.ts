@@ -55,7 +55,8 @@ export class AuthService {
             followed_entities: (metadata.followedNPOs || []).map((id: string) => ({ npo_id: id })),
             npo_name: metadata.npoName || metadata.npo_name,
             company_name: metadata.companyName || metadata.company_name,
-            is_verified: metadata.isVerified !== undefined ? metadata.isVerified : metadata.is_verified,
+            is_verified: (metadata.verification_status === 'verified' || metadata.is_verified || metadata.isVerified) === true,
+            verification_status: metadata.verification_status || (metadata.is_verified || metadata.isVerified ? 'verified' : 'none'),
             location_string: metadata.locationString || metadata.location_string,
             location_lat: metadata.locationCoords?.lat || metadata.location_lat,
             location_lng: metadata.locationCoords?.lng || metadata.location_lng,
@@ -66,7 +67,6 @@ export class AuthService {
             profile_completed: metadata.profileCompleted || metadata.profile_completed,
             // Legacy aliases
             profileCompleted: metadata.profileCompleted || metadata.profile_completed,
-            isVerified: metadata.isVerified !== undefined ? metadata.isVerified : metadata.is_verified,
             publicEmail: metadata.publicEmail || metadata.public_email,
             lastSeenAt: metadata.lastSeenAt || metadata.last_seen_at,
             createdAt: sbUser.created_at,
@@ -90,6 +90,16 @@ export class AuthService {
             is_banned: metadata.is_banned,
             ban_reason: metadata.ban_reason,
             ban_report_id: metadata.ban_report_id,
+            // NPO Fields
+            npo_vat_id: metadata.npo_vat_id,
+            npo_website: metadata.npo_website,
+            referent_name: metadata.referent_name,
+            referent_role: metadata.referent_role,
+            referent_avatar_url: metadata.referent_avatar_url,
+            auto_welcome_message: metadata.auto_welcome_message,
+            address_full: metadata.address_full,
+            sought_skills: metadata.sought_skills,
+            verification_doc_url: metadata.verification_doc_url,
         };
     }
 
@@ -376,6 +386,16 @@ export class AuthService {
             deletionRequestedAt: profile.deletion_requested_at,
             shortId: profile.id?.substring(0, 8).toUpperCase(),
             ban_report_id: profile.ban_report_id,
+            // NPO Fields
+            npo_vat_id: profile.npo_vat_id,
+            npo_website: profile.npo_website,
+            referent_name: profile.referent_name,
+            referent_role: profile.referent_role,
+            referent_avatar_url: profile.referent_avatar_url,
+            auto_welcome_message: profile.auto_welcome_message,
+            address_full: profile.address_full,
+            sought_skills: profile.sought_skills,
+            verification_doc_url: profile.verification_doc_url,
         };
     }
 
@@ -500,7 +520,9 @@ export class AuthService {
             'phone', 'website', 'location_string', 'location_lat', 'location_lng',
             'public_email', 'profile_completed', 'impact_points', 'is_verified',
             'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
-            'allow_calls', 'expo_push_token', 'deletion_requested_at'
+            'allow_calls', 'expo_push_token', 'deletion_requested_at',
+            'npo_vat_id', 'npo_website', 'referent_name', 'referent_role', 'referent_avatar_url',
+            'auto_welcome_message', 'address_full', 'sought_skills', 'verification_doc_url'
         ];
 
         const payload: any = {
@@ -727,6 +749,31 @@ export class AuthService {
             // So we should probably NOT swallow it if we want to debug.
             // But if we throw, the user sees an error toast.
             throw e;
+        }
+    }
+
+    /**
+     * Submits a verification request for an NPO
+     */
+    async submitVerificationRequest(userId: string, npoDetails: any): Promise<boolean> {
+        try {
+            const { error } = await supabase
+                .from('verification_requests')
+                .insert({
+                    user_id: userId,
+                    npo_details: npoDetails,
+                    status: 'pending'
+                });
+
+            if (error) throw error;
+
+            // Also update the profile status to pending
+            await this.updateProfile(userId, { verification_status: 'pending' });
+
+            return true;
+        } catch (error) {
+            console.error("Error submitting verification request:", error);
+            throw error;
         }
     }
 }

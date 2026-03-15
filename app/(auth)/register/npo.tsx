@@ -33,9 +33,9 @@ export default function NPORegister() {
                 email: formData.email,
                 password: formData.password,
                 role: "NPO",
-                npoName: formData.orgName,
+                profile_completed: false,
             });
-            router.replace("/(npo)" as any);
+            router.replace("/onboarding/intro");
         } catch (error: any) {
             showToast("error", error.message || "Errore durante la registrazione.");
         } finally {

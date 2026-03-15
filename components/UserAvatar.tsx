@@ -1,8 +1,10 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { User as UserIcon } from 'lucide-react-native';
+import { User as UserIcon, CheckCircle2 } from 'lucide-react-native';
 import { Image } from "expo-image";
 import { useAuth } from "../context/AuthContext";
+import { Colors } from "../constants/Colors";
+import { Role } from "../types";
 
 interface UserAvatarProps {
     size?: number;
@@ -13,6 +15,9 @@ interface UserAvatarProps {
     useAuthFallback?: boolean;
     showStatus?: boolean;
     isOnline?: boolean;
+    role?: Role;
+    isVerified?: boolean;
+    verificationStatus?: string;
 }
 
 export function UserAvatar({
@@ -23,7 +28,10 @@ export function UserAvatar({
     avatarUrl,
     useAuthFallback = false,
     showStatus = false,
-    isOnline = false
+    isOnline = false,
+    role,
+    isVerified = false,
+    verificationStatus
 }: UserAvatarProps) {
     const { user } = useAuth();
 
@@ -47,8 +55,17 @@ export function UserAvatar({
     return (
         <View style={{ width: size, height: size }}>
             <View
-                style={{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }}
-                className={`bg-slate-200 items-center justify-center border border-white/30 ${className}`}
+                style={{ 
+                    width: size, 
+                    height: size, 
+                    borderRadius: size / 2, 
+                    overflow: "hidden",
+                    borderWidth: role === 'NPO' ? 2 : 1,
+                    borderColor: role === 'NPO' 
+                        ? (isVerified ? Colors.primary : Colors.info)
+                        : 'rgba(255,255,255,0.3)'
+                }}
+                className={`bg-slate-200 items-center justify-center ${className}`}
             >
                 {finalAvatar ? (
                     <Image
@@ -78,6 +95,28 @@ export function UserAvatar({
                     }}
                     className={isOnline ? "bg-green-500" : "bg-slate-300"}
                 />
+            )}
+
+            {/* Verification Badge */}
+            {role === 'NPO' && (
+                <View
+                    style={{
+                        width: size * 0.35,
+                        height: size * 0.35,
+                        borderRadius: (size * 0.35) / 2,
+                        position: 'absolute',
+                        bottom: -size * 0.05,
+                        right: -size * 0.05,
+                        borderWidth: 2,
+                        borderColor: 'white',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isVerified ? Colors.primary : Colors.info
+                    }}
+                    className="shadow-sm"
+                >
+                    <CheckCircle2 size={size * 0.22} color="white" />
+                </View>
             )}
         </View>
     );

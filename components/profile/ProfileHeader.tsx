@@ -55,6 +55,9 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                         fontSize={32}
                         name={user?.full_name || user?.name || undefined}
                         avatarUrl={user?.avatar_url || user?.avatar || undefined}
+                        role={user?.role}
+                        verificationStatus={user?.verification_status}
+                        isVerified={!!user?.is_verified}
                     />
                 </View>
 

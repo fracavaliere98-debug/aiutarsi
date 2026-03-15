@@ -258,9 +258,13 @@ export default function ActivityDetail() {
                             activeOpacity={0.7}
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
                         >
-                            <Image
-                                source={{ uri: npoUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.npoName || 'NPO')}&background=random` }}
-                                style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'white' }}
+                            <UserAvatar
+                                size={36}
+                                fontSize={14}
+                                name={npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}
+                                avatarUrl={npoUser?.avatar}
+                                role="NPO"
+                                isVerified={!!(npoUser?.is_verified || activity?.profiles?.is_verified)}
                             />
                             <View style={{ alignItems: 'center' }}>
                                 <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>
@@ -268,7 +272,6 @@ export default function ActivityDetail() {
                                 </Text>
                                 <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>Organizzatore</Text>
                             </View>
-                            <CheckCircle2 size={16} color={Colors.accent} fill={Colors.accent} />
                         </TouchableOpacity>
                     </Animated.View>
 

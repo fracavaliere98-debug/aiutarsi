@@ -1,10 +1,12 @@
 
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
+import { AppUser } from "../../types";
+import { supabase } from "../../utils/supabase";
 import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -24,12 +26,48 @@ export default function NPOProfileScreen() {
     const { activities, reviews } = useActivities();
     const { applyToNPO, hasAppliedToNPO } = useApplications();
     const { showToast } = useToast();
-    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni">("attivita");
+    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [showReportModal, setShowReportModal] = useState(false);
+    const [fetchedNpo, setFetchedNpo] = useState<AppUser | null>(null);
+    const [isFetching, setIsFetching] = useState(false);
 
     // Get NPO data
     const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
-    const npoUser = users.find(u => u.id === npoId && u.role === "NPO");
+    
+    // Use Effect to fetch NPO directly if not in users list
+    useState(() => {
+        const existing = users.find(u => u.id === npoId && u.role === "NPO");
+        if (!existing && npoId) {
+            setIsFetching(true);
+            supabase
+                .from('profiles')
+                .select(`
+                    *,
+                    user_skills (skill),
+                    user_interests (interest),
+                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+                `)
+                .eq('id', npoId)
+                .single()
+                .then(({ data, error }) => {
+                    if (data && !error) {
+                        // We map it manually similar to AuthService
+                        const mapped: AppUser = {
+                            ...data,
+                            name: data.full_name || data.npo_name || 'Utente',
+                            avatar: data.avatar_url,
+                            profileCompleted: data.profile_completed,
+                            npoName: data.npo_name || data.full_name,
+                        } as any;
+                        setFetchedNpo(mapped);
+                    }
+                    setIsFetching(false);
+                })
+                .catch(() => setIsFetching(false));
+        }
+    });
+
+    const npoUser = users.find(u => u.id === npoId && u.role === "NPO") || fetchedNpo;
 
     // Get NPO activities
     const npoActivities = activities.filter(a => a.npoId === npoId);
@@ -59,11 +97,30 @@ export default function NPOProfileScreen() {
 
     const averageRating = npoRating.toFixed(1);
 
+    if (isFetching) {
+        return (
+            <StandardLayout title="Caricamento..." label="Profilo Ente">
+                <View className="flex-1 items-center justify-center p-10">
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text className="text-secondary mt-4 font-medium">Recupero informazioni ente...</Text>
+                </View>
+            </StandardLayout>
+        );
+    }
+
     if (!npoUser) {
         return (
-            <StandardLayout title="Ente Non Trovato" label="Profilo Non Trovato">
-                <View className="flex-1 items-center justify-center">
-                    <Text className="text-secondary">NPO non trovata</Text>
+            <StandardLayout title="Ente Non Trovato" label="Profilo Non Trovato" onBack={() => router.back()}>
+                <View className="flex-1 items-center justify-center p-10">
+                    <AlertTriangle size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
+                    <Text className="text-primary font-bold text-lg mb-2">Ops! Profilo non trovato</Text>
+                    <Text className="text-secondary text-center mb-6">Non siamo riusciti a trovare le informazioni per questo ente.</Text>
+                    <TouchableOpacity 
+                        onPress={() => router.back()}
+                        className="bg-primary px-6 py-3 rounded-full"
+                    >
+                        <Text className="text-white font-bold">Torna Indietro</Text>
+                    </TouchableOpacity>
                 </View>
             </StandardLayout>
         );
@@ -149,10 +206,10 @@ export default function NPOProfileScreen() {
                         fontSize={36}
                         name={npoUser.npoName || npoUser.name}
                         avatarUrl={npoUser.avatar}
+                        role="NPO"
+                        isVerified={npoUser.is_verified}
+                        verificationStatus={npoUser.verification_status}
                     />
-                    <View className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white">
-                        <CheckCircle2 size={16} color="white" />
-                    </View>
                 </View>
 
                 <Text className="text-primary font-black text-2xl text-center mb-1">
@@ -253,24 +310,30 @@ export default function NPOProfileScreen() {
             )}
 
             {/* Contact & Info Tabs */}
-            <View className="flex-row border-b border-gray-100 mb-6">
+            <View className="flex-row border-b border-gray-100 mb-6 justify-between px-2">
                 <TouchableOpacity
                     onPress={() => setActiveTab("attivita")}
-                    className={`px-4 py-3 border-b-2 mr-4 ${activeTab === "attivita" ? "border-primary" : "border-transparent"}`}
+                    className={`px-2 py-3 border-b-2 ${activeTab === "attivita" ? "border-primary" : "border-transparent"}`}
                 >
                     <Text className={`font-bold text-sm ${activeTab === "attivita" ? "text-primary" : "text-gray-400"}`}>Attività</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => setActiveTab("info")}
-                    className={`px-4 py-3 border-b-2 mr-4 ${activeTab === "info" ? "border-primary" : "border-transparent"}`}
+                    className={`px-2 py-3 border-b-2 ${activeTab === "info" ? "border-primary" : "border-transparent"}`}
                 >
                     <Text className={`font-bold text-sm ${activeTab === "info" ? "text-primary" : "text-gray-400"}`}>Chi Siamo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => setActiveTab("recensioni")}
-                    className={`px-4 py-3 border-b-2 ${activeTab === "recensioni" ? "border-primary" : "border-transparent"}`}
+                    className={`px-2 py-3 border-b-2 ${activeTab === "recensioni" ? "border-primary" : "border-transparent"}`}
                 >
                     <Text className={`font-bold text-sm ${activeTab === "recensioni" ? "text-primary" : "text-gray-400"}`}>Recensioni</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setActiveTab("referente")}
+                    className={`px-2 py-3 border-b-2 ${activeTab === "referente" ? "border-primary" : "border-transparent"}`}
+                >
+                    <Text className={`font-bold text-sm ${activeTab === "referente" ? "text-primary" : "text-gray-400"}`}>Referente</Text>
                 </TouchableOpacity>
             </View>
 
@@ -437,6 +500,45 @@ export default function NPOProfileScreen() {
                                 <Text className="text-secondary/50 text-center">Nessuna recensione ancora.</Text>
                             </View>
                         )}
+                    </View>
+                )}
+
+                {activeTab === "referente" && (
+                    <View>
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-primary font-bold text-lg">Il Tuo Referente</Text>
+                        </View>
+
+                        <SoftCard className="p-6 items-center">
+                            <UserAvatar
+                                size={120}
+                                fontSize={42}
+                                name={npoUser.referent_name || "R"}
+                                avatarUrl={npoUser.referent_avatar_url || undefined}
+                            />
+                            <Text className="text-primary font-black text-xl mt-4 text-center">
+                                {npoUser.referent_name || "Referente non specificato"}
+                            </Text>
+                            <Text className="text-secondary font-bold text-[10px] uppercase tracking-widest text-center">
+                                {npoUser.referent_role || "Ruolo non specificato"}
+                            </Text>
+
+                            <View className="w-full h-[1px] bg-gray-100 my-6" />
+
+                            <Text className="text-secondary text-sm text-center leading-relaxed italic px-4 pb-4">
+                                &quot;Insieme possiamo fare la differenza. Il mio compito è guidarti nella tua missione di volontariato con {npoUser.npoName || 'il nostro ente'}.&quot;
+                            </Text>
+
+                            {user?.role === "VOLUNTEER" && (
+                                <TouchableOpacity
+                                    onPress={handleMessageNPO}
+                                    className="mt-6 bg-primary py-2 px-8 rounded-full flex-row items-center justify-center gap-2"
+                                >
+                                    <MessageCircle size={18} color="white" />
+                                    <Text className="text-white font-bold text-sm">Contatta Referente</Text>
+                                </TouchableOpacity>
+                            )}
+                        </SoftCard>
                     </View>
                 )}
             </View>

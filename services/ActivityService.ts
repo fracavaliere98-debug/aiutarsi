@@ -59,7 +59,7 @@ export class ActivityService {
         const [{ data: skillRows }, { data: partRows }, { data: profiles }] = await Promise.all([
             supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
             supabase.from('activity_participants').select('activity_id, user_id').in('activity_id', ids),
-            supabase.from('profiles').select('id, npo_name, full_name, public_email, email').in('id', (data || []).map((r: any) => r.npo_id)),
+            supabase.from('profiles').select('id, npo_name, full_name, public_email, email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
         ]);
 
         const skillsMap: Record<string, string[]> = {};
@@ -76,7 +76,8 @@ export class ActivityService {
         for (const r of profiles || []) {
             profilesMap[r.id] = {
                 npoName: r.npo_name || r.full_name || 'NPO Sconosciuta',
-                email: r.public_email || r.email || ''
+                email: r.public_email || r.email || '',
+                isVerified: r.is_verified
             };
         }
 
@@ -105,7 +106,12 @@ export class ActivityService {
                 coords: { lat: r.location_lat || 0, lng: r.location_lng || 0 }
             },
             // Relational mappings if needed by UI
-            profiles: { npo_name: profilesMap[r.npo_id]?.npoName, full_name: profilesMap[r.npo_id]?.npoName, avatar_url: null },
+            profiles: { 
+                npo_name: profilesMap[r.npo_id]?.npoName, 
+                full_name: profilesMap[r.npo_id]?.npoName, 
+                avatar_url: null,
+                is_verified: profilesMap[r.npo_id]?.isVerified
+            },
             activity_participants: (partsMap[r.id] || []).map(uid => ({ user_id: uid })),
             activity_skills: (skillsMap[r.id] || []).map(s => ({ skill: s }))
         }));
@@ -235,7 +241,7 @@ export class ActivityService {
                 .from('activities')
                 .select(`
                     *,
-                    profiles:npo_id (npo_name, full_name, public_email, email),
+                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
                     activity_skills (skill),
                     activity_participants (user_id)
                 `, { count: 'exact' });
@@ -247,8 +253,22 @@ export class ActivityService {
                 query = query.eq('npo_id', filter.npoId);
             }
             if (filter?.searchText) {
-                // Combine title and description for search
-                query = query.or(`title.ilike.%${filter.searchText}%,description.ilike.%${filter.searchText}%`);
+                // To search NPO names in a way that is compatible with PostgREST .or() across tables,
+                // we first find NPO IDs that match the search term and then use them in an 'in' filter.
+                const term = `%${filter.searchText}%`;
+                const { data: matchedProfiles } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .or(`npo_name.ilike.${term},full_name.ilike.${term}`)
+                    .eq('role', 'NPO');
+                
+                const npoIds = matchedProfiles?.map(p => p.id) || [];
+                
+                if (npoIds.length > 0) {
+                    query = query.or(`title.ilike.${term},description.ilike.${term},npo_id.in.(${npoIds.join(',')})`);
+                } else {
+                    query = query.or(`title.ilike.${term},description.ilike.${term}`);
+                }
             }
             if (filter?.onlyUrgent) {
                 query = query.eq('is_urgent', true);
@@ -342,7 +362,7 @@ export class ActivityService {
                 .from('activities')
                 .select(`
                     *,
-                    profiles:npo_id (npo_name, full_name, public_email, email),
+                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
                     activity_skills (skill),
                     activity_participants (user_id)
                 `)

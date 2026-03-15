@@ -26,19 +26,18 @@ export function NPOAffiliationSection({ isOwnProfile, affiliatedNPOs, followedNP
                         <TouchableOpacity
                             key={npo.id}
                             activeOpacity={0.7}
-                            onPress={() => router.push(`/ npo - profile / ${npo.id} ` as any)}
+                            onPress={() => router.push(`/npo-profile/${npo.id}` as any)}
                         >
                             <SoftCard className="flex-row items-center p-3 mb-2">
                                 <View className="relative">
-                                    <UserAvatar
-                                        size={48}
-                                        fontSize={16}
-                                        name={npo.npoName || npo.name}
-                                        avatarUrl={npo.avatar}
-                                    />
-                                    <View className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1 border-2 border-white">
-                                        <CheckCircle2 size={10} color="white" />
-                                    </View>
+                                <UserAvatar
+                                    size={48}
+                                    fontSize={16}
+                                    name={npo.npoName || npo.name}
+                                    avatarUrl={npo.avatar}
+                                    role="NPO"
+                                    isVerified={true} // Affiliated NPOs are verified by definition in this context
+                                />
                                 </View>
                                 <View className="flex-1 ml-3">
                                     <Text className="font-bold text-primary text-sm" numberOfLines={1}>

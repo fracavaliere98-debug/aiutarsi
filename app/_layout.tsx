@@ -113,7 +113,7 @@ function RootLayoutNav() {
         : user.role === "VOLUNTEER"
           ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/intro")
           : user.role === "NPO"
-            ? "/(npo)/(tabs)/community" // Landing on Community by default for NPOs
+            ? (user.profile_completed || user.profileCompleted ? "/(npo)/(tabs)/community" : "/onboarding/intro")
             : "/(corporate)";
 
       router.replace(dest as any);
@@ -121,11 +121,11 @@ function RootLayoutNav() {
       return;
     }
 
-    // 5. ONBOARDING GUARD: OldUser logged in but profile incomplete
-    if (user.role === "VOLUNTEER" && !hasCompletedOnboarding && !inOnboarding) {
-      console.log("[DEBUG] RootLayoutNav: Incomplete profile, forcing onboarding to /onboarding/interests");
-      isRedirecting.current = true;
-      router.replace("/onboarding/interests" as any);
+    // 5. ONBOARDING GUARD: User logged in but profile incomplete
+    if ((user.role === "VOLUNTEER" || user.role === "NPO") && !hasCompletedOnboarding && !inOnboarding) {
+      console.log("[DEBUG] RootLayoutNav: Incomplete profile, forcing onboarding");
+      const dest = user.role === "NPO" ? "/onboarding/intro" : "/onboarding/interests";
+      router.replace(dest as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
       return;
     }

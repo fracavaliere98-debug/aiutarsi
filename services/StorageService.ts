@@ -22,6 +22,16 @@ export class StorageService {
     }
 
     /**
+     * Uploads a verification document to the 'verification_docs' bucket
+     */
+    async uploadVerificationDoc(userId: string, uri: string, extension: string = 'pdf'): Promise<string | null> {
+        const timestamp = Date.now();
+        const fileName = `${userId}/doc_${timestamp}.${extension}`;
+        // Note: Assumes 'verification_docs' bucket exists
+        return this.uploadFile('verification_docs', fileName, uri, extension === 'pdf' ? 'application/pdf' : 'image/jpeg');
+    }
+
+    /**
      * Uploads a community post image
      */
     async uploadCommunityImage(userId: string, uri: string): Promise<string | null> {
@@ -55,7 +65,7 @@ export class StorageService {
     /**
      * Generic upload helper using FileSystem and Base64 (Most Robust for Expo)
      */
-    private async uploadFile(bucket: string, fileName: string, uri: string): Promise<string | null> {
+    private async uploadFile(bucket: string, fileName: string, uri: string, contentType: string = 'image/jpeg'): Promise<string | null> {
         try {
             console.log(`Uploading to bucket: ${bucket}, path: ${fileName}`);
 
@@ -77,7 +87,7 @@ export class StorageService {
             const { data, error } = await supabase.storage
                 .from(bucket)
                 .upload(fileName, arrayBuffer, {
-                    contentType: 'image/jpeg',
+                    contentType: contentType,
                     upsert: true
                 });
 

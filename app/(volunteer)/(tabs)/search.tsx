@@ -340,11 +340,17 @@ export default function SearchScreen() {
                     // NPOs — search profiles with role=NPO
                     supabase
                         .from('profiles')
-                        .select('id, npo_name')
+                        .select('id, npo_name, full_name, avatar_url, is_verified, verification_status')
                         .eq('role', 'NPO')
-                        .ilike('npo_name', `%${searchText.trim()}%`)
+                        .or(`npo_name.ilike.%${searchText.trim()}%,full_name.ilike.%${searchText.trim()}%`)
                         .limit(3)
-                        .then(({ data }) => (data || []).map((r: any) => ({ id: r.id, name: r.npo_name || '' }))),
+                        .then(({ data }) => (data || []).map((r: any) => ({ 
+                            id: r.id, 
+                            name: r.npo_name || r.full_name || '', 
+                            avatarUrl: r.avatar_url,
+                            is_verified: r.is_verified,
+                            verification_status: r.verification_status
+                        }))),
                     // Places from Nominatim
                     fetchNominatim(searchText),
                 ]);
@@ -674,8 +680,12 @@ export default function SearchScreen() {
                                             borderBottomWidth: idx < suggestedActivities.length - 1 ? 1 : 0,
                                             borderBottomColor: '#f1f5f9',
                                         }}>
-                                        <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${Colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                                            <Calendar size={16} color={Colors.primary} />
+                                        <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                                            {act.imageUrl ? (
+                                                <Image source={{ uri: act.imageUrl }} style={{ width: '100%', height: '100%' }} />
+                                            ) : (
+                                                <Calendar size={16} color={Colors.primary} />
+                                            )}
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e1b4b' }} numberOfLines={1}>{act.title}</Text>
@@ -696,6 +706,7 @@ export default function SearchScreen() {
                                             setSearchText(npo.name);
                                             setIsSearchFocused(false);
                                             setSuggestedNpos([]);
+                                            router.push(`/npo-profile/${npo.id}` as any);
                                         }}
                                         style={{
                                             flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -703,9 +714,15 @@ export default function SearchScreen() {
                                             borderBottomWidth: idx < suggestedNpos.length - 1 ? 1 : 0,
                                             borderBottomColor: '#f1f5f9',
                                         }}>
-                                        <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${Colors.accent}15`, alignItems: 'center', justifyContent: 'center' }}>
-                                            <Users size={16} color={Colors.accent} />
-                                        </View>
+                                        <UserAvatar
+                                            size={32}
+                                            fontSize={12}
+                                            name={npo.name}
+                                            avatarUrl={(npo as any).avatarUrl}
+                                            role="NPO"
+                                            isVerified={(npo as any).is_verified}
+                                            verificationStatus={(npo as any).verification_status}
+                                        />
                                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e1b4b', flex: 1 }} numberOfLines={1}>{npo.name}</Text>
                                     </TouchableOpacity>
                                 ))}

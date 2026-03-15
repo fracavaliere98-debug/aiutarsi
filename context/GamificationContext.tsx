@@ -138,14 +138,16 @@ export const GamificationProvider = ({ children }: { children: ReactNode }) => {
 
     // 2. Local State for Level Up Modal
     const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
-    const prevLevelRef = useRef(1);
+    const prevLevelRef = useRef(0);
 
     // Watch for Level Up
     useEffect(() => {
+        // Trigger only if state is valid and level has increased from a previously known value (> 0)
         if (!isFetching && state.level > prevLevelRef.current && prevLevelRef.current > 0) {
             setLevelUpData({ level: state.level });
         }
-        if (!isFetching) {
+        // Update ref even during fetching if we have a valid level to avoid stale first-trigger
+        if (state.level > 0) {
             prevLevelRef.current = state.level;
         }
     }, [state.level, isFetching]);

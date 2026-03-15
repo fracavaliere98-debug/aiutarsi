@@ -246,16 +246,7 @@ export default function OnboardingInterests() {
                 </TouchableOpacity>
             </View>
 
-            {/* Progress */}
-            <View style={styles.progressContainer}>
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressLabel}>PROGRESSO INTERESSI</Text>
-                    <Text style={styles.progressLabel}>{currentIndex + 1} DI {INTERESTS.length}</Text>
-                </View>
-                <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-                </View>
-            </View>
+            {/* Progress - Removed redundant bar handled by layout */}
 
             {/* Header Text */}
             <View style={styles.headerSection}>

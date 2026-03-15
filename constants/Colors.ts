@@ -6,4 +6,5 @@ export const Colors = {
     white: "#FFFFFF",
     secondary: "#4b5563",
     success: "#22c55e", // Green 500
+    info: "#3b82f6", // Blue 500
 };
