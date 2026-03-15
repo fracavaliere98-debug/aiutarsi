@@ -156,20 +156,28 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
 
     const deletePost = async (postId: string) => {
         if (!user) return;
-        const { error } = await supabase.from('community_posts').delete().eq('id', postId).eq('author_id', user.id);
-        if (error) throw error;
-        setPosts(prev => prev.filter(p => p.id !== postId));
+        try {
+            const { error } = await supabase.from('community_posts').delete().eq('id', postId).eq('author_id', user.id);
+            if (error) throw error;
+            setPosts(prev => prev.filter(p => p.id !== postId));
+        } catch (e: any) {
+            console.warn('Error deleting post:', e.message || e);
+        }
     };
 
     const reportPost = async (postId: string, reason: string) => {
         if (!user) return;
-        const { error } = await supabase.from('community_reports').insert({
-            post_id: postId,
-            reporter_id: user.id,
-            reason: reason,
-            status: 'pending' // Default value in DB, defined here for clarity
-        });
-        if (error) throw error;
+        try {
+            const { error } = await supabase.from('community_reports').insert({
+                post_id: postId,
+                reporter_id: user.id,
+                reason: reason,
+                status: 'pending' // Default value in DB, defined here for clarity
+            });
+            if (error) throw error;
+        } catch (e: any) {
+            console.warn('Error reporting post:', e.message || e);
+        }
     };
 
     const toggleReaction = async (postId: string, reaction: ReactionType) => {
@@ -225,11 +233,10 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                     }));
                 }
             }
-        } catch (error) {
-            console.error('Error toggling reaction:', error);
-            // Rollback optimistic update
+        } catch (error: any) {
+            console.warn('Error toggling reaction:', error?.message || error);
+            // Rollback optimistic update on failure
             setPosts(previousPosts);
-            throw error; // Let the UI catch indicating failure
         }
     };
 

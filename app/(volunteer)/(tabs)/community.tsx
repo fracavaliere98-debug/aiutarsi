@@ -225,12 +225,21 @@ export default function CommunityScreen() {
         setIsLoadingMore(false);
     }, [isLoadingMore, posts, fetchFeed]);
 
-    const renderItem = ({ item }: { item: FeedItem }) => {
+    const renderItem = useCallback(({ item }: { item: FeedItem }) => {
         if (item.type === 'post') return <CommunityPostCard post={item.data} />;
         if (item.type === 'activity') return <SuggestedActivityInFeed activity={item.data} />;
         if (item.type === 'weekend') return <WeekendEventsBanner activities={activities} />;
         return null;
-    };
+    }, [activities]);
+
+    // Stable header — defined outside JSX to prevent recreation on every render
+    const listHeader = useMemo(() => (
+        <StoriesRow
+            isNPO={isNPO}
+            onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)}
+            onStoryPress={(stories, index) => setStoryViewer({ stories, index })}
+        />
+    ), [isNPO]);
 
     const rightElement = isNPO ? <NPOHeaderActions showAddPost={true} /> : <VolunteerHeaderActions />;
 
@@ -261,8 +270,9 @@ export default function CommunityScreen() {
                         contentContainerStyle={{ paddingBottom: 100 }}
                         onEndReached={onLoadMore}
                         onEndReachedThreshold={0.5}
+                        overScrollMode="never"
                         ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
-                        ListHeaderComponent={<StoriesRow isNPO={isNPO} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={(stories, index) => setStoryViewer({ stories, index })} />}
+                        ListHeaderComponent={listHeader}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
                         ListEmptyComponent={
                             <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>

@@ -794,6 +794,33 @@ export class ActivityService {
         }));
     }
 
+    async getLatestActivity(): Promise<AppActivity | null> {
+        try {
+            const { data, error } = await supabase
+                .from('activities')
+                .select(`
+                    *,
+                    profiles:npo_id (npo_name, full_name, public_email, email),
+                    activity_skills (skill),
+                    activity_participants (user_id)
+                `)
+                .eq('status', 'APERTA')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (error) {
+                console.error("Error fetching latest activity:", error);
+                return null;
+            }
+
+            return this._mapDbActivityToApp(data);
+        } catch (error) {
+            console.error("Error in getLatestActivity:", error);
+            return null;
+        }
+    }
+
     async refreshActivityStates(): Promise<AppActivity[]> {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER

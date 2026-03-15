@@ -58,7 +58,8 @@
           "locationAlwaysPermission": "Consenti ad AiutarSì di accedere alla tua posizione per trovare attività vicine.",
           "locationWhenInUsePermission": "Consenti ad AiutarSì di accedere alla tua posizione quando usi l'app per trovare attività vicine."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

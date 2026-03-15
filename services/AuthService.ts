@@ -408,6 +408,24 @@ export class AuthService {
         }
     }
 
+    async getTotalVolunteersCount(): Promise<number> {
+        try {
+            const { count, error } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('role', 'VOLUNTEER');
+
+            if (error) {
+                console.error("Error counting volunteers:", error);
+                return 0;
+            }
+            return count || 0;
+        } catch (e) {
+            console.error("Exception counting volunteers", e);
+            return 0;
+        }
+    }
+
     async getCurrentUser(): Promise<AppUser | null> {
         // 1. Check Session (Basic Auth)
         const { data: { session } } = await supabase.auth.getSession();

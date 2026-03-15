@@ -90,14 +90,20 @@ export function usePushNotifications() {
     useEffect(() => {
         if (!user?.id) return;
 
-        const updateLastSeen = () => {
-            supabase
-                .from('profiles')
-                .update({ last_seen_at: new Date().toISOString() })
-                .eq('id', user.id)
-                .then(({ error }) => {
-                    if (error) console.warn('[Push] last_seen_at update error:', error.message);
-                });
+        const updateLastSeen = async () => {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ last_seen_at: new Date().toISOString() })
+                    .eq('id', user.id);
+                
+                if (error && !error.message.includes('FetchError') && !error.message.includes('Network request')) {
+                    console.warn('[Push] last_seen_at error:', error.message);
+                }
+            } catch (err) {
+                // Silent catch for "Network request failed" or timeout errors 
+                // Since this is just a background presence ping, we don't care if it drops.
+            }
         };
 
         // Update immediately and then every 30 seconds
