@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { UserAvatar } from "../../../components/UserAvatar";
+import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
+
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
 import { Plus, List, Calendar as CalendarIcon } from "lucide-react-native";

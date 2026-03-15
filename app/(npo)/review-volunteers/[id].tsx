@@ -21,7 +21,7 @@ type VolunteerReviewDraft = {
 export default function ReviewVolunteersScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { activities, volunteerReviews, submitVolunteerReviews, activityApplications } = useActivities();
+    const { activities, volunteerReviews, submitVolunteerReviews } = useActivities();
     const { users } = useAuth();
     const { showToast } = useToast();
 

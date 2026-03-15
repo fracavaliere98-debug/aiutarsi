@@ -8,16 +8,7 @@ import { ArrowLeft, Code, MessageSquare, Heart, Lightbulb, PenTool, BarChart, Ha
 
 
 
-const SKILLS = [
-    { id: "comms", label: "Comunicazione", icon: MessageSquare },
-    { id: "tech", label: "Informatica", icon: Code },
-    { id: "medical", label: "Primo Soccorso", icon: Heart },
-    { id: "creative", label: "Creatività", icon: PenTool },
-    { id: "planning", label: "Organizzazione", icon: Lightbulb },
-    { id: "data", label: "Analisi Dati", icon: BarChart },
-    { id: "manual", label: "Lavoro Manuale", icon: HardHat },
-    { id: "photo", label: "Fotografia", icon: Camera },
-];
+import { SKILLS } from "../../constants/Skills";
 
 // ... existing imports ...
 

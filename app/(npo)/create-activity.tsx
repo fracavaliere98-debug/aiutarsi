@@ -7,22 +7,11 @@ import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
-import { ArrowLeft, Calendar, MapPin, Users, Tag, AlignLeft, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react-native";
-import { ScreenWrapper } from "../../components/ScreenWrapper";
+import { Calendar, Users, Send, Clock, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { AddressAutocomplete } from "../../components/AddressAutocomplete";
 import { CalendarPicker } from "../../components/CalendarPicker";
-
-const SKILLS = [
-    { id: "comms", label: "Comunicazione", icon: MessageSquare },
-    { id: "tech", label: "Informatica", icon: Code },
-    { id: "medical", label: "Primo Soccorso", icon: Heart },
-    { id: "creative", label: "Creatività", icon: PenTool },
-    { id: "planning", label: "Organizzazione", icon: Lightbulb },
-    { id: "data", label: "Analisi Dati", icon: BarChart },
-    { id: "manual", label: "Lavoro Manuale", icon: HardHat },
-    { id: "photo", label: "Fotografia", icon: Camera },
-];
+import { SKILLS } from "../../constants/Skills";
 
 export default function CreateActivityScreen() {
     const router = useRouter();
@@ -212,7 +201,7 @@ export default function CreateActivityScreen() {
                                     ) : (
                                         <View className="items-center">
                                             <View className="bg-primary/5 p-4 rounded-3xl mb-2">
-                                                <Camera size={32} color={Colors.primary} />
+                                                <RefreshCw size={32} color={Colors.primary} />
                                             </View>
                                             <Text className="text-primary/40 font-bold text-sm">Carica una foto per l&apos;attività</Text>
                                         </View>

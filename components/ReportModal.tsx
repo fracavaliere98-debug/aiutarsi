@@ -117,7 +117,7 @@ export default function ReportModal({ visible, onClose, reportedUser, contentTyp
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 20, lineHeight: 20 }}>
               Stai segnalando <Text style={{ fontWeight: 'bold' }}>{reportedUser.name || reportedUser.npoName || 'l\'utente'}</Text>.
-              Questa segnalazione è anonima. L'utente verrà anche bloccato e non potrà più contattarti o interagire con te.
+              Questa segnalazione è anonima. L&apos;utente verrà anche bloccato e non potrà più contattarti o interagire con te.
             </Text>
 
             <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', marginBottom: 12 }}>Motivazione (richiesta)</Text>

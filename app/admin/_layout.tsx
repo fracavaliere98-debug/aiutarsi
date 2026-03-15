@@ -1,8 +1,7 @@
 import React from 'react';
-import { Stack } from 'expo-router';
+import { Stack , Redirect } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Redirect } from 'expo-router';
 
 export default function AdminLayout() {
   const { user, isLoaded } = useAuth();

@@ -15,7 +15,7 @@ import {
 } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { OldActivity } from "../../../types";
+import { OldActivity, AppActivity } from "../../../types";
 import { useNotifications } from "../../../context/NotificationContext";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
@@ -25,6 +25,8 @@ import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-nati
 import { supabase } from "../../../utils/supabase";
 import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
+
+import { SKILLS } from "../../../constants/Skills";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 async function fetchNominatim(text: string): Promise<{ id: number; label: string; lat: number; lng: number }[]> {
@@ -51,17 +53,6 @@ const INTERESTS = [
     { id: "Animali", label: "Animali", icon: Dog },
     { id: "Arte & Cultura", label: "Arte", icon: Palette },
     { id: "Salute", label: "Salute", icon: Heart },
-];
-
-const SKILLS = [
-    { id: "Comunicazione", label: "Comunicazione", icon: MessageSquare },
-    { id: "Informatica", label: "Informatica", icon: Code },
-    { id: "Primo Soccorso", label: "Primo Soccorso", icon: Heart },
-    { id: "Creatività", label: "Creatività", icon: PenTool },
-    { id: "Organizzazione", label: "Organizzazione", icon: Lightbulb },
-    { id: "Analisi Dati", label: "Analisi Dati", icon: BarChart },
-    { id: "Lavoro Manuale", label: "Lavoro Manuale", icon: HardHat },
-    { id: "Fotografia", label: "Fotografia", icon: Camera },
 ];
 
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
@@ -415,7 +406,7 @@ export default function VolunteerMap() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [searchSuggestions, setSearchSuggestions] = useState<{ id: number; label: string; lat: number; lng: number }[]>([]);
-    const [suggestedActivities, setSuggestedActivities] = useState<OldActivity[]>([]);
+    const [suggestedActivities, setSuggestedActivities] = useState<AppActivity[]>([]);
     const [suggestedNpos, setSuggestedNpos] = useState<{ id: string; name: string }[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

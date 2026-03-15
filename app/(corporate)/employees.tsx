@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
-import { OldUser } from "../../types";
+import { View, Text, Image, TextInput } from "react-native";
+
 import { Trophy, Search, TrendingUp, ChevronRight } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
@@ -11,20 +11,7 @@ export default function EmployeesScreen() {
 
     const filteredEmployees: any[] = []; // Temporary placeholder since MockData is being removed
 
-    const HeaderSlot = (
-        <View className="mt-4">
-            <View className="flex-row items-center bg-white/10 rounded-2xl px-4 py-3 border border-white/20">
-                <Search size={20} color="rgba(255,255,255,0.6)" />
-                <TextInput
-                    placeholder="Cerca dipendente o reparto..."
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    className="flex-1 ml-3 text-white font-medium"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-            </View>
-        </View>
-    );
+
 
     const HeaderActions = (
         <View className="bg-accent p-3 rounded-2xl shadow-lg">

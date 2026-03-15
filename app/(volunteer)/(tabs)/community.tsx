@@ -77,6 +77,7 @@ const WeekendEventsBanner = memo(({ activities }: { activities: AppActivity[] })
         </View>
     );
 });
+WeekendEventsBanner.displayName = 'WeekendEventsBanner';
 
 // ── Suggested OldActivity Card (feed inline) ─────────────────────────────────────
 const SuggestedActivityInFeed = memo(({ activity }: { activity: AppActivity }) => {
@@ -119,6 +120,7 @@ const SuggestedActivityInFeed = memo(({ activity }: { activity: AppActivity }) =
         </TouchableOpacity>
     );
 });
+SuggestedActivityInFeed.displayName = 'SuggestedActivityInFeed';
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {
@@ -266,14 +268,16 @@ export default function CommunityScreen() {
                         keyExtractor={item => item.key}
                         getItemType={(item) => item.type}
                         renderItem={renderItem}
+                        // @ts-ignore - Required for performant layout calculation, ignoring TS type mismatch
+                        estimatedItemSize={220}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 100 }}
                         onEndReached={onLoadMore}
                         onEndReachedThreshold={0.5}
-                        overScrollMode="never"
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
                         ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
                         ListHeaderComponent={listHeader}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />}
                         ListEmptyComponent={
                             <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
                                 <Text style={{ fontSize: 40 }}>🌱</Text>

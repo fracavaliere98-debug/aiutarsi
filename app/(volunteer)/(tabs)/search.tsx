@@ -25,6 +25,8 @@ import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
 
+import { SKILLS } from "../../../constants/Skills";
+
 // ─── Shared constants (keep in sync with map.tsx) ────────────────────────────
 const INTERESTS = [
     { id: "Sociale", label: "Sociale", icon: Users },
@@ -33,17 +35,6 @@ const INTERESTS = [
     { id: "Animali", label: "Animali", icon: Dog },
     { id: "Arte & Cultura", label: "Arte", icon: Palette },
     { id: "Salute", label: "Salute", icon: Heart },
-];
-
-const SKILLS = [
-    { id: "Comunicazione", label: "Comunicazione", icon: MessageSquare },
-    { id: "Informatica", label: "Informatica", icon: Code },
-    { id: "Primo Soccorso", label: "Primo Soccorso", icon: Heart },
-    { id: "Creatività", label: "Creatività", icon: PenTool },
-    { id: "Organizzazione", label: "Organizzazione", icon: Lightbulb },
-    { id: "Analisi Dati", label: "Analisi Dati", icon: BarChart },
-    { id: "Lavoro Manuale", label: "Lavoro Manuale", icon: HardHat },
-    { id: "Fotografia", label: "Fotografia", icon: Camera },
 ];
 
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];

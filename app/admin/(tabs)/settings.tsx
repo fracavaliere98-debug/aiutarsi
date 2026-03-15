@@ -40,7 +40,7 @@ export default function AdminSettingsScreen() {
 
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <LogOut size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Esci dall'Area Admin</Text>
+          <Text style={styles.logoutText}>Esci dall&apos;Area Admin</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

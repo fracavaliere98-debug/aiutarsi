@@ -1,14 +1,13 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { UserAvatar } from "../../components/UserAvatar";
-import { Settings, Bell, Shield, Info, LogOut, ChevronRight, Mail, Building } from "lucide-react-native";
+import { Settings, Bell, Shield, LogOut, ChevronRight, Mail, Building } from "lucide-react-native";
 import { Card } from "../../components/Card";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useRouter } from "expo-router";
 
 export default function CorporateProfileScreen() {
     const { user, logout } = useAuth();
-    const router = useRouter();
 
     const menuItems = [
         { icon: Building, label: "Dati Aziendali", color: "#6366f1" },

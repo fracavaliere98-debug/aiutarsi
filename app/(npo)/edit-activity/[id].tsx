@@ -3,22 +3,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useActivities } from "../../../context/ActivityContext";
 import { Colors } from "../../../constants/Colors";
-import { ArrowLeft, Calendar, MapPin, Users, Send, Clock, Sparkles, MessageSquare, Code, Heart, PenTool, Lightbulb, BarChart, HardHat, Camera, Trash2, Plus, RefreshCw } from "lucide-react-native";
+import { Calendar, Users, Send, Clock, Camera, Trash2, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
-import { OldActivity } from "../../../types";
-import * as ImagePicker from 'expo-image-picker';
 
-const SKILLS = [
-    { id: "comms", label: "Comunicazione", icon: MessageSquare },
-    { id: "tech", label: "Informatica", icon: Code },
-    { id: "medical", label: "Primo Soccorso", icon: Heart },
-    { id: "creative", label: "Creatività", icon: PenTool },
-    { id: "planning", label: "Organizzazione", icon: Lightbulb },
-    { id: "data", label: "Analisi Dati", icon: BarChart },
-    { id: "manual", label: "Lavoro Manuale", icon: HardHat },
-    { id: "photo", label: "Fotografia", icon: Camera },
-];
+import * as ImagePicker from 'expo-image-picker';
+import { SKILLS } from "../../../constants/Skills";
 
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
@@ -44,7 +34,7 @@ export default function EditActivityScreen() {
     });
 
     useEffect(() => {
-        const activity = activities.find((a: OldActivity) => a.id === id);
+        const activity = activities.find((a: any) => a.id === id);
         if (activity) {
             setFormData({
                 title: activity.title,
@@ -188,14 +178,14 @@ export default function EditActivityScreen() {
                                         <View className="w-full h-full">
                                             <Image source={{ uri: formData.imageUrl }} className="w-full h-full" resizeMode="cover" />
                                             <View className="absolute inset-0 bg-black/30 justify-center items-center">
-                                                <Camera color="white" size={32} />
+                                                <RefreshCw color="white" size={32} />
                                                 <Text className="text-white font-bold mt-2">Cambia Foto</Text>
                                             </View>
                                         </View>
                                     ) : (
                                         <View className="items-center justify-center p-6">
                                             <View className="w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-3">
-                                                <Camera color={Colors.primary} size={32} />
+                                                <RefreshCw color={Colors.primary} size={32} />
                                             </View>
                                             <Text className="text-primary/60 font-medium">Tocca per caricare una foto</Text>
                                         </View>

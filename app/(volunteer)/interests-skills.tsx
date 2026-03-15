@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { ArrowLeft, Users, Globe, BookOpen, Dog, Palette, Heart, Code, MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera, Save, TreePine } from "lucide-react-native";
+import { SKILLS } from "../../constants/Skills";
 
 const INTERESTS = [
     { id: "social", label: "Sociale", icon: Users },
@@ -13,17 +14,6 @@ const INTERESTS = [
     { id: "animals", label: "Animali", icon: Dog },
     { id: "art", label: "Arte & Cultura", icon: Palette },
     { id: "health", label: "Salute", icon: Heart },
-];
-
-const SKILLS = [
-    { id: "comms", label: "Comunicazione", icon: MessageSquare },
-    { id: "tech", label: "Informatica", icon: Code },
-    { id: "medical", label: "Primo Soccorso", icon: Heart },
-    { id: "creative", label: "Creatività", icon: PenTool },
-    { id: "planning", label: "Organizzazione", icon: Lightbulb },
-    { id: "data", label: "Analisi Dati", icon: BarChart },
-    { id: "manual", label: "Lavoro Manuale", icon: HardHat },
-    { id: "photo", label: "Fotografia", icon: Camera },
 ];
 
 export default function InterestsSkillsSettings() {
@@ -82,13 +72,19 @@ export default function InterestsSkillsSettings() {
                             <TouchableOpacity
                                 key={item.id}
                                 onPress={() => toggleInterest(item.label)}
-                                className={`flex-row items-center gap-2 px-3 py-3 rounded-2xl border w-[48%] ${isSelected
-                                    ? "bg-primary border-primary"
-                                    : "bg-white border-primary/10 shadow-sm"
+                                className={`flex-col items-center justify-center px-1.5 py-3 rounded-xl border w-[31%] ${isSelected
+                                    ? "bg-accent/10 border-accent/10"
+                                    : "bg-white border-slate-200 shadow-sm"
                                     }`}
+                                style={{ gap: 6 }}
                             >
-                                <Icon size={18} color={isSelected ? "white" : Colors.primary} />
-                                <Text className={`font-bold text-sm flex-1 ${isSelected ? "text-white" : "text-primary"}`} numberOfLines={1}>
+                                <Icon size={20} color={isSelected ? Colors.accent : "#94a3b8"} />
+                                <Text 
+                                    className={`font-bold text-[11px] text-center ${isSelected ? "text-accent" : "text-slate-500"}`} 
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.7}
+                                >
                                     {item.label}
                                 </Text>
                             </TouchableOpacity>
@@ -111,13 +107,19 @@ export default function InterestsSkillsSettings() {
                             <TouchableOpacity
                                 key={item.id}
                                 onPress={() => toggleSkill(item.label)}
-                                className={`flex-row items-center gap-2 px-3 py-3 rounded-2xl border w-[48%] ${isSelected
-                                    ? "bg-accent border-accent"
-                                    : "bg-white border-accent/10 shadow-sm"
+                                className={`flex-col items-center justify-center px-1.5 py-3 rounded-xl border w-[31%] ${isSelected
+                                    ? "bg-primary/10 border-primary/10"
+                                    : "bg-white border-slate-200 shadow-sm"
                                     }`}
+                                style={{ gap: 6 }}
                             >
-                                <Icon size={18} color={isSelected ? "white" : Colors.accent} />
-                                <Text className={`font-bold text-sm flex-1 ${isSelected ? "text-white" : "text-accent"}`} numberOfLines={1}>
+                                <Icon size={20} color={isSelected ? Colors.primary : "#94a3b8"} />
+                                <Text 
+                                    className={`font-bold text-[11px] text-center ${isSelected ? "text-primary" : "text-slate-500"}`} 
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.7}
+                                >
                                     {item.label}
                                 </Text>
                             </TouchableOpacity>

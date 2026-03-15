@@ -1,14 +1,9 @@
-import { Tabs, useRouter, useSegments, Redirect } from "expo-router";
+import { Tabs } from "expo-router";
 import { BarChart3, Users, Award, User } from 'lucide-react-native';
 import { Colors } from "../../constants/Colors";
-import { useAuth } from "../../context/AuthContext";
-import { useEffect } from "react";
+
 
 export default function CorporateLayout() {
-    const { user } = useAuth();
-    const router = useRouter();
-
-
     return (
         <Tabs
             screenOptions={{

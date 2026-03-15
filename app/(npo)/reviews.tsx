@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
-import { Star, MessageSquareQuote, ArrowLeft, Calendar } from "lucide-react-native";
+import { Star, Calendar } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { EmptyState } from "../../components/EmptyState";
 import { useRouter } from "expo-router";

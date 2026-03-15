@@ -1,10 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { EmptyState } from "../../components/EmptyState";
-import { Bell, CheckCircle, AlertCircle, Info, Users, Calendar, FileText, MessageCircle } from "lucide-react-native";
+import { CheckCircle, AlertCircle, Info, Users, Calendar, FileText, MessageCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";

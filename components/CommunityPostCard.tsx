@@ -248,3 +248,4 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
         </View>
     );
 });
+CommunityPostCard.displayName = 'CommunityPostCard';

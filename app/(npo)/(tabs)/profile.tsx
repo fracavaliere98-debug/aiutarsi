@@ -4,9 +4,6 @@ import Constants from 'expo-constants';
 import * as ImagePicker from "expo-image-picker";
 import {
     LogOut,
-    Mail,
-    Bell,
-    Shield,
     ChevronRight,
     CreditCard,
     Users,
@@ -14,9 +11,7 @@ import {
     Eye,
     LifeBuoy,
     FileText,
-    Pencil,
     Camera,
-    X,
     ShieldBan
 } from "lucide-react-native";
 import { SoftCard } from "../../../components/SoftCard";
@@ -39,7 +34,6 @@ export default function NPOProfileScreen() {
     const { showToast } = useToast();
     const { getNPOApplications } = useApplications();
     const router = useRouter();
-    const { unreadCount } = useNotifications();
 
     // Modal States
     const [showEditProfile, setShowEditProfile] = useState(false);

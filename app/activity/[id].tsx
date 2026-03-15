@@ -10,7 +10,7 @@ import { useGamification } from "../../context/GamificationContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { activityService } from "../../services/ActivityService";
-import { OldActivity } from "../../types";
+import { AppActivity } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
@@ -22,6 +22,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { supabase } from "../../utils/supabase";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
 // Conditional import for map opening
 const openMapsUrl = (lat: number, lng: number, label?: string) => {
@@ -36,20 +38,6 @@ const openMapsUrl = (lat: number, lng: number, label?: string) => {
 };
 
 const { width: SCREEN_W } = Dimensions.get('window');
-
-const SKILLS_LABELS: Record<string, string> = {
-    comms: "Comunicazione",
-    tech: "Informatica",
-    medical: "Primo Soccorso",
-    creative: "Creatività",
-    planning: "Organizzazione",
-    data: "Analisi Dati",
-    manual: "Lavoro Manuale",
-    photo: "Fotografia",
-    empathy: "Empatia",
-    logistics: "Logistica",
-    teamwork: "Lavoro di squadra",
-};
 
 // Human-readable recurrence label derived from the start date
 const getRecurrenceLabel = (recurrence: string | undefined, dateTime: string | undefined): string | null => {
@@ -87,7 +75,7 @@ export default function ActivityDetail() {
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
 
-    const [fetchedActivity, setFetchedActivity] = useState<OldActivity | null>(null);
+    const [fetchedActivity, setFetchedActivity] = useState<AppActivity | null>(null);
     const [fetchLoading, setFetchLoading] = useState(false);
     const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
 
@@ -338,21 +326,27 @@ export default function ActivityDetail() {
                             </View>
                             {/* Auto-sizing chips that wrap naturally */}
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                                {activity.skills.map(s => (
-                                    <View
-                                        key={s}
-                                        style={{
-                                            backgroundColor: '#f8fafc',
-                                            paddingVertical: 10, paddingHorizontal: 16,
-                                            borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0',
-                                            alignItems: 'center', justifyContent: 'center'
-                                        }}
-                                    >
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary }}>
-                                            {SKILLS_LABELS[s] || s}
-                                        </Text>
-                                    </View>
-                                ))}
+                                {activity.skills.map((s: string) => {
+                                    const skill = SKILLS.find(x => x.id === s) || SKILLS.find(x => x.label === s);
+                                    const label = skill ? skill.label : s;
+                                    const Icon = getSkillIcon(s);
+                                    return (
+                                        <View
+                                            key={s}
+                                            style={{
+                                                backgroundColor: '#f8fafc',
+                                                paddingVertical: 10, paddingHorizontal: 16,
+                                                borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0',
+                                                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6
+                                            }}
+                                        >
+                                            <Icon size={14} color={Colors.primary} />
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary }}>
+                                                {label}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
                             </View>
                         </Animated.View>
                     )}

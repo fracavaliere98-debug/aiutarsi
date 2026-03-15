@@ -1,14 +1,12 @@
-import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { UserAvatar } from "../../../components/UserAvatar";
+
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { Check, X, Clock, User, Filter, Search, Calendar, Sparkles } from 'lucide-react-native';
-import { Card } from "../../../components/Card";
+import { Search, Sparkles } from 'lucide-react-native';
 import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
-import { CompactFollowerCard } from "../../../components/CompactFollowerCard";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 
 import { VolunteerCard } from "../../../components/VolunteerCard";
@@ -67,6 +65,7 @@ export default function VolunteersScreen() {
                     id: app.id,
                     isActivity: true, // Marker for handlers
                     activityId: app.activityId,
+                    embedding: user.embedding ?? undefined,
                     npoId: user?.id || "",
                     npoName: act ? `Attività: ${act.title}` : "Attività",
                     volunteerId: app.volunteerId,

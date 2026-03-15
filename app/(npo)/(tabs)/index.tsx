@@ -1,11 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
-import { useEffect, useCallback } from "react";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
-import { Bell, Sparkles, PlusCircle, Star, Users, Calendar, Clock, AlertCircle, Brain, Plus } from "lucide-react-native";
+import { Sparkles, Star, Users, Plus } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
-import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -13,19 +12,18 @@ import { EmptyState } from "../../../components/EmptyState";
 
 import { useApplications } from "../../../context/ApplicationContext";
 import { useNotifications } from "../../../context/NotificationContext";
-import { LinearGradient } from "expo-linear-gradient";
+
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
 import { InsightCarousel } from "../../../components/InsightCarousel";
 
 export default function NPODashboard() {
-    const { user, getNPOFollowers } = useAuth();
+    const { user, getNPOFollowers, refreshUsers } = useAuth();
     const router = useRouter();
-    const { activities, reviews, getNPORating } = useActivities();
+    const { activities, getNPORating } = useActivities();
     const { getNPOApplications } = useApplications();
-    const { unreadCount } = useNotifications();
-    const { users, refreshUsers } = useAuth(); // Destructure users and refreshUsers
+
     const { insights, dismissInsight } = useNPOInsights();
 
     // Refresh followers when screen gains focus to update "online" status
@@ -61,48 +59,7 @@ export default function NPODashboard() {
 
     const { addNotification } = useNotifications();
 
-    const triggerTestNotifications = () => {
-        const testData = [
-            {
-                type: "APPLICATION_RECEIVED" as const,
-                title: "Nuova Candidatura! 📋",
-                message: "Un volontario si è candidato per la tua attività",
-                userId: user?.id || ""
-            },
-            {
-                type: "VOLUNTEER_ENROLLED" as const,
-                title: "Nuovo Iscritto! 🎉",
-                message: "Un nuovo volontario si è unito al tuo team",
-                userId: user?.id || ""
-            },
-            {
-                type: "URGENT" as const,
-                title: "Azione Richiesta ⚠️",
-                message: "Hai un'attività che richiede attenzione immediata",
-                userId: user?.id || ""
-            },
-            {
-                type: "ACTIVITY_UPDATE" as const,
-                title: "Aggiornamento Attività 📅",
-                message: "Ci sono nuovi dettagli per la tua attività di domani",
-                userId: user?.id || ""
-            },
-            {
-                type: "SUCCESS" as const,
-                title: "Obiettivo Raggiunto! 🏆",
-                message: "Congratulazioni! Hai raggiunto un nuovo traguardo",
-                userId: user?.id || ""
-            }
-        ];
 
-        testData.forEach((data, index) => {
-            setTimeout(() => {
-                addNotification(data);
-            }, index * 200);
-        });
-
-        alert("5 Notifiche inviate! Controlla la campanella.");
-    };
 
     const HeaderActions = <NPOHeaderActions />;
 

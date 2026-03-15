@@ -230,7 +230,7 @@ export default function LandingPage() {
                             <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.bubbleCol}>
                                 <View style={styles.bubble}>
                                     <Text style={styles.bubbleText} numberOfLines={2}>
-                                        "Il tuo impegno ha un valore reale"
+                                        &quot;Il tuo impegno ha un valore reale&quot;
                                     </Text>
                                     <View style={styles.bubbleTail} />
                                 </View>
