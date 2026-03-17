@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, Share } from "react-native";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
@@ -38,6 +38,17 @@ export default function VolunteerProfile() {
         rating: averageRating
     };
 
+    const handleShare = async () => {
+        if (!user) return;
+        try {
+            await Share.share({
+                message: `👤 ${user.full_name || user.name || 'Volontario'}\nEcco il mio profilo su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://volunteer-profile/${user.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/volunteer-profile/${user.id}`,
+            });
+        } catch (error) {
+            console.error("Error sharing profile:", error);
+        }
+    };
+
     return (
         <VolunteerProfileView
             user={user}
@@ -48,6 +59,7 @@ export default function VolunteerProfile() {
             xpNeededForLevel={xpNeededForLevel}
             isOwnProfile={true}
             onSettingsPress={() => router.push("/(volunteer)/settings" as any)}
+            onSharePress={handleShare}
             followedNPOs={followedNPOs}
             affiliatedNPOs={affiliatedNPOs}
             npoApplications={myApplications}

@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
@@ -138,10 +138,21 @@ export default function NPOVolunteerProfile() {
         }
     };
 
+    const handleShare = async () => {
+        if (!user) return;
+        try {
+            await Share.share({
+                message: `👤 ${user.name || 'Volontario'}\nScopri questo Volontario su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://volunteer-profile/${id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/volunteer-profile/${id}`,
+            });
+        } catch (error) {
+            console.error("Error sharing volunteer profile:", error);
+        }
+    };
+
     return (
         <>
             <VolunteerProfileView
-                user={user}
+                user={user as any}
                 gamificationState={gamificationState}
                 stats={enrichedStats}
                 levelProgress={levelProgress}
@@ -150,8 +161,9 @@ export default function NPOVolunteerProfile() {
                 onBack={() => router.back()}
                 onMessagePress={handleMessageVolunteer}
                 onReportPress={() => setShowReportModal(true)}
-                followedNPOs={followedNPOs}
-                affiliatedNPOs={affiliatedNPOs}
+                onSharePress={handleShare}
+                followedNPOs={followedNPOs as any[]}
+                affiliatedNPOs={affiliatedNPOs as any[]}
                 npoApplications={userApplications}
             />
 

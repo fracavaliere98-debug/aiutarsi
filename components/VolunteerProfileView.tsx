@@ -1,6 +1,6 @@
 import React from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
-import { Settings, MessageCircle, AlertTriangle } from "lucide-react-native";
+import { Settings, MessageCircle, AlertTriangle, Share2 } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
 import { AppUser, OldApplication } from "../types";
 
@@ -45,6 +45,7 @@ interface VolunteerProfileViewProps {
     onSettingsPress?: () => void;
     onMessagePress?: () => void;
     onReportPress?: () => void;
+    onSharePress?: () => void;
     onBack?: () => void;
     followedNPOs?: AppUser[];
     affiliatedNPOs: AppUser[];
@@ -63,6 +64,7 @@ export function VolunteerProfileView({
     onSettingsPress,
     onMessagePress,
     onReportPress,
+    onSharePress,
     onBack,
     followedNPOs,
     affiliatedNPOs = [],
@@ -93,6 +95,14 @@ export function VolunteerProfileView({
                     className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
                     <Settings size={20} color="white" />
+                </TouchableOpacity>
+            )}
+            {onSharePress && (
+                <TouchableOpacity
+                    onPress={onSharePress}
+                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
+                >
+                    <Share2 size={20} color="white" />
                 </TouchableOpacity>
             )}
         </View>
