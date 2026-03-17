@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
+const hfApiKey = Deno.env.get('HUGGINGFACE_API_KEY')!;
 
 const HELP_CENTER_CONTEXT = `
 === GUIDE CENTRO ASSISTENZA AIUTARSI ===
@@ -73,6 +73,11 @@ ${HELP_CENTER_CONTEXT}
 `;
 
 Deno.serve(async (req) => {
+  // Gestione preflight CORS (OPTIONS) se chiamata da web
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } });
+  }
+
   try {
     const { question, history } = await req.json();
 
@@ -80,54 +85,56 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Domanda mancante' }), { status: 400 });
     }
 
-    // Build contents array – include conversation history for multi-turn chat
-    const contents = [
-      // System context as first user turn
-      {
-        role: "user",
-        parts: [{ text: SYSTEM_PROMPT }],
-      },
-      {
-        role: "model",
-        parts: [{ text: "Ciao! Sono Gemma, il tuo assistente su AiutarSì 👋 Come posso aiutarti?" }],
-      },
-      // Previous history
-      ...(history || []),
-      // New user question
-      {
-        role: "user",
-        parts: [{ text: question }],
-      },
+    // Costruzione array messaggi compatibile OpenAI
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "assistant", content: "Ciao! Sono Gemma, il tuo assistente su AiutarSì 👋 Come posso aiutarti?" },
     ];
 
+    // Formattazione della cronologia vecchia (da app React Natve: {role: "user"|"model", parts: [{text: ""}]})
+    if (history && Array.isArray(history)) {
+      for (const msg of history) {
+        messages.push({
+          role: msg.role === 'model' ? 'assistant' : 'user',
+          content: msg.parts?.[0]?.text || ""
+        });
+      }
+    }
+
+    // Aggiunta domanda corrente
+    messages.push({ role: "user", content: question });
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+      "https://router.huggingface.co/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${hfApiKey}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 300,
-          },
+          model: "meta-llama/Meta-Llama-3-8B-Instruct",
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: 500,
+          frequency_penalty: 0.15, // Equivalente a repetition_penalty = 1.15 in standard OpenAI
         }),
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Gemini API Error: ${errorText}`);
+      throw new Error(`Hugging Face API Error: ${errorText}`);
     }
 
     const data = await response.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Mi dispiace, non ho trovato una risposta. Prova a riformulare la domanda!";
+    const answer = data.choices?.[0]?.message?.content || "Mi dispiace, non ho trovato una risposta. Prova a riformulare la domanda!";
 
     return new Response(JSON.stringify({ answer }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
     });
   } catch (err) {
     console.error('[GemmaHelp Error]', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
 });

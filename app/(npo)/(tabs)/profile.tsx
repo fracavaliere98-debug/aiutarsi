@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal , Alert } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
 import Constants from 'expo-constants';
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -308,46 +308,54 @@ export default function NPOProfileScreen() {
             {/* MODALS */}
             <Modal
                 animationType="slide"
-                presentationStyle="pageSheet"
                 visible={showEditProfile}
                 onRequestClose={() => setShowEditProfile(false)}
+                statusBarTranslucent={true}
             >
-                <View style={{ flex: 1 }}>
-                    <EditProfileScreen onClose={() => setShowEditProfile(false)} />
-                </View>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <EditProfileScreen onClose={() => setShowEditProfile(false)} />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </Modal>
 
             <Modal
                 animationType="slide"
-                presentationStyle="pageSheet"
                 visible={showSecurity}
                 onRequestClose={() => setShowSecurity(false)}
+                statusBarTranslucent={true}
             >
-                <View style={{ flex: 1 }}>
-                    <SecurityScreen onClose={() => setShowSecurity(false)} />
-                </View>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <SecurityScreen onClose={() => setShowSecurity(false)} />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </Modal>
 
             <Modal
                 animationType="slide"
-                presentationStyle="pageSheet"
                 visible={showInterestsSkills}
                 onRequestClose={() => setShowInterestsSkills(false)}
+                statusBarTranslucent={true}
             >
-                <View style={{ flex: 1 }}>
-                    <InterestsSkillsScreen />
-                </View>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <InterestsSkillsScreen />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </Modal>
 
             <Modal
                 animationType="slide"
-                presentationStyle="pageSheet"
                 visible={showReferentDetails}
                 onRequestClose={() => setShowReferentDetails(false)}
+                statusBarTranslucent={true}
             >
-                <View style={{ flex: 1 }}>
-                    <ReferentDetailsScreen />
-                </View>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <ReferentDetailsScreen />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </Modal>
         </View>
     );

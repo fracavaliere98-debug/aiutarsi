@@ -9,7 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
-    ActivityIndicator,
+    SafeAreaView,
 } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -42,16 +42,6 @@ const TypingDots = () => {
     const dot3 = useSharedValue(0);
 
     useEffect(() => {
-        const animate = (val: Animated.SharedValue<number>, delay: number) => {
-            val.value = withRepeat(
-                withSequence(
-                    withTiming(-4, { duration: 300, easing: Easing.out(Easing.quad) }),
-                    withTiming(0, { duration: 300, easing: Easing.in(Easing.quad) }),
-                ),
-                -1,
-                false
-            );
-        };
         // Staggered timing via delays through sequential composition
         dot1.value = withRepeat(
             withSequence(
@@ -208,12 +198,13 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
     };
 
     return (
-        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-            <KeyboardAvoidingView
-                style={{ flex: 1, backgroundColor: 'white' }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-            >
+        <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent={true}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
                 {/* Header */}
                 <View style={{
                     flexDirection: 'row',
@@ -344,6 +335,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+            </SafeAreaView>
         </Modal>
     );
 };

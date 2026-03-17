@@ -636,8 +636,9 @@ export default function ChatDetailScreen() {
             </Modal>
 
             {/* Participants Modal */}
-            <Modal visible={showParticipants} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowParticipants(false)}>
-                <View className="flex-1 bg-white p-6">
+            <Modal visible={showParticipants} animationType="slide" onRequestClose={() => setShowParticipants(false)} statusBarTranslucent={true}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View className="flex-1 bg-white p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Text className="text-2xl font-black text-primary">Partecipanti</Text>
                         <TouchableOpacity onPress={() => setShowParticipants(false)} className="bg-slate-100 p-2 rounded-full">
@@ -667,7 +668,8 @@ export default function ChatDetailScreen() {
                             </TouchableOpacity>
                         )}
                     />
-                </View>
+                    </View>
+                </SafeAreaView>
             </Modal>
 
             {/* Modal Avanzato di Segnalazione */}

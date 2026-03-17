@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
 import { X, AlertTriangle } from 'lucide-react-native';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -97,22 +97,23 @@ export default function ReportModal({ visible, onClose, reportedUser, contentTyp
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent={true}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
       >
-        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' }}>
-          
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AlertTriangle size={24} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>Segnala Utente</Text>
+        <SafeAreaView style={{ maxHeight: '90%' }}>
+          <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AlertTriangle size={24} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>Segnala Utente</Text>
+              </View>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <X size={24} color="#6B7280" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <X size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 20, lineHeight: 20 }}>
@@ -187,6 +188,7 @@ export default function ReportModal({ visible, onClose, reportedUser, contentTyp
           </ScrollView>
 
         </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
   );

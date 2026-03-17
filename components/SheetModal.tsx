@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, ModalProps, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { Modal, View, ModalProps, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
 
 interface SheetModalProps extends ModalProps {
     visible: boolean;
@@ -16,14 +16,19 @@ export function SheetModal({ visible, onClose, children, ...props }: SheetModalP
     return (
         <Modal
             animationType="slide"
-            presentationStyle="pageSheet"
             visible={visible}
             onRequestClose={onClose}
+            statusBarTranslucent={true}
             {...props}
         >
-            <View style={styles.container}>
-                {children}
-            </View>
+            <SafeAreaView style={styles.container}>
+                <KeyboardAvoidingView 
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    {children}
+                </KeyboardAvoidingView>
+            </SafeAreaView>
         </Modal>
     );
 }

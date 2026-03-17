@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView , Alert } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 
 import { Colors } from "../../constants/Colors";
@@ -396,11 +396,15 @@ export default function VolunteerSettings() {
             {/* Edit Profile Modal */}
             <Modal
                 animationType="slide"
-                presentationStyle="pageSheet"
                 visible={showEditProfile}
                 onRequestClose={() => setShowEditProfile(false)}
+                statusBarTranslucent={true}
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    >
                     <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
                         <TouchableOpacity onPress={() => setShowEditProfile(false)}>
                             <Text className="text-secondary font-bold text-base">Annulla</Text>
@@ -483,7 +487,8 @@ export default function VolunteerSettings() {
                             </View>
                         </View>
                     </ScrollView>
-                </View>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </Modal>
         </View>
     );
