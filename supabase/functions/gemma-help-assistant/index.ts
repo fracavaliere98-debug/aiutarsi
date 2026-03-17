@@ -31,18 +31,18 @@ A: Nella sezione "Profilo" trovi il tuo livello attuale, la barra di avanzamento
 Q: Posso perdere XP o livelli?
 A: No. Gli XP accumulati non si perdono mai. Puoi solo salire di livello, mai scendere.
 
---- SEZIONE 3: CANDIDATURE E ATTIVITÀ ---
-Q: Come mi candido a un'attività?
-A: Cerca un'attività che ti interessa (nella Home, Esplora o sulla Mappa), apri il dettaglio e tocca "Candidati". Il NPO riceverà la tua candidatura e potrà accettarla o rifiutarla.
+--- SEZIONE 3: ISCRIZIONI E ATTIVITÀ ---
+Q: Come mi iscrivo a un'attività?
+A: Cerca un'attività che ti interessa (nella Home, Esplora o sulla Mappa), apri il dettaglio e tocca "Iscriviti". Sarai confermato automaticamente per il turno.
 
-Q: Come faccio a sapere se la mia candidatura è stata accettata?
-A: Ricevi una notifica push quando il NPO aggiorna lo stato della tua candidatura. Puoi anche controllare lo stato nella sezione "Le tue attività" nel profilo.
+Q: Come faccio a sapere se la mia iscrizione è stata accettata?
+A: Su AiutarSì l'iscrizione alle attività è automatica. Riceverai comunque conferma e potrai controllare lo stato nella sezione "Le tue attività" nel profilo.
 
-Q: Posso ritirarmi da un'attività dopo essermi candidato?
+Q: Posso ritirarmi da un'attività dopo essermi iscritto?
 A: Sì. Finché l'attività non è completata, puoi ritirarla dalla sezione "Le tue attività".
 
-Q: Posso candidarmi a più attività contemporaneamente?
-A: Sì, puoi candidarti a quante attività vuoi. Non c'è limite.
+Q: Posso iscrivermi a più attività contemporaneamente?
+A: Sì, puoi iscriverti a quante attività vuoi. Non c'è limite.
 
 --- SEZIONE 4: NOTIFICHE ---
 Q: Non ricevo notifiche, cosa faccio?

@@ -7,6 +7,9 @@ import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { Camera, ArrowLeft, Loader2 } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from "../../services/AuthService";
+import { useEffect } from "react";
 
 
 
@@ -18,7 +21,20 @@ export default function OnboardingProfile() {
     const { showToast } = useToast();
     const [bio, setBio] = useState("");
     const [avatar, setAvatar] = useState<string | null>(null);
+    const [referralCode, setReferralCode] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+
+    useEffect(() => {
+        const checkPendingReferral = async () => {
+            const pending = await AsyncStorage.getItem('@pending_referral_code');
+            if (pending) {
+                setReferralCode(pending);
+                // Clear it so we don't keep it forever
+                await AsyncStorage.removeItem('@pending_referral_code');
+            }
+        };
+        checkPendingReferral();
+    }, []);
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -42,6 +58,16 @@ export default function OnboardingProfile() {
         const interests = params.interests ? JSON.parse(params.interests as string) : [];
         const skills = params.skills ? JSON.parse(params.skills as string) : [];
 
+        // Resolve referral code if entered
+        let referredById = undefined;
+        if (referralCode && referralCode.trim()) {
+            try {
+                referredById = await authService.resolveReferralCode(referralCode.trim());
+            } catch (e) {
+                console.warn("Could not resolve referral code:", e);
+            }
+        }
+
         // FINAL SAVE
         setIsUploading(true);
         try {
@@ -49,7 +75,8 @@ export default function OnboardingProfile() {
                 interests,
                 skills,
                 bio,
-                avatar_url: avatar || undefined
+                avatar_url: avatar || undefined,
+                referred_by: referredById || undefined
             });
 
             if (success) {
@@ -126,6 +153,20 @@ export default function OnboardingProfile() {
                                 value={bio}
                                 onChangeText={setBio}
                             />
+                        </View>
+                        <View>
+                            <Text className="text-sm font-bold text-primary mb-2 ml-1">Codice Amico (Opzionale)</Text>
+                            <TextInput
+                                className="bg-white p-4 rounded-xl border border-primary/10 text-primary shadow-sm"
+                                placeholder="Inserisci il codice di chi ti ha invitato"
+                                placeholderTextColor="#9ca3af"
+                                value={referralCode}
+                                onChangeText={setReferralCode}
+                                autoCapitalize="characters"
+                            />
+                            <Text className="text-[11px] text-secondary/60 mt-1 ml-1 leading-relaxed">
+                                Inserendo un codice amico, sbloccherete entrambi il badge "Coppia Vincente" e 500 XP dopo la tua prima missione.
+                            </Text>
                         </View>
                     </View>
 

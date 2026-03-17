@@ -30,6 +30,7 @@ const ALL_BADGES = [
     { id: "netw", name: "Networker", icon: "🤝", criteria: "Segui almeno 5 diverse organizzazioni (NPO).", xp: 50, goal: 5 },
     { id: "anni", name: "Anniversario", icon: "🎂", criteria: "Rimani attivo nella community per un intero anno.", xp: 1200, goal: 365 },
     { id: "rece", name: "Recensore d'Oro", icon: "🌟", criteria: "Lascia 5 recensioni costruttive a organizzazioni diverse.", xp: 150, goal: 5 },
+    { id: "copp", name: "Coppia Vincente", icon: "👫", criteria: "Porta un amico a fare volontariato con te e sbloccate entrambi il badge.", xp: 500, goal: 1 },
 ];
 
 const ProgressBar = ({ progress, label, color = Colors.accent }: { progress: number, label: string, color?: string }) => {
@@ -122,6 +123,10 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
                 current = earnedBadgeIds.includes("anni") ? 365 : 0;
                 label = current === 365 ? "1 anno" : "In corso";
                 break;
+            case "copp":
+                current = earnedBadgeIds.includes("copp") ? 1 : 0;
+                label = current === 1 ? "Completato" : "Non completato";
+                break;
         }
 
         return {
@@ -140,7 +145,7 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
                     onPress={() => setShowInfoModal(true)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f1f5f9', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}
                 >
-                    <Text style={{ fontSize: 11, color: '#1e1b4b', fontWeight: '800', lineHeight: 14 }}>{badges.length} / 11</Text>
+                    <Text style={{ fontSize: 11, color: '#1e1b4b', fontWeight: '800', lineHeight: 14 }}>{badges.length} / 12</Text>
                     <Info size={11} color={Colors.primary} />
                 </TouchableOpacity>
             </View>
@@ -309,7 +314,7 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
                                 <Text className="font-black text-amber-900">Il Tuo Progresso</Text>
                             </View>
                             <Text className="text-amber-800 text-xs leading-5 font-medium">
-                                Hai sbloccato {badges.length} badge su 11. Continua così per diventare un volontario leggendario!
+                                Hai sbloccato {badges.length} badge su 12. Continua così per diventare un volontario leggendario!
                             </Text>
                         </View>
                     </ScrollView>

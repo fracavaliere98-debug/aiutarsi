@@ -74,7 +74,7 @@ export default function NPOSkillsScreen() {
                                     ]}
                                 >
                                     <View style={[styles.iconContainer, isSelected && styles.iconContainerSelected]}>
-                                        <Icon size={32} color={isSelected ? 'white' : Colors.primary} />
+                                        <Icon size={24} color={isSelected ? 'white' : Colors.primary} />
                                     </View>
                                     <Text style={[styles.label, isSelected && styles.labelSelected]}>{item.label}</Text>
                                     {isSelected && (
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
         padding: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        height: 130,
+        height: 110,
         elevation: 2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -157,9 +157,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F0FF',
     },
     iconContainer: {
-        width: 56,
-        height: 56,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 14,
         backgroundColor: '#F0F0FF',
         alignItems: 'center',
         justifyContent: 'center',
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
     },
     label: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '700',
         color: '#404060',
         textAlign: 'center',

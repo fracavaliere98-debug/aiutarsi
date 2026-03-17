@@ -29,6 +29,7 @@ interface AuthContextType {
     refreshUsers: () => Promise<void>;
     requestAccountDeletion: () => Promise<void>;
     cancelAccountDeletion: () => Promise<void>;
+    getReferralCount: () => Promise<number>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -50,6 +51,7 @@ const AuthContext = createContext<AuthContextType>({
     refreshUsers: async () => { },
     requestAccountDeletion: async () => { },
     cancelAccountDeletion: async () => { },
+    getReferralCount: async () => 0,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -151,14 +153,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         // 5. Handle Deep Links for Supabase Auth (Magic Links, Social Login)
-        const handleDeepLink = (url: string) => {
+        const handleDeepLink = async (url: string) => {
             if (!url) return;
-            const { queryParams } = Linking.parse(url);
+            const { path, queryParams } = Linking.parse(url);
+            console.log("AuthContext: Received Deep Link URL:", url, "path:", path);
 
-            // Supabase session tokens usually come in the hash (#) but expo-linking
-            // sometimes parses them or we might need to manually trigger refresh.
-            // With detectSessionInUrl: true, Supabase client handles it if we are on the same 'instance'.
-            console.log("AuthContext: Received Deep Link URL:", url);
+            // Referral link handling: aiutarsiapp://referral/[CODE] or https://aiutarsi.app/referral/[CODE]
+            if (path && path.includes('referral/')) {
+                const code = path.split('referral/')[1];
+                if (code) {
+                    console.log("AuthContext: Detected referral code:", code);
+                    await AsyncStorage.setItem('@pending_referral_code', code);
+                }
+            }
         };
 
         // Check initial URL
@@ -468,6 +475,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user]);
 
+    const getReferralCount = useCallback(async (): Promise<number> => {
+        if (!user) return 0;
+        return await authService.getReferralCount(user.id);
+    }, [user]);
+
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
     const resetUsers = useCallback(async () => {
         try {
@@ -497,8 +509,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         resetUsers,
         refreshUsers,
         requestAccountDeletion,
-        cancelAccountDeletion
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion]);
+        cancelAccountDeletion,
+        getReferralCount
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount]);
 
     return (
         <AuthContext.Provider value={value}>

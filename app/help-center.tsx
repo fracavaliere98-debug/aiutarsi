@@ -134,7 +134,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
         faqs: [
             {
                 id: 'applyact',
-                question: 'Come mi registro a un\'attività?',
+                question: 'Come mi iscrivo a un\'attività?',
                 answer: 'Cerca un\'attività che ti interessa (tramite Home, Esplora o Mappa), apri il dettaglio e tocca "Iscriviti". Sarai confermato automaticamente per il turno.',
             },
             {

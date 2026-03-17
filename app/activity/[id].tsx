@@ -671,7 +671,7 @@ export default function ActivityDetail() {
                         }}
                     >
                         <Text style={{ color: (isFull || activity.status === 'COMPLETATA') ? '#94a3b8' : 'white', fontWeight: '900', fontSize: 16 }}>
-                            {isFull ? 'Pieno' : activity.status === 'COMPLETATA' ? 'Chiusa' : 'Candidati Ora'}
+                            {isFull ? 'Pieno' : activity.status === 'COMPLETATA' ? 'Chiusa' : 'ISCRIVITI ORA'}
                         </Text>
                         {!isFull && activity.status !== 'COMPLETATA' && <ChevronRight size={18} color="white" />}
                     </TouchableOpacity>

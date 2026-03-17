@@ -89,20 +89,20 @@ export function VolunteerProfileView({
                     <AlertTriangle size={20} color="white" />
                 </TouchableOpacity>
             )}
-            {isOwnProfile && (
-                <TouchableOpacity
-                    onPress={onSettingsPress}
-                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
-                >
-                    <Settings size={20} color="white" />
-                </TouchableOpacity>
-            )}
             {onSharePress && (
                 <TouchableOpacity
                     onPress={onSharePress}
                     className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
                     <Share2 size={20} color="white" />
+                </TouchableOpacity>
+            )}
+            {isOwnProfile && (
+                <TouchableOpacity
+                    onPress={onSettingsPress}
+                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
+                >
+                    <Settings size={20} color="white" />
                 </TouchableOpacity>
             )}
         </View>

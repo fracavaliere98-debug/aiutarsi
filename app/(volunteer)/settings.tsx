@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan } from 'lucide-react-native';
+import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan, Users } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -277,6 +277,12 @@ export default function VolunteerSettings() {
                         label="Account bloccati"
                         color={Colors.accent}
                         onPress={() => router.push("/blocked-users" as any)}
+                    />
+                    <MenuItem
+                        icon={Users}
+                        label="Porta un amico"
+                        color={Colors.primary}
+                        onPress={() => router.push("/(volunteer)/referral" as any)}
                         last
                     />
                 </SoftCard>

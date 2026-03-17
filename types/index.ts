@@ -29,7 +29,7 @@ export type AppUser = Omit<User,
     'email' | 'bio' | 'phone' | 'website' | 'public_email' | 'location_string' |
     'npo_name' | 'company_name' | 'is_verified' | 'profile_public' |
     'show_email' | 'allow_calls' | 'show_volunteering_history' | 'volunteer_list_visible' |
-    'embedding' | 'updated_at' | 'created_at' | 'last_seen_at' | 'expo_push_token'
+    'embedding' | 'updated_at' | 'created_at' | 'last_seen_at' | 'expo_push_token' | 'referral_code' | 'referred_by'
 > & {
     email: string;
     user_skills?: UserSkill[];
@@ -92,6 +92,8 @@ export type AppUser = Omit<User,
     is_banned?: boolean | null;
     ban_reason?: string | null;
     ban_report_id?: string | null;
+    referral_code?: string | null;
+    referred_by?: string | null;
 };
 
 // Hybrid / Frontend-only Extended Types

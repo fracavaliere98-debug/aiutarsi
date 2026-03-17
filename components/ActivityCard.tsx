@@ -192,7 +192,7 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                     {/* Right: action button — flexShrink:0 so it never overflows */}
                     <View style={{ flexShrink: 0 }}>
                         {user?.role === 'VOLUNTEER' ? (
-                            <Text className="text-accent font-bold text-xs">CANDIDATI →</Text>
+                            <Text className="text-accent font-bold text-xs">ISCRIVITI →</Text>
                         ) : user?.role === 'NPO' && npoId === user.id ? (
                             <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
                         ) : (

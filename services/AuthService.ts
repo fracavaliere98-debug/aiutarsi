@@ -90,6 +90,8 @@ export class AuthService {
             is_banned: metadata.is_banned,
             ban_reason: metadata.ban_reason,
             ban_report_id: metadata.ban_report_id,
+            referral_code: metadata.referral_code,
+            referred_by: metadata.referred_by,
             // NPO Fields
             npo_vat_id: metadata.npo_vat_id,
             npo_website: metadata.npo_website,
@@ -383,7 +385,9 @@ export class AuthService {
             createdAt: profile.created_at,
             badges: profile.badges || [],
             xp: profile.impact_points || 0,
-            deletionRequestedAt: profile.deletion_requested_at,
+            deletion_requested_at: profile.deletion_requested_at,
+            referral_code: profile.referral_code,
+            referred_by: profile.referred_by,
             shortId: profile.id?.substring(0, 8).toUpperCase(),
             ban_report_id: profile.ban_report_id,
             // NPO Fields
@@ -774,6 +778,42 @@ export class AuthService {
         } catch (error) {
             console.error("Error submitting verification request:", error);
             throw error;
+        }
+    }
+
+    /**
+     * Get the count of users referred by a specific user
+     */
+    async getReferralCount(userId: string): Promise<number> {
+        try {
+            const { count, error } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('referred_by', userId);
+
+            if (error) throw error;
+            return count || 0;
+        } catch (error) {
+            console.error("Error fetching referral count:", error);
+            return 0;
+        }
+    }
+
+    /**
+     * Resolve a referral code to a user ID
+     */
+    async resolveReferralCode(code: string): Promise<string | null> {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('referral_code', code)
+                .single();
+
+            if (error) return null;
+            return data.id;
+        } catch (error) {
+            return null;
         }
     }
 }

@@ -79,12 +79,12 @@ export default function OnboardingSkills() {
                                 <TouchableOpacity
                                     key={item.id}
                                     onPress={() => toggleSkill(item.label)}
-                                    className={`w-[45%] aspect-square rounded-2xl p-4 justify-between border-2 ${isSelected ? "bg-primary/5 border-primary" : "bg-white border-primary/5 shadow-sm"
+                                    className={`w-[45%] h-32 rounded-2xl p-3 justify-between border-2 ${isSelected ? "bg-primary/5 border-primary" : "bg-white border-primary/5 shadow-sm"
                                         }`}
                                 >
-                                    <Icon size={32} color={isSelected ? Colors.primary : Colors.secondary} />
+                                    <Icon size={24} color={isSelected ? Colors.primary : Colors.secondary} />
                                     <View>
-                                        <Text className={`font-bold text-lg ${isSelected ? "text-primary" : "text-secondary"}`}>
+                                        <Text className={`font-bold text-sm ${isSelected ? "text-primary" : "text-secondary"}`}>
                                             {item.label}
                                         </Text>
                                         {isSelected && <Text className="text-xs text-primary">Selezionato</Text>}
