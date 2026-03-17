@@ -1,5 +1,6 @@
 
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
@@ -35,23 +36,24 @@ export default function NPOProfileScreen() {
     const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     
     // Use Effect to fetch NPO directly if not in users list
-    useState(() => {
+    useEffect(() => {
         const existing = users.find(u => u.id === npoId && u.role === "NPO");
         if (!existing && npoId) {
-            setIsFetching(true);
-            supabase
-                .from('profiles')
-                .select(`
-                    *,
-                    user_skills (skill),
-                    user_interests (interest),
-                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                `)
-                .eq('id', npoId)
-                .single()
-                .then(({ data, error }) => {
+            const fetchNpo = async () => {
+                setIsFetching(true);
+                try {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select(`
+                            *,
+                            user_skills (skill),
+                            user_interests (interest),
+                            followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+                        `)
+                        .eq('id', npoId)
+                        .single();
+
                     if (data && !error) {
-                        // We map it manually similar to AuthService
                         const mapped: AppUser = {
                             ...data,
                             name: data.full_name || data.npo_name || 'Utente',
@@ -61,11 +63,16 @@ export default function NPOProfileScreen() {
                         } as any;
                         setFetchedNpo(mapped);
                     }
+                } catch (err) {
+                    console.error("Error fetching NPO:", err);
+                } finally {
                     setIsFetching(false);
-                })
-                .catch(() => setIsFetching(false));
+                }
+            };
+
+            fetchNpo();
         }
-    });
+    }, [npoId, users]); // Added users to dependencies as `existing` depends on it.
 
     const npoUser = users.find(u => u.id === npoId && u.role === "NPO") || fetchedNpo;
 
@@ -166,6 +173,16 @@ export default function NPOProfileScreen() {
         }
     };
 
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message: `🏢 ${npoUser.npoName || npoUser.name}\nScopri questo Ente su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://npo-profile/${npoId}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/npo-profile/${npoId}`,
+            });
+        } catch (error) {
+            console.error("Error sharing profile:", error);
+        }
+    };
+
     const HeaderActions = (
         <View className="flex-row gap-2">
             {user?.role === "VOLUNTEER" && (
@@ -184,7 +201,7 @@ export default function NPOProfileScreen() {
                     <AlertTriangle size={20} color="white" />
                 </TouchableOpacity>
             )}
-            <TouchableOpacity className="p-2 bg-white/20 rounded-full">
+            <TouchableOpacity onPress={handleShare} className="p-2 bg-white/20 rounded-full">
                 <Share2 size={20} color="white" />
             </TouchableOpacity>
         </View>

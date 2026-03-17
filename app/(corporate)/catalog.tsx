@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Share } from "react-native";
 import { useActivities } from "../../context/ActivityContext";
 import { Search, Share2, Sparkles, Filter, MapPin, Building2 } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
@@ -15,8 +15,14 @@ export default function CorporateCatalog() {
         a.npoName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleSuggest = (title: string) => {
-        alert(`Attività "${title}" suggerita con successo ai dipendenti!`);
+    const handleSuggest = async (act: any) => {
+        try {
+            await Share.share({
+                message: `👐 ${act.title}\nTi suggerisco questa attività di volontariato aziendale tramite AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://activity/${act.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${act.id}`,
+            });
+        } catch (error) {
+            console.error("Error sharing activity:", error);
+        }
     };
 
     return (
@@ -70,7 +76,7 @@ export default function CorporateCatalog() {
                             </View>
 
                             <TouchableOpacity
-                                onPress={() => handleSuggest(act.title)}
+                                onPress={() => handleSuggest(act)}
                                 className="bg-primary flex-row items-center justify-center py-4 rounded-xl gap-2 active:scale-95"
                             >
                                 <Share2 size={18} color="white" />

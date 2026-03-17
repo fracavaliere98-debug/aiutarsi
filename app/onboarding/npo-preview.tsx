@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, ArrowRight, CheckCircle2, Globe, MapPin, Share2, ShieldCheck, User } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, CheckCircle2, Globe, MapPin, MessageCircle, ShieldCheck, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -141,7 +141,7 @@ export default function NPOPreviewScreen() {
                                 <Text style={styles.referentRole}>{user?.referent_role || "Referente Ente"}</Text>
                             </View>
                             <TouchableOpacity style={styles.referentChatIcon}>
-                                <Share2 size={20} color={Colors.primary} />
+                                <MessageCircle size={20} color={Colors.primary} />
                             </TouchableOpacity>
                         </View>
                     </View>

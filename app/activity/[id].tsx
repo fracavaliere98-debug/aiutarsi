@@ -141,12 +141,12 @@ export default function ActivityDetail() {
         if (!activity) return;
         try {
             await Share.share({
-                title: activity.title,
-                message: `👐 ${activity.title}\nPartecipa a questa attività su AiutarSi!\nhttps://aiutarsi.app/activity/${activity.id}`,
-                url: `https://aiutarsi.app/activity/${activity.id}`, // iOS only
+                message: `👐 ${activity.title}\nPartecipa a questa attività su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://activity/${activity.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${activity.id}`,
             });
             handleActivityShare(activity.id);
-        } catch (e) { /* user cancelled */ }
+        } catch (error) {
+            console.error("Error sharing activity:", error);
+        }
     };
 
     // ─── Computed display values ─────────────────────────────────────────────

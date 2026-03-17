@@ -1,6 +1,6 @@
 import {
     View, Text, TextInput, TouchableOpacity, Image, RefreshControl,
-    ActivityIndicator, ScrollView, Modal, Platform
+    ActivityIndicator, ScrollView, Modal, Platform, Share
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { Colors } from "../../../constants/Colors";
@@ -490,7 +490,17 @@ export default function SearchScreen() {
                                         className="bg-primary flex-1 py-3.5 rounded-2xl items-center shadow-md">
                                         <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
+                                    <TouchableOpacity 
+                                        onPress={async () => {
+                                            try {
+                                                await Share.share({
+                                                    message: `👐 ${item.title}\nPartecipa a questa attività su AiutarSì!\n\n📱 Apri directement nell'app:\naiutarsiapp://activity/${item.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${item.id}`,
+                                                });
+                                            } catch (error) {
+                                                console.error("Error sharing:", error);
+                                            }
+                                        }}
+                                        className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
                                         <Share2 size={18} color="#1e1b4b" />
                                     </TouchableOpacity>
                                 </View>

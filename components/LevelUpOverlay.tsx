@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Dimensions, Share } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -109,6 +109,20 @@ export const LevelUpOverlay = () => {
                         style={animatedBadgeStyle}
                     >
                         <Award size={64} color="white" />
+                        <TouchableOpacity
+                            className="absolute -bottom-2 -right-2 bg-white/20 p-4 rounded-full"
+                            onPress={async () => {
+                                try {
+                                    await Share.share({
+                                        message: `🎉 Ho appena raggiunto il livello ${levelUpData.level} su AiutarSì!\n\nScarica l'app e unisciti a me:\n🌐 https://aiutarsi.app/`,
+                                    });
+                                } catch (error) {
+                                    console.error("Error sharing level up:", error);
+                                }
+                            }}
+                        >
+                            <Share2 size={24} color="white" />
+                        </TouchableOpacity>
                     </Animated.View>
 
                     {/* Text Content */}
