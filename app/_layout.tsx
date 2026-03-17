@@ -19,7 +19,7 @@ import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, Alert } from "react-native";
+import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import BannedScreen from "../components/BannedScreen";
@@ -204,21 +204,27 @@ function RootLayoutNav() {
   // unless we want to show a generic unauthorized state, but the sub-layouts handle it.
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
 
-      <Stack.Screen name="(volunteer)" />
-      <Stack.Screen name="(npo)" />
-      <Stack.Screen name="(corporate)" />
-      <Stack.Screen name="admin" />
+        <Stack.Screen name="(volunteer)" />
+        <Stack.Screen name="(npo)" />
+        <Stack.Screen name="(corporate)" />
+        <Stack.Screen name="admin" />
 
-      {/* Shared Routes */}
-      <Stack.Screen name="activity/[id]" />
-      <Stack.Screen name="feedback/[id]" />
-      <Stack.Screen name="npo-profile/[id]" />
-      <Stack.Screen name="community/create-post" />
-    </Stack>
+        {/* Shared Routes */}
+        <Stack.Screen name="activity/[id]" />
+        <Stack.Screen name="feedback/[id]" />
+        <Stack.Screen name="npo-profile/[id]" />
+        <Stack.Screen name="community/create-post" />
+        <Stack.Screen name="help-center" />
+      </Stack>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -264,7 +264,7 @@ export default function ActivityDetail() {
                                 name={npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}
                                 avatarUrl={npoUser?.avatar}
                                 role="NPO"
-                                isVerified={!!(npoUser?.is_verified || activity?.profiles?.is_verified)}
+                                isVerified={!!(npoUser?.isVerified || npoUser?.is_verified || activity?.profiles?.is_verified)}
                             />
                             <View style={{ alignItems: 'center' }}>
                                 <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>

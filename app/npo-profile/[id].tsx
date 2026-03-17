@@ -207,7 +207,7 @@ export default function NPOProfileScreen() {
                         name={npoUser.npoName || npoUser.name}
                         avatarUrl={npoUser.avatar}
                         role="NPO"
-                        isVerified={npoUser.is_verified}
+                        isVerified={!!(npoUser.isVerified || npoUser.is_verified)}
                         verificationStatus={npoUser.verification_status}
                     />
                 </View>

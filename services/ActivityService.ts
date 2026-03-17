@@ -13,7 +13,17 @@ export class ActivityService {
             id: dbActivity.id,
             npo_id: dbActivity.npo_id,
             npoId: dbActivity.npo_id,
-            npoName: dbActivity.profiles?.npo_name || dbActivity.profiles?.full_name || "NPO Sconosciuta",
+            npoName: (() => {
+                if (dbActivity.npoName) return dbActivity.npoName;
+                if (dbActivity.npo_name) return dbActivity.npo_name;
+                
+                const p = Array.isArray(dbActivity.profiles) ? dbActivity.profiles[0] : dbActivity.profiles;
+                if (p) {
+                    return p.npo_name || p.full_name || dbActivity.full_name || "NPO Sconosciuta";
+                }
+                
+                return dbActivity.full_name || "NPO Sconosciuta";
+            })(),
             title: dbActivity.title,
             description: dbActivity.description,
             dateTime: dbActivity.date_start,

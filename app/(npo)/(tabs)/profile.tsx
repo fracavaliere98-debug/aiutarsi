@@ -139,7 +139,7 @@ export default function NPOProfileScreen() {
                             fontSize={32} 
                             useAuthFallback={true} 
                             role="NPO" 
-                            isVerified={user?.is_verified} 
+                            isVerified={!!(user?.isVerified || user?.is_verified)} 
                         />
                         <View
                             className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white"
@@ -238,6 +238,7 @@ export default function NPOProfileScreen() {
                         icon={LifeBuoy}
                         label="Centro Assistenza"
                         color="#ef4444"
+                        onPress={() => router.push('/help-center' as any)}
                     />
                     <MenuItem
                         icon={FileText}

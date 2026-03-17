@@ -308,6 +308,7 @@ export default function VolunteerSettings() {
                         icon={HelpCircle}
                         label="Centro Assistenza"
                         color="#ef4444"
+                        onPress={() => router.push('/help-center' as any)}
                     />
                     <MenuItem
                         icon={FileText}

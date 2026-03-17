@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Badge {
     id: string;
@@ -128,7 +129,7 @@ export const GamificationProvider = ({ children }: { children: ReactNode }) => {
     const queryClient = useQueryClient();
 
     // 1. Fetch server state using React Query
-    const { data: state = INITIAL_STATE, isFetching } = useQuery({
+    const { data, isFetching } = useQuery({
         queryKey: ['gamification', user?.id],
         enabled: !!user?.id,
         staleTime: 30_000,
@@ -136,21 +137,47 @@ export const GamificationProvider = ({ children }: { children: ReactNode }) => {
         queryFn: () => getUserGamificationState(user!.id)
     });
 
+    const state = data || INITIAL_STATE;
+
     // 2. Local State for Level Up Modal
     const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
-    const prevLevelRef = useRef(0);
+    const prevLevelRef = useRef<number | null>(null);
 
     // Watch for Level Up
     useEffect(() => {
-        // Trigger only if state is valid and level has increased from a previously known value (> 0)
-        if (!isFetching && state.level > prevLevelRef.current && prevLevelRef.current > 0) {
-            setLevelUpData({ level: state.level });
-        }
-        // Update ref even during fetching if we have a valid level to avoid stale first-trigger
-        if (state.level > 0) {
-            prevLevelRef.current = state.level;
-        }
-    }, [state.level, isFetching]);
+        const checkLevelUp = async () => {
+            if (!data) return; // Wait for actual data from backend
+
+            const currentLevel = data.level;
+
+            // Load last seen level from AsyncStorage to survive app restarts
+            const lastSeenLevelStr = await AsyncStorage.getItem(`last_seen_level_${user?.id}`);
+            const lastSeenLevel = lastSeenLevelStr ? parseInt(lastSeenLevelStr, 10) : 0;
+
+            if (prevLevelRef.current === null) {
+                // First load of the app session
+                // We sync the ref but DO NOT trigger the level up modal, unless it's genuinely
+                // higher than what's in AsyncStorage (which shouldn't usually happen unless leveled up on another device)
+                prevLevelRef.current = currentLevel;
+                
+                // If they leveled up while the app was closed/backgrounded or on another device
+                if (currentLevel > lastSeenLevel && lastSeenLevel > 0) {
+                     setLevelUpData({ level: currentLevel });
+                     await AsyncStorage.setItem(`last_seen_level_${user?.id}`, currentLevel.toString());
+                }
+            } else if (currentLevel !== prevLevelRef.current) {
+                // Level changed during active app session
+                if (currentLevel > prevLevelRef.current && currentLevel > lastSeenLevel) {
+                    setLevelUpData({ level: currentLevel });
+                    await AsyncStorage.setItem(`last_seen_level_${user?.id}`, currentLevel.toString());
+                }
+                // Always sync the ref
+                prevLevelRef.current = currentLevel;
+            }
+        };
+
+        checkLevelUp();
+    }, [data, user?.id]);
 
     const dismissLevelUp = useCallback(() => setLevelUpData(null), []);
 

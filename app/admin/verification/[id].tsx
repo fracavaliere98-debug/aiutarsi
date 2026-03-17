@@ -119,9 +119,25 @@ export default function AdminVerificationDetail() {
           type: action === 'approved' ? 'SUCCESS' : 'INFO',
           title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
           message: action === 'approved' 
-            ? `Congratulazioni! ${request.npo_details?.npo_name || profile.full_name || 'Il tuo ente'} ha ottenuto il Bollino Viola.`
-            : `La tua richiesta di verifica per ${request.npo_details?.npo_name || profile.full_name || 'il tuo ente'} non è stata approvata. Controlla i dati inseriti.`
+            ? `Congratulazioni! ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'Il tuo ente'} ha ottenuto il Bollino Viola.`
+            : `La tua richiesta di verifica per ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'il tuo ente'} non è stata approvata. Controlla i dati inseriti.`
         });
+      }
+
+      // 4. Trigger Push Notification via Edge Function
+      try {
+        await supabase.functions.invoke('notify-user', {
+          body: {
+            userId: request.user_id,
+            title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
+            body: action === 'approved' 
+              ? `Ottime notizie! Il tuo ente è stato verificato ufficialmente.`
+              : `La tua richiesta di verifica non è stata approvata. Accedi per maggiori dettagli.`,
+            data: { type: 'verification_update', status: action }
+          }
+        });
+      } catch (pushError) {
+        console.error('Push notification failed:', pushError);
       }
 
       Alert.alert('Successo', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);

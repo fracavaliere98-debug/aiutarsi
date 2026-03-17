@@ -27,7 +27,7 @@ export default function VolunteerCalendar() {
 
 
     const params = useLocalSearchParams<{ view?: ViewMode; filter?: FilterMode }>();
-    const [viewMode, setViewMode] = useState<ViewMode>("list");
+    const [viewMode, setViewMode] = useState<ViewMode>("calendar");
     const [filterMode, setFilterMode] = useState<FilterMode>("upcoming");
 
     useEffect(() => {
@@ -130,16 +130,6 @@ export default function VolunteerCalendar() {
             {/* View Mode Toggle */}
             <View className={`flex-row bg-slate-100 rounded-2xl p-1 ${viewMode === 'list' ? 'mb-6' : 'mb-2'}`}>
                 <TouchableOpacity
-                    onPress={() => setViewMode("list")}
-                    className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "list" ? "bg-white shadow-sm" : ""
-                        }`}
-                >
-                    <List size={18} color={viewMode === "list" ? Colors.primary : Colors.secondary} />
-                    <Text className={`font-bold ${viewMode === "list" ? "text-primary" : "text-secondary"}`}>
-                        Lista
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                     onPress={() => setViewMode("calendar")}
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "calendar" ? "bg-white shadow-sm" : ""
                         }`}
@@ -147,6 +137,16 @@ export default function VolunteerCalendar() {
                     <CalendarIcon size={18} color={viewMode === "calendar" ? Colors.primary : Colors.secondary} />
                     <Text className={`font-bold ${viewMode === "calendar" ? "text-primary" : "text-secondary"}`}>
                         Calendario
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setViewMode("list")}
+                    className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "list" ? "bg-white shadow-sm" : ""
+                        }`}
+                >
+                    <List size={18} color={viewMode === "list" ? Colors.primary : Colors.secondary} />
+                    <Text className={`font-bold ${viewMode === "list" ? "text-primary" : "text-secondary"}`}>
+                        Lista
                     </Text>
                 </TouchableOpacity>
             </View>

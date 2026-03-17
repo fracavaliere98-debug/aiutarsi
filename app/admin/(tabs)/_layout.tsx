@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Shield, Settings, ShieldCheck } from 'lucide-react-native';
+import { Shield, Settings, ShieldCheck, MessageSquare } from 'lucide-react-native';
 
 export default function AdminTabsLayout() {
   return (
@@ -32,6 +32,13 @@ export default function AdminTabsLayout() {
         options={{
           title: 'Verifiche',
           tabBarIcon: ({ color }) => <ShieldCheck size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="faq-feedback"
+        options={{
+          title: 'FAQ',
+          tabBarIcon: ({ color }) => <MessageSquare size={24} color={color} />,
         }}
       />
       <Tabs.Screen
