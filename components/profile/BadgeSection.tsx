@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { SheetModal } from "../SheetModal";
-import { Info, X, Clock, Award, Star } from "lucide-react-native";
+import { Info, X, Clock, Award, Star, CheckCircle2 } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
+import { useGamification } from "../../context/GamificationContext";
 
 interface Badge {
     id: string;
@@ -18,24 +19,118 @@ interface BadgeSectionProps {
 }
 
 const ALL_BADGES = [
-    { id: "debt", name: "Debuttante", icon: "🌱", criteria: "Completa la tua prima attività di volontariato.", xp: 100 },
-    { id: "pila", name: "Pilastro", icon: "🏛️", criteria: "Completa 10 attività diverse.", xp: 1000 },
-    { id: "stac", name: "Stacanovista", icon: "🏎️", criteria: "Partecipa a un'attività della durata superiore a 6 ore.", xp: 200 },
-    { id: "tutt", name: "Tuttofare", icon: "🛠️", criteria: "Partecipa ad attività in 3 categorie differenti.", xp: 300 },
-    { id: "fede", name: "Fedelissimo", icon: "🗓️", criteria: "Partecipa ad almeno un'attività per 4 settimane consecutive.", xp: 600 },
-    { id: "vete", name: "Veterano", icon: "🏅", criteria: "Accumula un totale di 100 ore di volontariato certificate.", xp: 1000 },
-    { id: "gufo", name: "Gufo Notturno", icon: "🦉", criteria: "Partecipa ad un'attività che inizia tra le 20:00 e le 07:00.", xp: 350 },
-    { id: "voce", name: "Voce del Popolo", icon: "📢", criteria: "Condividi 10 attività con i tuoi amici.", xp: 100 },
-    { id: "netw", name: "Networker", icon: "🤝", criteria: "Segui almeno 5 diverse organizzazioni (NPO).", xp: 50 },
-    { id: "anni", name: "Anniversario", icon: "🎂", criteria: "Rimani attivo nella community per un intero anno.", xp: 1200 },
-    { id: "rece", name: "Recensore d'Oro", icon: "🌟", criteria: "Lascia 5 recensioni costruttive a organizzazioni diverse.", xp: 150 },
+    { id: "debt", name: "Debuttante", icon: "🌱", criteria: "Completa la tua prima attività di volontariato.", xp: 100, goal: 1 },
+    { id: "pila", name: "Pilastro", icon: "🏛️", criteria: "Completa 10 attività diverse.", xp: 1000, goal: 10 },
+    { id: "stac", name: "Stacanovista", icon: "🏎️", criteria: "Partecipa a un'attività della durata superiore a 6 ore.", xp: 200, goal: 1 },
+    { id: "tutt", name: "Tuttofare", icon: "🛠️", criteria: "Partecipa ad attività in 3 categorie differenti.", xp: 300, goal: 3 },
+    { id: "fede", name: "Fedelissimo", icon: "🗓️", criteria: "Partecipa ad almeno un'attività per 4 settimane diverse.", xp: 600, goal: 4 },
+    { id: "vete", name: "Veterano", icon: "🏅", criteria: "Accumula un totale di 100 ore di volontariato certificate.", xp: 1000, goal: 100 },
+    { id: "gufo", name: "Gufo Notturno", icon: "🦉", criteria: "Partecipa ad un'attività che inizia tra le 20:00 e le 07:00.", xp: 350, goal: 1 },
+    { id: "voce", name: "Voce del Popolo", icon: "📢", criteria: "Condividi 10 attività con i tuoi amici.", xp: 100, goal: 10 },
+    { id: "netw", name: "Networker", icon: "🤝", criteria: "Segui almeno 5 diverse organizzazioni (NPO).", xp: 50, goal: 5 },
+    { id: "anni", name: "Anniversario", icon: "🎂", criteria: "Rimani attivo nella community per un intero anno.", xp: 1200, goal: 365 },
+    { id: "rece", name: "Recensore d'Oro", icon: "🌟", criteria: "Lascia 5 recensioni costruttive a organizzazioni diverse.", xp: 150, goal: 5 },
 ];
 
+const ProgressBar = ({ progress, label, color = Colors.accent }: { progress: number, label: string, color?: string }) => {
+    const clampedProgress = Math.min(100, Math.max(0, progress));
+    return (
+        <View className="mt-2">
+            <View className="flex-row justify-between items-center mb-1.5">
+                <Text className="text-[10px] font-black text-primary uppercase tracking-tighter">{label}</Text>
+                <Text className="text-[10px] font-black text-primary">{Math.round(clampedProgress)}%</Text>
+            </View>
+            <View className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                <View 
+                    style={{ 
+                        width: `${clampedProgress}%`, 
+                        backgroundColor: color,
+                        height: '100%'
+                    }} 
+                />
+            </View>
+        </View>
+    );
+};
+
 export function BadgeSection({ badges }: BadgeSectionProps) {
+    const { state } = useGamification();
     const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
     const earnedBadgeIds = badges.map(b => b.id);
+
+    const getBadgeProgress = (badgeId: string): { current: number; goal: number; progress: number; label: string } => {
+        const badge = ALL_BADGES.find(b => b.id === badgeId);
+        if (!badge) return { current: 0, goal: 0, progress: 0, label: "" };
+
+        let current = 0;
+        let goal = badge.goal;
+        let label = "";
+
+        switch (badgeId) {
+            case "debt":
+                current = state.completedActivitiesCount >= 1 ? 1 : 0;
+                label = `${current}/1 attività`;
+                break;
+            case "pila":
+                current = state.completedActivitiesCount;
+                label = `${current}/10 attività`;
+                break;
+            case "stac":
+                current = earnedBadgeIds.includes("stac") ? 1 : 0;
+                label = current === 1 ? "Completato" : "Non completato";
+                break;
+            case "tutt":
+                current = state.completedCategories?.length || 0;
+                label = `${current}/3 categorie`;
+                break;
+            case "fede":
+                // Estimate weeks from completion dates (simplified)
+                const uniqueWeeks = new Set(state.completionDates?.map(d => {
+                    const date = new Date(d);
+                    const oneJan = new Date(date.getFullYear(), 0, 1);
+                    const numberOfDays = Math.floor((date.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
+                    return Math.ceil((date.getDay() + 1 + numberOfDays) / 7);
+                }));
+                current = uniqueWeeks.size;
+                label = `${current}/4 settimane`;
+                break;
+            case "vete":
+                current = Math.round(state.totalHours || 0);
+                label = `${current}/100 ore`;
+                break;
+            case "gufo":
+                current = earnedBadgeIds.includes("gufo") ? 1 : 0;
+                label = current === 1 ? "Completato" : "Non completato";
+                break;
+            case "voce":
+                current = state.sharedActivities?.length || 0;
+                label = `${current}/10 condivisioni`;
+                break;
+            case "netw":
+                current = state.followedNPOsHistory?.length || 0;
+                label = `${current}/5 NPO seguite`;
+                break;
+            case "rece":
+                current = state.reviewedNpoIds?.length || 0;
+                label = `${current}/5 recensioni`;
+                break;
+            case "anni":
+                // This would ideally use the user's registration date
+                // For now, we'll mark as binary or placeholder if not in state
+                current = earnedBadgeIds.includes("anni") ? 365 : 0;
+                label = current === 365 ? "1 anno" : "In corso";
+                break;
+        }
+
+        return {
+            current,
+            goal,
+            progress: (current / goal) * 100,
+            label
+        };
+    };
 
     return (
         <View className="px-6 mb-8">
@@ -161,28 +256,49 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
 
                         {ALL_BADGES.map((b, index) => {
                             const isEarned = earnedBadgeIds.includes(b.id);
+                            const prog = getBadgeProgress(b.id);
+
                             return (
                                 <View
                                     key={b.id}
-                                    className={`flex-row items-center p-4 rounded-3xl mb-3 border ${isEarned ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50 border-slate-100 opacity-70'}`}
+                                    className={`p-4 rounded-3xl mb-4 border ${isEarned ? 'bg-indigo-50/50 border-indigo-100' : 'bg-white border-slate-100 shadow-sm shadow-slate-200/40'}`}
                                 >
-                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${isEarned ? 'bg-white' : 'bg-slate-200'}`}>
-                                        <Text className={`text-2xl ${!isEarned && 'grayscale opacity-50'}`}>{isEarned ? b.icon : '🔒'}</Text>
-                                    </View>
-                                    <View className="flex-1 mr-2">
-                                        <View className="flex-row items-center gap-2 mb-0.5">
-                                            <Text className={`font-black text-sm ${isEarned ? 'text-primary' : 'text-slate-400'}`}>{b.name}</Text>
-                                            {isEarned && <Award size={12} color={Colors.accent} />}
+                                    <View className="flex-row items-center">
+                                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${isEarned ? 'bg-white' : 'bg-slate-50 border border-slate-100'}`}>
+                                            <Text className={`text-2xl ${!isEarned && 'grayscale opacity-50'}`}>{isEarned ? b.icon : b.icon}</Text>
                                         </View>
-                                        <Text className="text-[11px] text-secondary leading-4 font-medium" numberOfLines={2}>
-                                            {b.criteria}
-                                        </Text>
-                                    </View>
-                                    <View className="items-end">
-                                        <View className="bg-white px-2 py-1 rounded-lg border border-slate-100">
-                                            <Text className="text-[10px] font-black text-accent">+{b.xp} XP</Text>
+                                        <View className="flex-1 mr-2">
+                                            <View className="flex-row items-center gap-2 mb-0.5">
+                                                <Text className={`font-black text-sm ${isEarned ? 'text-primary' : 'text-slate-600'}`}>{b.name}</Text>
+                                                {isEarned ? (
+                                                    <CheckCircle2 size={14} color="#10b981" />
+                                                ) : (
+                                                    <Award size={12} color={Colors.secondary} />
+                                                )}
+                                            </View>
+                                            <Text className="text-[11px] text-secondary leading-4 font-medium" numberOfLines={2}>
+                                                {b.criteria}
+                                            </Text>
+                                        </View>
+                                        <View className="items-end">
+                                            <View className="bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                                                <Text className="text-[10px] font-black text-accent">+{b.xp} XP</Text>
+                                            </View>
                                         </View>
                                     </View>
+
+                                    {!isEarned && (
+                                        <ProgressBar 
+                                            progress={prog.progress} 
+                                            label={prog.label}
+                                        />
+                                    )}
+                                    {isEarned && (
+                                        <View className="mt-3 pt-3 border-t border-indigo-100/50 flex-row items-center gap-2">
+                                            <View className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            <Text className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Badge Sbloccato</Text>
+                                        </View>
+                                    )}
                                 </View>
                             );
                         })}
