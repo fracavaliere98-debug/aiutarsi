@@ -133,8 +133,18 @@ export default function ActivityDetail() {
         return Math.floor((Date.now() - new Date(activity.endDateTime).getTime()) / 86400000);
     }, [activity?.endDateTime]);
 
+    const isConfirmedPresent = useMemo(() => {
+        if (!user || !activity) return false;
+        return volunteerReviews.some(r => 
+            r.activityId === activity.id && 
+            r.volunteerId === user.id && 
+            r.isPresent === true
+        );
+    }, [volunteerReviews, activity, user]);
+
     const canLeaveReview = user?.role === 'VOLUNTEER' && isEnrolled &&
-        activity?.status === 'COMPLETATA' && !hasReviewed && daysSinceEnd <= 10;
+        activity?.status === 'COMPLETATA' && !hasReviewed && daysSinceEnd <= 10 &&
+        isConfirmedPresent;
 
     // ─── Share ──────────────────────────────────────────────────────────────
     const handleShare = async () => {
@@ -634,32 +644,34 @@ export default function ActivityDetail() {
                     <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28 }}>
                         <Text style={{ color: '#94a3b8', fontWeight: '700', fontSize: 15 }}>Solo volontari</Text>
                     </View>
+                ) : canLeaveReview ? (
+                    <TouchableOpacity
+                        onPress={() => router.push(`/feedback/${activity.id}` as any)}
+                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                    >
+                        <Star size={16} color="white" />
+                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Recensisci</Text>
+                    </TouchableOpacity>
                 ) : isEnrolled ? (
                     <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity
-                            onPress={async () => {
-                                const prev = localIscrittiOverride;
-                                setLocalIscrittiOverride(c => (c ?? activity.iscritti).filter(i => i !== user?.id));
-                                try { await unenrollFromActivity(activity.id); }
-                                catch { setLocalIscrittiOverride(prev); }
-                            }}
-                            style={{ backgroundColor: '#fff0f0', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#fecaca' }}
-                        >
-                            <Text style={{ color: '#dc2626', fontWeight: '700' }}>Annulla</Text>
-                        </TouchableOpacity>
+                        {activity.status !== 'COMPLETATA' && (
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const prev = localIscrittiOverride;
+                                    setLocalIscrittiOverride(c => (c ?? activity.iscritti).filter(i => i !== user?.id));
+                                    try { await unenrollFromActivity(activity.id); }
+                                    catch { setLocalIscrittiOverride(prev); }
+                                }}
+                                style={{ backgroundColor: '#fff0f0', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#fecaca' }}
+                            >
+                                <Text style={{ color: '#dc2626', fontWeight: '700' }}>Annulla</Text>
+                            </TouchableOpacity>
+                        )}
                         <View style={{ backgroundColor: '#f0fdf4', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#bbf7d0', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             <CheckCircle2 size={16} color="#16a34a" fill="#16a34a" />
                             <Text style={{ color: '#16a34a', fontWeight: '800' }}>Iscritto</Text>
                         </View>
                     </View>
-                ) : canLeaveReview ? (
-                    <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/(volunteer)/review-application', params: { activityId: activity.id, type: 'FEEDBACK' } } as any)}
-                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                    >
-                        <Star size={16} color="white" />
-                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Lascia feedback</Text>
-                    </TouchableOpacity>
                 ) : user?.role === 'VOLUNTEER' ? (
                     <TouchableOpacity
                         onPress={() => !isFull && activity.status !== 'COMPLETATA' && router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}

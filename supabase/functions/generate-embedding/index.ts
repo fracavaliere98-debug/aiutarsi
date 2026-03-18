@@ -39,14 +39,15 @@ Deno.serve(async (req) => {
             return new Response("No content to embed", { status: 200 });
         }
 
-        console.log(`Generating embedding via HF Inference for model BAAI/bge-small-en-v1.5...`);
+        console.log(`Generating embedding via HF Inference for model sentence-transformers/all-MiniLM-L6-v2...`);
 
         const hfResponse = await fetch(
-            `https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5`,
+            `https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2`,
             {
                 headers: {
                     Authorization: `Bearer ${Deno.env.get("HUGGING_FACE_TOKEN")}`,
                     "Content-Type": "application/json",
+                    "x-wait-for-model": "true",
                 },
                 method: "POST",
                 body: JSON.stringify({

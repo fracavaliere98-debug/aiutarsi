@@ -235,11 +235,25 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const splashHasHidden = useRef(false);
+
   useEffect(() => {
     if (loaded || error) {
-      SplashScreen.hideAsync().catch((e) => {
-        console.log("SplashScreen hide error ignored:", e);
-      });
+      if (!splashHasHidden.current) {
+        splashHasHidden.current = true;
+        // We use a small delay or requestAnimationFrame to ensure the native side 
+        // is ready to receive the hide command after the initial render.
+        const hide = async () => {
+          try {
+            await SplashScreen.hideAsync();
+          } catch (e) {
+            console.log("[SplashScreen] Hide error ignored:", e);
+          }
+        };
+
+        // Small timeout to avoid "No native splash screen registered" race condition
+        setTimeout(hide, 100);
+      }
     }
   }, [loaded, error]);
 

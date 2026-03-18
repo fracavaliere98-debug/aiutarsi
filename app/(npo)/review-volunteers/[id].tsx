@@ -249,11 +249,9 @@ export default function ReviewVolunteersScreen() {
                             {isSubmitting ? (
                                 <Loader2 size={24} color="white" />
                             ) : (
-                                <>
-                                    <Text className={`font-black text-lg ${pendingCount > 0 ? 'text-white' : 'text-slate-400'}`}>
-                                        Salva ({pendingCount}) Valutazioni
-                                    </Text>
-                                </>
+                                <Text className={`font-black text-lg ${pendingCount > 0 ? 'text-white' : 'text-slate-400'}`}>
+                                    Salva ({pendingCount}) Valutazioni
+                                </Text>
                             )}
                         </TouchableOpacity>
                     </View>

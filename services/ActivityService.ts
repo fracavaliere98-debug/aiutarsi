@@ -36,7 +36,9 @@ export class ActivityService {
             isUrgent: dbActivity.is_urgent || false,
 
             // Relational mappings
-            iscritti: dbActivity.activity_participants?.map((p: any) => p.user_id) || [],
+            iscritti: dbActivity.activity_participants
+                ?.filter((p: any) => ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
+                .map((p: any) => p.user_id) || [],
             skills: dbActivity.activity_skills?.map((s: any) => s.skill) || [],
             profiles: dbActivity.profiles,
             activity_participants: dbActivity.activity_participants,
@@ -68,7 +70,7 @@ export class ActivityService {
 
         const [{ data: skillRows }, { data: partRows }, { data: profiles }] = await Promise.all([
             supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
-            supabase.from('activity_participants').select('activity_id, user_id').in('activity_id', ids),
+            supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
             supabase.from('profiles').select('id, npo_name, full_name, public_email, email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
         ]);
 
@@ -109,7 +111,9 @@ export class ActivityService {
             matchPercentage: 0,
             isUrgent: r.is_urgent || false,
             skills: skillsMap[r.id] || [],
-            iscritti: partsMap[r.id] || [],
+            iscritti: (partRows || [])
+                .filter((p: any) => p.activity_id === r.id && ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
+                .map((p: any) => p.user_id),
             distanceMeters: r.distance_meters,
             location: {
                 address: r.location_address || '',
@@ -176,7 +180,7 @@ export class ActivityService {
 
                 const [{ data: skillRows }, { data: partRows }] = await Promise.all([
                     supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
-                    supabase.from('activity_participants').select('activity_id, user_id').in('activity_id', ids),
+                    supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
                 ]);
 
                 const skillsMap: Record<string, string[]> = {};
@@ -204,7 +208,9 @@ export class ActivityService {
                     }),
                     matchPercentage: r.match_percentage,
                     skills: skillsMap[r.id] || [],
-                    iscritti: partsMap[r.id] || []
+                    iscritti: (partRows || [])
+                        .filter((p: any) => p.activity_id === r.id && ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
+                        .map((p: any) => p.user_id)
                 }));
 
                 const totalCount = count || activities.length; // Approximate if count not supported
@@ -253,7 +259,7 @@ export class ActivityService {
                     *,
                     profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
                     activity_skills (skill),
-                    activity_participants (user_id)
+                    activity_participants (user_id, status)
                 `, { count: 'exact' });
 
             if (filter?.category && filter.category !== "Tutti") {
@@ -374,7 +380,7 @@ export class ActivityService {
                     *,
                     profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
                     activity_skills (skill),
-                    activity_participants (user_id)
+                    activity_participants (user_id, status)
                 `)
                 .eq('id', id)
                 .single();
@@ -567,16 +573,16 @@ export class ActivityService {
     }
 
     async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<AppActivity> {
-        // Insert into participants
+        // Using upsert handles re-enrollment after cancellation/rejection
         const { error } = await supabase
             .from('activity_participants')
-            .insert({
+            .upsert({
                 activity_id: activityId,
                 user_id: userId,
                 status: 'REGISTERED',
                 message: message,
                 phone: phone
-            });
+            }, { onConflict: 'activity_id,user_id' });
 
         if (error) {
             // Handle duplicate key error gracefully
