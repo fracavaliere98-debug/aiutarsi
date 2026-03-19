@@ -16,6 +16,7 @@ export interface Badge {
 export interface GamificationState {
     totalXP: number;
     level: number;
+    levelName?: string;
     completedActivities: string[];
     processedActivityIds: string[];
     completedActivitiesCount: number;
@@ -34,6 +35,7 @@ export interface GamificationState {
 const INITIAL_STATE: GamificationState = {
     totalXP: 0,
     level: 1,
+    levelName: "Novizio",
     completedActivities: [],
     processedActivityIds: [],
     completedActivitiesCount: 0,
@@ -95,7 +97,10 @@ export const getUserGamificationState = async (userId: string): Promise<Gamifica
     try {
         const { data, error } = await supabase
             .from('gamification_state')
-            .select('*')
+            .select(`
+                *,
+                levels:level (name)
+            `)
             .eq('user_id', userId)
             .maybeSingle();
 
@@ -103,6 +108,7 @@ export const getUserGamificationState = async (userId: string): Promise<Gamifica
             return {
                 totalXP: data.xp,
                 level: data.level,
+                levelName: data.levels?.name || "Sconosciuto",
                 badges: data.badges as Badge[],
                 completedActivitiesCount: data.completed_activities_count,
                 processedActivityIds: data.processed_activity_ids || [],

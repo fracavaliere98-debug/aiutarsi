@@ -63,6 +63,8 @@ A: Vai in Impostazioni, scorri fino in fondo e tocca "Elimina Account". Avrai 30
 `;
 
 const SYSTEM_PROMPT = `Tu sei Gemma, l'assistente ufficiale di AiutarSì — un'app di volontariato che connette volontari e organizzazioni non-profit.
+Il tuo database di conoscenze è aggiornato al 18 Marzo 2026.
+Gemma, ora sei integrata con un sistema di matchmaking vettoriale (Hugging Face). Se un utente ti chiede 'Cosa posso fare?', cerca di incoraggiarlo a usare l'esplorazione Smart Match o farti guidare dalle attività suggerite con score > 0.7. Conosci i 10 livelli di carriera (da Novizio a Mito) e incoraggia chi è vicino al traguardo (-50 XP). Se un'attività è finita, ricorda all'utente di usare il tasto 'Recensisci'.
 Il tuo unico scopo è aiutare gli utenti (Volontari e NPO) usando ESCLUSIVAMENTE le informazioni contenute nelle guide del Centro Assistenza fornite di seguito.
 Se una domanda non riguarda AiutarSì o le sue funzionalità, rispondi gentilmente: "Mi dispiace, posso aiutarti solo con le funzionalità di AiutarSì! Hai altre domande sull'app?"
 Non inventare informazioni non presenti nelle guide.
@@ -72,8 +74,9 @@ Puoi usare emoji per rendere la risposta più amichevole.
 ${HELP_CENTER_CONTEXT}
 `;
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
+
 Deno.serve(async (req) => {
-  // Gestione preflight CORS (OPTIONS) se chiamata da web
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } });
   }
@@ -85,13 +88,76 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Domanda mancante' }), { status: 400 });
     }
 
-    // Costruzione array messaggi compatibile OpenAI
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error(`Missing vars: URL=${!!supabaseUrl}, KEY=${!!serviceRoleKey}`);
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Fetch HF API Key from database or env (using the stored one as fallback)
+    const { data: secretData } = await supabase
+        .from('internal_secrets')
+        .select('value')
+        .eq('key', 'HUGGINGFACE_API_KEY')
+        .single();
+    
+    const tokenToUse = secretData?.value || hfApiKey;
+
+    // 1. Generate text embedding for the user's question
+    let suggestedActivitiesText = "";
+    
+    try {
+        const hfEmbedResponse = await fetch(
+            `https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction`,
+            {
+                headers: {
+                    Authorization: `Bearer ${tokenToUse}`,
+                    "Content-Type": "application/json",
+                    "x-wait-for-model": "true",
+                },
+                method: "POST",
+                body: JSON.stringify({ inputs: question }),
+            }
+        );
+
+        if (hfEmbedResponse.ok) {
+            const hfResult = await hfEmbedResponse.json();
+            const queryEmbedding = Array.isArray(hfResult[0]) ? hfResult[0] : hfResult;
+
+            if (queryEmbedding && queryEmbedding.length === 384) {
+                // 2. Query Supabase for matching open activities (>0.70)
+                const { data: matchedActivities, error: matchError } = await supabase.rpc('match_activities', {
+                    query_embedding: queryEmbedding,
+                    match_threshold: 0.70,
+                    match_count: 3,
+                    user_lat: null,
+                    user_lng: null
+                });
+
+                if (!matchError && matchedActivities && matchedActivities.length > 0) {
+                    suggestedActivitiesText = "\n\nATTIVITÀ SUGGERITE (Smart Match > 0.70):\n";
+                    matchedActivities.forEach((act: any, index: number) => {
+                        suggestedActivitiesText += `${index + 1}. Titolo: "${act.title}" presso ${act.npo_name}. Categoria: ${act.category}. Descrizione breve: ${act.description.substring(0, 100)}...\n`;
+                    });
+                    suggestedActivitiesText += "\nSe l'utente cerca qualcosa da fare, proponi rigorosamente QUESTE attività reali disponibili sull'app e non inventarne altre. Suggerisci loro di cercarle nella Home o Esplora.";
+                }
+            }
+        }
+    } catch (embErr) {
+        console.error("Embedding / Match Error:", embErr);
+        // Continue even if embedding fails to still answer the question
+    }
+
+    // 3. Construct messages array compatible with OpenAI API
     const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SYSTEM_PROMPT + suggestedActivitiesText },
       { role: "assistant", content: "Ciao! Sono Gemma, il tuo assistente su AiutarSì 👋 Come posso aiutarti?" },
     ];
 
-    // Formattazione della cronologia vecchia (da app React Natve: {role: "user"|"model", parts: [{text: ""}]})
+    // Format old history
     if (history && Array.isArray(history)) {
       for (const msg of history) {
         messages.push({
@@ -101,15 +167,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Aggiunta domanda corrente
+    // Add current question
     messages.push({ role: "user", content: question });
 
+    // 4. Call HuggingFace LLM
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${hfApiKey}`,
+          "Authorization": `Bearer ${tokenToUse}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -117,7 +184,7 @@ Deno.serve(async (req) => {
           messages: messages,
           temperature: 0.7,
           max_tokens: 500,
-          frequency_penalty: 0.15, // Equivalente a repetition_penalty = 1.15 in standard OpenAI
+          frequency_penalty: 0.15,
         }),
       }
     );
@@ -133,7 +200,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ answer }), {
       headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[GemmaHelp Error]', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }

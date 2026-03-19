@@ -181,6 +181,21 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                     });
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`
+                },
+                (payload) => {
+                    const updated = payload.new;
+                    setAllNotifications(prev => 
+                        prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
+                    );
+                }
+            )
             .subscribe();
 
         return () => {
@@ -346,16 +361,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, [handleNotificationPress]);
 
     useEffect(() => {
-        // Global configuration for how notifications should behave when the app is in foreground
-        Notifications.setNotificationHandler({
-            handleNotification: async () => ({
-                shouldShowAlert: false, // User requested only Toast in foreground
-                shouldPlaySound: true,
-                shouldSetBadge: true,
-                shouldShowBanner: false,
-                shouldShowList: true,
-            }),
-        });
+        // notification handler
     }, []);
 
     return (

@@ -8,6 +8,7 @@ import { StatCard } from "../StatCard";
 
 interface ProfileStatsProps {
     level: number;
+    levelName?: string;
     totalXP: number;
     xpInLevel: number;
     xpNeededForLevel: number;
@@ -25,6 +26,7 @@ interface ProfileStatsProps {
 
 export function ProfileStats({
     level,
+    levelName,
     totalXP,
     xpInLevel,
     xpNeededForLevel,
@@ -57,7 +59,9 @@ export function ProfileStats({
                 <View className="flex-row items-center justify-between mb-3">
                     <View className="flex-row items-center gap-2">
                         <Award size={20} color={Colors.accent} />
-                        <Text className="text-primary font-black text-lg">Livello {level}</Text>
+                        <Text className="text-primary font-black text-lg">
+                            Livello {level} {levelName ? `• ${levelName}` : ''}
+                        </Text>
                     </View>
                     <Text className="text-secondary text-sm font-bold">{xpInLevel} / {xpNeededForLevel} XP</Text>
                 </View>

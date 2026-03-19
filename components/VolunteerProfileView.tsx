@@ -25,6 +25,7 @@ interface Badge {
 interface GamificationState {
     totalXP: number;
     level: number;
+    levelName?: string;
     badges: Badge[];
 }
 
@@ -132,6 +133,7 @@ export function VolunteerProfileView({
                 {/* 2. Stats & Level Section */}
                 <ProfileStats
                     level={gamificationState.level}
+                    levelName={gamificationState.levelName}
                     totalXP={gamificationState.totalXP}
                     xpInLevel={xpInLevel}
                     xpNeededForLevel={xpNeededForLevel}

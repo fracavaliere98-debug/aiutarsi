@@ -84,7 +84,7 @@ const TypingDots = () => {
 
 export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) => {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'model', text: 'Ciao! Sono Gemma 👋 Posso rispondere solo a domande su AiutarSì. Come posso aiutarti?' }
+        { role: 'model', text: 'Ciao! Sono Gemma 👋 Il mio database di conoscenze è aggiornato al 18 Marzo 2026. Posso rispondere solo a domande su AiutarSì. Come posso aiutarti?' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
