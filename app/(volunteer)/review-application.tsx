@@ -55,7 +55,8 @@ export default function ReviewApplication() {
                     pathname: "/(volunteer)/application-success",
                     params: {
                         npoName: isActivity ? activity!.npoName : npoUser!.npoName,
-                        activityTitle: isActivity ? activity!.title : "Candidatura Ente"
+                        activityTitle: isActivity ? activity!.title : "Candidatura Ente",
+                        type: isActivity ? "ACTIVITY" : "NPO"
                     }
                 } as any);
             } else {

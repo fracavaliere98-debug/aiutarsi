@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
 const hfApiKey = Deno.env.get('HUGGINGFACE_API_KEY')!;
 
@@ -35,23 +36,30 @@ A: No. Gli XP accumulati non si perdono mai. Puoi solo salire di livello, mai sc
 Q: Come mi iscrivo a un'attività?
 A: Cerca un'attività che ti interessa (nella Home, Esplora o sulla Mappa), apri il dettaglio e tocca "Iscriviti". Sarai confermato automaticamente per il turno.
 
-Q: Come faccio a sapere se la mia iscrizione è stata accettata?
-A: Su AiutarSì l'iscrizione alle attività è automatica. Riceverai comunque conferma e potrai controllare lo stato nella sezione "Le tue attività" nel profilo.
+Q: Dove trovo le attività a cui sono registrato?
+A: Puoi verificare lo stato in "Le tue attività" dal tuo profilo. Lì troverai le attività imminenti e quelle passate.
 
-Q: Posso ritirarmi da un'attività dopo essermi iscritto?
-A: Sì. Finché l'attività non è completata, puoi ritirarla dalla sezione "Le tue attività".
+Q: Posso ritirarmi da un'attività?
+A: Sì. Finché l'attività non è completata, puoi ritirarla dalla sezione "Le tue attività" nel profilo.
 
-Q: Posso iscrivermi a più attività contemporaneamente?
-A: Sì, puoi iscriverti a quante attività vuoi. Non c'è limite.
+--- SEZIONE 4: DIVENTARE MEMBRO DI UN NPO ---
+Q: Come mi candido a un NPO?
+A: Visita il profilo di un'organizzazione (NPO) che ti interessa e tocca "Candidati". Invia una breve presentazione. Il NPO valuterà la tua richiesta e potrà accettarla o rifiutarla.
 
---- SEZIONE 4: NOTIFICHE ---
+Q: Come faccio a sapere se la mia candidatura è stata accettata?
+A: Riceverai una notifica push quando il NPO prenderà una decisione. Puoi anche controllare nella sezione "I tuoi NPO" per vedere a quali organizzazioni sei attualmente affiliato.
+
+Q: Posso far parte di più NPO contemporaneamente?
+A: Sì, non c'è limite al numero di collaborazioni che puoi avere. Puoi candidarti ed essere membro di più NPO simultaneamente.
+
+--- SEZIONE 5: NOTIFICHE ---
 Q: Non ricevo notifiche, cosa faccio?
 A: Verifica che le notifiche siano abilitate nelle impostazioni del dispositivo per AiutarSi. Puoi ricontrollare anche nelle Impostazioni dell'app > Notifiche.
 
 Q: Quali notifiche ricevo?
 A: Ricevi notifiche quando: una tua candidatura viene accettata o rifiutata, un NPO aggiorna lo stato di un'attività, ricevi un messaggio in chat, sali di livello o sblocchi un badge.
 
---- SEZIONE 5: ACCOUNT E PRIVACY ---
+--- SEZIONE 6: ACCOUNT E PRIVACY ---
 Q: Come cambio la mia email o password?
 A: Vai su Impostazioni > Sicurezza e credenziali. Puoi modificare email e password da lì.
 
@@ -60,21 +68,33 @@ A: I tuoi dati (nome, foto, bio) sono visibili agli NPO a cui ti candidi e ad al
 
 Q: Come elimino il mio account?
 A: Vai in Impostazioni, scorri fino in fondo e tocca "Elimina Account". Avrai 30 giorni per cambiare idea prima che i dati vengano cancellati definitivamente.
+
+--- SEZIONE 7: ASSISTENTE AI (GEMMA) ---
+Q: Chi è Gemma?
+A: Gemma è l'assistente virtuale ufficiale di AiutarSì. È qui per aiutarti a navigare nell'app, spiegarti le regole del volontariato e suggerirti attività interessanti basate sui tuoi gusti.
+
+Q: Come funziona lo "Smart Match"?
+A: Lo Smart Match è un sistema intelligente che analizza le tue preferenze e le attività disponibili per trovare l'abbinamento perfetto. Prova a chiedere a Gemma "Cosa posso fare oggi?" per ricevere suggerimenti personalizzati.
+
+Q: Le risposte di Gemma sono sempre corrette?
+A: Gemma risponde basandosi esclusivamente sulle informazioni ufficiali di AiutarSì e sulle attività presenti nel database. Se non conosce una risposta, ti inviterà a consultare le guide o a contattare il supporto, senza mai inventare informazioni.
 `;
 
 const SYSTEM_PROMPT = `Tu sei Gemma, l'assistente ufficiale di AiutarSì — un'app di volontariato che connette volontari e organizzazioni non-profit.
 Il tuo database di conoscenze è aggiornato al 18 Marzo 2026.
 Gemma, ora sei integrata con un sistema di matchmaking vettoriale (Hugging Face). Se un utente ti chiede 'Cosa posso fare?', cerca di incoraggiarlo a usare l'esplorazione Smart Match o farti guidare dalle attività suggerite con score > 0.7. Conosci i 10 livelli di carriera (da Novizio a Mito) e incoraggia chi è vicino al traguardo (-50 XP). Se un'attività è finita, ricorda all'utente di usare il tasto 'Recensisci'.
-Il tuo unico scopo è aiutare gli utenti (Volontari e NPO) usando ESCLUSIVAMENTE le informazioni contenute nelle guide del Centro Assistenza fornite di seguito.
-Se una domanda non riguarda AiutarSì o le sue funzionalità, rispondi gentilmente: "Mi dispiace, posso aiutarti solo con le funzionalità di AiutarSì! Hai altre domande sull'app?"
-Non inventare informazioni non presenti nelle guide.
+Il tuo unico scopo è aiutare gli utenti (Volontari e NPO) usando ESCLUSIVAMENTE le informazioni che ti vengono fornite in questo prompt (attività da DB o testo del Centro Assistenza).
+
+REGOLA CRITICA E GUARDRAIL:
+Non inventare MAI informazioni, policy, nomi di enti, luoghi o funzionalità che non sono presenti nelle guide sottostanti o nelle attività esplicitamente fornite.
+Se un utente ti fa una domanda la cui risposta non è contenuta nel contesto fornito, DEVI rispondere: "Mi dispiace, non ho questa informazione a disposizione. Prova a cercare nell'app o a riformulare la domanda!"
+Se una domanda non riguarda AiutarSì, rispondi gentilmente che non puoi assisterlo su quell'argomento.
+
 Rispondi sempre in italiano, in modo cordiale, chiaro e conciso (max 3-4 frasi).
 Puoi usare emoji per rendere la risposta più amichevole.
 
 ${HELP_CENTER_CONTEXT}
 `;
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

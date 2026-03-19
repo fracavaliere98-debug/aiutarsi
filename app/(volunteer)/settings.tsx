@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan, Users } from 'lucide-react-native';
+import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -17,7 +17,7 @@ import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 
 export default function VolunteerSettings() {
-    const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion } = useAuth();
+    const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion, updateEmail, updatePassword } = useAuth();
     const { showToast } = useToast();
     const { resetData } = useActivities();
     const { resetApplications } = useApplications();
@@ -38,6 +38,63 @@ export default function VolunteerSettings() {
     const [locationInput, setLocationInput] = useState(user?.locationString || "Rilevamento in corso...");
     const [isAvatarUploading, setIsAvatarUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Change Email/Password states
+    const [showChangeEmail, setShowChangeEmail] = useState(false);
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [newEmail, setNewEmail] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState("");
+    const [isUpdatingAuth, setIsUpdatingAuth] = useState(false);
+
+    const handleEmailUpdate = async () => {
+        if (!newEmail || !newEmail.includes("@")) {
+            Alert.alert("Errore", "Inserisci un indirizzo email valido.");
+            return;
+        }
+
+        setIsUpdatingAuth(true);
+        try {
+            await updateEmail(newEmail);
+            showToast('success', 'Email aggiornata! Controlla la posta per la conferma.');
+            setShowChangeEmail(false);
+            setNewEmail("");
+        } catch (error: any) {
+            Alert.alert("Errore", error.message);
+        } finally {
+            setIsUpdatingAuth(false);
+        }
+    };
+
+    const handlePasswordUpdate = async () => {
+        if (!currentPassword || !newPassword) {
+            Alert.alert("Errore", "Compila tutti i campi.");
+            return;
+        }
+        if (newPassword !== confirmNewPassword) {
+            Alert.alert("Errore", "Le password non coincidono.");
+            return;
+        }
+        if (newPassword.length < 6) {
+            Alert.alert("Errore", "La nuova password deve essere di almeno 6 caratteri.");
+            return;
+        }
+
+        setIsUpdatingAuth(true);
+        try {
+            await updatePassword(currentPassword, newPassword);
+            showToast('success', 'Password aggiornata con successo!');
+            setShowChangePassword(false);
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmNewPassword("");
+        } catch (error: any) {
+            Alert.alert("Errore", error.message);
+        } finally {
+            setIsUpdatingAuth(false);
+        }
+    };
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -302,6 +359,23 @@ export default function VolunteerSettings() {
                     </>
                 )}
 
+                <SectionHeader title="Sicurezza" />
+                <SoftCard className="mb-8 px-5">
+                    <MenuItem
+                        icon={Mail}
+                        label="Cambia Email"
+                        color="#3b82f6"
+                        onPress={() => setShowChangeEmail(true)}
+                    />
+                    <MenuItem
+                        icon={Lock}
+                        label="Cambia Password"
+                        color={Colors.accent}
+                        onPress={() => setShowChangePassword(true)}
+                        last
+                    />
+                </SoftCard>
+
                 <SectionHeader title="Dati & Privacy" />
                 <SoftCard className="mb-8 px-5">
                     <MenuItem
@@ -493,6 +567,134 @@ export default function VolunteerSettings() {
                             </View>
                         </View>
                     </ScrollView>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </Modal>
+            
+            {/* Change Email Modal */}
+            <Modal
+                animationType="slide"
+                visible={showChangeEmail}
+                onRequestClose={() => setShowChangeEmail(false)}
+                statusBarTranslucent={true}
+            >
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    >
+                        <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                            <TouchableOpacity onPress={() => setShowChangeEmail(false)}>
+                                <Text className="text-secondary font-bold text-base">Annulla</Text>
+                            </TouchableOpacity>
+                            <Text className="text-primary font-black text-lg">Cambia Email</Text>
+                            <TouchableOpacity onPress={handleEmailUpdate} disabled={isUpdatingAuth}>
+                                {isUpdatingAuth ? (
+                                    <ActivityIndicator color={Colors.primary} size="small" />
+                                ) : (
+                                    <Text className="font-bold text-base" style={{ color: Colors.primary }}>Aggiorna</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView className="flex-1 p-6">
+                            <View className="gap-6 pb-12">
+                                <View>
+                                    <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Nuova Email</Text>
+                                    <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100">
+                                        <TextInput
+                                            value={newEmail}
+                                            onChangeText={setNewEmail}
+                                            autoCapitalize="none"
+                                            keyboardType="email-address"
+                                            className="text-primary font-medium text-lg p-0"
+                                            placeholder="Nuovo indirizzo email"
+                                            placeholderTextColor="#9ca3af"
+                                        />
+                                    </View>
+                                    <Text className="text-secondary/60 text-xs mt-3 px-1 leading-5">
+                                        Per motivi di sicurezza, riceverai un link di conferma al nuovo indirizzo. L'email non verrà cambiata finché non confermerai il link.
+                                    </Text>
+                                </View>
+                            </View>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </Modal>
+
+            {/* Change Password Modal */}
+            <Modal
+                animationType="slide"
+                visible={showChangePassword}
+                onRequestClose={() => setShowChangePassword(false)}
+                statusBarTranslucent={true}
+            >
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    >
+                        <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                            <TouchableOpacity onPress={() => setShowChangePassword(false)}>
+                                <Text className="text-secondary font-bold text-base">Annulla</Text>
+                            </TouchableOpacity>
+                            <Text className="text-primary font-black text-lg">Cambia Password</Text>
+                            <TouchableOpacity onPress={handlePasswordUpdate} disabled={isUpdatingAuth}>
+                                {isUpdatingAuth ? (
+                                    <ActivityIndicator color={Colors.primary} size="small" />
+                                ) : (
+                                    <Text className="font-bold text-base" style={{ color: Colors.primary }}>Aggiorna</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView className="flex-1 p-6">
+                            <View className="gap-6 pb-12">
+                                <View>
+                                    <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Password Attuale</Text>
+                                    <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100">
+                                        <TextInput
+                                            value={currentPassword}
+                                            onChangeText={setCurrentPassword}
+                                            secureTextEntry
+                                            className="text-primary font-medium text-lg p-0"
+                                            placeholder="••••••••"
+                                            placeholderTextColor="#9ca3af"
+                                        />
+                                    </View>
+                                </View>
+
+                                <View>
+                                    <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Nuova Password</Text>
+                                    <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100">
+                                        <TextInput
+                                            value={newPassword}
+                                            onChangeText={setNewPassword}
+                                            secureTextEntry
+                                            className="text-primary font-medium text-lg p-0"
+                                            placeholder="Almeno 6 caratteri"
+                                            placeholderTextColor="#9ca3af"
+                                        />
+                                    </View>
+                                </View>
+
+                                <View>
+                                    <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Conferma Nuova Password</Text>
+                                    <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100">
+                                        <TextInput
+                                            value={confirmNewPassword}
+                                            onChangeText={setConfirmNewPassword}
+                                            secureTextEntry
+                                            className="text-primary font-medium text-lg p-0"
+                                            placeholder="Ripeti la nuova password"
+                                            placeholderTextColor="#9ca3af"
+                                        />
+                                    </View>
+                                </View>
+
+                                <Text className="text-secondary/60 text-xs mt-1 px-1 leading-5">
+                                    Assicurati di usare una password robusta per proteggere il tuo account.
+                                </Text>
+                            </View>
+                        </ScrollView>
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </Modal>

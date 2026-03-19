@@ -210,6 +210,28 @@ const GUIDE_SECTIONS: GuideSection[] = [
             },
         ],
     },
+    {
+        id: 'aiassistant',
+        emoji: '🤖',
+        title: 'Assistente AI (Gemma)',
+        faqs: [
+            {
+                id: 'whoisgemma',
+                question: 'Chi è Gemma?',
+                answer: 'Gemma è l\'assistente virtuale ufficiale di AiutarSì. È qui per aiutarti a navigare nell\'app, spiegarti le regole del volontariato e suggerirti attività interessanti basate sui tuoi gusti.',
+            },
+            {
+                id: 'smartmatch',
+                question: 'Come funziona lo "Smart Match"?',
+                answer: 'Lo Smart Match è un sistema intelligente che analizza le tue preferenze e le attività disponibili per trovare l\'abbinamento perfetto. Prova a chiedere a Gemma "Cosa posso fare oggi?" per ricevere suggerimenti personalizzati.',
+            },
+            {
+                id: 'accuracy',
+                question: 'Le risposte di Gemma sono sempre corrette?',
+                answer: 'Gemma risponde basandosi esclusivamente sulle informazioni ufficiali di AiutarSì e sulle attività presenti nel database. Se non conosce una risposta, ti inviterà a consultare le guide o a contattare il supporto, senza mai inventare informazioni.',
+            },
+        ],
+    },
 ];
 
 // Accordion FAQ item

@@ -30,6 +30,8 @@ interface AuthContextType {
     requestAccountDeletion: () => Promise<void>;
     cancelAccountDeletion: () => Promise<void>;
     getReferralCount: () => Promise<number>;
+    updateEmail: (newEmail: string) => Promise<boolean>;
+    updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -52,6 +54,8 @@ const AuthContext = createContext<AuthContextType>({
     requestAccountDeletion: async () => { },
     cancelAccountDeletion: async () => { },
     getReferralCount: async () => 0,
+    updateEmail: async () => false,
+    updatePassword: async () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -479,6 +483,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!user) return 0;
         return await authService.getReferralCount(user.id);
     }, [user]);
+    
+    const updateEmail = useCallback(async (newEmail: string): Promise<boolean> => {
+        if (!user) return false;
+        try {
+            const updatedUser = await authService.updateEmail(newEmail);
+            setUser(updatedUser);
+            return true;
+        } catch (error) {
+            console.error("Update email failed:", error);
+            throw error;
+        }
+    }, [user]);
+
+    const updatePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
+        if (!user) return false;
+        try {
+            await authService.updatePassword(oldPassword, newPassword);
+            return true;
+        } catch (error) {
+            console.error("Update password failed:", error);
+            throw error;
+        }
+    }, [user]);
 
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
     const resetUsers = useCallback(async () => {
@@ -510,8 +537,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         refreshUsers,
         requestAccountDeletion,
         cancelAccountDeletion,
-        getReferralCount
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount]);
+        getReferralCount,
+        updateEmail,
+        updatePassword
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
 
     return (
         <AuthContext.Provider value={value}>
