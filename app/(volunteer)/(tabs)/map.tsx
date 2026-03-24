@@ -33,7 +33,7 @@ async function fetchNominatim(text: string): Promise<{ id: number; label: string
     try {
         const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
-            { headers: { 'OldUser-Agent': 'AiutarSiApp/1.0' } }
+            { headers: { 'User-Agent': 'AiutarSiApp/1.0' } }
         );
         const data = await res.json();
         return data.map((item: any) => ({

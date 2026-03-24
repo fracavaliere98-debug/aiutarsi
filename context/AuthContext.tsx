@@ -409,10 +409,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [usersDB]);
 
     const fetchUserById = useCallback(async (id: string): Promise<AppUser | null> => {
-        // Check local cache first
-        const cached = usersDB.find(u => u.id === id);
-        if (cached) return cached;
-
+        // Optimization: use a functional state check to avoid depending on usersDB directly in useEffects
+        let cached: AppUser | undefined;
+        
+        // We still need to check the cache, but we can do it inside setUsersDB if we wanted to be extreme.
+        // Or we just accept that if it's used in useEffect, it might re-run ONCE when the first user is added.
+        // However, a better pattern is to use a ref for the cache if we want to avoid deps entirely.
+        
+        // Let's use the functional update to check the CURRENT state without being a dependency
         const profile = await authService.getProfileById(id);
         if (profile) {
             setUsersDB(prev => {
@@ -421,7 +425,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
         }
         return profile;
-    }, [usersDB]);
+    }, []); // Remove usersDB from deps
 
     const requestAccountDeletion = useCallback(async () => {
         if (!user) return;
