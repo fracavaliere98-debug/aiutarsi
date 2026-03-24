@@ -19,7 +19,7 @@ export interface NPOInsight {
 }
 
 export const useNPOInsights = () => {
-    const { user } = useAuth();
+    const { user, getNPOFollowers } = useAuth();
     const { activities, activityApplications } = useActivities();
     const { applications: npoApplications } = useApplications();
     const router = useRouter();
@@ -36,8 +36,35 @@ export const useNPOInsights = () => {
             return !!act;
         });
         const myNPOApps = npoApplications.filter(app => app.npoId === user.id);
-        const foundInsights: NPOInsight[] = [];
         const now = new Date();
+        const followers = getNPOFollowers(user.id);
+        const allPending = [
+            ...myActivityApps.filter(a => a.status === 'PENDING'),
+            ...myNPOApps.filter(a => a.status === 'PENDING')
+        ];
+        const upcomingOpen = myActivities.filter(a => a.status === 'APERTA' && new Date(a.dateTime) > now);
+        const nextActivity = [...upcomingOpen].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
+        const totalHours = myActivities
+            .filter(a => a.status === 'COMPLETATA')
+            .reduce((acc, curr) => {
+                const start = new Date(curr.dateTime).getTime();
+                const end = new Date(curr.endDateTime).getTime();
+                return acc + (end - start) / (1000 * 3600);
+            }, 0);
+        const sharedMetrics = {
+            npoName: user.npoName || user.name,
+            followerCount: followers.length,
+            openActivitiesCount: upcomingOpen.length,
+            pendingApplicationsCount: allPending.length,
+            approvedVolunteersCount: [
+                ...myActivityApps.filter(a => a.status === 'APPROVED'),
+                ...myNPOApps.filter(a => a.status === 'APPROVED')
+            ].length,
+            totalImpactHours: Math.floor(totalHours),
+            nextActivityTitle: nextActivity?.title,
+            nextActivityDate: nextActivity?.dateTime,
+        };
+        const foundInsights: NPOInsight[] = [];
 
         // 1. Smart-Match (Priority 1)
         const urgentGapActivity = myActivities.find(a => {
@@ -63,16 +90,11 @@ export const useNPOInsights = () => {
                         params: { tab: 'FOLLOWERS', activityMatch: urgentGapActivity.id }
                     } as any);
                 },
-                data: { activityId: urgentGapActivity.id }
+                data: { activityId: urgentGapActivity.id, metrics: sharedMetrics }
             });
         }
 
         // 2. Pending (Priority 2)
-        const allPending = [
-            ...myActivityApps.filter(a => a.status === 'PENDING'),
-            ...myNPOApps.filter(a => a.status === 'PENDING')
-        ];
-
         const oldPending = allPending.filter(a => {
             const appDate = new Date(a.appliedDate);
             const diffHours = (now.getTime() - appDate.getTime()) / (1000 * 3600);
@@ -89,12 +111,12 @@ export const useNPOInsights = () => {
                 actionLabel: "Gestisci OldCandidature",
                 onAction: () => {
                     router.push("/(npo)/(tabs)/volunteers?tab=CANDIDATURE" as any);
-                }
+                },
+                data: { metrics: sharedMetrics }
             });
         }
 
         // 3. Drought (Priority 3)
-        const upcomingOpen = myActivities.filter(a => a.status === 'APERTA' && new Date(a.dateTime) > now);
         if (upcomingOpen.length === 0) {
             foundInsights.push({
                 id: 'activity_drought',
@@ -105,7 +127,8 @@ export const useNPOInsights = () => {
                 actionLabel: "Genera bozza con AI",
                 onAction: () => {
                     router.push("/(npo)/create-activity?ai_draft=true" as any);
-                }
+                },
+                data: { metrics: sharedMetrics }
             });
         }
 
@@ -126,19 +149,12 @@ export const useNPOInsights = () => {
                         pathname: "/(npo)/create-activity",
                         params: { duplicate: successfulActivity.id, recurrence: 'true' }
                     } as any);
-                }
+                },
+                data: { metrics: { ...sharedMetrics, nextActivityTitle: successfulActivity.title } }
             });
         }
 
         // 5. Milestone (Priority 5)
-        // Sum hours from completed
-        const completed = myActivities.filter(a => a.status === 'COMPLETATA');
-        const totalHours = completed.reduce((acc, curr) => {
-            const start = new Date(curr.dateTime).getTime();
-            const end = new Date(curr.endDateTime).getTime();
-            return acc + (end - start) / (1000 * 3600);
-        }, 0);
-
         if (totalHours > 10) { // Simple threshold for demo
             foundInsights.push({
                 id: 'milestone_celebration',
@@ -150,7 +166,8 @@ export const useNPOInsights = () => {
                 onAction: () => {
                     // For now just a toast/placeholder
                     console.log("Sharing milestones...");
-                }
+                },
+                data: { metrics: sharedMetrics }
             });
         }
 
@@ -164,7 +181,8 @@ export const useNPOInsights = () => {
                 actionLabel: "Apri dashboard",
                 onAction: () => {
                     router.push("/(npo)/(tabs)/projects" as any);
-                }
+                },
+                data: { metrics: sharedMetrics }
             });
         }
 
@@ -172,7 +190,7 @@ export const useNPOInsights = () => {
             .filter(i => !mutedIds.includes(i.id))
             .sort((a, b) => a.priority - b.priority);
 
-    }, [activities, activityApplications, npoApplications, user, mutedIds, router]);
+    }, [activities, activityApplications, npoApplications, user, mutedIds, router, getNPOFollowers]);
 
     useEffect(() => {
         const activeIds = new Set(baseInsights.map((insight) => insight.id));
@@ -197,6 +215,7 @@ export const useNPOInsights = () => {
                 description: insight.description,
                 actionLabel: insight.actionLabel,
                 priority: insight.priority,
+                metrics: insight.data?.metrics,
             }))
         ).then((result) => {
             if (cancelled || !Array.isArray(result.insights)) return;

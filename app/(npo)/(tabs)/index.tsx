@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { useCallback } from "react";
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
@@ -11,8 +11,6 @@ import { StandardLayout } from "../../../components/StandardLayout";
 import { EmptyState } from "../../../components/EmptyState";
 
 import { useApplications } from "../../../context/ApplicationContext";
-import { useNotifications } from "../../../context/NotificationContext";
-
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
@@ -21,8 +19,9 @@ import { InsightCarousel } from "../../../components/InsightCarousel";
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
     const router = useRouter();
-    const { activities, getNPORating } = useActivities();
-    const { getNPOApplications } = useApplications();
+    const { activities, getNPORating, loadData } = useActivities();
+    const { getNPOApplications, refreshApplications } = useApplications();
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { insights, dismissInsight } = useNPOInsights();
 
@@ -57,9 +56,18 @@ export default function NPODashboard() {
 
     const totalEnrollmentsCount = approvedNpoApps.length + approvedActivityApps.length;
 
-    const { addNotification } = useNotifications();
-
-
+    const handleRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        try {
+            await Promise.all([
+                refreshUsers(),
+                loadData(),
+                refreshApplications(),
+            ]);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [loadData, refreshApplications, refreshUsers]);
 
     const HeaderActions = <NPOHeaderActions />;
 
@@ -70,6 +78,14 @@ export default function NPODashboard() {
             rightElement={HeaderActions}
             bg="bg-[#f6f6f8]"
             hideBack={true}
+            refreshControl={
+                <RefreshControl
+                    refreshing={isRefreshing}
+                    onRefresh={handleRefresh}
+                    tintColor={Colors.primary}
+                    colors={[Colors.primary]}
+                />
+            }
         >
             {/* Stats Overview - Restored 1x4 Row with Individual Colors */}
             <View className="flex-row justify-between mb-8 -mx-1">

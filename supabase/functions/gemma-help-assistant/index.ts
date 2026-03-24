@@ -25,6 +25,16 @@ type NPOInsightInput = {
   description: string;
   actionLabel: string;
   priority?: number;
+  metrics?: {
+    npoName?: string;
+    followerCount?: number;
+    openActivitiesCount?: number;
+    pendingApplicationsCount?: number;
+    approvedVolunteersCount?: number;
+    totalImpactHours?: number;
+    nextActivityTitle?: string;
+    nextActivityDate?: string;
+  };
 };
 
 const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
@@ -147,7 +157,17 @@ function formatNPOInsightsContext(insights: NPOInsightInput[]): string {
 
   let text = "\n=== PRIORITÀ OPERATIVE NPO ===\n";
   insights.forEach((insight, index) => {
-    text += `${index + 1}. ID: ${insight.id} | Tipo: ${insight.type} | Priorità: ${insight.priority || index + 1} | Titolo attuale: "${insight.title}" | Descrizione attuale: ${insight.description} | CTA attuale: ${insight.actionLabel}\n`;
+    text += `${index + 1}. ID: ${insight.id} | Tipo: ${insight.type} | Priorità: ${insight.priority || index + 1} | Titolo attuale: "${insight.title}" | Descrizione attuale: ${insight.description} | CTA attuale: ${insight.actionLabel}`;
+    if (insight.metrics) {
+      text += ` | NPO: ${insight.metrics.npoName || "Ente"} | Followers: ${insight.metrics.followerCount ?? 0} | Attività aperte: ${insight.metrics.openActivitiesCount ?? 0} | Candidature pendenti: ${insight.metrics.pendingApplicationsCount ?? 0} | Volontari approvati: ${insight.metrics.approvedVolunteersCount ?? 0} | Ore impatto: ${insight.metrics.totalImpactHours ?? 0}`;
+      if (insight.metrics.nextActivityTitle) {
+        text += ` | Prossima attività: ${insight.metrics.nextActivityTitle}`;
+      }
+      if (insight.metrics.nextActivityDate) {
+        text += ` | Data prossima attività: ${insight.metrics.nextActivityDate}`;
+      }
+    }
+    text += `\n`;
   });
   return text;
 }

@@ -14,6 +14,7 @@ interface ApplicationContextType {
     getVolunteerApplications: (volunteerId: string) => OldApplication[];
     hasAppliedToNPO: (volunteerId: string, npoId: string) => boolean;
     resetApplications: () => Promise<void>;
+    refreshApplications: () => Promise<void>;
 }
 
 const ApplicationContext = createContext<ApplicationContextType>({
@@ -25,6 +26,7 @@ const ApplicationContext = createContext<ApplicationContextType>({
     getVolunteerApplications: () => [],
     hasAppliedToNPO: () => false,
     resetApplications: async () => { },
+    refreshApplications: async () => { },
 });
 
 export const useApplications = () => useContext(ApplicationContext);
@@ -143,6 +145,9 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const resetApplications = useCallback(async () => {
         queryClient.setQueryData(['applications', user?.id], []);
     }, [queryClient, user]);
+    const refreshApplications = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey: ['applications'] });
+    }, [queryClient]);
 
     const value = {
         applications,
@@ -153,6 +158,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
         getVolunteerApplications,
         hasAppliedToNPO,
         resetApplications,
+        refreshApplications,
     };
 
     return (

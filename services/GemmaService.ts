@@ -13,6 +13,16 @@ export type NPOInsightDraftInput = {
   description: string;
   actionLabel: string;
   priority: number;
+  metrics?: {
+    npoName?: string;
+    followerCount?: number;
+    openActivitiesCount?: number;
+    pendingApplicationsCount?: number;
+    approvedVolunteersCount?: number;
+    totalImpactHours?: number;
+    nextActivityTitle?: string;
+    nextActivityDate?: string;
+  };
 };
 
 export type NPOInsightDraftResult = {
