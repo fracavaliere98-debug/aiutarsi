@@ -73,6 +73,7 @@ export default function VolunteerDashboard() {
                 title="Dashboard"
                 label="Qualcosa è andato storto"
                 bg="bg-background-light"
+                hideBack={true}
             >
                 <ErrorState
                     title="Errore nel caricamento"
