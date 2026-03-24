@@ -12,6 +12,7 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { AddressAutocomplete } from "../../components/AddressAutocomplete";
 import { CalendarPicker } from "../../components/CalendarPicker";
 import { SKILLS } from "../../constants/Skills";
+import { gemmaService } from "../../services/GemmaService";
 
 export default function CreateActivityScreen() {
     const router = useRouter();
@@ -87,7 +88,52 @@ export default function CreateActivityScreen() {
     const urgentCount = activities.filter(a => a.npoId === user?.id && a.isUrgent && (a.status === 'APERTA' || a.status === 'IN_CORSO')).length;
     const [coordsConfirmed, setCoordsConfirmed] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [isCuratingDraft, setIsCuratingDraft] = useState(false);
     const { showToast } = useToast();
+
+    const applyCuratedDraft = async (source: "button" | "auto") => {
+        if (!formData.title.trim()) {
+            showToast('error', 'Inserisci almeno un titolo prima di usare l\'AI.');
+            return;
+        }
+
+        setIsCuratingDraft(true);
+        try {
+            const curated = await gemmaService.curateActivityDraft({
+                title: formData.title.trim(),
+                description: formData.description.trim(),
+                category: formData.category,
+            });
+
+            const suggestedSkills = SKILLS
+                .filter((skill) => curated.suggestedSkills.includes(skill.id) || curated.suggestedSkills.includes(skill.label))
+                .map((skill) => skill.id);
+
+            setFormData((prev) => ({
+                ...prev,
+                description: curated.expandedDescription || prev.description,
+                category: curated.suggestedCategory || prev.category,
+                skills: suggestedSkills.length > 0 ? suggestedSkills : prev.skills,
+            }));
+
+            showToast('success', source === 'auto' ? 'Bozza AI aggiornata.' : 'Descrizione migliorata con AI.');
+        } catch (error) {
+            console.error('[CreateActivity] activity-curator-ai failed', error);
+            showToast('error', 'Non sono riuscita a generare una bozza AI. Riprova tra poco.');
+        } finally {
+            setIsCuratingDraft(false);
+        }
+    };
+
+    useEffect(() => {
+        if (params.ai_draft !== 'true' || !formData.title.trim() || isCuratingDraft) {
+            return;
+        }
+
+        applyCuratedDraft('auto');
+        // We only want one automatic AI refinement after the ai_draft bootstrap.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params.ai_draft, formData.title]);
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -416,7 +462,19 @@ export default function CreateActivityScreen() {
 
                             {/* Description */}
                             <View>
-                                <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Descrizione</Text>
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] ml-1">Descrizione</Text>
+                                    <TouchableOpacity
+                                        onPress={() => applyCuratedDraft('button')}
+                                        disabled={isCuratingDraft}
+                                        className={`px-3 py-2 rounded-full border flex-row items-center gap-2 ${isCuratingDraft ? 'bg-slate-100 border-slate-200' : 'bg-white border-primary/10'}`}
+                                    >
+                                        <RefreshCw size={14} color={isCuratingDraft ? '#94a3b8' : Colors.primary} />
+                                        <Text className={`font-bold text-[11px] ${isCuratingDraft ? 'text-slate-400' : 'text-primary'}`}>
+                                            {isCuratingDraft ? 'Gemma al lavoro...' : 'Migliora con AI'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
                                 <View className="bg-white p-5 rounded-[28px] shadow-sm border border-primary/5">
                                     <TextInput
                                         placeholder="Descrivi l'attività, i requisiti e l'impatto..."

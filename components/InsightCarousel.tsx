@@ -9,7 +9,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // The component is rendered inside a bleed wrapper with negative margins,
 // so its natural parent width = full screen width.
 const H_PAD = 16; // inner horizontal padding for card content
-const CARD_WIDTH = SCREEN_WIDTH - H_PAD * 2; // card matches "Prossime Attività" width = screen - 32
 
 interface InsightCarouselProps {
     insights: NPOInsight[];

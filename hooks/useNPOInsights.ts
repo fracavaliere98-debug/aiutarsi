@@ -19,7 +19,7 @@ export interface NPOInsight {
 }
 
 export const useNPOInsights = () => {
-    const { user, getNPOFollowers } = useAuth();
+    const { user } = useAuth();
     const { activities, activityApplications } = useActivities();
     const { applications: npoApplications } = useApplications();
     const router = useRouter();
@@ -36,8 +36,6 @@ export const useNPOInsights = () => {
             return !!act;
         });
         const myNPOApps = npoApplications.filter(app => app.npoId === user.id);
-        const followers = getNPOFollowers(user.id);
-
         const foundInsights: NPOInsight[] = [];
         const now = new Date();
 
@@ -160,7 +158,7 @@ export const useNPOInsights = () => {
             .filter(i => !mutedIds.includes(i.id))
             .sort((a, b) => a.priority - b.priority);
 
-    }, [activities, activityApplications, npoApplications, user, mutedIds, getNPOFollowers]);
+    }, [activities, activityApplications, npoApplications, user, mutedIds, router]);
 
     useEffect(() => {
         const activeIds = new Set(baseInsights.map((insight) => insight.id));
