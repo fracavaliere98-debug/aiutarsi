@@ -18,6 +18,15 @@ type MatchedActivityInput = {
   matchPercentage?: number;
 };
 
+type NPOInsightInput = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+  priority?: number;
+};
+
 const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -133,6 +142,16 @@ function formatMatchedActivitiesContext(activities: MatchedActivityInput[]): str
   return text;
 }
 
+function formatNPOInsightsContext(insights: NPOInsightInput[]): string {
+  if (!insights.length) return "";
+
+  let text = "\n=== PRIORITÀ OPERATIVE NPO ===\n";
+  insights.forEach((insight, index) => {
+    text += `${index + 1}. ID: ${insight.id} | Tipo: ${insight.type} | Priorità: ${insight.priority || index + 1} | Titolo attuale: "${insight.title}" | Descrizione attuale: ${insight.description} | CTA attuale: ${insight.actionLabel}\n`;
+  });
+  return text;
+}
+
 function parseJsonResponse(text: string) {
   const trimmed = text.trim();
   const jsonText = trimmed.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
@@ -193,7 +212,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { question, history, mode, responseFormat, matchedActivities } = await req.json();
+    const { question, history, mode, responseFormat, matchedActivities, npoInsights } = await req.json();
     const assistantMode: AssistantMode = mode === "shadow" ? "shadow" : "help_center";
     const normalizedQuestion = String(question || "").trim() || (
       assistantMode === "shadow"
@@ -216,6 +235,9 @@ Deno.serve(async (req) => {
     const matchedActivitiesContext = Array.isArray(matchedActivities)
       ? formatMatchedActivitiesContext(matchedActivities as MatchedActivityInput[])
       : "";
+    const npoInsightsContext = Array.isArray(npoInsights)
+      ? formatNPOInsightsContext(npoInsights as NPOInsightInput[])
+      : "";
 
     const tokenToUse = await getHfToken(serviceClient);
     if (!tokenToUse) {
@@ -225,7 +247,7 @@ Deno.serve(async (req) => {
     const systemPrompt = buildSystemPrompt(
       assistantMode,
       userContext,
-      suggestedActivitiesText + matchedActivitiesContext,
+      suggestedActivitiesText + matchedActivitiesContext + npoInsightsContext,
     );
 
     const messages = [
@@ -255,6 +277,14 @@ Deno.serve(async (req) => {
         role: "user",
         content:
           'Restituisci solo JSON valido nel formato {"summary":"string","reasons":[{"activityId":"string","reason":"string"}]}. Ogni "reason" deve essere breve, concreta, personalizzata e riferita ai dati forniti. Massimo 18 parole per motivo.',
+      });
+    }
+
+    if (responseFormat === "npo_insight_drafts") {
+      messages.push({
+        role: "user",
+        content:
+          'Restituisci solo JSON valido nel formato {"insights":[{"id":"string","title":"string","description":"string","actionLabel":"string"}]}. Riscrivi le priorità NPO in modo concreto, orientato all\'azione e coerente con i dati reali. Ogni "description" deve stare entro 24 parole. Ogni "actionLabel" entro 4 parole.',
       });
     }
 
@@ -301,6 +331,33 @@ Deno.serve(async (req) => {
             mode: assistantMode,
             summary: "Gemma ha selezionato attività in linea con il tuo profilo attuale.",
             reasons: fallbackReasons,
+          }),
+          { headers: corsHeaders },
+        );
+      }
+    }
+
+    if (responseFormat === "npo_insight_drafts") {
+      try {
+        const parsed = parseJsonResponse(answer);
+        return new Response(JSON.stringify({ ...parsed, mode: assistantMode }), {
+          headers: corsHeaders,
+        });
+      } catch (parseError) {
+        console.error("[GemmaHelp] Failed to parse npo_insight_drafts JSON:", parseError);
+        const fallbackInsights = Array.isArray(npoInsights)
+          ? (npoInsights as NPOInsightInput[]).map((insight) => ({
+              id: insight.id,
+              title: insight.title,
+              description: insight.description,
+              actionLabel: insight.actionLabel,
+            }))
+          : [];
+
+        return new Response(
+          JSON.stringify({
+            mode: assistantMode,
+            insights: fallbackInsights,
           }),
           { headers: corsHeaders },
         );

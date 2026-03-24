@@ -14,11 +14,11 @@ export const VolunteerHeaderActions = () => {
     const { unreadCount: chatUnreadCount } = useChat();
     const { unreadCount: notificationsUnreadCount } = useNotifications();
 
-    const iconSize = Layout.iconSize.md;
+    const iconSize = Layout.iconSize.md - 2;
     const avatarSize = Layout.isTablet ? 52 : 44;
 
     return (
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-2" style={{ marginTop: 5 }}>
             <TouchableOpacity
                 onPress={() => router.push("/(volunteer)/notifications" as any)}
                 className="bg-white/10 p-2.5 rounded-2xl border border-white/20 relative"

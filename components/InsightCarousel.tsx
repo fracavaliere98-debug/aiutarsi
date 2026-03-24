@@ -58,7 +58,7 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         {getIcon(item.type)}
-                        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>AI Insight</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Gemma Insight</Text>
                     </View>
                     <TouchableOpacity
                         onPress={() => onDismiss(item.id)}

@@ -13,11 +13,11 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const { unreadCount: notifUnreadCount } = useNotifications();
     const { unreadCount: chatUnreadCount } = useChat();
 
-    const iconSize = Layout.iconSize.md;
+    const iconSize = Layout.iconSize.md - 2;
     const avatarSize = Layout.isTablet ? 52 : 44;
 
     return (
-        <View className="flex-row items-center gap-2.5 h-full">
+        <View className="flex-row items-center gap-2.5 h-full" style={{ marginTop: 5 }}>
             <TouchableOpacity
                 onPress={() => router.push("/messages" as any)}
                 className="bg-white/10 p-2 rounded-2xl active:scale-90 relative"

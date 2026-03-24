@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActivities } from "../context/ActivityContext";
 import { useApplications } from "../context/ApplicationContext";
 import { useAuth } from "../context/AuthContext";
-import { OldActivity, OldActivityApplication } from "../types";
 import { useRouter } from "expo-router";
+import { gemmaService } from "../services/GemmaService";
 
 export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE';
 
@@ -25,8 +25,9 @@ export const useNPOInsights = () => {
     const router = useRouter();
 
     const [mutedIds, setMutedIds] = useState<string[]>([]);
+    const [aiContentById, setAiContentById] = useState<Record<string, Pick<NPOInsight, "title" | "description" | "actionLabel">>>({});
 
-    const insights = useMemo(() => {
+    const baseInsights = useMemo(() => {
         if (!user || user.role !== 'NPO') return [];
 
         const myActivities = activities.filter(a => a.npoId === user.id);
@@ -160,6 +161,67 @@ export const useNPOInsights = () => {
             .sort((a, b) => a.priority - b.priority);
 
     }, [activities, activityApplications, npoApplications, user, mutedIds, getNPOFollowers]);
+
+    useEffect(() => {
+        const activeIds = new Set(baseInsights.map((insight) => insight.id));
+        setAiContentById((prev) => {
+            const nextEntries = Object.entries(prev).filter(([id]) => activeIds.has(id));
+            return nextEntries.length === Object.keys(prev).length ? prev : Object.fromEntries(nextEntries);
+        });
+    }, [baseInsights]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        if (!user || user.role !== 'NPO' || baseInsights.length === 0) {
+            return;
+        }
+
+        gemmaService.getNPOInsightDrafts(
+            baseInsights.map((insight) => ({
+                id: insight.id,
+                type: insight.type,
+                title: insight.title,
+                description: insight.description,
+                actionLabel: insight.actionLabel,
+                priority: insight.priority,
+            }))
+        ).then((result) => {
+            if (cancelled || !Array.isArray(result.insights)) return;
+
+            const fallbackById = Object.fromEntries(baseInsights.map((insight) => [insight.id, insight]));
+            const nextMap = result.insights.reduce<Record<string, Pick<NPOInsight, "title" | "description" | "actionLabel">>>((acc, insight) => {
+                if (!insight?.id || !fallbackById[insight.id]) return acc;
+                acc[insight.id] = {
+                    title: insight.title || fallbackById[insight.id].title,
+                    description: insight.description || fallbackById[insight.id].description,
+                    actionLabel: insight.actionLabel || fallbackById[insight.id].actionLabel,
+                };
+                return acc;
+            }, {});
+
+            if (Object.keys(nextMap).length > 0) {
+                setAiContentById(nextMap);
+            }
+        }).catch(() => {
+            if (!cancelled) {
+                setAiContentById({});
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [baseInsights, user]);
+
+    const insights = useMemo(() => {
+        return baseInsights.map((insight) => ({
+            ...insight,
+            title: aiContentById[insight.id]?.title || insight.title,
+            description: aiContentById[insight.id]?.description || insight.description,
+            actionLabel: aiContentById[insight.id]?.actionLabel || insight.actionLabel,
+        }));
+    }, [aiContentById, baseInsights]);
 
     const dismissInsight = (id: string) => {
         setMutedIds(prev => [...prev, id]);
