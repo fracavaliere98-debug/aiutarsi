@@ -11,6 +11,7 @@ import { Sparkles, MapPin, Calendar, ChevronRight, Bot, Zap } from 'lucide-react
 import { useSmartMatch } from '../context/SmartMatchContext';
 import { Colors } from '../constants/Colors';
 import { OldSmartMatchResult } from '../types';
+import { GemmaAvatar } from './GemmaAvatar';
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -246,7 +247,7 @@ export function SmartMatchCarousel() {
             }}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Zap size={22} color={Colors.accent} fill={Colors.accent} />
+                <GemmaAvatar size={30} />
                 <View>
                     <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.primary }}>
                         Consigliato per te

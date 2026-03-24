@@ -1,9 +1,10 @@
 import React, { useRef, useState } from "react";
 import { View, Text, TouchableOpacity, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Brain, X, Sparkles, Target, Users, TrendingUp, PartyPopper } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
 import { NPOInsight } from "../hooks/useNPOInsights";
+import { GemmaAvatar } from "./GemmaAvatar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // The component is rendered inside a bleed wrapper with negative margins,
@@ -20,17 +21,6 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
     const flatListRef = useRef<FlatList>(null);
 
     if (insights.length === 0) return null;
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'SMART_MATCH': return <Target size={18} color={Colors.accent} />;
-            case 'PENDING': return <Users size={18} color={Colors.accent} />;
-            case 'DROUGHT': return <Sparkles size={18} color={Colors.accent} />;
-            case 'STABILITY': return <TrendingUp size={18} color={Colors.accent} />;
-            case 'MILESTONE': return <PartyPopper size={18} color={Colors.accent} />;
-            default: return <Brain size={18} color={Colors.accent} />;
-        }
-    };
 
     const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
@@ -56,7 +46,7 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                 {/* Header */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {getIcon(item.type)}
+                        <GemmaAvatar size={22} bordered />
                         <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Gemma Insight</Text>
                     </View>
                     <TouchableOpacity

@@ -35,8 +35,8 @@ export default function LoginScreen() {
     return (
         <AuthShell
             eyebrow="Bentornato"
-            title="Rientra nel tuo spazio AiutarSì."
-            subtitle="Accedi per riprendere da dove avevi lasciato, con le tue attività e i tuoi suggerimenti già pronti."
+            title="Accedi al tuo profilo."
+            subtitle="Riprendi da dove avevi lasciato, con attività, messaggi e suggerimenti già pronti."
             backAction={() => router.back()}
             footer={(
                 <View style={styles.footerRow}>

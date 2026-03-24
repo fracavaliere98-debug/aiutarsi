@@ -15,7 +15,6 @@ import {
     HeartHandshake,
     MapPin,
     ShieldCheck,
-    Sparkles,
     Users,
 } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
@@ -38,6 +37,7 @@ import { authService } from "../services/AuthService";
 import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
 import { Layout } from "../utils/layout";
+import { GemmaAvatar } from "../components/GemmaAvatar";
 
 const BACKGROUND_GRADIENTS = [
     ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
@@ -302,7 +302,7 @@ export default function LandingPage() {
                             Seleziona il tuo profilo e continua con un’iscrizione pensata per quello che vuoi fare.
                         </Text>
                         <View style={styles.gemmaBadge}>
-                            <Sparkles size={14} color={Colors.accent} />
+                            <GemmaAvatar size={20} />
                             <Text style={styles.gemmaBadgeText}>Onboarding guidato da Gemma</Text>
                         </View>
                     </View>

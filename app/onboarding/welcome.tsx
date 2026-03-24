@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Switch, Animated, Dimensions, ScrollView, Platform, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Animated, ScrollView, Platform, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { MapPin, Bell, Shield, Heart, Sparkles, Rocket, ArrowLeft } from 'lucide-react-native';
+import { MapPin, Bell, Shield, Heart, Rocket, ArrowLeft } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UserAvatar } from '../../components/UserAvatar';
-
-const { width } = Dimensions.get('window');
+import { GemmaAvatar } from '../../components/GemmaAvatar';
 
 export default function WelcomeScreen() {
     const router = useRouter();
@@ -169,8 +167,8 @@ export default function WelcomeScreen() {
 
                         {/* Gemma Transition Info */}
                         <View className="absolute bottom-24 bg-white/10 px-4 py-2 rounded-2xl border border-white/20 flex-row items-center w-full">
-                            <View className="w-9 h-9 bg-white/20 rounded-xl items-center justify-center mr-3">
-                                <Sparkles size={16} color="white" />
+                            <View className="mr-3">
+                                <GemmaAvatar size={36} bordered />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-white font-bold text-[12px]">Gemma sta arrivando</Text>
@@ -207,8 +205,8 @@ export default function WelcomeScreen() {
                     <View 
                         className="mb-3 mt-0 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 flex-row items-center"
                     >
-                        <View className="w-9 h-9 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                            <Sparkles size={16} color={Colors.primary} />
+                        <View className="mr-3">
+                            <GemmaAvatar size={36} />
                         </View>
                         <View className="flex-1">
                             <Text 
