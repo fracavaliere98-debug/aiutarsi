@@ -73,6 +73,17 @@ XP: ${profile.impact_points || 0}
 `;
 }
 
+function buildRoleOnlyContext(role?: string | null): string {
+  if (!role) return "";
+
+  return `
+=== CONTESTO UTENTE ===
+Ruolo: ${role}
+Profilo autenticato: non disponibile
+Usa solo le FAQ e i flussi pertinenti a questo ruolo.
+`;
+}
+
 async function getHfToken(serviceClient: any): Promise<string> {
   const { data: secretData } = await serviceClient
     .from("internal_secrets")
@@ -228,18 +239,10 @@ Deno.serve(async (req) => {
       throw new Error("Missing Supabase configuration");
     }
 
-    const authToken = getTokenFromAuthHeader(req.headers.get("Authorization"));
-    if (!authToken) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
-
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: authData, error: authError } = await serviceClient.auth.getUser(authToken);
-    if (authError || !authData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
+    const authToken = getTokenFromAuthHeader(req.headers.get("Authorization"));
 
-    const { question, history, mode, responseFormat, matchedActivities, npoInsights } = await req.json();
+    const { question, history, mode, responseFormat, matchedActivities, npoInsights, role } = await req.json();
     const assistantMode: AssistantMode = mode === "shadow" ? "shadow" : "help_center";
     const normalizedQuestion = String(question || "").trim() || (
       assistantMode === "shadow"
@@ -251,13 +254,29 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Domanda mancante" }), { status: 400, headers: corsHeaders });
     }
 
-    const profile = await getUserProfile(serviceClient, authData.user.id);
-    const userContext = buildUserContext(profile);
-    const roleScopedHelpCenterContext = buildHelpCenterContextForRole(profile?.role);
+    let authUserId: string | null = null;
+    let profile: any = null;
+    let effectiveRole: string | null = typeof role === "string" ? role : null;
+
+    if (authToken) {
+      const { data: authData, error: authError } = await serviceClient.auth.getUser(authToken);
+      if (!authError && authData.user) {
+        authUserId = authData.user.id;
+        profile = await getUserProfile(serviceClient, authUserId);
+        effectiveRole = profile?.role || effectiveRole;
+      } else if (assistantMode === "shadow") {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      }
+    } else if (assistantMode === "shadow") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+
+    const userContext = profile ? buildUserContext(profile) : buildRoleOnlyContext(effectiveRole);
+    const roleScopedHelpCenterContext = buildHelpCenterContextForRole(effectiveRole);
 
     let suggestedActivitiesText = "";
-    if (profile?.role === "VOLUNTEER") {
-      const suggestedActivities = await getSuggestedActivities(serviceClient, authData.user.id, profile);
+    if (profile?.role === "VOLUNTEER" && authUserId) {
+      const suggestedActivities = await getSuggestedActivities(serviceClient, authUserId, profile);
       suggestedActivitiesText = formatSuggestedActivities(suggestedActivities);
     }
     const matchedActivitiesContext = Array.isArray(matchedActivities)

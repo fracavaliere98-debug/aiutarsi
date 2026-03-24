@@ -21,6 +21,10 @@ import { X, Send } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 import { supabase } from '../utils/supabase';
 import { GemmaAvatar } from './GemmaAvatar';
+import { useAuth } from '../context/AuthContext';
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 interface Message {
     role: 'user' | 'model';
@@ -92,6 +96,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
     subtitle = 'Assistente AiutarSì · Solo argomenti app',
     initialMessage = 'Ciao! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?'
 }) => {
+    const { user } = useAuth();
     const [messages, setMessages] = useState<Message[]>([
         { role: 'model', text: initialMessage }
     ]);
@@ -121,6 +126,13 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+
+            if (!accessToken) {
+                throw new Error('Sessione non valida. Effettua di nuovo l’accesso.');
+            }
+
             // Build history excluding initial greeting (index 0)
             const history = messages
                 .slice(1) // skip greeting
@@ -129,14 +141,27 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                     parts: [{ text: m.text }],
                 }));
 
-            const { data, error } = await supabase.functions.invoke('gemma-help-assistant', {
-                body: { question, history, mode },
+            const response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: supabaseAnonKey,
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ question, history, mode, role: user?.role || null }),
             });
 
-            if (error) {
-                throw error;
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                const serverMessage =
+                    payload?.error ||
+                    payload?.message ||
+                    `HTTP ${response.status}`;
+                throw new Error(serverMessage);
             }
 
+            const data = payload;
             const answer = data?.answer || 'Mi dispiace, ho avuto un problema. Riprova!';
 
             // Replace placeholder with typed text
@@ -181,12 +206,17 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                 }
             }, 18);
 
-        } catch {
+        } catch (error: any) {
+            console.error('[GemmaAIChat] invoke failed:', error);
+            const fallbackMessage =
+                error?.message && typeof error.message === 'string'
+                    ? `Errore Gemma: ${error.message}`
+                    : 'Errore di connessione. Riprova tra poco! 🔌';
             setMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
                 if (updated[lastIdx]) {
-                    updated[lastIdx] = { role: 'model', text: 'Errore di connessione. Riprova tra poco! 🔌', isTyping: false };
+                    updated[lastIdx] = { role: 'model', text: fallbackMessage, isTyping: false };
                 }
                 return updated;
             });
