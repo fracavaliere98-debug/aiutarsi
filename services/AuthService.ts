@@ -1,5 +1,4 @@
 import { AppUser } from '../types';
-import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
@@ -318,9 +317,6 @@ export class AuthService {
         console.log("[DEBUG] AuthService: session after register:", sessionData.session?.user?.id ? "Exists" : "Missing");
 
         const user = this._mapSupabaseUserToAppUser(data.user);
-
-        // Notify subscribers
-        eventEmitter.emit(SyncEvents.SYNC_USERS);
 
         return user!;
     }

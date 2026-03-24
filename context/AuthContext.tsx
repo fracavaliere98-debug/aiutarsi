@@ -4,8 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { AppUser } from "../types";
 import { authService } from "../services/AuthService";
-import { npoService } from "../services/NPOService";
-import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
 import { supabase } from "../utils/supabase";
 import { profileService } from "../services/ProfileService";
 
@@ -59,7 +57,6 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<AppUser | null>(null);
-    const hasCompletedOnboarding = user?.profile_completed;
     const [isLoading, setIsLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -160,7 +157,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const appUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
-                    setUser(appUser);
                     // No automatic full refresh anymore
                 }
             } else if (event === 'SIGNED_OUT') {
@@ -173,7 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // 5. Handle Deep Links for Supabase Auth (Magic Links, Social Login)
         const handleDeepLink = async (url: string) => {
             if (!url) return;
-            const { path, queryParams } = Linking.parse(url);
+            const { path } = Linking.parse(url);
             console.log("AuthContext: Received Deep Link URL:", url, "path:", path);
 
             // Referral link handling: aiutarsiapp://referral/[CODE] or https://aiutarsi.app/referral/[CODE]

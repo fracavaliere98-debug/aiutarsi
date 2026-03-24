@@ -1,6 +1,6 @@
 import { View, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
@@ -13,11 +13,13 @@ import ReportModal from "../../../components/ReportModal";
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { fetchUserById, users, user: currentUser } = useAuth();
+    const { fetchUserById, user: currentUser } = useAuth();
     const { getVolunteerApplications } = useApplications();
     const { activities, reviews } = useActivities();
 
     const [user, setUser] = useState<AppUser | null>(null);
+    const [affiliatedNPOs, setAffiliatedNPOs] = useState<AppUser[]>([]);
+    const [followedNPOs, setFollowedNPOs] = useState<AppUser[]>([]);
     const [gamificationState, setGamificationState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -43,6 +45,47 @@ export default function NPOVolunteerProfile() {
 
         loadData();
     }, [id, fetchUserById]);
+
+    const userApplications = useMemo(
+        () => (user ? getVolunteerApplications(user.id) : []),
+        [user, getVolunteerApplications]
+    );
+    const affiliatedNPOIds = useMemo(
+        () => userApplications.filter(app => app.status === "APPROVED").map(app => app.npoId),
+        [userApplications]
+    );
+    const followedNPOIds = useMemo(() => user?.followedNPOs || [], [user?.followedNPOs]);
+
+    useEffect(() => {
+        if (!user) {
+            setAffiliatedNPOs([]);
+            setFollowedNPOs([]);
+            return;
+        }
+
+        let isActive = true;
+
+        const loadRelatedNPOs = async () => {
+            const uniqueAffiliatedIds = Array.from(new Set(affiliatedNPOIds));
+            const uniqueFollowedIds = Array.from(new Set(followedNPOIds));
+
+            const [affiliatedProfiles, followedProfiles] = await Promise.all([
+                Promise.all(uniqueAffiliatedIds.map(npoId => fetchUserById(npoId))),
+                Promise.all(uniqueFollowedIds.map(npoId => fetchUserById(npoId))),
+            ]);
+
+            if (!isActive) return;
+
+            setAffiliatedNPOs(affiliatedProfiles.filter((profile): profile is AppUser => Boolean(profile)));
+            setFollowedNPOs(followedProfiles.filter((profile): profile is AppUser => Boolean(profile)));
+        };
+
+        void loadRelatedNPOs();
+
+        return () => {
+            isActive = false;
+        };
+    }, [user, affiliatedNPOIds, followedNPOIds, fetchUserById]);
 
     if (loading) {
         return (
@@ -75,18 +118,6 @@ export default function NPOVolunteerProfile() {
     const xpInLevel = gamificationState.totalXP - currentLevelXP;
     const xpNeededForLevel = nextLevelXP - currentLevelXP;
     const levelProgress = Math.min(100, Math.max(0, (xpInLevel / xpNeededForLevel) * 100));
-
-    // Get NPO lists for this user
-    const userApplications = getVolunteerApplications(user.id);
-
-    const affiliatedNPOIds = userApplications
-        .filter(app => app.status === "APPROVED")
-        .map(app => app.npoId);
-
-    const affiliatedNPOs = users.filter(u => affiliatedNPOIds.includes(u.id));
-
-    // Check if user has followedNPOs
-    const followedNPOs = users.filter(u => user.followedNPOs?.includes(u.id));
 
     // 3. Calculate Real Stats for this volunteer
     const volunteerStats = {

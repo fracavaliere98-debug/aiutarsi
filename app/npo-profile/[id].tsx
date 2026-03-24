@@ -22,7 +22,7 @@ import ReportModal from "../../components/ReportModal";
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { user, usersDB: users, refreshUsers } = useAuth();
+    const { user, usersDB: users, fetchUserById } = useAuth();
     const { followNPO, unfollowNPO, isFollowingNPO, isProcessing } = useNPOFollow();
     const { activities, reviews } = useActivities();
     const { applyToNPO, hasAppliedToNPO } = useApplications();
@@ -35,34 +35,15 @@ export default function NPOProfileScreen() {
     // Get NPO data
     const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     
-    // Use Effect to fetch NPO directly if not in users list
+    // Fetch the exact NPO profile on demand when it is missing from the lightweight cache.
     useEffect(() => {
         const existing = users.find(u => u.id === npoId && u.role === "NPO");
         if (!existing && npoId) {
             const fetchNpo = async () => {
                 setIsFetching(true);
                 try {
-                    const { data, error } = await supabase
-                        .from('profiles')
-                        .select(`
-                            *,
-                            user_skills (skill),
-                            user_interests (interest),
-                            followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                        `)
-                        .eq('id', npoId)
-                        .single();
-
-                    if (data && !error) {
-                        const mapped: AppUser = {
-                            ...data,
-                            name: data.full_name || data.npo_name || 'Utente',
-                            avatar: data.avatar_url,
-                            profile_completed: data.profile_completed || false,
-                            npoName: data.npo_name || data.full_name,
-                        } as any;
-                        setFetchedNpo(mapped);
-                    }
+                    const profile = await fetchUserById(npoId);
+                    setFetchedNpo(profile);
                 } catch (err) {
                     console.error("Error fetching NPO:", err);
                 } finally {
@@ -72,7 +53,7 @@ export default function NPOProfileScreen() {
 
             fetchNpo();
         }
-    }, [npoId, users]); // Added users to dependencies as `existing` depends on it.
+    }, [npoId, users, fetchUserById]);
 
     const npoUser = users.find(u => u.id === npoId && u.role === "NPO") || fetchedNpo;
 

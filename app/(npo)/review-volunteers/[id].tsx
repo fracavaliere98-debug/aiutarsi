@@ -9,6 +9,7 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { Star, CheckCircle2, XCircle, Loader2 } from 'lucide-react-native';
 import { useToast } from '../../../context/ToastContext';
 import { EmptyState } from '../../../components/EmptyState';
+import { AppUser } from '../../../types';
 
 type VolunteerReviewDraft = {
     volunteerId: string;
@@ -22,23 +23,30 @@ export default function ReviewVolunteersScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { activities, volunteerReviews, submitVolunteerReviews } = useActivities();
-    const { fetchUserById, users } = useAuth();
+    const { fetchUserById } = useAuth();
     const { showToast } = useToast();
 
     const activityId = typeof id === "string" ? id : id?.[0] || "";
     const activity = useMemo(() => activities.find(a => a.id === activityId), [activities, activityId]);
 
     const [drafts, setDrafts] = useState<Record<string, VolunteerReviewDraft>>({});
+    const [volunteers, setVolunteers] = useState<AppUser[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Initialize drafts and fetch missing profiles
+    // Initialize drafts and load the exact enrolled volunteers for this activity.
     useEffect(() => {
         if (!activity) return;
 
         const enrolledIds = activity.iscritti || [];
-        
-        // Fetch all profiles in parallel if not in cache
-        Promise.all(enrolledIds.map(pid => fetchUserById(pid)));
+        let isActive = true;
+
+        const loadVolunteers = async () => {
+            const profiles = await Promise.all(enrolledIds.map(pid => fetchUserById(pid)));
+            if (!isActive) return;
+            setVolunteers(profiles.filter((profile): profile is AppUser => Boolean(profile)));
+        };
+
+        void loadVolunteers();
 
         const existingReviews = volunteerReviews.filter(r => r.activityId === activityId);
 
@@ -67,6 +75,10 @@ export default function ReviewVolunteersScreen() {
         });
 
         setDrafts(initialDrafts);
+
+        return () => {
+            isActive = false;
+        };
     }, [activity, volunteerReviews, activityId, fetchUserById]);
 
     if (!activity) {
@@ -76,12 +88,6 @@ export default function ReviewVolunteersScreen() {
             </StandardLayout>
         );
     }
-
-    const enrolledIds = activity.iscritti || [];
-    const volunteers = useMemo(() => 
-        enrolledIds.map(id => users.find(u => u.id === id)).filter(Boolean) as any[]
-    , [enrolledIds, users]);
-
     const handleUpdateDraft = (volId: string, updates: Partial<VolunteerReviewDraft>) => {
         setDrafts(prev => ({
             ...prev,
