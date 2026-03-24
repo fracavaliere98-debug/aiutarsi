@@ -24,6 +24,7 @@ import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import BannedScreen from "../components/BannedScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { STACK_TRANSITIONS } from "../constants/motion";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -150,21 +151,21 @@ function RootLayoutNav() {
       style={{ flex: 1 }} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
+      <Stack screenOptions={STACK_TRANSITIONS.root}>
+        <Stack.Screen name="index" options={STACK_TRANSITIONS.root} />
+        <Stack.Screen name="onboarding" options={STACK_TRANSITIONS.push} />
 
-        <Stack.Screen name="(volunteer)" />
-        <Stack.Screen name="(npo)" />
-        <Stack.Screen name="(corporate)" />
-        <Stack.Screen name="admin" />
+        <Stack.Screen name="(volunteer)" options={STACK_TRANSITIONS.root} />
+        <Stack.Screen name="(npo)" options={STACK_TRANSITIONS.root} />
+        <Stack.Screen name="(corporate)" options={STACK_TRANSITIONS.root} />
+        <Stack.Screen name="admin" options={STACK_TRANSITIONS.root} />
 
         {/* Shared Routes */}
-        <Stack.Screen name="activity/[id]" />
-        <Stack.Screen name="feedback/[id]" />
-        <Stack.Screen name="npo-profile/[id]" />
-        <Stack.Screen name="community/create-post" />
-        <Stack.Screen name="help-center" />
+        <Stack.Screen name="activity/[id]" options={STACK_TRANSITIONS.push} />
+        <Stack.Screen name="feedback/[id]" options={STACK_TRANSITIONS.modal} />
+        <Stack.Screen name="npo-profile/[id]" options={STACK_TRANSITIONS.push} />
+        <Stack.Screen name="community/create-post" options={STACK_TRANSITIONS.modal} />
+        <Stack.Screen name="help-center" options={STACK_TRANSITIONS.modal} />
       </Stack>
     </KeyboardAvoidingView>
   );

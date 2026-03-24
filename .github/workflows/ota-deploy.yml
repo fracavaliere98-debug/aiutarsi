@@ -135,6 +135,9 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
@@ -156,7 +159,7 @@ jobs:
           disable-animations: true
           script: |
             adb install android/app/build/outputs/apk/debug/app-debug.apk
-            maestro test .maestro/flows/
+            maestro test maestro/flows/
 
   ota-update:
     name: Fast OTA Deploy

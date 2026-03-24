@@ -109,15 +109,15 @@ eas update:rollback --branch production --update-id <ID>
 
 ## Test con Maestro
 
-I flow di smoke test sono in `.maestro/flows/`:
+I flow di smoke test sono in `maestro/flows/`:
 
 ```bash
 # Esegui localmente (richiede device/emulatore connesso)
-maestro test .maestro/flows/login.yaml
-maestro test .maestro/flows/enroll_activity.yaml
+maestro test maestro/flows/login.yaml
+maestro test maestro/flows/enroll_activity.yaml
 
 # Tutti i flow
-maestro test .maestro/flows/
+maestro test maestro/flows/
 ```
 
 > ⚠️ Creare un account di test su Supabase Dashboard:
