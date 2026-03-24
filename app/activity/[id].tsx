@@ -10,7 +10,7 @@ import { useGamification } from "../../context/GamificationContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { activityService } from "../../services/ActivityService";
-import { AppActivity } from "../../types";
+import { AppActivity, AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
@@ -64,7 +64,7 @@ const STATUS_CONFIG = {
 export default function ActivityDetail() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { user, users } = useAuth();
+    const { user, users, fetchUserById } = useAuth();
     const { showToast } = useToast();
     const {
         activities, reviews, unenrollFromActivity, error, loadData,
@@ -103,7 +103,7 @@ export default function ActivityDetail() {
     useFocusEffect(useCallback(() => { setLocalIscrittiOverride(null); }, []));
 
     const isOwner = useMemo(() => {
-        if (!user || user.role !== "NPO" || !activity) return false;
+        if (!user || user.role !== "VOLUNTEER" && user.role !== "NPO" || !activity) return false;
         return user.id.trim() === activity.npoId.trim();
     }, [user, activity]);
 
@@ -113,10 +113,26 @@ export default function ActivityDetail() {
     const isEnrolled = !!user && currentIscritti.includes(user.id);
     const isFull = activity ? currentIscritti.length >= activity.slots : false;
 
-    const npoUser = useMemo(() => {
-        if (!activity?.npoId) return null;
-        return users.find(u => u.id === activity.npoId);
-    }, [users, activity?.npoId]);
+    const [npoUser, setNpoUser] = useState<AppUser | null>(null);
+
+    useEffect(() => {
+        const loadProfiles = async () => {
+            if (!activity) return;
+            
+            // 1. Fetch NPO
+            fetchUserById(activity.npoId).then(setNpoUser);
+            
+            // 2. Fetch Participants (first few for avatars)
+            const participantIds = activity.iscritti.slice(0, 10);
+            await Promise.all(participantIds.map(pid => fetchUserById(pid)));
+            
+            // 3. Fetch Reviewers
+            const reviewerIds = reviews.filter(r => r.activityId === activity.id).map(r => r.volunteerId);
+            await Promise.all(reviewerIds.slice(0, 5).map(rid => fetchUserById(rid)));
+        };
+        
+        loadProfiles();
+    }, [activity?.id, activity?.npoId, activity?.iscritti, reviews, fetchUserById]);
 
     const currentUserApplication = useMemo(() => {
         if (!user || !activity) return null;

@@ -58,109 +58,69 @@ function RootLayoutNav() {
 
   const onLandingPage = routeSegments.length === 0 || (routeSegments.length === 1 && routeSegments[0] === "index");
 
-  // Redirection Logic
+  // Navigation Guard Logic
   useEffect(() => {
-    // 1. BASIC GUARDS
-    if (!isLoaded || isRedirecting.current) return;
+    if (!isLoaded || isRedirecting.current || isLoggingOut) return;
 
     const inOnboarding = segmentKey.includes("onboarding");
-    const hasCompletedOnboarding = user?.profileCompleted;
+    const hasCompletedOnboarding = user?.profile_completed;
 
-    // 2. NO USER -> MUST ESCAPE PROTECTED GROUPS
-    // This MUST trigger even during isLoggingOut to avoid infinite spinners on protected pages.
+    const navigate = (dest: string) => {
+      console.log(`[DEBUG] RootLayoutNav: Redirecting to ${dest}`);
+      isRedirecting.current = true;
+      router.replace(dest as any);
+      setTimeout(() => { isRedirecting.current = false; }, 800);
+    };
+
+    // 1. Unauthenticated users: Can't stay in protected/onboarding areas
     if (!user) {
       if (inProtectedGroup || inOnboarding) {
-        console.log("[DEBUG] RootLayoutNav: No user, escaping to /");
-        isRedirecting.current = true;
-        router.replace("/");
-        setTimeout(() => { isRedirecting.current = false; }, 800);
+        navigate("/");
       }
       return;
     }
 
-    // 3. LOGOUT ACTIVE GUARD: Prevent re-entering the app while logging out
-    if (isLoggingOut) {
-      console.log("[DEBUG] RootLayoutNav: Redirection to App paused due to active logout");
-      return;
-    }
+    // 2. Banned users: Handled in render (BannedScreen)
+    if (user.is_banned) return;
 
-    // 4. LANDING PAGE GUARD: Logged user trying to access landing
+    // 3. User on Landing Page: Route them to their dashboard
     if (onLandingPage) {
-      console.log("[DEBUG] RootLayoutNav: User present on Landing, going to App");
-      isRedirecting.current = true;
-
-      const dest = user.role === "ADMIN"
-        ? "/admin"
-        : user.role === "VOLUNTEER"
-          ? (user.profileCompleted ? "/(volunteer)/(tabs)/community" : "/onboarding/intro")
-          : user.role === "NPO"
-            ? (user.profile_completed || user.profileCompleted ? "/(npo)/(tabs)/community" : "/onboarding/intro")
-            : "/(corporate)";
-
-      router.replace(dest as any);
-      setTimeout(() => { isRedirecting.current = false; }, 800);
+      const dest = user.role === "ADMIN" ? "/admin" :
+                   user.role === "VOLUNTEER" ? (hasCompletedOnboarding ? "/(volunteer)/(tabs)/community" : "/onboarding/intro") :
+                   user.role === "NPO" ? (hasCompletedOnboarding ? "/(npo)/(tabs)/community" : "/onboarding/intro") :
+                   "/(corporate)";
+      navigate(dest);
       return;
     }
 
-    // 5. ONBOARDING GUARD: User logged in but profile incomplete
+    // 4. Incomplete Profile: Forcing onboarding
     if ((user.role === "VOLUNTEER" || user.role === "NPO") && !hasCompletedOnboarding && !inOnboarding) {
-      console.log("[DEBUG] RootLayoutNav: Incomplete profile, forcing onboarding");
       const dest = user.role === "NPO" ? "/onboarding/intro" : "/onboarding/interests";
-      router.replace(dest as any);
-      setTimeout(() => { isRedirecting.current = false; }, 800);
+      navigate(dest);
       return;
     }
 
-    // 6. COMPLETION GUARD: User logged in, profile complete, but stuck in onboarding
+    // 5. Stuck in Onboarding: Escape to app
     if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding && !segmentKey.includes("welcome")) {
-      console.log("[DEBUG] RootLayoutNav: Escalating from onboarding");
-      isRedirecting.current = true;
-      if (user.role === "ADMIN") router.replace("/admin" as any);
-      else if (user.role === "VOLUNTEER") router.replace("/(volunteer)/(tabs)/community" as any);
-      else if (user.role === "NPO") router.replace("/(npo)/(tabs)/community" as any);
-      else if (user.role === "CORPORATE") router.replace("/(corporate)" as any);
-      setTimeout(() => { isRedirecting.current = false; }, 800);
+      const dest = user.role === "ADMIN" ? "/admin" :
+                   user.role === "VOLUNTEER" ? "/(volunteer)/(tabs)/community" :
+                   user.role === "NPO" ? "/(npo)/(tabs)/community" :
+                   "/(corporate)";
+      navigate(dest);
       return;
     }
 
-    // 6.5. BANNED USER GUARD -> BannedScreen is rendered in the return below
-    if (user?.is_banned) {
-      // Non reindirizziamo, lasceremo che il componente React ritorni la BannedScreen a livello radice
-      return;
-    }
-
-    // 7. OTA UPDATE CHECK
+    // 6. OTA Update Check (Once per session-ish)
     if (!__DEV__ && !hasCheckedForUpdates.current) {
       hasCheckedForUpdates.current = true;
-      const checkUpdates = async () => {
-        try {
-          const update = await Updates.checkForUpdateAsync();
-          if (update.isAvailable) {
-            Alert.alert(
-              "Nuovo Aggiornamento",
-              "È disponibile una nuova versione dell'app. Vuoi installarla ora?",
-              [
-                { text: "Più tardi", style: "cancel" },
-                {
-                  text: "Installa ora",
-                  onPress: async () => {
-                    try {
-                      await Updates.fetchUpdateAsync();
-                      await Updates.reloadAsync();
-                    } catch (e) {
-                      console.error("Error fetching update:", e);
-                    }
-                  }
-                }
-              ]
-            );
-          }
-        } catch (e) {
-          console.log("[DEBUG] OTA Check error:", e);
+      Updates.checkForUpdateAsync().then(update => {
+        if (update.isAvailable) {
+          Alert.alert("Nuovo Aggiornamento", "È disponibile una nuova versione. Installa ora?", [
+            { text: "Più tardi", style: "cancel" },
+            { text: "Installa ora", onPress: async () => { await Updates.fetchUpdateAsync(); await Updates.reloadAsync(); } }
+          ]);
         }
-      };
-
-      checkUpdates();
+      }).catch(e => console.log("[DEBUG] OTA Check error:", e));
     }
 
   }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router]);

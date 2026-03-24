@@ -33,7 +33,7 @@ export default function VolunteerRegister() {
                 email: formData.email,
                 password: formData.password,
                 role: "VOLUNTEER",
-                profileCompleted: false
+                profile_completed: false
             });
 
             router.replace("/onboarding/intro");

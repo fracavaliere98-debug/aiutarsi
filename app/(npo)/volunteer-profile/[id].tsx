@@ -13,7 +13,7 @@ import ReportModal from "../../../components/ReportModal";
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { getUserById, users, user: currentUser } = useAuth();
+    const { fetchUserById, users, user: currentUser } = useAuth();
     const { getVolunteerApplications } = useApplications();
     const { activities, reviews } = useActivities();
 
@@ -28,7 +28,7 @@ export default function NPOVolunteerProfile() {
 
             try {
                 // 1. Get user profile data
-                const userData = getUserById(id); // from AuthContext
+                const userData = await fetchUserById(id);
                 setUser(userData || null);
 
                 // 2. Get Gamification Data
@@ -42,7 +42,7 @@ export default function NPOVolunteerProfile() {
         };
 
         loadData();
-    }, [id, getUserById]);
+    }, [id, fetchUserById]);
 
     if (loading) {
         return (

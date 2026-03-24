@@ -25,8 +25,9 @@ interface AuthContextType {
     getNPOFollowers: (npoId: string) => AppUser[];
     isFollowingNPO: (npoId: string) => boolean;
     getUserById: (id: string) => AppUser | undefined;
+    fetchUserById: (id: string) => Promise<AppUser | null>;
     resetUsers: () => Promise<void>;
-    refreshUsers: () => Promise<void>;
+    refreshUsers: (role?: string) => Promise<void>;
     requestAccountDeletion: () => Promise<void>;
     cancelAccountDeletion: () => Promise<void>;
     getReferralCount: () => Promise<number>;
@@ -49,6 +50,7 @@ const AuthContext = createContext<AuthContextType>({
     getNPOFollowers: () => [],
     isFollowingNPO: () => false,
     getUserById: () => undefined,
+    fetchUserById: async () => null,
     resetUsers: async () => { },
     refreshUsers: async () => { },
     requestAccountDeletion: async () => { },
@@ -62,6 +64,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<AppUser | null>(null);
+    const hasCompletedOnboarding = user?.profile_completed;
     const [isLoading, setIsLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -71,9 +74,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isLoggingOutRef = React.useRef(false);
     const usersRefreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const refreshUsers = useCallback(async () => {
-        const all = await authService.getAllUsers();
-        setUsersDB(all);
+    const refreshUsers = useCallback(async (role?: string) => {
+        // Fetch only a small page of users initially or based on role
+        const relevantUsers = await authService.getUsers(0, role ? 50 : 20, role);
+        setUsersDB(prev => {
+            const map = new Map(prev.map(u => [u.id, u]));
+            relevantUsers.forEach(u => map.set(u.id, u));
+            return Array.from(map.values());
+        });
     }, []);
 
     const scheduleUsersRefresh = useCallback((delayMs = 1000) => {
@@ -120,9 +128,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // REMOVED FALLBACK: We rely on Supabase Persistence. 
                 // Manual loadUserLocally() causes race conditions with onAuthStateChange.
 
-                // Defer the full public profile refresh so auth/session restore is not blocked by a full-table fetch.
+                // Defer the initial profile refresh (e.g. only NPCs for common lists)
                 if (isMounted && result?.data?.session) {
-                    scheduleUsersRefresh();
+                    scheduleUsersRefresh(1000); // 1s delay
                 }
 
             } catch (error) {
@@ -157,7 +165,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const appUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
-                    scheduleUsersRefresh(0);
+                    setUser(appUser);
+                    // No automatic full refresh anymore
                 }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
@@ -165,11 +174,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         });
 
-        // 4. Listen for Sync Events (Legacy/Internal sync)
-        const unsubscribeEventEmitter = eventEmitter.on(SyncEvents.SYNC_USERS, () => {
-            console.log("AuthContext: Syncing users...");
-            refreshUsers();
-        });
 
         // 5. Handle Deep Links for Supabase Auth (Magic Links, Social Login)
         const handleDeepLink = async (url: string) => {
@@ -203,7 +207,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 clearTimeout(usersRefreshTimerRef.current);
             }
             subscription.unsubscribe();
-            unsubscribeEventEmitter();
             linkingSubscription.remove();
         };
     }, [refreshUsers, scheduleUsersRefresh]);
@@ -314,13 +317,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Ensure both snake_case and camelCase for profile completion and avatar are synced
             const updatedUser = { ...user, ...cleanData };
             
-            // Sync Profile Completion keys
-            if (cleanData.profile_completed !== undefined) {
-                (updatedUser as any).profileCompleted = cleanData.profile_completed;
-            } else if ((cleanData as any).profileCompleted !== undefined) {
-                updatedUser.profile_completed = (cleanData as any).profileCompleted;
-            }
-
             // Sync Avatar keys
             if (cleanData.avatar_url !== undefined) {
                 (updatedUser as any).avatar = cleanData.avatar_url;
@@ -473,6 +469,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return usersDB.find(u => u.id === id);
     }, [usersDB]);
 
+    const fetchUserById = useCallback(async (id: string): Promise<AppUser | null> => {
+        // Check local cache first
+        const cached = usersDB.find(u => u.id === id);
+        if (cached) return cached;
+
+        const profile = await authService.getProfileById(id);
+        if (profile) {
+            setUsersDB(prev => {
+                if (prev.find(u => u.id === id)) return prev;
+                return [...prev, profile];
+            });
+        }
+        return profile;
+    }, [usersDB]);
+
     const requestAccountDeletion = useCallback(async () => {
         if (!user) return;
         try {
@@ -551,6 +562,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         getNPOFollowers,
         isFollowingNPO,
         getUserById,
+        fetchUserById,
         resetUsers,
         refreshUsers,
         requestAccountDeletion,
@@ -558,7 +570,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         getReferralCount,
         updateEmail,
         updatePassword
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, fetchUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
 
     return (
         <AuthContext.Provider value={value}>

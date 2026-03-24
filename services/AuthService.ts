@@ -64,9 +64,8 @@ export class AuthService {
             phone: metadata.phone,
             website: metadata.website,
             public_email: metadata.publicEmail || metadata.public_email,
-            profile_completed: metadata.profileCompleted || metadata.profile_completed,
+            profile_completed: metadata.profile_completed || metadata.profileCompleted || false,
             // Legacy aliases
-            profileCompleted: metadata.profileCompleted || metadata.profile_completed,
             publicEmail: metadata.publicEmail || metadata.public_email,
             lastSeenAt: metadata.lastSeenAt || metadata.last_seen_at,
             createdAt: sbUser.created_at,
@@ -378,7 +377,7 @@ export class AuthService {
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || [],
             locationCoords: profile.location_coords,
             // Legacy aliases for UI/Navigation
-            profileCompleted: profile.profile_completed,
+            profile_completed: profile.profile_completed || false,
             isVerified: profile.is_verified,
             publicEmail: profile.public_email,
             lastSeenAt: profile.last_seen_at,
@@ -403,9 +402,44 @@ export class AuthService {
         };
     }
 
-    // NOTE: Fetches all public profiles. 
-    // In a large app, this should be paginated or searched on demand.
+    // NOTE: Fetches public profiles with pagination.
+    async getUsers(page = 0, pageSize = 20, role?: string): Promise<AppUser[]> {
+        try {
+            let query = supabase
+                .from('profiles')
+                .select(`
+                    *,
+                    user_skills (skill),
+                    user_interests (interest),
+                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+                `)
+                .order('full_name')
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (role) {
+                query = query.eq('role', role);
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error("Error fetching users:", error);
+                return [];
+            }
+
+            return data.map(p => this._mapProfileToUser(p));
+        } catch (e) {
+            console.error("Exception fetching users", e);
+            return [];
+        }
+    }
+
+    // Deprecated: Avoid using this in production for large datasets.
     async getAllUsers(): Promise<AppUser[]> {
+        return this.getUsers(0, 1000);
+    }
+
+    async getProfileById(userId: string): Promise<AppUser | null> {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -415,20 +449,20 @@ export class AuthService {
                     user_interests (interest),
                     followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
                 `)
-                .order('full_name');
+                .eq('id', userId)
+                .single();
 
             if (error) {
-                console.error("Error fetching all users:", error);
-                return [];
+                if (error.code !== 'PGRST116') { // Not found is fine
+                    console.error("Error fetching profile by ID:", error);
+                }
+                return null;
             }
 
-            const realUsers = data.map(p => this._mapProfileToUser(p));
-            if (realUsers.length === 0) return [];
-
-            return realUsers;
+            return this._mapProfileToUser(data);
         } catch (e) {
-            console.error("Exception fetching all users", e);
-            return [];
+            console.error("Exception fetching profile by ID", e);
+            return null;
         }
     }
 
@@ -535,11 +569,6 @@ export class AuthService {
 
         // Add resilience: Map legacy camelCase keys to snake_case DB columns
         const legacyMapping: Record<string, string> = {
-            'profileCompleted': 'profile_completed',
-            'isVerified': 'is_verified',
-            'npoName': 'npo_name',
-            'companyName': 'company_name',
-            'locationString': 'location_string',
             'publicEmail': 'public_email',
             'avatar': 'avatar_url',
             'name': 'full_name'
@@ -590,7 +619,6 @@ export class AuthService {
                 console.log("[DEBUG] AuthService: updateProfile - Local storage synced");
             }
 
-            eventEmitter.emit(SyncEvents.SYNC_USERS);
             return updatedUser!;
 
         } catch (e: any) {
@@ -672,7 +700,7 @@ export class AuthService {
                             role: (metadata.role || 'VOLUNTEER').toUpperCase(),
                             npo_name: metadata.npoName,
                             company_name: metadata.companyName,
-                            profile_completed: metadata.profileCompleted || false
+                            profile_completed: metadata.profile_completed || metadata.profileCompleted || false
                         });
 
                     if (insertError) {

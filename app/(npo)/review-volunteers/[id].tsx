@@ -22,7 +22,7 @@ export default function ReviewVolunteersScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { activities, volunteerReviews, submitVolunteerReviews } = useActivities();
-    const { users } = useAuth();
+    const { fetchUserById, users } = useAuth();
     const { showToast } = useToast();
 
     const activityId = typeof id === "string" ? id : id?.[0] || "";
@@ -31,11 +31,15 @@ export default function ReviewVolunteersScreen() {
     const [drafts, setDrafts] = useState<Record<string, VolunteerReviewDraft>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Initialize drafts based on existing applications and already saved reviews
+    // Initialize drafts and fetch missing profiles
     useEffect(() => {
         if (!activity) return;
 
         const enrolledIds = activity.iscritti || [];
+        
+        // Fetch all profiles in parallel if not in cache
+        Promise.all(enrolledIds.map(pid => fetchUserById(pid)));
+
         const existingReviews = volunteerReviews.filter(r => r.activityId === activityId);
 
         const initialDrafts: Record<string, VolunteerReviewDraft> = {};
@@ -63,7 +67,7 @@ export default function ReviewVolunteersScreen() {
         });
 
         setDrafts(initialDrafts);
-    }, [activity, volunteerReviews, activityId]);
+    }, [activity, volunteerReviews, activityId, fetchUserById]);
 
     if (!activity) {
         return (
@@ -74,7 +78,9 @@ export default function ReviewVolunteersScreen() {
     }
 
     const enrolledIds = activity.iscritti || [];
-    const volunteers = users.filter(u => enrolledIds.includes(u.id));
+    const volunteers = useMemo(() => 
+        enrolledIds.map(id => users.find(u => u.id === id)).filter(Boolean) as any[]
+    , [enrolledIds, users]);
 
     const handleUpdateDraft = (volId: string, updates: Partial<VolunteerReviewDraft>) => {
         setDrafts(prev => ({

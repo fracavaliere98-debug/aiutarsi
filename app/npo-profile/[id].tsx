@@ -58,7 +58,7 @@ export default function NPOProfileScreen() {
                             ...data,
                             name: data.full_name || data.npo_name || 'Utente',
                             avatar: data.avatar_url,
-                            profileCompleted: data.profile_completed,
+                            profile_completed: data.profile_completed || false,
                             npoName: data.npo_name || data.full_name,
                         } as any;
                         setFetchedNpo(mapped);
@@ -81,17 +81,19 @@ export default function NPOProfileScreen() {
     const openActivities = npoActivities.filter(a => a.status === "APERTA");
     const pastActivities = npoActivities.filter(a => a.status === "COMPLETATA");
 
-    // Get NPO stats
-    const followerCount = getNPOFollowers(npoId).length;
+    const [followerCount, setFollowerCount] = useState(0);
 
-    // Calculate total donated hours (approx: completed activities * duration * participants)
-    // For now, simpler metric: just sum of completed activity durations * participants
-    const totalDonatedHours = pastActivities.reduce((total, act) => {
-        const start = new Date(act.dateTime).getTime();
-        const end = new Date(act.endDateTime).getTime();
-        const durationHours = (end - start) / (1000 * 60 * 60);
-        return total + (durationHours * act.iscritti.length);
-    }, 0);
+    // Get NPO stats and technical data
+    useEffect(() => {
+        if (npoId) {
+            // Using a simple count for the UI instead of loading all follower objects
+            supabase
+                .from('npo_followers')
+                .select('*', { count: 'exact', head: true })
+                .eq('npo_id', npoId)
+                .then(({ count }) => setFollowerCount(count || 0));
+        }
+    }, [npoId]);
 
     const npoReviews = reviews.filter(r => {
         const activity = activities.find(a => a.id === r.activityId);
@@ -293,7 +295,12 @@ export default function NPOProfileScreen() {
                 </View>
                 <View className="flex-1 h-24">
                     <StatCard
-                        value={Math.round(totalDonatedHours).toString()}
+                        value={pastActivities.reduce((total, act) => {
+                            const start = new Date(act.dateTime).getTime();
+                            const end = new Date(act.endDateTime).getTime();
+                            const durationHours = (end - start) / (1000 * 60 * 60);
+                            return total + (durationHours * act.iscritti.length);
+                        }, 0).toFixed(0)}
                         label="ORE DONATE"
                         valueColor="text-indigo-600"
                         icon={<Clock size={14} color="#4f46e5" />}

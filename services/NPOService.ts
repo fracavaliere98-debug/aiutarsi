@@ -28,8 +28,7 @@ export class NPOService {
             website: profile.website,
             publicEmail: profile.public_email,
             public_email: profile.public_email,
-            profileCompleted: profile.profile_completed,
-            profile_completed: profile.profile_completed,
+            profile_completed: profile.profile_completed || false,
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || []
         } as AppUser;
     }
@@ -78,7 +77,6 @@ export class NPOService {
             if (error.code === '23505') return; // Already following
             throw error;
         }
-        eventEmitter.emit(SyncEvents.SYNC_USERS); // Profile update (followedNPOs list changed conceptually)
     }
 
     async unfollowNPO(npoId: string, userId: string): Promise<void> {
@@ -89,7 +87,6 @@ export class NPOService {
             .eq('follower_id', userId);
 
         if (error) throw error;
-        eventEmitter.emit(SyncEvents.SYNC_USERS);
     }
 
     async isFollowing(npoId: string, userId: string): Promise<boolean> {
@@ -101,6 +98,26 @@ export class NPOService {
             .maybeSingle();
 
         return !!data;
+    }
+
+    async getFollowers(npoId: string): Promise<AppUser[]> {
+        const { data, error } = await supabase
+            .from('npo_followers')
+            .select(`
+                follower:follower_id (
+                    *,
+                    user_skills (skill),
+                    user_interests (interest)
+                )
+            `)
+            .eq('npo_id', npoId);
+
+        if (error) {
+            console.error("Error fetching NPO followers:", error);
+            return [];
+        }
+
+        return data.map((d: any) => this._mapProfileToUser(d.follower));
     }
 
     // --- Applications ---

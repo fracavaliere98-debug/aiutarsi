@@ -57,7 +57,6 @@ export type AppUser = Omit<User,
     followedNPOs: string[];
     password?: string;
     locationCoords?: { lat: number; lng: number };
-    profileCompleted?: boolean;
     lastSeenAt?: string;
     createdAt?: string;
     badges?: Badge[];
@@ -82,7 +81,7 @@ export type AppUser = Omit<User,
     location_lat?: number | null;
     location_lng?: number | null;
     public_email?: string | null;
-    profile_completed?: boolean | null;
+    profile_completed: boolean;
     last_seen_at?: string | null;
     expo_push_token?: string | null;
     created_at?: string;
@@ -167,7 +166,7 @@ export interface OldUser {
     profile_public?: boolean;
     show_email?: boolean;
     allow_calls?: boolean;
-    profileCompleted?: boolean;
+    profile_completed: boolean;
     lastSeenAt?: string;
     createdAt?: string;
     badges?: Badge[];

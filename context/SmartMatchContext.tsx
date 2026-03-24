@@ -57,8 +57,8 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
     const fetchMatches = useCallback(async () => {
         // Guard: only volunteers with a completed profile
-        if (!user || user.role !== 'VOLUNTEER' || !user.profileCompleted) {
-            console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profileCompleted:', user?.profileCompleted);
+        if (!user || user.role !== 'VOLUNTEER' || !user.profile_completed) {
+            console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profile_completed:', user?.profile_completed);
             return;
         }
 
@@ -144,10 +144,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
     // Auto-fetch when a volunteer user loads the context
     useEffect(() => {
-        if (user?.role === 'VOLUNTEER' && user?.profileCompleted) {
+        if (user?.role === 'VOLUNTEER' && user?.profile_completed) {
             fetchMatches();
         }
-    }, [user?.id, user?.role, user?.profileCompleted]);
+    }, [user?.id, user?.role, user?.profile_completed]);
 
     // Re-fetch when the volunteer updates their bio/skills/interests
     const profileKey = [user?.bio, user?.skills?.join(','), user?.interests?.join(',')].join('|');
