@@ -73,6 +73,12 @@ Summarized from Supabase PostgREST.
 - **DELETE**: No summary
 - **PATCH**: No summary
 
+### /faq_feedback
+- **GET**: No summary
+- **POST**: No summary
+- **DELETE**: No summary
+- **PATCH**: No summary
+
 ### /gamification_state
 - **GET**: No summary
 - **POST**: No summary
@@ -83,6 +89,18 @@ Summarized from Supabase PostgREST.
 - **GET**: No summary
 
 ### /geometry_columns
+- **GET**: No summary
+- **POST**: No summary
+- **DELETE**: No summary
+- **PATCH**: No summary
+
+### /internal_secrets
+- **GET**: No summary
+- **POST**: No summary
+- **DELETE**: No summary
+- **PATCH**: No summary
+
+### /levels
 - **GET**: No summary
 - **POST**: No summary
 - **DELETE**: No summary
@@ -397,6 +415,9 @@ Summarized from Supabase PostgREST.
 - **POST**: No summary
 
 ### /rpc/get_activities_with_match
+- **POST**: No summary
+
+### /rpc/get_matching_volunteers
 - **POST**: No summary
 
 ### /rpc/get_my_conversations
@@ -1205,6 +1226,12 @@ Summarized from Supabase PostgREST.
 - **PATCH**: No summary
 
 ### /user_skills
+- **GET**: No summary
+- **POST**: No summary
+- **DELETE**: No summary
+- **PATCH**: No summary
+
+### /verification_requests
 - **GET**: No summary
 - **POST**: No summary
 - **DELETE**: No summary

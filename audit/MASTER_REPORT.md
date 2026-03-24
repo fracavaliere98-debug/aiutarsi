@@ -1,6 +1,6 @@
 # MASTER AUDIT REPORT
 
-*Generated on: 3/15/2026, 8:49:15 PM*
+*Generated on: 3/24/2026, 8:20:40 AM*
 
 ## 1. Data Schema & RLS
 # RLS Security Audit
@@ -15,6 +15,7 @@
 | activity_participants | ✅ | Participants can update own status | UPDATE | 0 | `(auth.uid() = user_id)` |
 | activity_participants | ✅ | Participants viewable by everyone | SELECT | 0 | `true` |
 | activity_participants | ✅ | Volunteers can join | INSERT | 0 | `(auth.uid() = user_id)` |
+| activity_participants | ✅ | Volunteers can leave activities | DELETE | 16481 | `(auth.uid() = user_id)` |
 | activity_skills | ✅ | Activity skills viewable by everyone | SELECT | 0 | `true` |
 | activity_skills | ✅ | NPOs can manage activity skills | ALL | 0 | `(EXISTS ( SELECT 1
    FROM activities
@@ -48,7 +49,13 @@
 | conversation_participants | ✅ | Users can view participants of their conversations | SELECT | 0 | `(conversation_id IN ( SELECT get_my_conversations() AS get_my_conversations))` |
 | conversations | ✅ | Authenticated users can insert conversations | INSERT | 0 | `(auth.role() = 'authenticated'::text)` |
 | conversations | ✅ | Users can view conversations they are part of | SELECT | 0 | `((created_by = auth.uid()) OR (id IN ( SELECT get_my_conversations() AS get_my_conversations)))` |
+| faq_feedback | ✅ | Admins can read faq feedback | SELECT | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| faq_feedback | ✅ | Users can insert faq feedback | INSERT | 16481 | `true` |
 | gamification_state | ✅ | Authenticated users can view all gamification states | SELECT | 16481 | `true` |
+| internal_secrets | ✅ | *NONE* | - | - | `-` |
+| levels | ❌ | *NONE* | - | - | `-` |
 | messages | ✅ | Participants can insert messages | INSERT | 16481 | `((COALESCE((((auth.jwt() -> 'user_metadata'::text) ->> 'is_banned'::text))::boolean, false) IS NOT TRUE) AND (sender_id = auth.uid()) AND (EXISTS ( SELECT 1
    FROM conversation_participants cp
   WHERE ((cp.conversation_id = messages.conversation_id) AND (cp.user_id = auth.uid())))))` |
@@ -94,6 +101,14 @@
 | user_interests | ✅ | Users can manage own interests | ALL | 0 | `(auth.uid() = user_id)` |
 | user_skills | ✅ | Skills viewable by everyone | SELECT | 0 | `true` |
 | user_skills | ✅ | Users can manage own skills | ALL | 0 | `(auth.uid() = user_id)` |
+| verification_requests | ✅ | Admins can update verification requests | UPDATE | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| verification_requests | ✅ | Admins can view all verification requests | SELECT | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| verification_requests | ✅ | Users can create their own requests | INSERT | 0 | `(auth.uid() = user_id)` |
+| verification_requests | ✅ | Users can view their own requests | SELECT | 0 | `(auth.uid() = user_id)` |
 | volunteer_reviews | ✅ | NPOs can delete their volunteer reviews | DELETE | 0 | `(auth.uid() = npo_id)` |
 | volunteer_reviews | ✅ | NPOs can insert volunteer reviews | INSERT | 0 | `(auth.uid() = npo_id)` |
 | volunteer_reviews | ✅ | NPOs can update their volunteer reviews | UPDATE | 0 | `(auth.uid() = npo_id)` |
@@ -127,7 +142,9 @@
 | /(npo)/create-activity | Standard | Page |
 | /(npo)/edit-activity/[id] | Standard | Page |
 | /(npo)/edit-profile | Standard | Page |
+| /(npo)/interests-skills | Standard | Page |
 | /(npo)/notifications | Standard | Page |
+| /(npo)/referent-details | Standard | Page |
 | /(npo)/review-volunteers/[id] | Standard | Page |
 | /(npo)/reviews | Standard | Page |
 | /(npo)/security | Standard | Page |
@@ -148,22 +165,33 @@
 | /(volunteer)/my-reviews | Standard | Page |
 | /(volunteer)/notifications | Standard | Page |
 | /(volunteer)/privacy | Standard | Page |
+| /(volunteer)/referral | Standard | Page |
 | /(volunteer)/review-application | Standard | Page |
 | /(volunteer)/settings | Standard | Page |
 | /activity/[id] | Standard | Page |
 | /(tabs) | Layout Group | Group |
+| /admin/(tabs)/faq-feedback | Standard | Page |
 | /admin/(tabs)/ | Standard | Page |
 | /admin/(tabs)/settings | Standard | Page |
+| /admin/(tabs)/verifications | Standard | Page |
 | /admin/report/[id] | Standard | Page |
+| /admin/verification/[id] | Standard | Page |
 | /blocked-users | Standard | Page |
 | /community/create-post | Standard | Page |
 | /feedback/[id] | Standard | Page |
+| /help-center | Standard | Page |
 | / | Standard | Page |
 | /messages/[id] | Standard | Page |
 | /messages/ | Standard | Page |
 | /npo-profile/[id] | Standard | Page |
 | /onboarding/interests | Standard | Page |
 | /onboarding/intro | Standard | Page |
+| /onboarding/npo-category | Standard | Page |
+| /onboarding/npo-details | Standard | Page |
+| /onboarding/npo-preview | Standard | Page |
+| /onboarding/npo-referent | Standard | Page |
+| /onboarding/npo-skills | Standard | Page |
+| /onboarding/npo-verification | Standard | Page |
 | /onboarding/profile | Standard | Page |
 | /onboarding/skills | Standard | Page |
 | /onboarding/welcome | Standard | Page |
@@ -180,7 +208,8 @@
 | activity-curator-ai | HTTP Request | https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash |
 | auth-hook | HTTP Request | None |
 | community-moderator-ai | HTTP Request | None |
-| generate-embedding | HTTP Request | https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5 |
+| gemma-help-assistant | HTTP Request | https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction, https://router.huggingface.co/v1/chat/completions |
+| generate-embedding | HTTP Request | https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction |
 | image-optimizer | HTTP Request | None |
 | push-notifications | DB Webhook | https://exp.host/--/api/v2/push/send |
 
@@ -273,6 +302,12 @@ graph TD
     "app/blocked-users.tsx" --> "UserAvatar"
     "app/blocked-users.tsx" --> "Colors"
     "app/blocked-users.tsx" --> "ToastContext"
+    "app/help-center.tsx" -.-> "lucide-react-native"
+    "app/help-center.tsx" --> "StandardLayout"
+    "app/help-center.tsx" --> "SoftCard"
+    "app/help-center.tsx" --> "Colors"
+    "app/help-center.tsx" --> "GemmaAIChat"
+    "app/help-center.tsx" --> "supabase"
     "app/index.tsx" -.-> "lucide-react-native"
     "app/index.tsx" --> "Colors"
     "app/index.tsx" --> "AuthService"
@@ -285,13 +320,11 @@ graph TD
     "app/(auth)/login.tsx" --> "Button"
     "app/(corporate)/_layout.tsx" -.-> "lucide-react-native"
     "app/(corporate)/_layout.tsx" --> "Colors"
-    "app/(corporate)/_layout.tsx" --> "AuthContext"
     "app/(corporate)/catalog.tsx" --> "ActivityContext"
     "app/(corporate)/catalog.tsx" -.-> "lucide-react-native"
     "app/(corporate)/catalog.tsx" --> "Colors"
     "app/(corporate)/catalog.tsx" --> "Card"
     "app/(corporate)/catalog.tsx" --> "StandardLayout"
-    "app/(corporate)/employees.tsx" --> "types"
     "app/(corporate)/employees.tsx" -.-> "lucide-react-native"
     "app/(corporate)/employees.tsx" --> "Colors"
     "app/(corporate)/employees.tsx" --> "Card"
@@ -312,10 +345,10 @@ graph TD
     "app/(npo)/create-activity.tsx" --> "ToastContext"
     "app/(npo)/create-activity.tsx" --> "Colors"
     "app/(npo)/create-activity.tsx" -.-> "lucide-react-native"
-    "app/(npo)/create-activity.tsx" --> "ScreenWrapper"
     "app/(npo)/create-activity.tsx" --> "StandardLayout"
     "app/(npo)/create-activity.tsx" --> "AddressAutocomplete"
     "app/(npo)/create-activity.tsx" --> "CalendarPicker"
+    "app/(npo)/create-activity.tsx" --> "Skills"
     "app/(npo)/edit-profile.tsx" -.-> "lucide-react-native"
     "app/(npo)/edit-profile.tsx" --> "StandardLayout"
     "app/(npo)/edit-profile.tsx" --> "SoftCard"
@@ -323,6 +356,12 @@ graph TD
     "app/(npo)/edit-profile.tsx" --> "AuthContext"
     "app/(npo)/edit-profile.tsx" --> "ToastContext"
     "app/(npo)/edit-profile.tsx" --> "Colors"
+    "app/(npo)/interests-skills.tsx" --> "StandardLayout"
+    "app/(npo)/interests-skills.tsx" --> "AuthContext"
+    "app/(npo)/interests-skills.tsx" --> "Colors"
+    "app/(npo)/interests-skills.tsx" -.-> "lucide-react-native"
+    "app/(npo)/interests-skills.tsx" --> "Skills"
+    "app/(npo)/interests-skills.tsx" --> "ToastContext"
     "app/(npo)/notifications.tsx" --> "AuthContext"
     "app/(npo)/notifications.tsx" --> "NotificationContext"
     "app/(npo)/notifications.tsx" --> "StandardLayout"
@@ -331,6 +370,12 @@ graph TD
     "app/(npo)/notifications.tsx" -.-> "lucide-react-native"
     "app/(npo)/notifications.tsx" --> "Colors"
     "app/(npo)/notifications.tsx" --> "ToastContext"
+    "app/(npo)/referent-details.tsx" --> "StandardLayout"
+    "app/(npo)/referent-details.tsx" --> "AuthContext"
+    "app/(npo)/referent-details.tsx" --> "Colors"
+    "app/(npo)/referent-details.tsx" -.-> "lucide-react-native"
+    "app/(npo)/referent-details.tsx" --> "ToastContext"
+    "app/(npo)/referent-details.tsx" --> "UserAvatar"
     "app/(npo)/reviews.tsx" --> "StandardLayout"
     "app/(npo)/reviews.tsx" --> "ActivityContext"
     "app/(npo)/reviews.tsx" --> "AuthContext"
@@ -353,6 +398,7 @@ graph TD
     "app/(volunteer)/interests-skills.tsx" --> "AuthContext"
     "app/(volunteer)/interests-skills.tsx" --> "Colors"
     "app/(volunteer)/interests-skills.tsx" -.-> "lucide-react-native"
+    "app/(volunteer)/interests-skills.tsx" --> "Skills"
     "app/(volunteer)/my-reviews.tsx" --> "StandardLayout"
     "app/(volunteer)/my-reviews.tsx" --> "ActivityContext"
     "app/(volunteer)/my-reviews.tsx" --> "AuthContext"
@@ -374,6 +420,11 @@ graph TD
     "app/(volunteer)/privacy.tsx" --> "ToastContext"
     "app/(volunteer)/privacy.tsx" --> "supabase"
     "app/(volunteer)/privacy.tsx" --> "Colors"
+    "app/(volunteer)/referral.tsx" --> "AuthContext"
+    "app/(volunteer)/referral.tsx" --> "StandardLayout"
+    "app/(volunteer)/referral.tsx" --> "SoftCard"
+    "app/(volunteer)/referral.tsx" --> "Colors"
+    "app/(volunteer)/referral.tsx" -.-> "lucide-react-native"
     "app/(volunteer)/review-application.tsx" -.-> "lucide-react-native"
     "app/(volunteer)/review-application.tsx" --> "AuthContext"
     "app/(volunteer)/review-application.tsx" --> "ActivityContext"
@@ -401,6 +452,7 @@ graph TD
     "app/activity/[id].tsx" --> "UserAvatar"
     "app/activity/[id].tsx" --> "ErrorState"
     "app/activity/[id].tsx" --> "supabase"
+    "app/activity/[id].tsx" --> "Skills"
     "app/admin/_layout.tsx" --> "AuthContext"
     "app/community/create-post.tsx" -.-> "lucide-react-native"
     "app/community/create-post.tsx" --> "Colors"
@@ -436,6 +488,8 @@ graph TD
     "app/npo-profile/[id].tsx" --> "ActivityContext"
     "app/npo-profile/[id].tsx" --> "ApplicationContext"
     "app/npo-profile/[id].tsx" --> "ToastContext"
+    "app/npo-profile/[id].tsx" --> "types"
+    "app/npo-profile/[id].tsx" --> "supabase"
     "app/npo-profile/[id].tsx" -.-> "lucide-react-native"
     "app/npo-profile/[id].tsx" --> "StandardLayout"
     "app/npo-profile/[id].tsx" --> "UserAvatar"
@@ -447,6 +501,7 @@ graph TD
     "app/npo-profile/[id].tsx" --> "ChatService"
     "app/npo-profile/[id].tsx" --> "ReportModal"
     "app/onboarding/_layout.tsx" --> "Colors"
+    "app/onboarding/_layout.tsx" --> "AuthContext"
     "app/onboarding/interests.tsx" -.-> "@react-native-async-storage"
     "app/onboarding/interests.tsx" --> "Colors"
     "app/onboarding/interests.tsx" --> "AuthContext"
@@ -455,15 +510,46 @@ graph TD
     "app/onboarding/intro.tsx" -.-> "lucide-react-native"
     "app/onboarding/intro.tsx" --> "Colors"
     "app/onboarding/intro.tsx" --> "AuthContext"
+    "app/onboarding/npo-category.tsx" --> "Colors"
+    "app/onboarding/npo-category.tsx" --> "AuthContext"
+    "app/onboarding/npo-category.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-details.tsx" --> "Colors"
+    "app/onboarding/npo-details.tsx" --> "AuthContext"
+    "app/onboarding/npo-details.tsx" --> "ToastContext"
+    "app/onboarding/npo-details.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-details.tsx" --> "AddressAutocomplete"
+    "app/onboarding/npo-details.tsx" --> "UserAvatar"
+    "app/onboarding/npo-preview.tsx" --> "Colors"
+    "app/onboarding/npo-preview.tsx" --> "AuthContext"
+    "app/onboarding/npo-preview.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-preview.tsx" --> "UserAvatar"
+    "app/onboarding/npo-referent.tsx" --> "Colors"
+    "app/onboarding/npo-referent.tsx" --> "AuthContext"
+    "app/onboarding/npo-referent.tsx" --> "ToastContext"
+    "app/onboarding/npo-referent.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-referent.tsx" --> "UserAvatar"
+    "app/onboarding/npo-skills.tsx" --> "Colors"
+    "app/onboarding/npo-skills.tsx" --> "AuthContext"
+    "app/onboarding/npo-skills.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-skills.tsx" --> "Skills"
+    "app/onboarding/npo-verification.tsx" --> "Colors"
+    "app/onboarding/npo-verification.tsx" --> "AuthContext"
+    "app/onboarding/npo-verification.tsx" --> "ToastContext"
+    "app/onboarding/npo-verification.tsx" -.-> "lucide-react-native"
+    "app/onboarding/npo-verification.tsx" --> "StorageService"
+    "app/onboarding/npo-verification.tsx" --> "AuthService"
     "app/onboarding/profile.tsx" --> "ScreenWrapper"
     "app/onboarding/profile.tsx" --> "AuthContext"
     "app/onboarding/profile.tsx" --> "ToastContext"
     "app/onboarding/profile.tsx" --> "Colors"
     "app/onboarding/profile.tsx" -.-> "lucide-react-native"
+    "app/onboarding/profile.tsx" -.-> "@react-native-async-storage"
+    "app/onboarding/profile.tsx" --> "AuthService"
     "app/onboarding/skills.tsx" --> "ScreenWrapper"
     "app/onboarding/skills.tsx" --> "AuthContext"
     "app/onboarding/skills.tsx" --> "Colors"
     "app/onboarding/skills.tsx" -.-> "lucide-react-native"
+    "app/onboarding/skills.tsx" --> "Skills"
     "app/onboarding/welcome.tsx" --> "ScreenWrapper"
     "app/onboarding/welcome.tsx" --> "Colors"
     "app/onboarding/welcome.tsx" --> "AuthContext"
@@ -488,7 +574,6 @@ graph TD
     "app/(npo)/(tabs)/index.tsx" --> "ActivityContext"
     "app/(npo)/(tabs)/index.tsx" -.-> "lucide-react-native"
     "app/(npo)/(tabs)/index.tsx" --> "Colors"
-    "app/(npo)/(tabs)/index.tsx" --> "SoftCard"
     "app/(npo)/(tabs)/index.tsx" --> "StatCard"
     "app/(npo)/(tabs)/index.tsx" --> "ActivityCard"
     "app/(npo)/(tabs)/index.tsx" --> "StandardLayout"
@@ -509,10 +594,11 @@ graph TD
     "app/(npo)/(tabs)/profile.tsx" --> "AuthContext"
     "app/(npo)/(tabs)/profile.tsx" --> "UserAvatar"
     "app/(npo)/(tabs)/profile.tsx" --> "edit-profile"
+    "app/(npo)/(tabs)/profile.tsx" --> "interests-skills"
+    "app/(npo)/(tabs)/profile.tsx" --> "referent-details"
     "app/(npo)/(tabs)/profile.tsx" --> "security"
     "app/(npo)/(tabs)/profile.tsx" --> "AccountDeletionAlert"
     "app/(npo)/(tabs)/profile.tsx" --> "ToastContext"
-    "app/(npo)/(tabs)/projects.tsx" --> "UserAvatar"
     "app/(npo)/(tabs)/projects.tsx" --> "AuthContext"
     "app/(npo)/(tabs)/projects.tsx" --> "ActivityContext"
     "app/(npo)/(tabs)/projects.tsx" -.-> "lucide-react-native"
@@ -525,13 +611,10 @@ graph TD
     "app/(npo)/(tabs)/projects.tsx" --> "ErrorState"
     "app/(npo)/(tabs)/projects.tsx" --> "ActivityCard"
     "app/(npo)/(tabs)/volunteers.tsx" -.-> "@shopify"
-    "app/(npo)/(tabs)/volunteers.tsx" --> "UserAvatar"
     "app/(npo)/(tabs)/volunteers.tsx" --> "AuthContext"
     "app/(npo)/(tabs)/volunteers.tsx" --> "ToastContext"
     "app/(npo)/(tabs)/volunteers.tsx" -.-> "lucide-react-native"
-    "app/(npo)/(tabs)/volunteers.tsx" --> "Card"
     "app/(npo)/(tabs)/volunteers.tsx" --> "StandardLayout"
-    "app/(npo)/(tabs)/volunteers.tsx" --> "CompactFollowerCard"
     "app/(npo)/(tabs)/volunteers.tsx" --> "NPOHeaderActions"
     "app/(npo)/(tabs)/volunteers.tsx" --> "VolunteerCard"
     "app/(npo)/(tabs)/volunteers.tsx" --> "EmptyState"
@@ -545,7 +628,7 @@ graph TD
     "app/(npo)/edit-activity/[id].tsx" -.-> "lucide-react-native"
     "app/(npo)/edit-activity/[id].tsx" --> "StandardLayout"
     "app/(npo)/edit-activity/[id].tsx" --> "AddressAutocomplete"
-    "app/(npo)/edit-activity/[id].tsx" --> "types"
+    "app/(npo)/edit-activity/[id].tsx" --> "Skills"
     "app/(npo)/review-volunteers/[id].tsx" --> "StandardLayout"
     "app/(npo)/review-volunteers/[id].tsx" --> "ActivityContext"
     "app/(npo)/review-volunteers/[id].tsx" --> "AuthContext"
@@ -643,6 +726,7 @@ graph TD
     "app/(volunteer)/(tabs)/map.tsx" --> "supabase"
     "app/(volunteer)/(tabs)/map.tsx" -.-> "@tanstack"
     "app/(volunteer)/(tabs)/map.tsx" --> "CalendarPicker"
+    "app/(volunteer)/(tabs)/map.tsx" --> "Skills"
     "app/(volunteer)/(tabs)/profile.tsx" --> "AuthContext"
     "app/(volunteer)/(tabs)/profile.tsx" --> "ActivityContext"
     "app/(volunteer)/(tabs)/profile.tsx" --> "ApplicationContext"
@@ -663,15 +747,25 @@ graph TD
     "app/(volunteer)/(tabs)/search.tsx" --> "EmptyState"
     "app/(volunteer)/(tabs)/search.tsx" --> "ToastContext"
     "app/(volunteer)/(tabs)/search.tsx" --> "CalendarPicker"
+    "app/(volunteer)/(tabs)/search.tsx" --> "Skills"
     "app/admin/(tabs)/_layout.tsx" -.-> "lucide-react-native"
+    "app/admin/(tabs)/faq-feedback.tsx" -.-> "lucide-react-native"
+    "app/admin/(tabs)/faq-feedback.tsx" --> "supabase"
+    "app/admin/(tabs)/faq-feedback.tsx" --> "Colors"
     "app/admin/(tabs)/index.tsx" --> "supabase"
     "app/admin/(tabs)/index.tsx" -.-> "lucide-react-native"
     "app/admin/(tabs)/settings.tsx" --> "AuthContext"
     "app/admin/(tabs)/settings.tsx" -.-> "lucide-react-native"
+    "app/admin/(tabs)/verifications.tsx" --> "supabase"
+    "app/admin/(tabs)/verifications.tsx" -.-> "lucide-react-native"
     "app/admin/report/[id].tsx" --> "supabase"
     "app/admin/report/[id].tsx" --> "AuthContext"
     "app/admin/report/[id].tsx" -.-> "lucide-react-native"
     "app/admin/report/[id].tsx" --> "NotificationContext"
+    "app/admin/verification/[id].tsx" --> "supabase"
+    "app/admin/verification/[id].tsx" --> "AuthContext"
+    "app/admin/verification/[id].tsx" -.-> "lucide-react-native"
+    "app/admin/verification/[id].tsx" --> "NotificationContext"
     "components/AccountDeletionAlert.tsx" -.-> "lucide-react-native"
     "components/AccountDeletionAlert.tsx" --> "AuthContext"
     "components/AccountDeletionAlert.tsx" --> "Colors"
@@ -722,6 +816,9 @@ graph TD
     "components/ErrorBoundary.tsx" -.-> "lucide-react-native"
     "components/ErrorState.tsx" -.-> "lucide-react-native"
     "components/ErrorState.tsx" --> "Colors"
+    "components/GemmaAIChat.tsx" -.-> "lucide-react-native"
+    "components/GemmaAIChat.tsx" --> "Colors"
+    "components/GemmaAIChat.tsx" --> "supabase"
     "components/InsightCarousel.tsx" -.-> "lucide-react-native"
     "components/InsightCarousel.tsx" --> "Colors"
     "components/InsightCarousel.tsx" --> "useNPOInsights"
@@ -756,6 +853,8 @@ graph TD
     "components/Toast.tsx" --> "ToastContext"
     "components/UserAvatar.tsx" -.-> "lucide-react-native"
     "components/UserAvatar.tsx" --> "AuthContext"
+    "components/UserAvatar.tsx" --> "Colors"
+    "components/UserAvatar.tsx" --> "types"
     "components/VolunteerApplicationCard.tsx" --> "UserAvatar"
     "components/VolunteerApplicationCard.tsx" -.-> "lucide-react-native"
     "components/VolunteerApplicationCard.tsx" --> " Or use SoftCard if available, but plans said "Soft UI style (White card, shadow)" which Card is close to, or we can inline styles. Let"
@@ -792,6 +891,7 @@ graph TD
     "components/profile/BadgeSection.tsx" --> "SheetModal"
     "components/profile/BadgeSection.tsx" -.-> "lucide-react-native"
     "components/profile/BadgeSection.tsx" --> "Colors"
+    "components/profile/BadgeSection.tsx" --> "GamificationContext"
     "components/profile/NPOAffiliationSection.tsx" -.-> "lucide-react-native"
     "components/profile/NPOAffiliationSection.tsx" --> "SoftCard"
     "components/profile/NPOAffiliationSection.tsx" --> "UserAvatar"
@@ -856,8 +956,10 @@ graph TD
     "context/GamificationContext.tsx" -.-> "@tanstack"
     "context/GamificationContext.tsx" --> "AuthContext"
     "context/GamificationContext.tsx" --> "supabase"
+    "context/GamificationContext.tsx" -.-> "@react-native-async-storage"
     "context/NotificationContext.tsx" --> "AuthContext"
     "context/NotificationContext.tsx" --> "supabase"
+    "context/NotificationContext.tsx" --> "ToastContext"
     "context/SmartMatchContext.tsx" --> "supabase"
     "context/SmartMatchContext.tsx" --> "ActivityService"
     "context/SmartMatchContext.tsx" --> "AuthContext"

@@ -10,6 +10,7 @@
 | activity_participants | ✅ | Participants can update own status | UPDATE | 0 | `(auth.uid() = user_id)` |
 | activity_participants | ✅ | Participants viewable by everyone | SELECT | 0 | `true` |
 | activity_participants | ✅ | Volunteers can join | INSERT | 0 | `(auth.uid() = user_id)` |
+| activity_participants | ✅ | Volunteers can leave activities | DELETE | 16481 | `(auth.uid() = user_id)` |
 | activity_skills | ✅ | Activity skills viewable by everyone | SELECT | 0 | `true` |
 | activity_skills | ✅ | NPOs can manage activity skills | ALL | 0 | `(EXISTS ( SELECT 1
    FROM activities
@@ -43,7 +44,13 @@
 | conversation_participants | ✅ | Users can view participants of their conversations | SELECT | 0 | `(conversation_id IN ( SELECT get_my_conversations() AS get_my_conversations))` |
 | conversations | ✅ | Authenticated users can insert conversations | INSERT | 0 | `(auth.role() = 'authenticated'::text)` |
 | conversations | ✅ | Users can view conversations they are part of | SELECT | 0 | `((created_by = auth.uid()) OR (id IN ( SELECT get_my_conversations() AS get_my_conversations)))` |
+| faq_feedback | ✅ | Admins can read faq feedback | SELECT | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| faq_feedback | ✅ | Users can insert faq feedback | INSERT | 16481 | `true` |
 | gamification_state | ✅ | Authenticated users can view all gamification states | SELECT | 16481 | `true` |
+| internal_secrets | ✅ | *NONE* | - | - | `-` |
+| levels | ❌ | *NONE* | - | - | `-` |
 | messages | ✅ | Participants can insert messages | INSERT | 16481 | `((COALESCE((((auth.jwt() -> 'user_metadata'::text) ->> 'is_banned'::text))::boolean, false) IS NOT TRUE) AND (sender_id = auth.uid()) AND (EXISTS ( SELECT 1
    FROM conversation_participants cp
   WHERE ((cp.conversation_id = messages.conversation_id) AND (cp.user_id = auth.uid())))))` |
@@ -89,6 +96,14 @@
 | user_interests | ✅ | Users can manage own interests | ALL | 0 | `(auth.uid() = user_id)` |
 | user_skills | ✅ | Skills viewable by everyone | SELECT | 0 | `true` |
 | user_skills | ✅ | Users can manage own skills | ALL | 0 | `(auth.uid() = user_id)` |
+| verification_requests | ✅ | Admins can update verification requests | UPDATE | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| verification_requests | ✅ | Admins can view all verification requests | SELECT | 16481 | `(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::user_role))))` |
+| verification_requests | ✅ | Users can create their own requests | INSERT | 0 | `(auth.uid() = user_id)` |
+| verification_requests | ✅ | Users can view their own requests | SELECT | 0 | `(auth.uid() = user_id)` |
 | volunteer_reviews | ✅ | NPOs can delete their volunteer reviews | DELETE | 0 | `(auth.uid() = npo_id)` |
 | volunteer_reviews | ✅ | NPOs can insert volunteer reviews | INSERT | 0 | `(auth.uid() = npo_id)` |
 | volunteer_reviews | ✅ | NPOs can update their volunteer reviews | UPDATE | 0 | `(auth.uid() = npo_id)` |
