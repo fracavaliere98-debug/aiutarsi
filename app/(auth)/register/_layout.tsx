@@ -1,37 +1,15 @@
-import { Stack, useRouter } from "expo-router";
-import { Colors } from "../../../constants/Colors";
-import { TouchableOpacity } from "react-native";
-import { ArrowLeft } from "lucide-react-native";
+import { Stack } from "expo-router";
 
 export default function RegisterLayout() {
-    const router = useRouter();
     return (
         <Stack
             screenOptions={{
-                headerStyle: {
-                    backgroundColor: Colors.background,
-                },
-                headerTintColor: Colors.primary,
-                headerTitleStyle: {
-                    fontWeight: "bold",
-                },
-                headerShadowVisible: false,
-                contentStyle: { backgroundColor: Colors.background },
+                headerShown: false,
             }}
         >
-            <Stack.Screen
-                name="volunteer"
-                options={{
-                    title: "Diventa Volontario",
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 10 }}>
-                            <ArrowLeft size={24} color={Colors.primary} />
-                        </TouchableOpacity>
-                    ),
-                }}
-            />
-            <Stack.Screen name="npo" options={{ title: "Registra NPO" }} />
-            <Stack.Screen name="corporate" options={{ title: "Registra Azienda" }} />
+            <Stack.Screen name="volunteer" />
+            <Stack.Screen name="npo" />
+            <Stack.Screen name="corporate" />
         </Stack>
     );
 }

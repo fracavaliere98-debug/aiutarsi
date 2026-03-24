@@ -1,11 +1,12 @@
-import { View, Text, TextInput, TouchableOpacity, Image, Alert } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ScreenWrapper } from "../../components/ScreenWrapper";
-import { Colors } from "../../constants/Colors";
-import { useAuth } from "../../context/AuthContext";
 import { useState } from "react";
-import { ArrowLeft, Mail, Lock } from "lucide-react-native";
+import { Lock, Mail } from "lucide-react-native";
+import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/Button";
+import { AuthShell } from "../../components/auth/AuthShell";
+import { AuthField } from "../../components/auth/AuthField";
+import { Colors } from "../../constants/Colors";
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -23,7 +24,6 @@ export default function LoginScreen() {
         setIsLoading(true);
         try {
             await login(email, password);
-            // Navigate to root - the _layout will redirect to the correct dashboard
             router.replace("/");
         } catch (error: any) {
             Alert.alert("Errore di Accesso", error.message || "Login fallito. Riprova.");
@@ -33,68 +33,78 @@ export default function LoginScreen() {
     };
 
     return (
-        <ScreenWrapper className="px-6 bg-background-light justify-center">
-            <TouchableOpacity
-                onPress={() => router.back()}
-                className="absolute top-12 left-6 z-10 p-2 bg-white rounded-full shadow-sm"
-            >
-                <ArrowLeft size={24} color={Colors.primary} />
+        <AuthShell
+            eyebrow="Bentornato"
+            title="Rientra nel tuo spazio AiutarSì."
+            subtitle="Accedi per riprendere da dove avevi lasciato, con le tue attività e i tuoi suggerimenti già pronti."
+            backAction={() => router.back()}
+            footer={(
+                <View style={styles.footerRow}>
+                    <Text style={styles.footerText}>Non hai un account?</Text>
+                    <TouchableOpacity onPress={() => router.push("/register/volunteer")} activeOpacity={0.8}>
+                        <Text style={styles.footerLink}>Registrati</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+        >
+            <AuthField
+                label="Email"
+                placeholder="mario.rossi@email.com"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                icon={<Mail size={18} color={Colors.secondary} />}
+            />
+
+            <AuthField
+                label="Password"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+                secureTextEntry
+                icon={<Lock size={18} color={Colors.secondary} />}
+            />
+
+            <TouchableOpacity style={styles.recoveryLinkWrap} activeOpacity={0.75}>
+                <Text style={styles.recoveryLink}>Password dimenticata?</Text>
             </TouchableOpacity>
-
-            <View className="items-center mb-10">
-                <Image
-                    source={require("../../assets/images/logo.png")}
-                    className="w-40 h-24 mb-4"
-                    resizeMode="contain"
-                />
-                <Text className="text-3xl font-black text-primary">Bentornato!</Text>
-                <Text className="text-secondary text-center mt-2">
-                    Accedi al tuo account per continuare a fare la differenza.
-                </Text>
-            </View>
-
-            <View className="gap-4 mb-6">
-                <View className="bg-white p-4 rounded-3xl border border-primary/10 flex-row items-center gap-3">
-                    <Mail size={20} color={Colors.secondary} />
-                    <TextInput
-                        placeholder="Email"
-                        className="flex-1 text-primary font-medium"
-                        placeholderTextColor="#9ca3af"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                    />
-                </View>
-                <View className="bg-white p-4 rounded-3xl border border-primary/10 flex-row items-center gap-3">
-                    <Lock size={20} color={Colors.secondary} />
-                    <TextInput
-                        placeholder="Password"
-                        className="flex-1 text-primary font-medium"
-                        placeholderTextColor="#9ca3af"
-                        secureTextEntry
-                        value={password}
-                        onChangeText={setPassword}
-                        autoCapitalize="none"
-                    />
-                </View>
-                <TouchableOpacity className="self-end">
-                    <Text className="text-accent font-bold text-sm">Password dimenticata?</Text>
-                </TouchableOpacity>
-            </View>
 
             <Button
                 title="Accedi"
                 onPress={handleLogin}
                 isLoading={isLoading}
-                className="mb-6 rounded-3xl" // Extra rounded
+                className="mt-2 rounded-[28px]"
             />
-
-            <View className="flex-row justify-center gap-1">
-                <Text className="text-secondary">Non hai un account?</Text>
-                <TouchableOpacity onPress={() => router.push("/register/volunteer")}>
-                    <Text className="text-primary font-bold">Registrati</Text>
-                </TouchableOpacity>
-            </View>
-        </ScreenWrapper>
+        </AuthShell>
     );
 }
+
+const styles = StyleSheet.create({
+    recoveryLinkWrap: {
+        alignSelf: "flex-end",
+        marginBottom: 16,
+    },
+    recoveryLink: {
+        color: Colors.accent,
+        fontSize: 13,
+        fontWeight: "800",
+    },
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 6,
+    },
+    footerText: {
+        color: "#6f6880",
+        fontSize: 14,
+        fontWeight: "500",
+    },
+    footerLink: {
+        color: Colors.primary,
+        fontSize: 14,
+        fontWeight: "900",
+    },
+});

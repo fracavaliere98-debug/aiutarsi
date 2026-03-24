@@ -1,11 +1,12 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../../context/AuthContext";
-import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { useState } from "react";
-
-
-
+import { BriefcaseBusiness, Lock, Mail, ShieldCheck } from "lucide-react-native";
+import { useAuth } from "../../../context/AuthContext";
+import { AuthShell } from "../../../components/auth/AuthShell";
+import { AuthField } from "../../../components/auth/AuthField";
+import { Button } from "../../../components/Button";
+import { Colors } from "../../../constants/Colors";
 
 export default function CorporateRegister() {
     const router = useRouter();
@@ -20,7 +21,11 @@ export default function CorporateRegister() {
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
     const handleRegister = async () => {
-        if (!acceptedPrivacy) return;
+        if (!formData.companyName || !formData.vatId || !formData.email || !formData.password || !acceptedPrivacy) {
+            Alert.alert("Attenzione", "Compila tutti i campi e accetta privacy e termini.");
+            return;
+        }
+
         setIsLoading(true);
         try {
             await register({
@@ -32,89 +37,127 @@ export default function CorporateRegister() {
             });
             router.replace("/(corporate)" as any);
         } catch (error: any) {
-            alert(error.message || "Errore durante la registrazione.");
+            Alert.alert("Errore", error.message || "Errore durante la registrazione.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <ScreenWrapper className="px-6 bg-background-light">
-            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-                <Text className="text-3xl font-black text-primary mb-2">Registra Azienda</Text>
-                <Text className="text-secondary mb-8">
-                    Migliora il tuo ESG score con il volontariato aziendale.
-                </Text>
+        <AuthShell
+            eyebrow="Profilo azienda"
+            title="Apri il profilo corporate."
+            subtitle="Configura il team e inizia a esplorare attività da proporre ai collaboratori."
+            backAction={() => router.back()}
+        >
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+                <AuthField
+                    label="Ragione sociale"
+                    placeholder="Azienda SpA"
+                    value={formData.companyName}
+                    onChangeText={(text) => setFormData({ ...formData, companyName: text })}
+                    icon={<BriefcaseBusiness size={18} color={Colors.secondary} />}
+                />
 
-                <View className="gap-4">
-                    <View>
-                        <Text className="text-sm font-bold text-primary mb-2 ml-1">Ragione Sociale</Text>
-                        <TextInput
-                            className="bg-white p-4 rounded-xl border border-primary/10 text-primary"
-                            placeholder="Azienda SpA"
-                            placeholderTextColor="#9ca3af"
-                            value={formData.companyName}
-                            onChangeText={(text) => setFormData({ ...formData, companyName: text })}
-                        />
-                    </View>
+                <AuthField
+                    label="Partita IVA"
+                    placeholder="IT12345678901"
+                    value={formData.vatId}
+                    onChangeText={(text) => setFormData({ ...formData, vatId: text })}
+                    icon={<ShieldCheck size={18} color={Colors.secondary} />}
+                />
 
-                    <View>
-                        <Text className="text-sm font-bold text-primary mb-2 ml-1">Partita IVA</Text>
-                        <TextInput
-                            className="bg-white p-4 rounded-xl border border-primary/10 text-primary"
-                            placeholder="IT12345678901"
-                            placeholderTextColor="#9ca3af"
-                            value={formData.vatId}
-                            onChangeText={(text) => setFormData({ ...formData, vatId: text })}
-                        />
-                    </View>
+                <AuthField
+                    label="Email aziendale"
+                    placeholder="hr@azienda.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                    icon={<Mail size={18} color={Colors.secondary} />}
+                />
 
-                    <View>
-                        <Text className="text-sm font-bold text-primary mb-2 ml-1">Email Aziendale</Text>
-                        <TextInput
-                            className="bg-white p-4 rounded-xl border border-primary/10 text-primary"
-                            placeholder="hr@azienda.com"
-                            placeholderTextColor="#9ca3af"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={formData.email}
-                            onChangeText={(text) => setFormData({ ...formData, email: text })}
-                        />
-                    </View>
+                <AuthField
+                    label="Password"
+                    placeholder="Crea una password sicura"
+                    secureTextEntry
+                    value={formData.password}
+                    onChangeText={(text) => setFormData({ ...formData, password: text })}
+                    icon={<Lock size={18} color={Colors.secondary} />}
+                />
 
-                    <View>
-                        <Text className="text-sm font-bold text-primary mb-2 ml-1">Password</Text>
-                        <TextInput
-                            className="bg-white p-4 rounded-xl border border-primary/10 text-primary"
-                            placeholder="••••••••"
-                            placeholderTextColor="#9ca3af"
-                            secureTextEntry
-                            value={formData.password}
-                            onChangeText={(text) => setFormData({ ...formData, password: text })}
-                        />
-                    </View>
-                </View>
-
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                    className="flex-row items-center mt-6 px-1"
+                    style={styles.privacyRow}
+                    activeOpacity={0.8}
                 >
-                    <View className={`w-6 h-6 rounded-md border-2 mr-3 items-center justify-center ${acceptedPrivacy ? 'bg-primary border-primary' : 'border-primary/20'}`}>
-                        {acceptedPrivacy && <Text className="text-white text-xs">✓</Text>}
+                    <View style={[styles.checkbox, acceptedPrivacy && styles.checkboxChecked]}>
+                        {acceptedPrivacy ? <Text style={styles.checkboxTick}>✓</Text> : null}
                     </View>
-                    <Text className="text-sm text-secondary flex-1">
-                        Accetto la <Text onPress={() => router.push("/(corporate)/privacy-policy")} className="text-primary font-bold underline">Privacy Policy</Text> e i <Text onPress={() => router.push("/(corporate)/terms")} className="text-primary font-bold underline">Termini di Servizio</Text>
+                    <Text style={styles.privacyText}>
+                        Accetto la{" "}
+                        <Text onPress={() => router.push("/(corporate)/privacy-policy")} style={styles.inlineLink}>
+                            Privacy Policy
+                        </Text>
+                        {" "}e i{" "}
+                        <Text onPress={() => router.push("/(corporate)/terms")} style={styles.inlineLink}>
+                            Termini di Servizio
+                        </Text>
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                <Button
+                    title={isLoading ? "Registrazione..." : "Crea account corporate"}
                     onPress={handleRegister}
-                    disabled={isLoading || !acceptedPrivacy}
-                    className={`bg-primary mt-8 py-4 rounded-xl shadow-lg active:scale-95 transition-transform items-center ${isLoading || !acceptedPrivacy ? 'opacity-50' : ''}`}
-                >
-                    <Text className="text-white text-lg font-bold">{isLoading ? "Registrazione..." : "Crea Account Corporate"}</Text>
-                </TouchableOpacity>
+                    isLoading={isLoading}
+                    className="mt-2 rounded-[28px]"
+                />
             </ScrollView>
-        </ScreenWrapper>
+        </AuthShell>
     );
 }
+
+const styles = StyleSheet.create({
+    formContent: {
+        paddingBottom: 8,
+    },
+    privacyRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 12,
+        marginTop: 4,
+        marginBottom: 16,
+    },
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: "rgba(70,34,130,0.18)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 2,
+        backgroundColor: "#fff",
+    },
+    checkboxChecked: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+    },
+    checkboxTick: {
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: "900",
+    },
+    privacyText: {
+        flex: 1,
+        color: "#686177",
+        fontSize: 13,
+        lineHeight: 20,
+        fontWeight: "500",
+    },
+    inlineLink: {
+        color: Colors.primary,
+        fontWeight: "800",
+        textDecorationLine: "underline",
+    },
+});
