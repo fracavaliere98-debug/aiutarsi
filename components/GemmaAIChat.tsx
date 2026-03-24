@@ -146,7 +146,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                 headers: {
                     'Content-Type': 'application/json',
                     apikey: supabaseAnonKey,
-                    Authorization: `Bearer ${accessToken}`,
+                    ...(mode === 'shadow' ? { Authorization: `Bearer ${accessToken}` } : {}),
                 },
                 body: JSON.stringify({ question, history, mode, role: user?.role || null }),
             });
