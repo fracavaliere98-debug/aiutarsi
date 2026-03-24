@@ -777,6 +777,28 @@ export class ActivityService {
         }
     }
 
+    async getLatestActivities(limit = 10): Promise<AppActivity[]> {
+        try {
+            const { data, error } = await supabase
+                .from('activities')
+                .select(`
+                    *,
+                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
+                    activity_skills (skill),
+                    activity_participants (user_id, status)
+                `)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (error) throw error;
+
+            return (data || []).map((row: any) => this._mapDbActivityToApp(row));
+        } catch (error) {
+            console.error("Error in getLatestActivities:", error);
+            return [];
+        }
+    }
+
     async refreshActivityStates(): Promise<AppActivity[]> {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER
@@ -832,4 +854,3 @@ export class ActivityService {
 }
 
 export const activityService = new ActivityService();
-

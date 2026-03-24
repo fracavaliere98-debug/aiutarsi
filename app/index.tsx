@@ -3,7 +3,6 @@ import {
     Text,
     TouchableOpacity,
     Image,
-    Dimensions,
     StyleSheet,
     StatusBar,
 } from "react-native";
@@ -21,9 +20,9 @@ import {
 } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
 import Animated, {
-    FadeIn,
     FadeInDown,
     FadeInUp,
+    FadeOut,
     Extrapolation,
     interpolate,
     useAnimatedScrollHandler,
@@ -40,13 +39,25 @@ import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
 import { Layout } from "../utils/layout";
 
-const { height } = Dimensions.get("window");
-
 const BACKGROUND_GRADIENTS = [
     ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
     ['#fff7ed', '#ede9fe', '#eef2ff'] as const,
     ['#fef2f2', '#fae8ff', '#eff6ff'] as const,
 ];
+
+const extractCityFromAddress = (address?: string | null): string | null => {
+    if (!address) return null;
+
+    const parts = address
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    const lastPart = parts[parts.length - 1] || parts[0];
+    if (!lastPart) return null;
+
+    return lastPart.replace(/\b\d{5}\b/g, "").trim() || null;
+};
 
 const MotionBackground = () => {
     const a = useSharedValue(0);
@@ -69,7 +80,7 @@ const MotionBackground = () => {
             -1,
             false,
         );
-    }, []);
+    }, [a, b, c]);
 
     const s0 = useAnimatedStyle(() => ({ opacity: interpolate(a.value, [0, 1], [0.45, 1]) }));
     const s1 = useAnimatedStyle(() => ({ opacity: interpolate(b.value, [0, 1], [0.35, 0.85]) }));
@@ -121,6 +132,7 @@ const RoleCard = ({
     eyebrow,
     icon,
     colors,
+    highlight,
     onPress,
 }: {
     title: string;
@@ -128,14 +140,24 @@ const RoleCard = ({
     eyebrow: string;
     icon: React.ReactNode;
     colors: readonly [string, string];
+    highlight?: string;
     onPress: () => void;
 }) => (
-    <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={styles.roleCardShadow}>
+    <TouchableOpacity
+        activeOpacity={0.86}
+        onPress={onPress}
+        style={styles.roleCardShadow}
+    >
         <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.roleCard}>
             <View style={styles.roleCardTop}>
                 <View style={styles.roleIconWrap}>{icon}</View>
                 <Text style={styles.roleEyebrow}>{eyebrow}</Text>
             </View>
+            {highlight ? (
+                <View style={styles.roleHighlightBadge}>
+                    <Text style={styles.roleHighlightText}>{highlight}</Text>
+                </View>
+            ) : null}
             <Text style={styles.roleTitle}>{title}</Text>
             <Text style={styles.roleDescription}>{description}</Text>
             <View style={styles.roleFooter}>
@@ -173,6 +195,8 @@ export default function LandingPage() {
     const router = useRouter();
     const scrollY = useSharedValue(0);
     const [latestActivity, setLatestActivity] = useState<AppActivity | null>(null);
+    const [latestCities, setLatestCities] = useState<string[]>([]);
+    const [cityIndex, setCityIndex] = useState(0);
     const [totalVolunteers, setTotalVolunteers] = useState(1);
 
     useEffect(() => {
@@ -184,11 +208,29 @@ export default function LandingPage() {
                 ]);
                 setTotalVolunteers(count || 1);
                 setLatestActivity(activity);
+
+                const recentActivities = await activityService.getLatestActivities(10);
+                const cities = recentActivities
+                    .map((item) => extractCityFromAddress(item.location?.address))
+                    .filter((city, index, arr): city is string => Boolean(city) && arr.indexOf(city) === index)
+                    .slice(0, 10);
+
+                setLatestCities(cities);
             } catch (e) {
                 console.warn(e);
             }
         })();
     }, []);
+
+    useEffect(() => {
+        if (latestCities.length <= 1) return;
+
+        const interval = setInterval(() => {
+            setCityIndex((current) => (current + 1) % latestCities.length);
+        }, 2200);
+
+        return () => clearInterval(interval);
+    }, [latestCities]);
 
     const scrollHandler = useAnimatedScrollHandler((event) => {
         scrollY.value = event.contentOffset.y;
@@ -204,9 +246,8 @@ export default function LandingPage() {
     }));
 
     const latestCity = useMemo(() => {
-        if (!latestActivity?.location?.address) return "vicino a te";
-        return latestActivity.location.address.split(",")[0];
-    }, [latestActivity]);
+        return latestCities[cityIndex] || extractCityFromAddress(latestActivity?.location?.address) || "vicino a te";
+    }, [cityIndex, latestActivity?.location?.address, latestCities]);
 
     return (
         <View style={styles.root}>
@@ -225,7 +266,11 @@ export default function LandingPage() {
                 <Animated.View style={[styles.page, heroStyle]}>
                     <Animated.View entering={FadeInDown.duration(550)} style={styles.brandRow}>
                         <View style={styles.brandPill}>
-                            <Sparkles size={14} color={Colors.accent} />
+                            <Image
+                                source={require("../assets/images/logo-transparent.png")}
+                                style={styles.brandLogo}
+                                resizeMode="contain"
+                            />
                             <Text style={styles.brandPillText}>AiutarSì</Text>
                         </View>
                         <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
@@ -235,31 +280,38 @@ export default function LandingPage() {
 
                     <Animated.View entering={FadeInUp.delay(120).duration(620)} style={styles.heroBlock}>
                         <Text style={styles.heroHeadline}>
-                            Il volontariato che si adatta alla tua vita.
+                            Il volontariato che entra davvero nella tua giornata.
                         </Text>
                         <Text style={styles.heroSubheadline}>
-                            Scopri opportunità vicine, entra in contatto con enti reali e trasforma anche un’ora libera in impatto concreto.
-                        </Text>
-                    </Animated.View>
-
-                    <Animated.View entering={FadeInUp.delay(180).duration(620)} style={styles.liveNotice}>
-                        <MapPin size={15} color={Colors.primary} />
-                        <Text style={styles.liveNoticeText}>
-                            Ultima opportunità pubblicata a <Text style={styles.liveNoticeStrong}>{latestCity}</Text>
+                            Scopri opportunità vicine e scegli come iniziare in pochi minuti.
                         </Text>
                     </Animated.View>
 
                     <Animated.View entering={FadeInUp.delay(240).duration(620)} style={styles.heroStatsRow}>
                         <HeroStat value={`+${totalVolunteers.toLocaleString("it-IT")}`} label="Volontari attivi" />
                         <HeroStat value={latestActivity ? "Live" : "Nuove"} label="Opportunità ogni giorno" />
-                        <HeroStat value="Smart" label="Match guidato" />
+                        <HeroStat value="AI" label="Smart Match guidato" />
                     </Animated.View>
+                </Animated.View>
 
-                    <Animated.View entering={FadeInUp.delay(300).duration(620)} style={styles.ctaStack}>
+                <Animated.View entering={FadeInUp.delay(300).duration(620)} style={styles.registrationBlock}>
+                    <View style={styles.registrationHeader}>
+                        <Text style={styles.roleIntroEyebrow}>Scegli come entrare in AiutarSì</Text>
+                        <Text style={styles.registrationTitle}>Il percorso giusto, subito.</Text>
+                        <Text style={styles.registrationText}>
+                            Seleziona il tuo profilo e continua con un’iscrizione pensata per quello che vuoi fare.
+                        </Text>
+                        <View style={styles.gemmaBadge}>
+                            <Sparkles size={14} color={Colors.accent} />
+                            <Text style={styles.gemmaBadgeText}>Onboarding guidato da Gemma</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.ctaStack}>
                         <RoleCard
                             title="Diventa volontario"
-                            eyebrow="Per chi vuole aiutare"
-                            description="Trova attività compatibili con i tuoi interessi, la tua zona e il tempo che hai davvero."
+                            eyebrow="Per iniziare subito"
+                            description="Trova attività compatibili con interessi, zona e tempo disponibile."
                             colors={["#462282", "#cd057f"]}
                             icon={<HeartHandshake size={22} color="#fff" />}
                             onPress={() => router.push("/register/volunteer")}
@@ -267,20 +319,37 @@ export default function LandingPage() {
                         <RoleCard
                             title="Registra il tuo ente"
                             eyebrow="Per associazioni e NPO"
-                            description="Pubblica iniziative, ricevi candidature e usa l’app per coordinare la tua community."
+                            description="Pubblica iniziative, ricevi candidature e coordina la tua community."
                             colors={["#1f2a44", "#334155"]}
                             icon={<Building2 size={22} color="#fff" />}
                             onPress={() => router.push("/register/npo")}
                         />
-                    </Animated.View>
+                    </View>
                 </Animated.View>
+
+                <View style={styles.conversionStrip}>
+                    <View style={styles.conversionPill}>
+                        <MapPin size={15} color={Colors.primary} />
+                        <View style={styles.conversionPillTextRow}>
+                            <Text style={styles.conversionPillText}>Ultime opportunità pubblicate a </Text>
+                            <Animated.Text
+                                key={latestCity}
+                                entering={FadeInUp.duration(240)}
+                                exiting={FadeOut.duration(200)}
+                                style={styles.conversionPillStrong}
+                            >
+                                {latestCity}
+                            </Animated.Text>
+                        </View>
+                    </View>
+                </View>
 
                 <View style={styles.section}>
                     <Animated.View entering={FadeInDown.delay(100).duration(520)} style={styles.sectionHeader}>
                         <Text style={styles.sectionEyebrow}>Perché funziona</Text>
                         <Text style={styles.sectionTitle}>Più chiaro, meno dispersione.</Text>
                         <Text style={styles.sectionSubtitle}>
-                            La landing ora spiega subito cosa fai, per chi è pensata e quale beneficio concreto ottieni.
+                            Capisci subito dove iniziare, quali opportunità fanno per te e come entrare in contatto con enti affidabili.
                         </Text>
                     </Animated.View>
 
@@ -321,15 +390,6 @@ export default function LandingPage() {
                 </View>
 
                 <View style={styles.bottomCtaWrap}>
-                    <TouchableOpacity
-                        activeOpacity={0.82}
-                        style={styles.bottomPrimary}
-                        onPress={() => router.push("/register/volunteer")}
-                    >
-                        <Text style={styles.bottomPrimaryText}>Inizia come volontario</Text>
-                        <ArrowRight size={18} color="#fff" />
-                    </TouchableOpacity>
-
                     <View style={styles.bottomLoginRow}>
                         <Text style={styles.bottomLoginText}>Hai già un account? </Text>
                         <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
@@ -359,19 +419,23 @@ const styles = StyleSheet.create({
     brandPill: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 6,
         backgroundColor: "rgba(255,255,255,0.78)",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 5,
         borderRadius: 999,
         borderWidth: 1,
         borderColor: "rgba(70,34,130,0.08)",
+    },
+    brandLogo: {
+        width: 28,
+        height: 28,
     },
     brandPillText: {
         color: Colors.primary,
         fontSize: 13,
         fontWeight: "900",
-        letterSpacing: 0.3,
+        letterSpacing: 0.2,
     },
     loginLinkTop: {
         color: Colors.primary,
@@ -382,19 +446,19 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     heroHeadline: {
-        color: "#1b1232",
-        fontSize: Math.min(Layout.window.width * 0.107, 42),
-        lineHeight: Math.min(Layout.window.width * 0.116, 46),
+        color: Colors.primary,
+        fontSize: Math.min(Layout.window.width * 0.094, 37),
+        lineHeight: Math.min(Layout.window.width * 0.102, 41),
         fontWeight: "900",
-        letterSpacing: -1.2,
-        marginBottom: 14,
+        letterSpacing: -0.9,
+        marginBottom: 12,
     },
     heroSubheadline: {
         color: "#5b556b",
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: 15,
+        lineHeight: 22,
         fontWeight: "500",
-        maxWidth: "96%",
+        maxWidth: "88%",
     },
     liveNotice: {
         flexDirection: "row",
@@ -433,8 +497,8 @@ const styles = StyleSheet.create({
         borderColor: "rgba(70,34,130,0.08)",
     },
     heroStatValue: {
-        color: "#1b1232",
-        fontSize: 20,
+        color: "#37245f",
+        fontSize: 19,
         fontWeight: "900",
         marginBottom: 4,
     },
@@ -446,6 +510,64 @@ const styles = StyleSheet.create({
     },
     ctaStack: {
         gap: 14,
+    },
+    roleIntroEyebrow: {
+        color: Colors.accent,
+        fontSize: 12,
+        fontWeight: "900",
+        letterSpacing: 1.1,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    roleIntroText: {
+        color: "#6b647a",
+        fontSize: 14,
+        lineHeight: 21,
+        fontWeight: "600",
+    },
+    registrationBlock: {
+        marginTop: 0,
+        marginHorizontal: 22,
+        padding: 22,
+        borderRadius: 30,
+        backgroundColor: "rgba(255,255,255,0.72)",
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.08)",
+    },
+    registrationHeader: {
+        marginBottom: 18,
+    },
+    registrationTitle: {
+        color: Colors.primary,
+        fontSize: 23,
+        lineHeight: 27,
+        fontWeight: "900",
+        letterSpacing: -0.5,
+        marginBottom: 8,
+    },
+    registrationText: {
+        color: "#6b647a",
+        fontSize: 14,
+        lineHeight: 21,
+        fontWeight: "600",
+    },
+    gemmaBadge: {
+        marginTop: 12,
+        alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: "rgba(205,5,127,0.08)",
+        borderWidth: 1,
+        borderColor: "rgba(205,5,127,0.10)",
+    },
+    gemmaBadgeText: {
+        color: Colors.accent,
+        fontSize: 12,
+        fontWeight: "800",
     },
     roleCardShadow: {
         borderRadius: 30,
@@ -488,6 +610,22 @@ const styles = StyleSheet.create({
         fontWeight: "900",
         marginBottom: 10,
     },
+    roleHighlightBadge: {
+        alignSelf: "flex-start",
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.18)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.18)",
+        marginBottom: 12,
+    },
+    roleHighlightText: {
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: "900",
+        letterSpacing: 0.4,
+    },
     roleDescription: {
         color: "rgba(255,255,255,0.82)",
         fontSize: 14,
@@ -509,6 +647,43 @@ const styles = StyleSheet.create({
         paddingHorizontal: 22,
         paddingTop: 36,
     },
+    conversionStrip: {
+        paddingHorizontal: 22,
+        paddingTop: 24,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+    },
+    conversionPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        flex: 1,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.76)",
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.06)",
+    },
+    conversionPillTextRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "wrap",
+        flex: 1,
+        minWidth: 0,
+        flexShrink: 1,
+    },
+    conversionPillText: {
+        color: "#4f4861",
+        fontSize: 13,
+        fontWeight: "700",
+    },
+    conversionPillStrong: {
+        color: Colors.accent,
+        fontSize: 13,
+        fontWeight: "900",
+    },
     sectionHeader: {
         marginBottom: 18,
     },
@@ -521,11 +696,11 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     sectionTitle: {
-        color: "#1b1232",
-        fontSize: 28,
-        lineHeight: 32,
+        color: Colors.primary,
+        fontSize: 25,
+        lineHeight: 29,
         fontWeight: "900",
-        letterSpacing: -0.8,
+        letterSpacing: -0.5,
         marginBottom: 8,
     },
     sectionSubtitle: {
@@ -551,8 +726,8 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     featureTitle: {
-        color: "#1b1232",
-        fontSize: 20,
+        color: "#37245f",
+        fontSize: 19,
         fontWeight: "900",
         marginBottom: 8,
     },
@@ -573,9 +748,9 @@ const styles = StyleSheet.create({
         borderColor: "rgba(70,34,130,0.06)",
     },
     statementQuote: {
-        color: "#24183f",
-        fontSize: 21,
-        lineHeight: 29,
+        color: Colors.primary,
+        fontSize: 20,
+        lineHeight: 28,
         fontWeight: "800",
         letterSpacing: -0.4,
         textAlign: "center",
@@ -597,21 +772,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 22,
         paddingTop: 24,
         gap: 14,
-    },
-    bottomPrimary: {
-        backgroundColor: Colors.primary,
-        borderRadius: 999,
-        paddingHorizontal: 22,
-        paddingVertical: 18,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-    },
-    bottomPrimaryText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "900",
     },
     bottomLoginRow: {
         flexDirection: "row",
