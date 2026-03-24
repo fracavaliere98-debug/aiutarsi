@@ -84,6 +84,8 @@ export function StandardLayout({
                                 className="text-white font-black" 
                                 style={{ fontSize: Layout.fontSize['2xl'] }}
                                 numberOfLines={1}
+                                adjustsFontSizeToFit={true}
+                                minimumFontScale={0.7}
                             >
                                 {title}
                             </Text>
@@ -91,6 +93,9 @@ export function StandardLayout({
                                 <Text 
                                     className="text-white/60 font-medium mt-1"
                                     style={{ fontSize: Layout.fontSize.xs }}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit={true}
+                                    minimumFontScale={0.8}
                                 >
                                     {subtitle}
                                 </Text>

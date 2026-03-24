@@ -41,18 +41,18 @@ export const Layout = {
     headerHeight: verticalScale(104),
     // Standard font sizes that scale nicely
     fontSize: {
-        xs: moderateScale(12),
-        sm: moderateScale(14),
-        base: moderateScale(16),
-        lg: moderateScale(18),
-        xl: moderateScale(20),
-        '2xl': moderateScale(24),
-        '3xl': moderateScale(30),
+        xs: moderateScale(11),
+        sm: moderateScale(13),
+        base: moderateScale(15),
+        lg: moderateScale(17),
+        xl: moderateScale(19),
+        '2xl': moderateScale(22), // Reduced from 24
+        '3xl': moderateScale(28),
     },
     // Icon sizes that scale moderately
     iconSize: {
-        sm: moderateScale(18),
-        md: moderateScale(22),
-        lg: moderateScale(26),
+        sm: moderateScale(16),
+        md: moderateScale(20), // Reduced from 22
+        lg: moderateScale(24),
     }
 };
