@@ -34,6 +34,7 @@ tsc_output.txt
 # SECRETS - IMPORTANT
 .env
 .env*.local
+credentials.json
 google-services-key.json
 
 # typescript

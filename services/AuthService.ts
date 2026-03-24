@@ -223,8 +223,8 @@ export class AuthService {
 
             if (profile) {
                 const dbUser = this._mapProfileToUser(profile);
-                // Merge DB profile into user object, keeping sensitive credentials/role from auth
-                Object.assign(user, dbUser, { email: user.email, role: user.role });
+                // Merge DB profile into user object, keeping the auth email but trusting the profile row for role.
+                Object.assign(user, dbUser, { email: user.email });
                 console.log("[DEBUG] AuthService: Login - Profile merged from DB");
             }
         } catch (e) {
@@ -474,9 +474,8 @@ export class AuthService {
                 console.log("[DEBUG] AuthService: Loaded profile from DB");
                 user = this._mapProfileToUser(profile);
 
-                // Ensure email/role are synced from session if missing in DB (unlikely)
+                // Keep auth email in sync, but trust public.profiles as the source of truth for role.
                 user.email = session.user.email || user.email;
-                user.role = this._mapSupabaseUserToAppUser(session.user)?.role || user.role;
             }
         } catch (e) {
             console.warn("[DEBUG] Profile DB fetch failed:", e);

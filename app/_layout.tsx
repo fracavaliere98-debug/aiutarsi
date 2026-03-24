@@ -1,4 +1,4 @@
-import { Stack, useRouter, useSegments, Redirect } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
@@ -41,30 +41,10 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const isRedirecting = useRef(false);
+  const hasCheckedForUpdates = useRef(false);
 
   // Register for push notifications and keep last_seen_at updated
   usePushNotifications();
-
-  // Notification listeners
-  useEffect(() => {
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log("[Notification] Received:", notification);
-    });
-
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
-      console.log("[Notification] Response:", data);
-
-      if (data?.conversationId) {
-        router.push(`/messages/${data.conversationId}`);
-      }
-    });
-
-    return () => {
-      notificationListener.remove();
-      responseListener.remove();
-    };
-  }, []);
 
   // Join segments to avoid reference mismatch loops
   const routeSegments = segments as string[];
@@ -149,7 +129,8 @@ function RootLayoutNav() {
     }
 
     // 7. OTA UPDATE CHECK
-    if (!__DEV__) {
+    if (!__DEV__ && !hasCheckedForUpdates.current) {
+      hasCheckedForUpdates.current = true;
       const checkUpdates = async () => {
         try {
           const update = await Updates.checkForUpdateAsync();

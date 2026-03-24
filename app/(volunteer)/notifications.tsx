@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { Bell, ArrowLeft, CheckCircle, Info, AlertCircle, MessageCircle } from "lucide-react-native";
+import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
+import { Bell, CheckCircle, Info, AlertCircle, MessageCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
@@ -11,7 +11,7 @@ import { useState } from "react";
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const { notifications, markAsRead, markAllAsRead, getUnreadCount } = useNotifications();
+    const { notifications, markAllAsRead, openNotification } = useNotifications();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -90,14 +90,7 @@ export default function NotificationsScreen() {
                     return (
                         <SoftCard
                             key={notif.id}
-                            onPress={() => {
-                                markAsRead(notif.id);
-                                if (notif.title.startsWith("Nuovo messaggio da")) {
-                                    router.push("/messages" as any);
-                                } else if (notif.activityId) {
-                                    router.push(`/activity/${notif.activityId}` as any);
-                                }
-                            }}
+                            onPress={() => { void openNotification(notif); }}
                             className={`p-4 mb-4 flex-row items-start gap-4 rounded-2xl ${notif.read ? "opacity-60" : "border-accent/20"
                                 }`}
                         >

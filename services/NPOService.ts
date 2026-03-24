@@ -1,13 +1,11 @@
-import { OldUser, OldApplication } from '../types';
+import { AppUser, OldApplication } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { supabase } from '../utils/supabase';
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export class NPOService {
 
-    // Helper to map Profile to OldUser
-    private _mapProfileToUser(profile: any): OldUser {
+    // Helper to map Profile rows to the current app user shape.
+    private _mapProfileToUser(profile: any): AppUser {
         return {
             id: profile.id,
             email: profile.email || '',
@@ -29,9 +27,11 @@ export class NPOService {
             phone: profile.phone,
             website: profile.website,
             publicEmail: profile.public_email,
+            public_email: profile.public_email,
             profileCompleted: profile.profile_completed,
+            profile_completed: profile.profile_completed,
             followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || []
-        };
+        } as AppUser;
     }
 
     // Helper map OldApplication
@@ -50,7 +50,7 @@ export class NPOService {
         };
     }
 
-    async getNPOProfile(npoId: string): Promise<OldUser | null> {
+    async getNPOProfile(npoId: string): Promise<AppUser | null> {
         const { data, error } = await supabase
             .from('profiles')
             .select(`
@@ -93,7 +93,7 @@ export class NPOService {
     }
 
     async isFollowing(npoId: string, userId: string): Promise<boolean> {
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('npo_followers')
             .select('*')
             .eq('npo_id', npoId)

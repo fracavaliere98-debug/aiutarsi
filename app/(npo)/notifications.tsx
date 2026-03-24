@@ -12,7 +12,7 @@ import { useToast } from "../../context/ToastContext";
 
 export default function NPONotificationsScreen() {
     const { user } = useAuth();
-    const { notifications, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, markAllAsRead, openNotification } = useNotifications();
     const router = useRouter();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
@@ -101,16 +101,7 @@ export default function NPONotificationsScreen() {
                     return (
                         <SoftCard
                             key={notif.id}
-                            onPress={() => {
-                                markAsRead(notif.id);
-                                if (notif.title.startsWith("Nuovo messaggio da")) {
-                                    router.push("/messages" as any);
-                                } else if (notif.type === "APPLICATION_RECEIVED") {
-                                    router.push("/(npo)/(tabs)/volunteers" as any);
-                                } else if (notif.activityId) {
-                                    router.push(`/activity/${notif.activityId}` as any);
-                                }
-                            }}
+                            onPress={() => { void openNotification(notif); }}
                             className={`p-4 mb-4 flex-row items-start gap-4 rounded-2xl ${notif.read ? "opacity-60" : "border-accent/20"
                                 }`}
                         >

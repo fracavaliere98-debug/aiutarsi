@@ -69,11 +69,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Use ref to track logout intent immediately and synchronously across closures
     const isLoggingOutRef = React.useRef(false);
+    const usersRefreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const refreshUsers = useCallback(async () => {
         const all = await authService.getAllUsers();
         setUsersDB(all);
     }, []);
+
+    const scheduleUsersRefresh = useCallback((delayMs = 1000) => {
+        if (usersRefreshTimerRef.current) {
+            clearTimeout(usersRefreshTimerRef.current);
+        }
+
+        usersRefreshTimerRef.current = setTimeout(() => {
+            usersRefreshTimerRef.current = null;
+            void refreshUsers();
+        }, delayMs);
+    }, [refreshUsers]);
 
     // Load users and session on mount
     useEffect(() => {
@@ -108,8 +120,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // REMOVED FALLBACK: We rely on Supabase Persistence. 
                 // Manual loadUserLocally() causes race conditions with onAuthStateChange.
 
-                // 2. Load All Users (Mock + Current)
-                if (isMounted && result?.data?.session) await refreshUsers();
+                // Defer the full public profile refresh so auth/session restore is not blocked by a full-table fetch.
+                if (isMounted && result?.data?.session) {
+                    scheduleUsersRefresh();
+                }
 
             } catch (error) {
                 console.error("Auth init error:", error);
@@ -143,10 +157,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const appUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
-                    await refreshUsers();
+                    scheduleUsersRefresh(0);
                 }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
+                setUsersDB([]);
             }
         });
 
@@ -184,11 +199,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         return () => {
             isMounted = false;
+            if (usersRefreshTimerRef.current) {
+                clearTimeout(usersRefreshTimerRef.current);
+            }
             subscription.unsubscribe();
             unsubscribeEventEmitter();
             linkingSubscription.remove();
         };
-    }, [refreshUsers]);
+    }, [refreshUsers, scheduleUsersRefresh]);
 
     // Heartbeat for "Online now" status
     useEffect(() => {

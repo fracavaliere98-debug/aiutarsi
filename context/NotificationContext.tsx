@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from "react";
 import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
-import Constants from "expo-constants";
-import { Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
@@ -31,7 +28,7 @@ interface NotificationContextType {
     clearAll: () => Promise<void>;
     getUnreadCount: () => number;
     unreadCount: number;
-    expoPushToken: string | null;
+    openNotification: (notification: Pick<AppNotification, "id" | "type" | "activityId" | "applicationId" | "npoId" | "conversationId">) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -40,67 +37,39 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = useState<AppNotification[]>([]);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
-    const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
     const { showToast } = useToast();
+    const handledResponseIds = useRef<Set<string>>(new Set());
 
-    // Mapping function for notification navigation
-    const handleNotificationPress = useCallback((notif: AppNotification) => {
-        console.log("Navigating for notification type:", notif.type, notif.activityId, notif.conversationId);
-        
+    const resolveNotificationRoute = useCallback((notif: Pick<AppNotification, "type" | "activityId" | "applicationId" | "npoId" | "conversationId">) => {
         switch (notif.type) {
+            case 'CHAT_MESSAGE':
+                return notif.conversationId ? `/messages/${notif.conversationId}` : '/messages';
+            case 'APPLICATION_RECEIVED':
+                return '/(npo)/(tabs)/volunteers';
+            case 'VOLUNTEER_ENROLLED':
             case 'SKILL_MATCH':
             case 'ACTIVITY_UPDATE':
             case 'APPLICATION_APPROVED':
-                if (notif.activityId) {
-                    router.push(`/(volunteer)/activity/${notif.activityId}` as any);
-                } else {
-                    router.push('/(volunteer)/(tabs)/home' as any);
-                }
-                break;
-            case 'CHAT_MESSAGE':
-                if (notif.conversationId) {
-                    router.push(`/(shared)/chat/${notif.conversationId}` as any);
-                } else {
-                    router.push('/(shared)/chat' as any);
-                }
-                break;
-            case 'GAMIFICATION_REMIND':
+            case 'APPLICATION_REJECTED':
+                return notif.activityId
+                    ? `/activity/${notif.activityId}`
+                    : user?.role === 'NPO'
+                        ? '/(npo)/(tabs)/community'
+                        : '/(volunteer)/(tabs)/community';
             case 'BADGE_UNLOCKED':
-                router.push('/(volunteer)/(tabs)/profile' as any);
-                break;
+            case 'GAMIFICATION_REMIND':
+                return user?.role === 'NPO'
+                    ? '/(npo)/(tabs)/profile'
+                    : '/(volunteer)/(tabs)/profile';
             default:
-                // Default fallback
                 if (notif.activityId) {
-                    router.push(`/(volunteer)/activity/${notif.activityId}` as any);
-                } else {
-                    router.push('/(volunteer)/(tabs)/profile' as any);
+                    return `/activity/${notif.activityId}`;
                 }
+                return user?.role === 'NPO'
+                    ? '/(npo)/notifications'
+                    : '/(volunteer)/notifications';
         }
-    }, [router]);
-
-    // 1. Handle Push Token Registration
-    useEffect(() => {
-        if (!user) return;
-
-        const registerForPush = async () => {
-            try {
-                const token = await registerForPushNotificationsAsync();
-                if (token) {
-                    setExpoPushToken(token);
-                    // Save to Supabase
-                    await supabase
-                        .from('profiles')
-                        .update({ expo_push_token: token })
-                        .eq('id', user.id);
-                }
-            } catch (error) {
-                console.error("Error registering for push notifications:", error);
-            }
-        };
-
-        registerForPush();
-    }, [user?.id]);
+    }, [user?.role]);
 
     // Load notifications from Supabase
     useEffect(() => {
@@ -135,13 +104,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 setAllNotifications(mapped);
             } catch (error) {
                 console.error("Error fetching notifications:", error);
-            } finally {
-                setIsInitialLoad(false);
             }
         };
 
         fetchNotifications();
-    }, [user?.id]);
+    }, [user]);
 
     // Supabase Realtime Listener
     useEffect(() => {
@@ -177,7 +144,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                     // Show Foreground Toast with custom logic
                     showToast('info', `${newNotif.title}: ${newNotif.message}`, 6000, {
                         label: "VEDI",
-                        onPress: () => handleNotificationPress(newNotif)
+                        onPress: () => {
+                            void openNotification(newNotif);
+                        }
                     });
                 }
             )
@@ -201,7 +170,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user?.id, handleNotificationPress]);
+    }, [user, openNotification, showToast]);
 
     const addNotification = useCallback(async (notification: Omit<AppNotification, "id" | "timestamp" | "read">) => {
         if (!user) return;
@@ -275,6 +244,16 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
+    const openNotification = useCallback(async (notif: Pick<AppNotification, "id" | "type" | "activityId" | "applicationId" | "npoId" | "conversationId">) => {
+        if (notif.id) {
+            await markAsRead(notif.id);
+        }
+
+        const route = resolveNotificationRoute(notif);
+        console.log('Navigating for notification:', notif.type, route);
+        router.push(route as any);
+    }, [markAsRead, resolveNotificationRoute, router]);
+
     const markAllAsRead = useCallback(async () => {
         if (!user) return;
 
@@ -325,40 +304,66 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // 2. Register Notification Listeners
     useEffect(() => {
-        // This listener is fired whenever a notification is received while the app is foregrounded
-        const notificationListener = Notifications.addNotificationReceivedListener(event => {
-            console.log('Notification received in foreground (Expo):', event);
-            
-            // Only show toast if it's NOT coming from our Supabase listener to avoid duplicates
-            // Most push notifications will also have a DB record, but some might be raw
-            const data = event.request.content.data;
-            
-            // If we don't have a specific way to deduplicate, we might show both, 
-            // but usually Realtime is faster.
-            // Let's check if this specific interaction has already been shown
-        });
+        const normalizeNotificationType = (rawType: unknown): AppNotification['type'] => {
+            const normalized = String(rawType || 'INFO').trim().toUpperCase();
+            if (normalized === 'CHAT_MESSAGE') return 'CHAT_MESSAGE';
+            if (normalized === 'ACTIVITY_UPDATE') return 'ACTIVITY_UPDATE';
+            if (normalized === 'SUCCESS') return 'SUCCESS';
+            if (normalized === 'INFO') return 'INFO';
+            if (normalized === 'URGENT') return 'URGENT';
+            if (normalized === 'VOLUNTEER_ENROLLED') return 'VOLUNTEER_ENROLLED';
+            if (normalized === 'APPLICATION_RECEIVED') return 'APPLICATION_RECEIVED';
+            if (normalized === 'APPLICATION_APPROVED') return 'APPLICATION_APPROVED';
+            if (normalized === 'APPLICATION_REJECTED') return 'APPLICATION_REJECTED';
+            if (normalized === 'SKILL_MATCH') return 'SKILL_MATCH';
+            if (normalized === 'GAMIFICATION_REMIND') return 'GAMIFICATION_REMIND';
+            if (normalized === 'BADGE_UNLOCKED') return 'BADGE_UNLOCKED';
+            return 'INFO';
+        };
 
-        // This listener is fired whenever a user taps on or interacts with a notification 
-        // (works when app is foreground, background, or killed)
-        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-            const data = response.notification.request.content.data;
-            console.log('Notification interaction:', data);
+        const mapResponseToNotification = (response: Notifications.NotificationResponse) => {
+            const request = response.notification.request;
+            const data = request.content.data ?? {};
 
-            // Mapped navigation logic for Expo Notifications
-            const notif: any = {
-                type: data?.type || 'INFO',
-                activityId: data?.activityId || data?.related_activity_id,
-                conversationId: data?.conversationId || data?.related_conversation_id,
+            return {
+                id: String((data as any).notificationId || request.identifier || ''),
+                type: normalizeNotificationType((data as any).type),
+                activityId: (data as any).activityId || (data as any).related_activity_id,
+                applicationId: (data as any).applicationId || (data as any).related_application_id,
+                npoId: (data as any).npoId || (data as any).related_npo_id,
+                conversationId: (data as any).conversationId || (data as any).related_conversation_id,
             };
+        };
 
-            handleNotificationPress(notif);
+        const handleResponse = async (response: Notifications.NotificationResponse | null) => {
+            if (!response) return;
+
+            const responseId = response.notification.request.identifier;
+            if (handledResponseIds.current.has(responseId)) {
+                return;
+            }
+
+            handledResponseIds.current.add(responseId);
+            await openNotification(mapResponseToNotification(response));
+        };
+
+        const notificationListener = Notifications.addNotificationReceivedListener(event => {
+            console.log('Notification received in foreground (Expo):', event.request.content.data);
         });
+
+        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+            void handleResponse(response);
+        });
+
+        void Notifications.getLastNotificationResponseAsync()
+            .then(handleResponse)
+            .finally(() => Notifications.clearLastNotificationResponseAsync().catch(() => {}));
 
         return () => {
             notificationListener.remove();
             responseListener.remove();
         };
-    }, [handleNotificationPress]);
+    }, [openNotification]);
 
     useEffect(() => {
         // notification handler
@@ -374,7 +379,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 clearAll,
                 getUnreadCount,
                 unreadCount,
-                expoPushToken,
+                openNotification,
             }}
         >
             {children}
@@ -389,38 +394,3 @@ export const useNotifications = () => {
     }
     return context;
 };
-
-async function registerForPushNotificationsAsync() {
-    let token;
-
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-        });
-    }
-
-    if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-            console.log('Failed to get push token for push notification!');
-            return null;
-        }
-
-        token = (await Notifications.getExpoPushTokenAsync({
-            projectId: Constants.expoConfig?.extra?.eas?.projectId,
-        })).data;
-    } else {
-        console.log('Must use physical device for Push Notifications');
-    }
-
-    return token;
-}
-

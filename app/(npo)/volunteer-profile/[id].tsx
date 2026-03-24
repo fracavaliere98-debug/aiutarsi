@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator, Share } from "react-native";
+import { View, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
@@ -6,7 +6,7 @@ import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } from "../../../context/GamificationContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
-import { OldUser } from "../../../types";
+import { AppUser } from "../../../types";
 import ChatService from "../../../services/ChatService";
 import ReportModal from "../../../components/ReportModal";
 
@@ -17,7 +17,7 @@ export default function NPOVolunteerProfile() {
     const { getVolunteerApplications } = useApplications();
     const { activities, reviews } = useActivities();
 
-    const [user, setUser] = useState<OldUser | null>(null);
+    const [user, setUser] = useState<AppUser | null>(null);
     const [gamificationState, setGamificationState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -27,7 +27,7 @@ export default function NPOVolunteerProfile() {
             if (typeof id !== 'string') return;
 
             try {
-                // 1. Get OldUser Data
+                // 1. Get user profile data
                 const userData = getUserById(id); // from AuthContext
                 setUser(userData || null);
 
