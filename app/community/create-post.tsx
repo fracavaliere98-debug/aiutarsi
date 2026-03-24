@@ -16,7 +16,13 @@ import { useToast } from '../../context/ToastContext';
 
 export default function CreatePostScreen() {
     const router = useRouter();
-    const { mode, postId } = useLocalSearchParams<{ mode?: string, postId?: string }>();
+    const { mode, postId, prefillCaption, prefillLinkedActivityId, draftLabel } = useLocalSearchParams<{
+        mode?: string,
+        postId?: string,
+        prefillCaption?: string,
+        prefillLinkedActivityId?: string,
+        draftLabel?: string,
+    }>();
     const isStoryMode = mode === 'story';
     const isEditMode = mode === 'edit';
     const { user } = useAuth();
@@ -42,6 +48,16 @@ export default function CreatePostScreen() {
             }
         }
     }, [isEditMode, postId, posts]);
+
+    React.useEffect(() => {
+        if (isEditMode) return;
+        if (typeof prefillCaption === 'string' && !caption.trim()) {
+            setCaption(prefillCaption);
+        }
+        if (typeof prefillLinkedActivityId === 'string' && !linkedActivityId) {
+            setLinkedActivityId(prefillLinkedActivityId);
+        }
+    }, [isEditMode, prefillCaption, prefillLinkedActivityId, caption, linkedActivityId]);
 
     const myActivities = activities.filter(a => a.npoId === user?.id);
     const linkedActivity = myActivities.find(a => a.id === linkedActivityId);
@@ -127,6 +143,16 @@ export default function CreatePostScreen() {
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
                 <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} showsVerticalScrollIndicator={false}>
+                    {draftLabel && !isEditMode && (
+                        <View style={{ backgroundColor: '#eef2ff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#c7d2fe' }}>
+                            <Text style={{ fontSize: 12, fontWeight: '900', color: Colors.accent, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                Bozza Gemma
+                            </Text>
+                            <Text style={{ fontSize: 13, color: Colors.primary, fontWeight: '700', marginTop: 4 }}>
+                                {draftLabel}
+                            </Text>
+                        </View>
+                    )}
 
                     {/* Images Picker Row */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 16 }}>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { MoreHorizontal } from 'lucide-react-native';
@@ -36,7 +36,7 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                         try {
                             await deletePost(post.id);
                             showToast('success', 'Post eliminato con successo');
-                        } catch (e) {
+                        } catch {
                             showToast('error', 'Errore durante l\'eliminazione del post');
                         }
                     }
@@ -48,7 +48,7 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                 try {
                     await reportPost(post.id, reason);
                     showToast('success', 'Segnalazione inviata! Grazie per il tuo feedback.');
-                } catch (e) {
+                } catch {
                     showToast('error', 'Impossibile inviare la segnalazione. Riprova più tardi.');
                 }
             };
@@ -116,7 +116,16 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{authorName}</Text>
-                    <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                        <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
+                        {post.linked_activity && (
+                            <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
+                                    {post.linked_activity.status === 'IN_CORSO' ? 'LIVE' : 'Attività collegata'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
                 {user && (
                     <TouchableOpacity onPress={handleMenuPress} style={{ padding: 4 }}>
@@ -202,7 +211,7 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                                     style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}
                                     activeOpacity={0.85}
                                 >
-                                    <Text style={{ color: Colors.primary, fontWeight: '900', fontSize: 13 }}>Partecipa</Text>
+                                    <Text style={{ color: Colors.primary, fontWeight: '900', fontSize: 13 }}>Apri attività</Text>
                                 </TouchableOpacity>
                             )}
                         </LinearGradient>
@@ -212,9 +221,11 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
 
             {/* Caption */}
             {post.caption && (
-                <Text style={{ fontSize: 14, color: '#374151', lineHeight: 21, padding: 14, paddingBottom: 10 }}>
-                    {post.caption}
-                </Text>
+                <View style={{ padding: 14, paddingBottom: 10 }}>
+                    <Text style={{ fontSize: 14, color: '#374151', lineHeight: 21 }}>
+                        {post.caption}
+                    </Text>
+                </View>
             )}
 
             {/* Reactions row */}

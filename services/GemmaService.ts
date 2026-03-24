@@ -40,6 +40,23 @@ export type CuratedActivityDraftResult = {
   suggestedCategory: string;
 };
 
+export type CommunityPostDraftInput = {
+  purpose: "activity_promo" | "recent_recap" | "community_update";
+  activity?: {
+    id?: string;
+    title: string;
+    description?: string;
+    dateTime?: string;
+    location?: string;
+    npoName?: string;
+  };
+};
+
+export type CommunityPostDraftResult = {
+  caption: string;
+  suggestedMode: "post" | "story";
+};
+
 class GemmaService {
   async getSmartMatchReasons(matches: OldSmartMatchResult[]): Promise<SmartMatchReasonResult> {
     const matchedActivities = matches.map((match) => ({
@@ -106,6 +123,26 @@ class GemmaService {
       expandedDescription: data?.expandedDescription || activity.description,
       suggestedSkills: Array.isArray(data?.suggestedSkills) ? data.suggestedSkills : [],
       suggestedCategory: data?.suggestedCategory || activity.category || "Sociale",
+    };
+  }
+
+  async getCommunityPostDraft(input: CommunityPostDraftInput): Promise<CommunityPostDraftResult> {
+    const { data, error } = await supabase.functions.invoke("gemma-help-assistant", {
+      body: {
+        mode: "shadow",
+        question: "Prepara una bozza breve e credibile per la community di un ente non profit.",
+        responseFormat: "community_post_draft",
+        communityDraft: input,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      caption: data?.caption || "",
+      suggestedMode: data?.suggestedMode === "story" ? "story" : "post",
     };
   }
 }

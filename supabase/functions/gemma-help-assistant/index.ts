@@ -37,6 +37,18 @@ type NPOInsightInput = {
   };
 };
 
+type CommunityDraftInput = {
+  purpose: "activity_promo" | "recent_recap" | "community_update";
+  activity?: {
+    id?: string;
+    title?: string;
+    description?: string;
+    dateTime?: string;
+    location?: string;
+    npoName?: string;
+  };
+};
+
 const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -181,6 +193,27 @@ function formatNPOInsightsContext(insights: NPOInsightInput[]): string {
   return text;
 }
 
+function formatCommunityDraftContext(draft?: CommunityDraftInput | null): string {
+  if (!draft) return "";
+
+  const base = [
+    "\n=== BOZZA COMMUNITY DA PREPARARE ===",
+    `Obiettivo: ${draft.purpose}`,
+  ];
+
+  if (draft.activity) {
+    base.push(
+      `Attività: ${draft.activity.title || "non disponibile"}`,
+      `Descrizione: ${(draft.activity.description || "").slice(0, 180) || "non disponibile"}`,
+      `Data: ${draft.activity.dateTime || "non disponibile"}`,
+      `Luogo: ${draft.activity.location || "non disponibile"}`,
+      `Ente: ${draft.activity.npoName || "non disponibile"}`,
+    );
+  }
+
+  return `${base.join("\n")}\n`;
+}
+
 function parseJsonResponse(text: string) {
   const trimmed = text.trim();
   const jsonText = trimmed.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
@@ -242,7 +275,7 @@ Deno.serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
     const authToken = getTokenFromAuthHeader(req.headers.get("Authorization"));
 
-    const { question, history, mode, responseFormat, matchedActivities, npoInsights, role } = await req.json();
+    const { question, history, mode, responseFormat, matchedActivities, npoInsights, communityDraft, role } = await req.json();
     const assistantMode: AssistantMode = mode === "shadow" ? "shadow" : "help_center";
     const normalizedQuestion = String(question || "").trim() || (
       assistantMode === "shadow"
@@ -285,6 +318,9 @@ Deno.serve(async (req) => {
     const npoInsightsContext = Array.isArray(npoInsights)
       ? formatNPOInsightsContext(npoInsights as NPOInsightInput[])
       : "";
+    const communityDraftContext = communityDraft
+      ? formatCommunityDraftContext(communityDraft as CommunityDraftInput)
+      : "";
 
     const tokenToUse = await getHfToken(serviceClient);
     if (!tokenToUse) {
@@ -294,7 +330,7 @@ Deno.serve(async (req) => {
     const systemPrompt = buildSystemPrompt(
       assistantMode,
       userContext,
-      suggestedActivitiesText + matchedActivitiesContext + npoInsightsContext,
+      suggestedActivitiesText + matchedActivitiesContext + npoInsightsContext + communityDraftContext,
       roleScopedHelpCenterContext,
     );
 
@@ -333,6 +369,14 @@ Deno.serve(async (req) => {
         role: "user",
         content:
           'Restituisci solo JSON valido nel formato {"insights":[{"id":"string","title":"string","description":"string","actionLabel":"string"}]}. Riscrivi le priorità NPO in modo concreto, orientato all\'azione e coerente con i dati reali. Ogni "description" deve stare entro 24 parole. Ogni "actionLabel" entro 4 parole.',
+      });
+    }
+
+    if (responseFormat === "community_post_draft") {
+      messages.push({
+        role: "user",
+        content:
+          'Restituisci solo JSON valido nel formato {"caption":"string","suggestedMode":"post|story"}. La caption deve essere naturale, breve, pronta da pubblicare, massimo 55 parole. "story" solo se il contenuto sembra un aggiornamento rapido o dietro le quinte; altrimenti usa "post".',
       });
     }
 
@@ -406,6 +450,33 @@ Deno.serve(async (req) => {
           JSON.stringify({
             mode: assistantMode,
             insights: fallbackInsights,
+          }),
+          { headers: corsHeaders },
+        );
+      }
+    }
+
+    if (responseFormat === "community_post_draft") {
+      try {
+        const parsed = parseJsonResponse(answer);
+        return new Response(JSON.stringify({ ...parsed, mode: assistantMode }), {
+          headers: corsHeaders,
+        });
+      } catch (parseError) {
+        console.error("[GemmaHelp] Failed to parse community_post_draft JSON:", parseError);
+        const draftInput = communityDraft as CommunityDraftInput | undefined;
+        const fallbackCaption =
+          draftInput?.purpose === "activity_promo" && draftInput.activity?.title
+            ? `Stiamo preparando ${draftInput.activity.title}. Se vuoi dare una mano, trovi tutti i dettagli nell'attività appena pubblicata.`
+            : draftInput?.purpose === "recent_recap"
+              ? "Oggi condividiamo un momento semplice ma importante della nostra community. Grazie a chi c’era e a chi continua a seguirci."
+              : "Stiamo continuando a costruire impatto insieme alla nostra community. Presto condivideremo nuovi aggiornamenti e opportunità.";
+
+        return new Response(
+          JSON.stringify({
+            mode: assistantMode,
+            caption: fallbackCaption,
+            suggestedMode: draftInput?.purpose === "recent_recap" ? "story" : "post",
           }),
           { headers: corsHeaders },
         );
