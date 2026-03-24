@@ -6,6 +6,14 @@ appId: com.aiutarsi.app
 ---
 
 - launchApp
+- waitForAnimationToEnd
+
+# Se siamo sulla Landing Page, premi "Accedi"
+- runScript:
+    condition: ${maestro.visible("btn-landing-login")}
+    commands:
+      - tapOn:
+          id: "btn-landing-login"
 
 # ── Login rapido ──────────────────────────────────────────────────────────────
 - tapOn:
@@ -15,7 +23,7 @@ appId: com.aiutarsi.app
     id: "input-password"
 - inputText: "TestMaestro123!"
 - tapOn:
-    text: "Accedi"
+    id: "btn-login"
 - waitForAnimationToEnd
 
 # ── Naviga al tab Esplora ─────────────────────────────────────────────────────

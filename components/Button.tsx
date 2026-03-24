@@ -10,9 +10,10 @@ interface ButtonProps {
     variant?: "primary" | "accent" | "outline";
     isLoading?: boolean;
     className?: string;
+    testID?: string;
 }
 
-export const Button = ({ title, onPress, variant = "primary", isLoading, className }: ButtonProps) => {
+export const Button = ({ title, onPress, variant = "primary", isLoading, className, testID }: ButtonProps) => {
     // Increased rounding to rounded-[24px]
     let baseStyle = "py-4 px-6 rounded-[24px] flex-row justify-center items-center active:opacity-90 shadow-sm";
     let textStyle = "font-bold text-lg";
@@ -29,7 +30,12 @@ export const Button = ({ title, onPress, variant = "primary", isLoading, classNa
     }
 
     return (
-        <StyledTouchableOpacity onPress={onPress} className={`${baseStyle} ${className}`} disabled={isLoading}>
+        <StyledTouchableOpacity 
+            onPress={onPress} 
+            className={`${baseStyle} ${className}`} 
+            disabled={isLoading}
+            testID={testID}
+        >
             {isLoading ? (
                 <ActivityIndicator color={variant === "outline" ? "#462282" : "#ffffff"} />
             ) : (

@@ -62,6 +62,7 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     icon={<Mail size={18} color={Colors.secondary} />}
+                    testID="input-email"
                 />
 
                 <AuthField
@@ -72,6 +73,7 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     secureTextEntry
                     icon={<Lock size={18} color={Colors.secondary} />}
+                    testID="input-password"
                 />
 
                 <TouchableOpacity style={styles.recoveryLinkWrap} activeOpacity={0.75}>
@@ -83,6 +85,7 @@ export default function LoginScreen() {
                     onPress={handleLogin}
                     isLoading={isLoading}
                     className="mt-2 rounded-[28px]"
+                    testID="btn-login"
                 />
             </ScrollView>
         </AuthShell>

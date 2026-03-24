@@ -5,9 +5,10 @@ import { Colors } from "../../constants/Colors";
 interface AuthFieldProps extends TextInputProps {
     label: string;
     icon?: ReactNode;
+    testID?: string;
 }
 
-export function AuthField({ label, icon, ...props }: AuthFieldProps) {
+export function AuthField({ label, icon, testID, ...props }: AuthFieldProps) {
     return (
         <View style={styles.wrapper}>
             <Text style={styles.label}>{label}</Text>
@@ -16,6 +17,7 @@ export function AuthField({ label, icon, ...props }: AuthFieldProps) {
                 <TextInput
                     placeholderTextColor="#9ca3af"
                     style={styles.input}
+                    testID={testID}
                     {...props}
                 />
             </View>

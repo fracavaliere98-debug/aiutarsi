@@ -273,7 +273,11 @@ export default function LandingPage() {
                             />
                             <Text style={styles.brandPillText}>AiutarSì</Text>
                         </View>
-                        <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
+                        <TouchableOpacity 
+                            onPress={() => router.push("/login")} 
+                            activeOpacity={0.75}
+                            testID="btn-landing-login"
+                        >
                             <Text style={styles.loginLinkTop}>Accedi</Text>
                         </TouchableOpacity>
                     </Animated.View>

@@ -11,11 +11,14 @@ appId: com.aiutarsi.app
 ---
 
 - launchApp
-
-# Attendi che la schermata di login sia visibile
 - waitForAnimationToEnd
-- assertVisible:
-    text: "Accedi"
+
+# Se siamo sulla Landing Page, premi "Accedi"
+- runScript:
+    condition: ${maestro.visible("btn-landing-login")}
+    commands:
+      - tapOn:
+          id: "btn-landing-login"
 
 # Inserisci le credenziali
 - tapOn:
@@ -28,7 +31,7 @@ appId: com.aiutarsi.app
 
 # Tap su Accedi
 - tapOn:
-    text: "Accedi"
+    id: "btn-login"
 
 # Attendi il caricamento della Home
 - waitForAnimationToEnd
