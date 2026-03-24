@@ -10,162 +10,164 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
-    Heart, Search, Wallet, Users, HandHeart, Building2, Plus, ChevronRight,
+    ArrowRight,
+    Building2,
+    CalendarClock,
+    HeartHandshake,
+    MapPin,
+    ShieldCheck,
+    Sparkles,
+    Users,
 } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
 import Animated, {
     FadeIn,
     FadeInDown,
     FadeInUp,
-    useAnimatedScrollHandler,
-    useSharedValue,
-    useAnimatedStyle,
-    interpolate,
     Extrapolation,
-    withTiming,
-    withSequence,
-    withDelay,
+    interpolate,
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue,
     withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
-import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useMemo, useState } from "react";
 import { authService } from "../services/AuthService";
 import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
+import { Layout } from "../utils/layout";
 
-const { width, height } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
-// ── Brand color palette ────────────────────────────────────────────────────
-// Deep dark base + fuchsia + violet + indigo
-const G = [
-    { colors: ['#0d001a', '#4a0080', '#cf057f'] as const, angle: { x: 0, y: 0 } },
-    { colors: ['#060025', '#6b21a8', '#e8006e'] as const, angle: { x: 1, y: 0 } },
-    { colors: ['#02001f', '#312e81', '#9333ea'] as const, angle: { x: 0, y: 1 } },
+const BACKGROUND_GRADIENTS = [
+    ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
+    ['#fff7ed', '#ede9fe', '#eef2ff'] as const,
+    ['#fef2f2', '#fae8ff', '#eff6ff'] as const,
 ];
 
-// ── Animated mesh gradient ─────────────────────────────────────────────────
-const AnimatedBackground = () => {
+const MotionBackground = () => {
     const a = useSharedValue(0);
     const b = useSharedValue(0);
     const c = useSharedValue(1);
 
     useEffect(() => {
-        // G[0]: 0→1→0 over 8s
         a.value = withRepeat(
-            withSequence(
-                withTiming(1, { duration: 4000 }),
-                withTiming(0, { duration: 4000 })
-            ), -1, false
+            withSequence(withTiming(1, { duration: 5000 }), withTiming(0, { duration: 5000 })),
+            -1,
+            false,
         );
-        // G[1]: lags by 2.7s
-        setTimeout(() => {
-            b.value = withRepeat(
-                withSequence(
-                    withTiming(1, { duration: 4000 }),
-                    withTiming(0, { duration: 4000 })
-                ), -1, false
-            );
-        }, 2700);
-        // G[2]: lags by 5.3s
-        setTimeout(() => {
-            c.value = withRepeat(
-                withSequence(
-                    withTiming(1, { duration: 4000 }),
-                    withTiming(0, { duration: 4000 })
-                ), -1, false
-            );
-        }, 5300);
+        b.value = withRepeat(
+            withSequence(withTiming(1, { duration: 6200 }), withTiming(0, { duration: 6200 })),
+            -1,
+            false,
+        );
+        c.value = withRepeat(
+            withSequence(withTiming(1, { duration: 7600 }), withTiming(0, { duration: 7600 })),
+            -1,
+            false,
+        );
     }, []);
 
-    const s0 = useAnimatedStyle(() => ({ opacity: interpolate(a.value, [0, 1], [0.3, 1]) }));
-    const s1 = useAnimatedStyle(() => ({ opacity: interpolate(b.value, [0, 1], [0.3, 0.85]) }));
-    const s2 = useAnimatedStyle(() => ({ opacity: interpolate(c.value, [0, 1], [0.3, 0.7]) }));
+    const s0 = useAnimatedStyle(() => ({ opacity: interpolate(a.value, [0, 1], [0.45, 1]) }));
+    const s1 = useAnimatedStyle(() => ({ opacity: interpolate(b.value, [0, 1], [0.35, 0.85]) }));
+    const s2 = useAnimatedStyle(() => ({ opacity: interpolate(c.value, [0, 1], [0.25, 0.7]) }));
 
     return (
         <View style={StyleSheet.absoluteFill}>
-            {/* Base dark fill */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#07000f' }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fffaf7" }]} />
             <Animated.View style={[StyleSheet.absoluteFill, s0]}>
-                <LinearGradient colors={G[0].colors} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={StyleSheet.absoluteFill} />
+                <LinearGradient
+                    colors={BACKGROUND_GRADIENTS[0]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
             </Animated.View>
             <Animated.View style={[StyleSheet.absoluteFill, s1]}>
-                <LinearGradient colors={G[1].colors} start={{ x: 0.8, y: 0 }} end={{ x: 0.2, y: 1 }} style={StyleSheet.absoluteFill} />
+                <LinearGradient
+                    colors={BACKGROUND_GRADIENTS[1]}
+                    start={{ x: 1, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
             </Animated.View>
             <Animated.View style={[StyleSheet.absoluteFill, s2]}>
-                <LinearGradient colors={G[2].colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+                <LinearGradient
+                    colors={BACKGROUND_GRADIENTS[2]}
+                    start={{ x: 0.25, y: 0 }}
+                    end={{ x: 0.75, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
             </Animated.View>
-            {/* Noise-like inner highlight */}
-            <LinearGradient
-                colors={['rgba(207,5,127,0.12)', 'transparent', 'rgba(107,33,168,0.18)']}
-                start={{ x: 0, y: 0.4 }}
-                end={{ x: 1, y: 0.6 }}
-                style={StyleSheet.absoluteFill}
-            />
-            {/* Bottom fade to near-black */}
-            <LinearGradient
-                colors={['transparent', 'rgba(3,0,12,0.8)']}
-                start={{ x: 0.5, y: 0.3 }}
-                end={{ x: 0.5, y: 1 }}
-                style={StyleSheet.absoluteFill}
-            />
+            <View style={styles.blobOne} />
+            <View style={styles.blobTwo} />
         </View>
     );
 };
 
-// ── Gradient Text (per-character interpolation) ───────────────────────────
-const GradientText = ({
-    text, style,
-    startRGB = [107, 33, 168],
-    endRGB   = [207, 5, 127],
+const HeroStat = ({ value, label }: { value: string; label: string }) => (
+    <View style={styles.heroStat}>
+        <Text style={styles.heroStatValue}>{value}</Text>
+        <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
+);
+
+const RoleCard = ({
+    title,
+    description,
+    eyebrow,
+    icon,
+    colors,
+    onPress,
 }: {
-    text: string; style?: any;
-    startRGB?: [number, number, number];
-    endRGB?:   [number, number, number];
-}) => {
-    const chars = text.split('');
-    const n = Math.max(chars.length - 1, 1);
-    return (
-        <Text style={[style, { textAlign: 'center' }]} numberOfLines={1}>
-            {chars.map((char, i) => {
-                const t = i / n;
-                const r = Math.round(startRGB[0] + (endRGB[0] - startRGB[0]) * t);
-                const g = Math.round(startRGB[1] + (endRGB[1] - startRGB[1]) * t);
-                const b = Math.round(startRGB[2] + (endRGB[2] - startRGB[2]) * t);
-                return <Text key={i} style={[style, { color: `rgb(${r},${g},${b})` }]}>{char}</Text>;
-            })}
-        </Text>
-    );
-};
+    title: string;
+    description: string;
+    eyebrow: string;
+    icon: React.ReactNode;
+    colors: readonly [string, string];
+    onPress: () => void;
+}) => (
+    <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={styles.roleCardShadow}>
+        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.roleCard}>
+            <View style={styles.roleCardTop}>
+                <View style={styles.roleIconWrap}>{icon}</View>
+                <Text style={styles.roleEyebrow}>{eyebrow}</Text>
+            </View>
+            <Text style={styles.roleTitle}>{title}</Text>
+            <Text style={styles.roleDescription}>{description}</Text>
+            <View style={styles.roleFooter}>
+                <Text style={styles.roleCta}>Inizia ora</Text>
+                <ArrowRight size={18} color="#fff" />
+            </View>
+        </LinearGradient>
+    </TouchableOpacity>
+);
 
-// ── Ticker (absolute bottom) ───────────────────────────────────────────────
-const LandingTicker = ({ latestActivity }: { latestActivity: AppActivity | null }) => {
-    const opacity = useSharedValue(1);
+const FeatureCard = ({
+    icon,
+    title,
+    text,
+    accent,
+    delay,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    text: string;
+    accent: string;
+    delay: number;
+}) => (
+    <Animated.View entering={FadeInDown.delay(delay).duration(520)} style={styles.featureCard}>
+        <View style={[styles.featureIconWrap, { backgroundColor: `${accent}14` }]}>
+            {icon}
+        </View>
+        <Text style={styles.featureTitle}>{title}</Text>
+        <Text style={styles.featureText}>{text}</Text>
+    </Animated.View>
+);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            opacity.value = withSequence(
-                withTiming(0, { duration: 400 }),
-                withDelay(100, withTiming(1, { duration: 400 }))
-            );
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-    const msg = latestActivity
-        ? `Nova missione: ${latestActivity.npoName} · ${latestActivity.location.address.split(',')[0]}`
-        : `Nuove opportunità di volontariato ogni giorno`;
-
-    return (
-        <Animated.View style={[styles.ticker, animStyle]}>
-            <View style={styles.tickerDot} />
-            <Text style={styles.tickerText} numberOfLines={1}>{msg.toUpperCase()}</Text>
-        </Animated.View>
-    );
-};
-
-// ── Main ──────────────────────────────────────────────────────────────────
 export default function LandingPage() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -182,329 +184,467 @@ export default function LandingPage() {
                 ]);
                 setTotalVolunteers(count || 1);
                 setLatestActivity(activity);
-            } catch (e) { console.warn(e); }
+            } catch (e) {
+                console.warn(e);
+            }
         })();
     }, []);
 
-    const scrollHandler = useAnimatedScrollHandler((e) => { scrollY.value = e.contentOffset.y; });
-    const heroFade = useAnimatedStyle(() => ({
-        opacity: interpolate(scrollY.value, [0, height * 0.4], [1, 0], Extrapolation.CLAMP),
-    }));
-    const sectionFade = useAnimatedStyle(() => ({
-        opacity: interpolate(scrollY.value, [height * 0.3, height * 0.6], [0, 1], Extrapolation.CLAMP),
-        transform: [{ translateY: interpolate(scrollY.value, [height * 0.3, height * 0.6], [40, 0], Extrapolation.CLAMP) }],
+    const scrollHandler = useAnimatedScrollHandler((event) => {
+        scrollY.value = event.contentOffset.y;
+    });
+
+    const heroStyle = useAnimatedStyle(() => ({
+        transform: [
+            {
+                translateY: interpolate(scrollY.value, [0, 260], [0, -26], Extrapolation.CLAMP),
+            },
+        ],
+        opacity: interpolate(scrollY.value, [0, 260], [1, 0.78], Extrapolation.CLAMP),
     }));
 
-    const topPad = Math.max(insets.top + 4, 48);
-    const botPad = Math.max(insets.bottom + 20, 34);
+    const latestCity = useMemo(() => {
+        if (!latestActivity?.location?.address) return "vicino a te";
+        return latestActivity.location.address.split(",")[0];
+    }, [latestActivity]);
 
     return (
         <View style={styles.root}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+            <MotionBackground />
+
             <Animated.ScrollView
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ minHeight: height * 1.5 }}
+                contentContainerStyle={{
+                    paddingTop: insets.top + 18,
+                    paddingBottom: insets.bottom + 42,
+                }}
             >
-                {/* ── Hero ── */}
-                <Animated.View style={[styles.hero, heroFade]}>
-                    <AnimatedBackground />
-
-                    {/* Overlay UI */}
-                    <View style={[styles.overlay, { paddingTop: topPad }]}>
-
-                        {/* TOP: brand logo text */}
-                        <Animated.View entering={FadeInDown.duration(700).springify()} style={styles.headerWrap}>
-                            <GradientText
-                                text="AiutarSì"
-                                style={styles.appName}
-                                startRGB={[107, 33, 168]}
-                                endRGB={[207, 5, 127]}
-                            />
-                        </Animated.View>
-
-                        {/* CONTENT: bubble + logo circle + slogan + pill */}
-                        <View style={styles.middle}>
-                            {/* Bubble + logo circle (below bubble, right-aligned) */}
-                            <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.bubbleCol}>
-                                <View style={styles.bubble}>
-                                    <Text style={styles.bubbleText} numberOfLines={2}>
-                                        &quot;Il tuo impegno ha un valore reale&quot;
-                                    </Text>
-                                    <View style={styles.bubbleTail} />
-                                </View>
-                                {/* Logo circle with magenta border */}
-                                <View style={styles.logoBorderRing}>
-                                    <View style={styles.logoInner}>
-                                        <Image
-                                            source={require("../assets/images/logo-transparent.png")}
-                                            style={styles.logoImg}
-                                            resizeMode="contain"
-                                        />
-                                    </View>
-                                </View>
-                            </Animated.View>
-
-                            {/* Slogan */}
-                            <Animated.View entering={FadeInUp.delay(300).springify().damping(14)} style={styles.sloganWrap}>
-                                <Text style={styles.sloganWhite}>
-                                    Dai Valore al <Text style={styles.sloganItalic}>Tuo</Text> Tempo.
-                                </Text>
-                                <GradientText
-                                    text="Moltiplica l'impatto."
-                                    style={styles.sloganGradient}
-                                    startRGB={[147, 51, 234]}
-                                    endRGB={[232, 0, 110]}
-                                />
-                            </Animated.View>
-
-                            {/* Social proof pill */}
-                            <Animated.View entering={FadeIn.delay(500).duration(600)} style={styles.pill}>
-                                <View style={styles.pillDot} />
-                                <Text style={styles.pillText} numberOfLines={1}>
-                                    UNISCITI A +{totalVolunteers.toLocaleString('it-IT')} PERSONE CHE STANNO GIÀ AIUTANDO.
-                                </Text>
-                            </Animated.View>
+                <Animated.View style={[styles.page, heroStyle]}>
+                    <Animated.View entering={FadeInDown.duration(550)} style={styles.brandRow}>
+                        <View style={styles.brandPill}>
+                            <Sparkles size={14} color={Colors.accent} />
+                            <Text style={styles.brandPillText}>AiutarSì</Text>
                         </View>
+                        <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
+                            <Text style={styles.loginLinkTop}>Accedi</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
 
-                        {/* BOTTOM: Buttons + login — ABSOLUTE at bottom */}
-                        <Animated.View
-                            entering={FadeInUp.delay(600).springify().damping(16)}
-                            style={[styles.bottom, { bottom: botPad + 28 }]}
-                        >
-                            {/* Primary (magenta→violet) */}
-                            <TouchableOpacity onPress={() => router.push("/register/volunteer")} activeOpacity={0.82} style={styles.primaryWrap}>
-                                <LinearGradient colors={['#e8006e', '#9c27b0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.pill2}>
-                                    <View style={styles.iconCirclePink}>
-                                        <Heart size={17} color="white" fill="white" />
-                                    </View>
-                                    <Text style={styles.btnLabel}>Diventa Volontario</Text>
-                                    <ChevronRight size={17} color="rgba(255,255,255,0.65)" />
-                                </LinearGradient>
-                            </TouchableOpacity>
+                    <Animated.View entering={FadeInUp.delay(120).duration(620)} style={styles.heroBlock}>
+                        <Text style={styles.heroHeadline}>
+                            Il volontariato che si adatta alla tua vita.
+                        </Text>
+                        <Text style={styles.heroSubheadline}>
+                            Scopri opportunità vicine, entra in contatto con enti reali e trasforma anche un’ora libera in impatto concreto.
+                        </Text>
+                    </Animated.View>
 
-                            {/* Secondary (indigo dark gradient) */}
-                            <TouchableOpacity onPress={() => router.push("/register/npo")} activeOpacity={0.82} style={styles.secondaryWrap}>
-                                <LinearGradient colors={['#1e1b4b', '#312e81']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.pill2}>
-                                    <View style={styles.iconCircleIndigo}>
-                                        <Plus size={17} color="white" strokeWidth={2.5} />
-                                    </View>
-                                    <Text style={styles.btnLabel}>Registra il tuo Ente</Text>
-                                    <ChevronRight size={17} color="rgba(255,255,255,0.5)" />
-                                </LinearGradient>
-                            </TouchableOpacity>
+                    <Animated.View entering={FadeInUp.delay(180).duration(620)} style={styles.liveNotice}>
+                        <MapPin size={15} color={Colors.primary} />
+                        <Text style={styles.liveNoticeText}>
+                            Ultima opportunità pubblicata a <Text style={styles.liveNoticeStrong}>{latestCity}</Text>
+                        </Text>
+                    </Animated.View>
 
-                            {/* Login */}
-                            <View style={styles.loginRow}>
-                                <Text style={styles.loginText}>Hai già un account? </Text>
-                                <TouchableOpacity onPress={() => router.push("/login")}>
-                                    <Text style={styles.loginLink}>Accedi</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </Animated.View>
-                    </View>
+                    <Animated.View entering={FadeInUp.delay(240).duration(620)} style={styles.heroStatsRow}>
+                        <HeroStat value={`+${totalVolunteers.toLocaleString("it-IT")}`} label="Volontari attivi" />
+                        <HeroStat value={latestActivity ? "Live" : "Nuove"} label="Opportunità ogni giorno" />
+                        <HeroStat value="Smart" label="Match guidato" />
+                    </Animated.View>
 
-                    {/* TICKER — absolute bottom, separate from CTA block */}
-                    <LandingTicker latestActivity={latestActivity} />
+                    <Animated.View entering={FadeInUp.delay(300).duration(620)} style={styles.ctaStack}>
+                        <RoleCard
+                            title="Diventa volontario"
+                            eyebrow="Per chi vuole aiutare"
+                            description="Trova attività compatibili con i tuoi interessi, la tua zona e il tempo che hai davvero."
+                            colors={["#462282", "#cd057f"]}
+                            icon={<HeartHandshake size={22} color="#fff" />}
+                            onPress={() => router.push("/register/volunteer")}
+                        />
+                        <RoleCard
+                            title="Registra il tuo ente"
+                            eyebrow="Per associazioni e NPO"
+                            description="Pubblica iniziative, ricevi candidature e usa l’app per coordinare la tua community."
+                            colors={["#1f2a44", "#334155"]}
+                            icon={<Building2 size={22} color="#fff" />}
+                            onPress={() => router.push("/register/npo")}
+                        />
+                    </Animated.View>
                 </Animated.View>
 
-                {/* ── Come Funziona ── */}
-                <Animated.View style={[styles.featureSection, sectionFade]}>
-                    <View style={styles.dividerRow}>
-                        <View style={styles.dividerLine} />
-                        <Text style={styles.dividerLabel}>Come Funziona</Text>
-                        <View style={styles.dividerLine} />
+                <View style={styles.section}>
+                    <Animated.View entering={FadeInDown.delay(100).duration(520)} style={styles.sectionHeader}>
+                        <Text style={styles.sectionEyebrow}>Perché funziona</Text>
+                        <Text style={styles.sectionTitle}>Più chiaro, meno dispersione.</Text>
+                        <Text style={styles.sectionSubtitle}>
+                            La landing ora spiega subito cosa fai, per chi è pensata e quale beneficio concreto ottieni.
+                        </Text>
+                    </Animated.View>
+
+                    <FeatureCard
+                        delay={120}
+                        accent={Colors.primary}
+                        icon={<MapPin size={22} color={Colors.primary} />}
+                        title="Scopri attività vicine"
+                        text="Le opportunità vengono presentate in modo semplice, con contesto territoriale e priorità leggibili."
+                    />
+                    <FeatureCard
+                        delay={220}
+                        accent={Colors.accent}
+                        icon={<CalendarClock size={22} color={Colors.accent} />}
+                        title="Scegli in base al tuo tempo"
+                        text="Non serve stravolgere la giornata: puoi trovare occasioni brevi, urgenti o ricorrenti."
+                    />
+                    <FeatureCard
+                        delay={320}
+                        accent={"#0f766e"}
+                        icon={<ShieldCheck size={22} color="#0f766e" />}
+                        title="Aiuta enti reali"
+                        text="L’esperienza è costruita per ridurre il rumore e far emergere organizzazioni e richieste concrete."
+                    />
+                </View>
+
+                <View style={styles.statementPanel}>
+                    <Text style={styles.statementQuote}>
+                        “Non ti chiediamo di cambiare vita. Ti chiediamo di dare più valore al tempo che hai già.”
+                    </Text>
+                    <View style={styles.statementTrustRow}>
+                        <Users size={18} color={Colors.secondary} />
+                        <View style={styles.statementDot} />
+                        <HeartHandshake size={18} color={Colors.secondary} />
+                        <View style={styles.statementDot} />
+                        <Building2 size={18} color={Colors.secondary} />
                     </View>
-                    <FeatureCard icon={Search} title="Scopri" description="Trova opportunità su misura per le tue abilità grazie al nostro Smart Match." color="#6366f1" delay={0} />
-                    <FeatureCard icon={Heart} title="Partecipa" description="Unisciti alle attività e crea un impatto concreto nella tua comunità." color={Colors.accent} delay={150} />
-                    <FeatureCard icon={Wallet} title="Ottieni Valore" description="Il tuo impegno è riconosciuto con badge che potrai condividere." color="#10b981" delay={300} />
-                    <TrustIcons />
-                </Animated.View>
+                </View>
+
+                <View style={styles.bottomCtaWrap}>
+                    <TouchableOpacity
+                        activeOpacity={0.82}
+                        style={styles.bottomPrimary}
+                        onPress={() => router.push("/register/volunteer")}
+                    >
+                        <Text style={styles.bottomPrimaryText}>Inizia come volontario</Text>
+                        <ArrowRight size={18} color="#fff" />
+                    </TouchableOpacity>
+
+                    <View style={styles.bottomLoginRow}>
+                        <Text style={styles.bottomLoginText}>Hai già un account? </Text>
+                        <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
+                            <Text style={styles.bottomLoginLink}>Accedi</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </Animated.ScrollView>
         </View>
     );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────
-const FeatureCard = ({ icon: Icon, title, description, color, delay }: { icon: any, title: string, description: string, color: string, delay: number }) => (
-    <Animated.View entering={FadeInDown.delay(delay).springify().damping(13)} style={styles.featureCard}>
-        <View style={[styles.featureIcon, { backgroundColor: `${color}15` }]}>
-            <Icon size={26} color={color} strokeWidth={2.5} />
-        </View>
-        <Text style={styles.featureTitle}>{title}</Text>
-        <Text style={styles.featureDesc}>{description}</Text>
-    </Animated.View>
-);
-
-const TrustIcons = () => (
-    <View style={styles.trustRow}>
-        <Users size={20} color={Colors.text} strokeWidth={2.5} />
-        <View style={styles.trustDot} />
-        <HandHeart size={20} color={Colors.text} strokeWidth={2.5} />
-        <View style={styles.trustDot} />
-        <Building2 size={20} color={Colors.text} strokeWidth={2.5} />
-    </View>
-);
-
-import { Layout, moderateScale } from "../utils/layout";
-
-// ... existing code ...
-
-// ── Styles ────────────────────────────────────────────────────────────────
-const SLOGAN = Math.min(Layout.window.width * 0.085, 34);
-const SLOGAN_GRAD = Math.min(Layout.window.width * 0.072, 28);
-
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#07000f' },
-    hero: { width: Layout.window.width, height: Layout.window.height, overflow: 'hidden' },
-    // Overlay — content groups from top, no space-between
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
+    root: {
+        flex: 1,
+        backgroundColor: "#fffaf7",
+    },
+    page: {
         paddingHorizontal: 22,
     },
-
-    // Header
-    headerWrap: { alignItems: 'center' },
-    appName: {
-        fontSize: Layout.fontSize['3xl'] + 4,
-        fontWeight: '900',
-        fontStyle: 'italic',
-        letterSpacing: -1,
+    brandRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 24,
     },
-
-    // Middle — content flows naturally from top
-    middle: { gap: 18, marginTop: 42 },
-
-    // Bubble column (right-aligned, with logo circle below)
-    bubbleCol: { alignItems: 'flex-end', gap: 6 },
-    bubbleRow: { alignItems: 'flex-end' },
-    bubble: {
-        backgroundColor: 'rgba(255,255,255,0.09)',
+    brandPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        backgroundColor: "rgba(255,255,255,0.78)",
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.08)",
+    },
+    brandPillText: {
+        color: Colors.primary,
+        fontSize: 13,
+        fontWeight: "900",
+        letterSpacing: 0.3,
+    },
+    loginLinkTop: {
+        color: Colors.primary,
+        fontSize: 13,
+        fontWeight: "800",
+    },
+    heroBlock: {
+        marginBottom: 18,
+    },
+    heroHeadline: {
+        color: "#1b1232",
+        fontSize: Math.min(Layout.window.width * 0.107, 42),
+        lineHeight: Math.min(Layout.window.width * 0.116, 46),
+        fontWeight: "900",
+        letterSpacing: -1.2,
+        marginBottom: 14,
+    },
+    heroSubheadline: {
+        color: "#5b556b",
+        fontSize: 16,
+        lineHeight: 24,
+        fontWeight: "500",
+        maxWidth: "96%",
+    },
+    liveNotice: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        backgroundColor: "rgba(255,255,255,0.72)",
         borderRadius: 18,
         paddingHorizontal: 14,
         paddingVertical: 10,
+        alignSelf: "flex-start",
+        marginBottom: 18,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
-        maxWidth: '78%',
-        alignSelf: 'flex-end',
-        marginRight: 8,
+        borderColor: "rgba(70,34,130,0.08)",
     },
-    bubbleText: { color: 'rgba(255,255,255,0.85)', fontSize: Layout.fontSize.xs - 1, fontWeight: '600', textAlign: 'right', lineHeight: 16 },
-    bubbleTail: {
-        position: 'absolute', bottom: -7, right: 16,
-        width: 0, height: 0,
-        borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 8,
-        borderLeftColor: 'transparent', borderRightColor: 'transparent',
-        borderTopColor: 'rgba(255,255,255,0.09)',
+    liveNoticeText: {
+        color: Colors.secondary,
+        fontSize: 13,
+        fontWeight: "600",
     },
-
-    // Logo circle
-    logoBorderRing: {
-        width: 56, height: 56, borderRadius: 28,
-        borderWidth: 2.5, borderColor: '#cf057f',
-        alignSelf: 'flex-end',
-        marginRight: 20,
-        shadowColor: '#cf057f', shadowOpacity: 0.45, shadowRadius: 10,
-        shadowOffset: { width: 0, height: 0 },
+    liveNoticeStrong: {
+        color: Colors.primary,
+        fontWeight: "900",
     },
-    logoInner: { flex: 1, borderRadius: 26, backgroundColor: '#ffffff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    logoImg: { width: '85%', height: '85%' },
-
-    // Slogan
-    sloganWrap: { alignItems: 'center', gap: 2 },
-    sloganWhite: {
-        color: '#ffffff',
-        fontSize: SLOGAN,
-        fontWeight: '900',
-        lineHeight: SLOGAN * 1.18,
-        textAlign: 'center',
-        letterSpacing: -0.5,
+    heroStatsRow: {
+        flexDirection: "row",
+        gap: 10,
+        marginBottom: 20,
     },
-    sloganItalic: {
-        fontStyle: 'italic',
-        fontWeight: '900',
-        fontSize: SLOGAN,
-        color: '#ffffff',
+    heroStat: {
+        flex: 1,
+        backgroundColor: "rgba(255,255,255,0.74)",
+        borderRadius: 20,
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.08)",
     },
-    sloganGradient: {
-        fontSize: SLOGAN_GRAD,
-        fontWeight: '900',
-        fontStyle: 'italic',
-        letterSpacing: -0.5,
-        lineHeight: SLOGAN_GRAD * 1.2,
+    heroStatValue: {
+        color: "#1b1232",
+        fontSize: 20,
+        fontWeight: "900",
+        marginBottom: 4,
     },
-
-    // Pill (social proof) — auto width, same visual scale as slogan line
-    pill: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,255,255,0.07)',
-        borderRadius: 100,
-        paddingHorizontal: 14, paddingVertical: 8,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
-        alignSelf: 'flex-start',
-        maxWidth: '100%',
+    heroStatLabel: {
+        color: "#6b647a",
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 0.2,
     },
-    pillDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' },
-    pillText: { color: 'rgba(255,255,255,0.7)', fontSize: Layout.fontSize.xs - 3, fontWeight: '700', letterSpacing: 0.4, flexShrink: 1 },
-
-    // Bottom CTA block — absolute at bottom, pushed higher
-    bottom: {
-        position: 'absolute',
-        left: 22, right: 22,
-        gap: 11,
+    ctaStack: {
+        gap: 14,
     },
-    primaryWrap: { borderRadius: 50, overflow: 'hidden' },
-    secondaryWrap: {
-        borderRadius: 50, overflow: 'hidden',
-        borderWidth: 1, borderColor: 'rgba(99,102,241,0.45)',
+    roleCardShadow: {
+        borderRadius: 30,
+        shadowColor: "#150c2a",
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 4,
     },
-    pill2: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 18, paddingHorizontal: 22, gap: 14, borderRadius: 50,
+    roleCard: {
+        borderRadius: 30,
+        padding: 22,
+        minHeight: 178,
     },
-    iconCirclePink: {
-        width: 34, height: 34, borderRadius: 17,
-        backgroundColor: 'rgba(255,255,255,0.22)',
-        alignItems: 'center', justifyContent: 'center',
+    roleCardTop: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 18,
     },
-    iconCircleIndigo: {
-        width: 34, height: 34, borderRadius: 17,
-        backgroundColor: 'rgba(99,102,241,0.3)',
-        alignItems: 'center', justifyContent: 'center',
+    roleIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 16,
+        backgroundColor: "rgba(255,255,255,0.16)",
+        alignItems: "center",
+        justifyContent: "center",
     },
-    btnLabel: { flex: 1, color: '#fff', fontSize: Layout.fontSize.base - 1, fontWeight: '800', letterSpacing: -0.2 },
-    loginRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 2 },
-    loginText: { color: 'rgba(255,255,255,0.38)', fontSize: Layout.fontSize.xs - 1, fontWeight: '500' },
-    loginLink: { color: 'rgba(255,255,255,0.7)', fontSize: Layout.fontSize.xs - 1, fontWeight: '800', textDecorationLine: 'underline' },
-
-    // Ticker — absolute bottom
-    ticker: {
-        position: 'absolute',
-        bottom: 10,
-        left: 0, right: 0,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        paddingHorizontal: 24,
+    roleEyebrow: {
+        color: "rgba(255,255,255,0.78)",
+        fontSize: 11,
+        fontWeight: "800",
+        textTransform: "uppercase",
+        letterSpacing: 1,
     },
-    tickerDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#cf057f', opacity: 0.8 },
-    tickerText: { color: 'rgba(255,255,255,0.38)', fontSize: Layout.fontSize.xs - 3, fontWeight: '700', letterSpacing: 1.2, flexShrink: 1 },
-
-    // Feature section
-    featureSection: { paddingHorizontal: 24, paddingTop: 56, backgroundColor: '#f8fafc' },
-    dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 28 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
-    dividerLabel: { fontSize: Layout.fontSize.xl, fontWeight: '900', color: '#1a237e', letterSpacing: -0.5 },
+    roleTitle: {
+        color: "#fff",
+        fontSize: 24,
+        lineHeight: 28,
+        fontWeight: "900",
+        marginBottom: 10,
+    },
+    roleDescription: {
+        color: "rgba(255,255,255,0.82)",
+        fontSize: 14,
+        lineHeight: 21,
+        fontWeight: "500",
+    },
+    roleFooter: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: 18,
+    },
+    roleCta: {
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: "900",
+    },
+    section: {
+        paddingHorizontal: 22,
+        paddingTop: 36,
+    },
+    sectionHeader: {
+        marginBottom: 18,
+    },
+    sectionEyebrow: {
+        color: Colors.accent,
+        fontSize: 12,
+        fontWeight: "900",
+        letterSpacing: 1.2,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    sectionTitle: {
+        color: "#1b1232",
+        fontSize: 28,
+        lineHeight: 32,
+        fontWeight: "900",
+        letterSpacing: -0.8,
+        marginBottom: 8,
+    },
+    sectionSubtitle: {
+        color: "#6b647a",
+        fontSize: 15,
+        lineHeight: 23,
+        fontWeight: "500",
+    },
     featureCard: {
-        backgroundColor: '#fff', borderRadius: 32, padding: 26, marginBottom: 14,
-        borderWidth: 1, borderColor: '#f1f5f9', alignItems: 'center',
-        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+        backgroundColor: "rgba(255,255,255,0.9)",
+        borderRadius: 26,
+        padding: 22,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.06)",
     },
-    featureIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-    featureTitle: { fontSize: Layout.fontSize.lg, fontWeight: '900', color: '#1a237e', marginBottom: 6, textAlign: 'center' },
-    featureDesc: { fontSize: Layout.fontSize.sm - 1, color: '#64748b', lineHeight: 20, fontWeight: '500', textAlign: 'center' },
-    trustRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 36, opacity: 0.3 },
-    trustDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: '#94a3b8' },
+    featureIconWrap: {
+        width: 46,
+        height: 46,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 14,
+    },
+    featureTitle: {
+        color: "#1b1232",
+        fontSize: 20,
+        fontWeight: "900",
+        marginBottom: 8,
+    },
+    featureText: {
+        color: "#625b72",
+        fontSize: 14,
+        lineHeight: 21,
+        fontWeight: "500",
+    },
+    statementPanel: {
+        marginHorizontal: 22,
+        marginTop: 18,
+        borderRadius: 28,
+        paddingHorizontal: 22,
+        paddingVertical: 24,
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.06)",
+    },
+    statementQuote: {
+        color: "#24183f",
+        fontSize: 21,
+        lineHeight: 29,
+        fontWeight: "800",
+        letterSpacing: -0.4,
+        textAlign: "center",
+    },
+    statementTrustRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 18,
+    },
+    statementDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: "#c7c2d3",
+    },
+    bottomCtaWrap: {
+        paddingHorizontal: 22,
+        paddingTop: 24,
+        gap: 14,
+    },
+    bottomPrimary: {
+        backgroundColor: Colors.primary,
+        borderRadius: 999,
+        paddingHorizontal: 22,
+        paddingVertical: 18,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+    },
+    bottomPrimaryText: {
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "900",
+    },
+    bottomLoginRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    bottomLoginText: {
+        color: "#726b80",
+        fontSize: 13,
+        fontWeight: "500",
+    },
+    bottomLoginLink: {
+        color: Colors.primary,
+        fontSize: 13,
+        fontWeight: "900",
+    },
+    blobOne: {
+        position: "absolute",
+        top: 80,
+        right: -60,
+        width: 220,
+        height: 220,
+        borderRadius: 999,
+        backgroundColor: "rgba(205,5,127,0.11)",
+    },
+    blobTwo: {
+        position: "absolute",
+        bottom: 140,
+        left: -70,
+        width: 250,
+        height: 250,
+        borderRadius: 999,
+        backgroundColor: "rgba(70,34,130,0.08)",
+    },
 });
