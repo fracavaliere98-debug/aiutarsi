@@ -1,8 +1,8 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
+import { useNPOFollow } from "../../hooks/useNPOFollow";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
@@ -16,14 +16,14 @@ import { StatCard } from "../../components/StatCard";
 import { BadgePill } from "../../components/BadgePill";
 import { ActivityCard } from "../../components/ActivityCard";
 import { Colors } from "../../constants/Colors";
-import { useState } from "react";
 import ChatService from "../../services/ChatService";
 import ReportModal from "../../components/ReportModal";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { user, followNPO, unfollowNPO, isFollowingNPO, getNPOFollowers, users } = useAuth();
+    const { user, usersDB: users, refreshUsers } = useAuth();
+    const { followNPO, unfollowNPO, isFollowingNPO, isProcessing } = useNPOFollow();
     const { activities, reviews } = useActivities();
     const { applyToNPO, hasAppliedToNPO } = useApplications();
     const { showToast } = useToast();
@@ -240,35 +240,39 @@ export default function NPOProfileScreen() {
 
                 {/* Main Action: Follow */}
                 <TouchableOpacity
+                    className="flex-1 flex-row items-center justify-center p-4 rounded-2xl w-full max-w-[280px]"
+                    style={{
+                        backgroundColor: isFollowingNPO(npoId) ? 'transparent' : Colors.primary,
+                        borderWidth: isFollowingNPO(npoId) ? 1 : 0,
+                        borderColor: isFollowingNPO(npoId) ? Colors.primary : 'transparent',
+                        opacity: isProcessing ? 0.7 : 1
+                    }}
+                    disabled={isProcessing || user?.role !== "VOLUNTEER"}
                     onPress={async () => {
-                        if (!user || user.role !== "VOLUNTEER") return;
-                        const isFollowing = isFollowingNPO(npoId);
-                        const success = isFollowing
-                            ? await unfollowNPO(npoId)
-                            : await followNPO(npoId);
-                        if (success) {
-                            showToast(
-                                isFollowing ? "info" : "success",
-                                isFollowing ? "Non segui più questa NPO" : `Ora segui ${npoUser.npoName}!`
-                            );
+                        if (isFollowingNPO(npoId)) {
+                            await unfollowNPO(npoId);
+                        } else {
+                            await followNPO(npoId);
                         }
                     }}
-                    className={`px-6 h-11 rounded-full flex-row items-center justify-center gap-2 border ${user?.role === "VOLUNTEER" && isFollowingNPO(npoId)
-                        ? "bg-white border-accent"
-                        : "bg-accent border-accent"
-                        }`}
                 >
-                    <Heart
-                        size={18}
-                        color={user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? Colors.accent : "white"}
-                        fill={user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? Colors.accent : "transparent"}
-                    />
-                    <Text className={`font-bold text-sm ${user?.role === "VOLUNTEER" && isFollowingNPO(npoId)
-                        ? "text-accent"
-                        : "text-white"
-                        }`}>
-                        {user?.role === "VOLUNTEER" && isFollowingNPO(npoId) ? "Segui già" : "Segui Ente"}
-                    </Text>
+                    {isProcessing ? (
+                        <ActivityIndicator size="small" color={isFollowingNPO(npoId) ? Colors.primary : "#fff"} />
+                    ) : (
+                        <>
+                            <Heart
+                                size={20}
+                                color={isFollowingNPO(npoId) ? Colors.primary : "#fff"}
+                                fill={isFollowingNPO(npoId) ? Colors.primary : "transparent"}
+                            />
+                            <Text
+                                className="ml-2 font-bold"
+                                style={{ color: isFollowingNPO(npoId) ? Colors.primary : "#fff" }}
+                            >
+                                {isFollowingNPO(npoId) ? "Seguito" : "Segui Ente"}
+                            </Text>
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
 

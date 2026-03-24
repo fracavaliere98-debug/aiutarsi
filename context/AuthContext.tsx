@@ -11,7 +11,8 @@ import { profileService } from "../services/ProfileService";
 
 interface AuthContextType {
     user: AppUser | null;
-    users: AppUser[]; // All users in the system
+    users: AppUser[];
+    usersDB: AppUser[]; 
     login: (email: string, password: string) => Promise<boolean>;
     register: (userData: Partial<AppUser>) => Promise<boolean>;
     logout: () => void;
@@ -19,13 +20,9 @@ interface AuthContextType {
     isLoading: boolean;
     isLoggingOut: boolean;
     updateUserProfile: (data: Partial<AppUser>) => Promise<boolean>;
-    // NPO Follower Management
-    followNPO: (npoId: string) => Promise<boolean>;
-    unfollowNPO: (npoId: string) => Promise<boolean>;
-    getNPOFollowers: (npoId: string) => AppUser[];
-    isFollowingNPO: (npoId: string) => boolean;
     getUserById: (id: string) => AppUser | undefined;
     fetchUserById: (id: string) => Promise<AppUser | null>;
+    setUser: (user: AppUser | null) => void;
     resetUsers: () => Promise<void>;
     refreshUsers: (role?: string) => Promise<void>;
     requestAccountDeletion: () => Promise<void>;
@@ -38,6 +35,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
     user: null,
     users: [],
+    usersDB: [],
     login: async () => false,
     register: async () => false,
     logout: () => { },
@@ -45,12 +43,9 @@ const AuthContext = createContext<AuthContextType>({
     isLoading: false,
     isLoggingOut: false,
     updateUserProfile: async () => false,
-    followNPO: async () => false,
-    unfollowNPO: async () => false,
-    getNPOFollowers: () => [],
-    isFollowingNPO: () => false,
     getUserById: () => undefined,
     fetchUserById: async () => null,
+    setUser: () => { },
     resetUsers: async () => { },
     refreshUsers: async () => { },
     requestAccountDeletion: async () => { },
@@ -404,66 +399,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [resetState]);
 
-    // NPO Follower Management Functions
-    const followNPO = useCallback(async (npoId: string): Promise<boolean> => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        try {
-            await npoService.followNPO(npoId, user.id);
-
-            // Update both relational and flat arrays for consistency
-            const updatedFollowedEntities = [...(user.followed_entities || []), { npo_id: npoId }];
-            const updatedFollowedNPOs = [...(user.followedNPOs || []), npoId];
-
-            const updatedUser = {
-                ...user,
-                followed_entities: updatedFollowedEntities,
-                followedNPOs: updatedFollowedNPOs
-            };
-            setUser(updatedUser);
-
-            refreshUsers();
-            return true;
-        } catch (error) {
-            console.error("Follow NPO failed:", error);
-            return false;
-        }
-    }, [user, refreshUsers]);
-
-    const unfollowNPO = useCallback(async (npoId: string): Promise<boolean> => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        try {
-            await npoService.unfollowNPO(npoId, user.id);
-
-            // Update both relational and flat arrays
-            const updatedFollowedEntities = (user.followed_entities || []).filter(e => e.npo_id !== npoId);
-            const updatedFollowedNPOs = (user.followedNPOs || []).filter(id => id !== npoId);
-
-            const updatedUser = {
-                ...user,
-                followed_entities: updatedFollowedEntities,
-                followedNPOs: updatedFollowedNPOs
-            };
-            setUser(updatedUser);
-
-            refreshUsers();
-            return true;
-        } catch (error) {
-            console.error("Unfollow NPO failed:", error);
-            return false;
-        }
-    }, [user, refreshUsers]);
-
     const getNPOFollowers = useCallback((npoId: string): AppUser[] => {
         return usersDB.filter(u =>
             u.role === "VOLUNTEER" &&
             u.followed_entities?.some(e => e.npo_id === npoId)
         );
     }, [usersDB]);
-
-    const isFollowingNPO = useCallback((npoId: string): boolean => {
-        if (!user || user.role !== "VOLUNTEER") return false;
-        return user.followed_entities?.some(e => e.npo_id === npoId) || false;
-    }, [user]);
 
     const getUserById = useCallback((id: string) => {
         return usersDB.find(u => u.id === id);
@@ -550,6 +491,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const value = useMemo(() => ({
         user,
         users: usersDB,
+        usersDB,
         login,
         register,
         logout,
@@ -557,12 +499,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoggingOut,
         isLoaded,
         updateUserProfile,
-        followNPO,
-        unfollowNPO,
         getNPOFollowers,
-        isFollowingNPO,
         getUserById,
         fetchUserById,
+        setUser,
         resetUsers,
         refreshUsers,
         requestAccountDeletion,
@@ -570,7 +510,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         getReferralCount,
         updateEmail,
         updatePassword
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, followNPO, unfollowNPO, getNPOFollowers, isFollowingNPO, getUserById, fetchUserById, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
 
     return (
         <AuthContext.Provider value={value}>
