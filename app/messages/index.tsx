@@ -333,7 +333,7 @@ export default function MessagesListScreen() {
                             setShowNpoPicker(true);
                             fetchMyNpos();
                         }}
-                        style={{ backgroundColor: '#D81B60' }} // Pink/Magenta color from photo
+                        style={{ backgroundColor: Colors.accent }} // Pink/Magenta color from photo
                         className="w-12 h-12 rounded-full items-center justify-center shadow-sm"
                     >
                         <Edit size={22} color="white" />
@@ -406,7 +406,7 @@ export default function MessagesListScreen() {
                                         timestamp={formatRelativeDate(lastMessageAt)}
                                         unreadCount={isUnread ? 1 : 0}
                                         isGroup={isGroup}
-                                        lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (getUserById(lastMessageSenderId || '')?.name || 'Utente') : undefined)}
+                                        lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (conv.participants?.find((p: any) => p.user_id === lastMessageSenderId)?.profiles?.name || 'Utente') : undefined)}
                                         isOwnLastMessage={lastMessageSenderId === user?.id}
                                         onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
                                     />
