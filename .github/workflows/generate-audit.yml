@@ -1,11 +1,6 @@
 name: Generate Master Audit Report
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'audit/**'
   workflow_dispatch:
 
 jobs:

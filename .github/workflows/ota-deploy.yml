@@ -7,6 +7,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ota-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ota-update:
     name: Fast OTA Deploy
@@ -16,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,10 +40,61 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      # ── Verifica cosa è cambiato (Smart Build Strategy) ───────────────────
+      - name: Check for JS-Only Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            native:
+              - '!app/**'
+              - '!components/**'
+              - '!hooks/**'
+              - '!types/**'
+              - '!utils/**'
+              - '!services/**'
+              - '!constants/**'
+
+      - name: Restore cached APK
+        id: apk-cache
+        if: steps.filter.outputs.native != 'true'
+        uses: actions/cache@v4
+        with:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          key: apk-${{ runner.os }}-${{ hashFiles('app.json', 'package-lock.json', 'package.json', 'eas.json', 'metro.config.js', 'babel.config.js', 'android/**', 'ios/**') }}
+
       - name: Inject Environment Variables
         run: |
           echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
           echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+
+      # ── Build Nativa Completa (Solo se necessario) ────────────────────────
+      - name: Build Android Release APK
+        if: steps.filter.outputs.native == 'true' || steps.apk-cache.outputs.cache-hit != 'true'
+        run: |
+          npx expo prebuild --platform android --clean
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # ── Setup & Run Maestro E2E Tests ─────────────────────────────────────
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Run Maestro smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        timeout-minutes: 45
+        with:
+          api-level: 33
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            maestro test .maestro/flows/
 
       - name: EAS OTA Update → branch preview
         run: |
