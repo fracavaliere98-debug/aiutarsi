@@ -20,7 +20,7 @@ const CATEGORIES = [
     { id: 'salute', label: 'Salute', emoji: '💚' },
 ];
 
-export default function NPOInterestsSkillsSettings() {
+export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () => void }) {
     const router = useRouter();
     const { user, updateUserProfile } = useAuth();
     const { showToast } = useToast();
@@ -54,7 +54,11 @@ export default function NPOInterestsSkillsSettings() {
                 sought_skills: selectedSkills
             } as any);
             showToast("success", "Preferenze aggiornate!");
-            router.back();
+            if (onClose) {
+                onClose();
+            } else {
+                router.back();
+            }
         } catch (error) {
             console.error("Failed to save settings", error);
             showToast("error", "Errore durante il salvataggio.");
@@ -68,7 +72,7 @@ export default function NPOInterestsSkillsSettings() {
             label="Impostazioni"
             title="Settori e Competenze"
             bg="bg-background-light"
-            onBack={() => router.back()}
+            onBack={onClose || (() => router.back())}
         >
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
                 {/* SETTORI SECTION */}

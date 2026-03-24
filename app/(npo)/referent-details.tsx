@@ -29,7 +29,7 @@ const InputField = ({ label, value, onChangeText, placeholder, icon: Icon, multi
     </View>
 );
 
-export default function ReferentDetailsSettings() {
+export default function ReferentDetailsSettings({ onClose }: { onClose?: () => void }) {
     const router = useRouter();
     const { user, updateUserProfile } = useAuth();
     const { showToast } = useToast();
@@ -74,7 +74,11 @@ export default function ReferentDetailsSettings() {
                 auto_welcome_message: welcomeMessage
             } as any);
             showToast("success", "Dati referente aggiornati!");
-            router.back();
+            if (onClose) {
+                onClose();
+            } else {
+                router.back();
+            }
         } catch (error) {
             console.error("Failed to save referent details", error);
             showToast("error", "Errore durante il salvataggio.");
@@ -88,7 +92,7 @@ export default function ReferentDetailsSettings() {
             label="Impostazioni"
             title="Referente Principale"
             bg="bg-background-light"
-            onBack={() => router.back()}
+            onBack={onClose || (() => router.back())}
         >
             <KeyboardAvoidingView 
                 behavior={Platform.OS === "ios" ? "padding" : "height"}

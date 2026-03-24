@@ -340,7 +340,7 @@ export default function NPOProfileScreen() {
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                        <InterestsSkillsScreen />
+                        <InterestsSkillsScreen onClose={() => setShowInterestsSkills(false)} />
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </Modal>
@@ -353,7 +353,7 @@ export default function NPOProfileScreen() {
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                        <ReferentDetailsScreen />
+                        <ReferentDetailsScreen onClose={() => setShowReferentDetails(false)} />
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </Modal>

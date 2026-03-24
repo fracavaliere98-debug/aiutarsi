@@ -1,5 +1,6 @@
 import { ScrollView, View, TouchableOpacity, Text } from "react-native";
 import { ReactNode } from "react";
+import { useRouter } from "expo-router";
 import { ScreenWrapper } from "./ScreenWrapper";
 import { ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
@@ -34,7 +35,19 @@ export function StandardLayout({
     refreshControl
 }: StandardLayoutProps) {
     const { user } = useAuth();
+    const router = useRouter();
     const Content = noScroll ? View : ScrollView;
+
+    const handleBack = () => {
+        if (onBack) {
+            onBack();
+        } else if (router.canGoBack()) {
+            router.back();
+        }
+    };
+
+    // Show back button if onBack is provided OR if we can go back
+    const showBackButton = onBack || router.canGoBack();
 
     // Determine header color based on role if not provided
     const getHeaderColor = () => {
@@ -52,8 +65,8 @@ export function StandardLayout({
             >
                 <View className="flex-row justify-between items-center">
                     <View className="flex-row items-center flex-1 gap-4">
-                        {onBack && (
-                            <TouchableOpacity onPress={onBack} className="bg-white/10 p-2 rounded-full">
+                        {showBackButton && (
+                            <TouchableOpacity onPress={handleBack} className="bg-white/10 p-2 rounded-full">
                                 <ArrowLeft size={20} color="white" />
                             </TouchableOpacity>
                         )}
