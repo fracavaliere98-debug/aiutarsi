@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Switch, Animated, Dimensions, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Switch, Animated, Dimensions, ScrollView, Platform, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { Colors } from '../../constants/Colors';
@@ -61,10 +61,30 @@ export default function WelcomeScreen() {
         }
     }, [phase]);
 
+    const promptOpenSettings = (permissionLabel: string) => {
+        Alert.alert(
+            `${permissionLabel} disattivati`,
+            `Per attivare ${permissionLabel.toLowerCase()} devi consentirli nelle impostazioni del dispositivo.`,
+            [
+                { text: 'Annulla', style: 'cancel' },
+                { text: 'Apri impostazioni', onPress: () => void Linking.openSettings() },
+            ]
+        );
+    };
+
     const toggleLocation = async (value: boolean) => {
         if (value) {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            setLocationEnabled(status === 'granted');
+            const current = await Location.getForegroundPermissionsAsync();
+            const { status, canAskAgain } = current.status === 'granted'
+                ? current
+                : await Location.requestForegroundPermissionsAsync();
+
+            const granted = status === 'granted';
+            setLocationEnabled(granted);
+
+            if (!granted && !canAskAgain) {
+                promptOpenSettings('Localizzazione');
+            }
         } else {
             setLocationEnabled(false);
         }
@@ -78,8 +98,17 @@ export default function WelcomeScreen() {
 
         if (value) {
             const Notifications = await import('expo-notifications');
-            const { status } = await Notifications.requestPermissionsAsync();
-            setNotificationsEnabled(status === 'granted');
+            const current = await Notifications.getPermissionsAsync();
+            const { status, canAskAgain } = current.status === 'granted'
+                ? current
+                : await Notifications.requestPermissionsAsync();
+
+            const granted = status === 'granted';
+            setNotificationsEnabled(granted);
+
+            if (!granted && !canAskAgain) {
+                promptOpenSettings('Notifiche');
+            }
         } else {
             setNotificationsEnabled(false);
         }
