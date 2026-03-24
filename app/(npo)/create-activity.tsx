@@ -89,6 +89,7 @@ export default function CreateActivityScreen() {
     const [coordsConfirmed, setCoordsConfirmed] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [isCuratingDraft, setIsCuratingDraft] = useState(false);
+    const [hasAutoCuratedDraft, setHasAutoCuratedDraft] = useState(false);
     const { showToast } = useToast();
 
     const applyCuratedDraft = async (source: "button" | "auto") => {
@@ -116,9 +117,16 @@ export default function CreateActivityScreen() {
                 skills: suggestedSkills.length > 0 ? suggestedSkills : prev.skills,
             }));
 
+            if (source === 'auto') {
+                setHasAutoCuratedDraft(true);
+            }
+
             showToast('success', source === 'auto' ? 'Bozza AI aggiornata.' : 'Descrizione migliorata con AI.');
         } catch (error) {
             console.error('[CreateActivity] activity-curator-ai failed', error);
+            if (source === 'auto') {
+                setHasAutoCuratedDraft(true);
+            }
             showToast('error', 'Non sono riuscita a generare una bozza AI. Riprova tra poco.');
         } finally {
             setIsCuratingDraft(false);
@@ -126,14 +134,14 @@ export default function CreateActivityScreen() {
     };
 
     useEffect(() => {
-        if (params.ai_draft !== 'true' || !formData.title.trim() || isCuratingDraft) {
+        if (params.ai_draft !== 'true' || !formData.title.trim() || isCuratingDraft || hasAutoCuratedDraft) {
             return;
         }
 
         applyCuratedDraft('auto');
         // We only want one automatic AI refinement after the ai_draft bootstrap.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [params.ai_draft, formData.title]);
+    }, [params.ai_draft, formData.title, hasAutoCuratedDraft, isCuratingDraft]);
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

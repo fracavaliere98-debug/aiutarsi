@@ -513,7 +513,13 @@ export default function SearchScreen() {
     };
 
     return (
-        <StandardLayout label="Scopri" title="Esplora Attività" rightElement={<VolunteerHeaderActions />} bg="bg-background-light">
+        <StandardLayout 
+            label="Scopri" 
+            title="Esplora Attività" 
+            rightElement={<VolunteerHeaderActions />} 
+            bg="bg-background-light"
+            hideBack={true}
+        >
             {/* ── Search + Filter Box (rounded card, matches Map UI) ── */}
             <View style={{
                 backgroundColor: 'white',

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 import { gemmaService } from "../services/GemmaService";
 
-export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE';
+export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE' | 'OVERVIEW';
 
 export interface NPOInsight {
     id: string;
@@ -150,6 +150,20 @@ export const useNPOInsights = () => {
                 onAction: () => {
                     // For now just a toast/placeholder
                     console.log("Sharing milestones...");
+                }
+            });
+        }
+
+        if (foundInsights.length === 0) {
+            foundInsights.push({
+                id: 'npo_overview',
+                type: 'OVERVIEW',
+                priority: 99,
+                title: "Gemma ha controllato la tua dashboard",
+                description: "La situazione sembra stabile. Ti consiglio di pubblicare una nuova attività o curare i follower più attivi.",
+                actionLabel: "Apri dashboard",
+                onAction: () => {
+                    router.push("/(npo)/(tabs)/projects" as any);
                 }
             });
         }

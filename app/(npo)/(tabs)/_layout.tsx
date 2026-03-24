@@ -12,15 +12,26 @@ export default function NPOTabsLayout() {
                     backgroundColor: "white",
                     borderTopWidth: 1,
                     borderTopColor: "#f1f5f9",
-                    height: 85,
-                    paddingBottom: 25,
-                    paddingTop: 10,
+                    height: 90,
+                    paddingBottom: 30,
+                    paddingTop: 12,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: -4 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 10,
+                    elevation: 5,
+                    position: 'absolute',
+                    paddingHorizontal: 20,
+                },
+                tabBarItemStyle: {
+                    marginHorizontal: -10,
                 },
                 tabBarActiveTintColor: Colors.primary,
                 tabBarInactiveTintColor: "#94a3b8",
                 tabBarLabelStyle: {
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: "700",
+                    marginTop: 4,
                 }
             }}
         >
@@ -45,27 +56,27 @@ export default function NPOTabsLayout() {
                     title: "Community",
                     tabBarIcon: ({ focused }) => (
                         <View style={{
-                            width: 52, height: 52, borderRadius: 26,
+                            width: 56, height: 56, borderRadius: 28,
                             backgroundColor: Colors.primary,
                             alignItems: 'center', justifyContent: 'center',
-                            marginTop: -20,
+                            marginTop: -22,
                             shadowColor: Colors.primary,
-                            shadowOpacity: 0.35,
+                            shadowOpacity: 0.4,
                             shadowRadius: 10,
                             elevation: 8,
                         }}>
-                            <Globe size={22} color="white" />
+                            <Globe size={24} color="white" />
                         </View>
                     ),
                     tabBarLabel: () => (
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="projects"
                 options={{
-                    title: "Calendario",
+                    title: "Attività",
                     tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} />,
                 }}
             />

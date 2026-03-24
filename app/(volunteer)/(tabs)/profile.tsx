@@ -63,6 +63,7 @@ export default function VolunteerProfile() {
             followedNPOs={followedNPOs}
             affiliatedNPOs={affiliatedNPOs}
             npoApplications={myApplications}
+            hideBack={true}
         />
     );
 }

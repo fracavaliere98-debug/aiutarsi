@@ -118,6 +118,7 @@ export default function VolunteerCalendar() {
             title="Calendario"
             rightElement={<VolunteerHeaderActions />}
             bg="bg-background-light"
+            hideBack={true}
             refreshControl={
                 <RefreshControl
                     refreshing={refreshing}

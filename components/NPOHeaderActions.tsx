@@ -13,7 +13,7 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const { unreadCount: notifUnreadCount } = useNotifications();
     const { unreadCount: chatUnreadCount } = useChat();
 
-    const iconSize = Layout.iconSize.md - 2;
+    const iconSize = Layout.iconSize.md;
     const avatarSize = Layout.isTablet ? 52 : 44;
 
     return (

@@ -65,7 +65,7 @@ export default function VolunteersScreen() {
                     id: app.id,
                     isActivity: true, // Marker for handlers
                     activityId: app.activityId,
-                    embedding: user.embedding ?? undefined,
+                    embedding: user?.embedding ?? undefined,
                     npoId: user?.id || "",
                     npoName: act ? `Attività: ${act.title}` : "Attività",
                     volunteerId: app.volunteerId,
@@ -105,16 +105,16 @@ export default function VolunteersScreen() {
         const activity = activities.find(a => a.id === params.activityMatch);
         if (!activity) return [];
 
-        return followers.map(f => {
-            const matchingSkills = f.skills.filter(s => activity.skills.includes(s));
+        return followers.map((f: any) => {
+            const matchingSkills = f.skills.filter((s: string) => activity.skills.includes(s));
             return {
                 ...f,
                 matchScore: matchingSkills.length,
                 matchingSkills
             };
         })
-            .filter(f => f.matchScore > 0)
-            .sort((a, b) => b.matchScore - a.matchScore)
+            .filter((f: any) => f.matchScore > 0)
+            .sort((a: any, b: any) => b.matchScore - a.matchScore)
             .slice(0, 5);
     }, [followers, params.activityMatch, activities]);
 
@@ -292,6 +292,7 @@ export default function VolunteersScreen() {
             rightElement={HeaderActions}
             noScroll={true}
             bg="bg-[#f0f2f5]"
+            hideBack={true}
         >
             <View className="px-0 pb-1">
                 {/* Soft UI Inset Search Bar */}
@@ -351,7 +352,7 @@ export default function VolunteersScreen() {
                             contentContainerStyle={{ paddingBottom: 20 }}
                             renderItem={({ item }) => {
                                 const fullVolunteer = getUserById(item.volunteerId);
-                                const enrichedVolunteer = fullVolunteer || {
+                                const enrichedVolunteer = (fullVolunteer || {
                                     id: item.volunteerId,
                                     name: item.volunteerName,
                                     avatar: item.volunteerAvatar,
@@ -359,8 +360,10 @@ export default function VolunteersScreen() {
                                     email: '',
                                     role: 'VOLUNTEER' as const,
                                     impactPoints: 0,
-                                    skills: []
-                                };
+                                    skills: [],
+                                    profile_completed: true,
+                                    deletionRequestedAt: null
+                                }) as any;
                                 return (
                                     <VolunteerCard
                                         volunteer={enrichedVolunteer}
@@ -431,7 +434,7 @@ export default function VolunteersScreen() {
 
                     {displayFollowers.length > 0 ? (
                         <FlashList
-                            data={displayFollowers.filter(f => !matchedFollowers.find(m => m.id === f.id)) as any[]}
+                            data={displayFollowers.filter((f: any) => !matchedFollowers.find((m: any) => m.id === f.id)) as any[]}
                             // @ts-ignore
                             estimatedItemSize={100}
                             renderItem={({ item }) => (
@@ -471,7 +474,7 @@ export default function VolunteersScreen() {
                             contentContainerStyle={{ paddingBottom: 20 }}
                             renderItem={({ item }) => {
                                 const fullVolunteer = getUserById(item.volunteerId);
-                                const enrichedVolunteer = fullVolunteer || {
+                                const enrichedVolunteer = (fullVolunteer || {
                                     id: item.volunteerId,
                                     name: item.volunteerName,
                                     avatar: item.volunteerAvatar,
@@ -479,8 +482,10 @@ export default function VolunteersScreen() {
                                     email: '',
                                     role: 'VOLUNTEER' as const,
                                     impactPoints: 0,
-                                    skills: []
-                                };
+                                    skills: [],
+                                    profile_completed: true,
+                                    deletionRequestedAt: null
+                                }) as any;
                                 return (
                                     <VolunteerCard
                                         volunteer={enrichedVolunteer}

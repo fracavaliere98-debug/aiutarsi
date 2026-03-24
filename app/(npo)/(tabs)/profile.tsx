@@ -123,6 +123,7 @@ export default function NPOProfileScreen() {
                 label="SISTEMA"
                 title="Impostazioni"
                 rightElement={HeaderActions}
+                hideBack={true}
             >
                 {/* Account Deletion Warning */}
                 <AccountDeletionAlert />

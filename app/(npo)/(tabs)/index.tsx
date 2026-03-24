@@ -69,6 +69,7 @@ export default function NPODashboard() {
             title={user?.npoName || "La Tua NPO"}
             rightElement={HeaderActions}
             bg="bg-[#f6f6f8]"
+            hideBack={true}
         >
             {/* Stats Overview - Restored 1x4 Row with Individual Colors */}
             <View className="flex-row justify-between mb-8 -mx-1">
@@ -144,10 +145,10 @@ export default function NPODashboard() {
                     className="px-1"
                     contentContainerStyle={{ gap: 20 }}
                 >
-                    {followers.filter(vol => vol.lastSeenAt && (new Date().getTime() - new Date(vol.lastSeenAt).getTime()) < 300000).length > 0 ? (
+                    {followers.filter((vol: any) => vol.lastSeenAt && (new Date().getTime() - new Date(vol.lastSeenAt).getTime()) < 300000).length > 0 ? (
                         followers
-                            .filter(vol => vol.lastSeenAt && (new Date().getTime() - new Date(vol.lastSeenAt).getTime()) < 300000)
-                            .map((vol) => {
+                            .filter((vol: any) => vol.lastSeenAt && (new Date().getTime() - new Date(vol.lastSeenAt).getTime()) < 300000)
+                            .map((vol: any) => {
                                 return (
                                     <TouchableOpacity
                                         key={vol.id}

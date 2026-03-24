@@ -253,6 +253,7 @@ export default function CommunityScreen() {
             noScroll={true}
             noPadding={true}
             rightElement={rightElement}
+            hideBack={true}
         >
             {user?.deletionRequestedAt && <DeletionBanner />}
 

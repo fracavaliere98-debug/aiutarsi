@@ -89,6 +89,7 @@ export default function VolunteerDashboard() {
             title="Dashboard"
             rightElement={<VolunteerHeaderActions />}
             bg="bg-background-light"
+            hideBack={true}
             refreshControl={
                 <RefreshControl
                     refreshing={refreshing}

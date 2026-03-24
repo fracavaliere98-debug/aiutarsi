@@ -28,6 +28,7 @@ interface AuthContextType {
     getReferralCount: () => Promise<number>;
     updateEmail: (newEmail: string) => Promise<boolean>;
     updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+    getNPOFollowers: (npoId: string) => AppUser[];
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -51,6 +52,7 @@ const AuthContext = createContext<AuthContextType>({
     getReferralCount: async () => 0,
     updateEmail: async () => false,
     updatePassword: async () => false,
+    getNPOFollowers: () => [],
 });
 
 export const useAuth = () => useContext(AuthContext);

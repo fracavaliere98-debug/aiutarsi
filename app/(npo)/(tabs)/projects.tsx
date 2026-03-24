@@ -65,6 +65,7 @@ export default function NPOCalendarScreen() {
             label="ATTIVITÀ"
             title="Calendario"
             rightElement={HeaderActions}
+            hideBack={true}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
             }

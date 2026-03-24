@@ -18,6 +18,7 @@ interface StandardLayoutProps {
     headerSlot?: ReactNode;
     onBack?: () => void;
     refreshControl?: ReactNode;
+    hideBack?: boolean;
 }
 
 import { Layout } from "../utils/layout";
@@ -34,7 +35,8 @@ export function StandardLayout({
     noPadding = false,
     headerSlot,
     onBack,
-    refreshControl
+    refreshControl,
+    hideBack = false
 }: StandardLayoutProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -48,8 +50,8 @@ export function StandardLayout({
         }
     };
 
-    // Show back button if onBack is provided OR if we can go back
-    const showBackButton = onBack || router.canGoBack();
+    // Show back button if (onBack is provided OR if we can go back) AND hideBack is false
+    const showBackButton = !hideBack && (onBack || router.canGoBack());
 
     // Determine header color based on role if not provided
     const getHeaderColor = () => {

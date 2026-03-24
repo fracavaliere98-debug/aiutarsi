@@ -51,6 +51,7 @@ interface VolunteerProfileViewProps {
     followedNPOs?: AppUser[];
     affiliatedNPOs: AppUser[];
     npoApplications: OldApplication[];
+    hideBack?: boolean;
     children?: React.ReactNode;
 }
 
@@ -72,6 +73,7 @@ export function VolunteerProfileView({
     followedNPOs,
     affiliatedNPOs = [],
     npoApplications = [],
+    hideBack = false,
     children
 }: VolunteerProfileViewProps) {
     const iconSize = Layout.iconSize.md;
@@ -121,6 +123,7 @@ export function VolunteerProfileView({
             bg="bg-white"
             noPadding
             onBack={onBack}
+            hideBack={hideBack}
         >
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 {/* Account Deletion Warning */}
