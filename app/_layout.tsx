@@ -2,7 +2,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
-import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityProvider } from "../context/ActivityContext";
@@ -28,15 +27,23 @@ import { STACK_TRANSITIONS } from "../constants/motion";
 
 SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: false, // Disabilita l'alert di sistema in-app (gestito dal Toast in NotificationContext)
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: false,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== "web") {
+  void import("expo-notifications")
+    .then((Notifications) => {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: false,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: false,
+          shouldShowList: true,
+        }),
+      });
+    })
+    .catch((error) => {
+      console.warn("[Push] Notification handler unavailable:", error);
+    });
+}
 
 function RootLayoutNav() {
   const { user, isLoaded, isLoading: isAuthLoading, isLoggingOut, logout } = useAuth();

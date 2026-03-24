@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase } from '../utils/supabase';
@@ -19,9 +18,11 @@ export function usePushNotifications() {
     const hasRegistered = useRef(false);
 
     useEffect(() => {
-        if (!user?.id || hasRegistered.current) return;
+        if (!user?.id || hasRegistered.current || Platform.OS === 'web') return;
 
         const registerForPushNotifications = async () => {
+            const Notifications = await import('expo-notifications');
+
             // Physical device required (simulators/emulators don't get real tokens)
             if (!Device.isDevice) {
                 console.log('[Push] Skipping: not a physical device');

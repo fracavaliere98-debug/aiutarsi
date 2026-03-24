@@ -60,7 +60,13 @@ export default function NPORegister() {
                 </View>
             )}
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets
+                contentContainerStyle={styles.formContent}
+            >
                 <AuthField
                     label="Nome organizzazione"
                     placeholder="Associazione Onlus..."
@@ -129,7 +135,8 @@ export default function NPORegister() {
 
 const styles = StyleSheet.create({
     formContent: {
-        paddingBottom: 8,
+        paddingBottom: 24,
+        flexGrow: 1,
     },
     privacyRow: {
         flexDirection: "row",

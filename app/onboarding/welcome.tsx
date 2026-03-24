@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Switch, Animated, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Switch, Animated, Dimensions, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { MapPin, Bell, Shield, Heart, Sparkles, Rocket, ArrowLeft } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UserAvatar } from '../../components/UserAvatar';
 
@@ -72,7 +71,13 @@ export default function WelcomeScreen() {
     };
 
     const toggleNotifications = async (value: boolean) => {
+        if (Platform.OS === 'web') {
+            setNotificationsEnabled(false);
+            return;
+        }
+
         if (value) {
+            const Notifications = await import('expo-notifications');
             const { status } = await Notifications.requestPermissionsAsync();
             setNotificationsEnabled(status === 'granted');
         } else {

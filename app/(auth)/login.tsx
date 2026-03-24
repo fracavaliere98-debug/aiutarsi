@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react-native";
@@ -47,41 +47,53 @@ export default function LoginScreen() {
                 </View>
             )}
         >
-            <AuthField
-                label="Email"
-                placeholder="mario.rossi@email.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                icon={<Mail size={18} color={Colors.secondary} />}
-            />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets
+                contentContainerStyle={styles.formContent}
+            >
+                <AuthField
+                    label="Email"
+                    placeholder="mario.rossi@email.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    icon={<Mail size={18} color={Colors.secondary} />}
+                />
 
-            <AuthField
-                label="Password"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                secureTextEntry
-                icon={<Lock size={18} color={Colors.secondary} />}
-            />
+                <AuthField
+                    label="Password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChangeText={setPassword}
+                    autoCapitalize="none"
+                    secureTextEntry
+                    icon={<Lock size={18} color={Colors.secondary} />}
+                />
 
-            <TouchableOpacity style={styles.recoveryLinkWrap} activeOpacity={0.75}>
-                <Text style={styles.recoveryLink}>Password dimenticata?</Text>
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.recoveryLinkWrap} activeOpacity={0.75}>
+                    <Text style={styles.recoveryLink}>Password dimenticata?</Text>
+                </TouchableOpacity>
 
-            <Button
-                title="Accedi"
-                onPress={handleLogin}
-                isLoading={isLoading}
-                className="mt-2 rounded-[28px]"
-            />
+                <Button
+                    title="Accedi"
+                    onPress={handleLogin}
+                    isLoading={isLoading}
+                    className="mt-2 rounded-[28px]"
+                />
+            </ScrollView>
         </AuthShell>
     );
 }
 
 const styles = StyleSheet.create({
+    formContent: {
+        paddingBottom: 24,
+        flexGrow: 1,
+    },
     recoveryLinkWrap: {
         alignSelf: "flex-end",
         marginBottom: 16,

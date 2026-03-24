@@ -50,7 +50,13 @@ export default function CorporateRegister() {
             subtitle="Configura il team e inizia a esplorare attività da proporre ai collaboratori."
             backAction={() => router.back()}
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets
+                contentContainerStyle={styles.formContent}
+            >
                 <AuthField
                     label="Ragione sociale"
                     placeholder="Azienda SpA"
@@ -119,7 +125,8 @@ export default function CorporateRegister() {
 
 const styles = StyleSheet.create({
     formContent: {
-        paddingBottom: 8,
+        paddingBottom: 24,
+        flexGrow: 1,
     },
     privacyRow: {
         flexDirection: "row",

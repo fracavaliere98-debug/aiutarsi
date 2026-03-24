@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from "react";
-import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
+import { Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 import { useToast } from "./ToastContext";
@@ -276,6 +276,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // 2. Register Notification Listeners
     useEffect(() => {
+        if (Platform.OS === "web") {
+            return;
+        }
+
         const normalizeNotificationType = (rawType: unknown): AppNotification['type'] => {
             const normalized = String(rawType || 'INFO').trim().toUpperCase();
             if (normalized === 'CHAT_MESSAGE') return 'CHAT_MESSAGE';
@@ -293,7 +297,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             return 'INFO';
         };
 
-        const mapResponseToNotification = (response: Notifications.NotificationResponse) => {
+        const mapResponseToNotification = (response: any) => {
             const request = response.notification.request;
             const data = request.content.data ?? {};
 
@@ -307,7 +311,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             };
         };
 
-        const handleResponse = async (response: Notifications.NotificationResponse | null) => {
+        const handleResponse = async (response: any | null) => {
             if (!response) return;
 
             const responseId = response.notification.request.identifier;
@@ -319,21 +323,34 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             await openNotification(mapResponseToNotification(response));
         };
 
-        const notificationListener = Notifications.addNotificationReceivedListener(event => {
-            console.log('Notification received in foreground (Expo):', event.request.content.data);
-        });
+        let isMounted = true;
+        let notificationListener: { remove: () => void } | null = null;
+        let responseListener: { remove: () => void } | null = null;
 
-        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-            void handleResponse(response);
-        });
+        void import("expo-notifications")
+            .then((Notifications) => {
+                if (!isMounted) return;
 
-        void Notifications.getLastNotificationResponseAsync()
-            .then(handleResponse)
-            .finally(() => Notifications.clearLastNotificationResponseAsync().catch(() => {}));
+                notificationListener = Notifications.addNotificationReceivedListener(event => {
+                    console.log('Notification received in foreground (Expo):', event.request.content.data);
+                });
+
+                responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+                    void handleResponse(response);
+                });
+
+                void Notifications.getLastNotificationResponseAsync()
+                    .then(handleResponse)
+                    .finally(() => Notifications.clearLastNotificationResponseAsync().catch(() => {}));
+            })
+            .catch((error) => {
+                console.warn("[Push] Notification listeners unavailable:", error);
+            });
 
         return () => {
-            notificationListener.remove();
-            responseListener.remove();
+            isMounted = false;
+            notificationListener?.remove();
+            responseListener?.remove();
         };
     }, [openNotification]);
 

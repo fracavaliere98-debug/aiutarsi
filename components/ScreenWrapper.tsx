@@ -21,7 +21,8 @@ export function ScreenWrapper({
         <SafeAreaView edges={edges} className={`flex-1 ${bg}`}>
             <StatusBar style="dark" />
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "padding"}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={0}
                 style={{ flex: 1 }}
             >
                 <View className={`flex-1 ${withPadding ? "px-4" : ""} ${className}`}>{children}</View>

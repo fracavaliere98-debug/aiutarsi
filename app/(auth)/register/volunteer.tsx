@@ -61,7 +61,13 @@ export default function VolunteerRegister() {
                 </View>
             )}
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets
+                contentContainerStyle={styles.formContent}
+            >
                 <AuthField
                     label="Nome"
                     placeholder="Mario"
@@ -130,7 +136,8 @@ export default function VolunteerRegister() {
 
 const styles = StyleSheet.create({
     formContent: {
-        paddingBottom: 8,
+        paddingBottom: 24,
+        flexGrow: 1,
     },
     privacyRow: {
         flexDirection: "row",
