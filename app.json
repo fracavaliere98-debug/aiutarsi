@@ -15,7 +15,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo.",
-        "NSPhotoLibraryUsageDescription": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo."
+        "NSPhotoLibraryUsageDescription": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo.",
+        "NSPhotoLibraryAddUsageDescription": "AiutarSì ha bisogno di salvare immagini nella tua galleria quando scegli di esportare o condividere contenuti dall'app."
       }
     },
     "android": {
@@ -42,6 +43,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo.",
+          "cameraPermission": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo."
+        }
+      ],
       [
         "expo-splash-screen",
         {
