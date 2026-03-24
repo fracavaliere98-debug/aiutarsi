@@ -3,11 +3,9 @@ import {
     View,
     Text,
     TouchableOpacity,
-    ScrollView,
     LayoutAnimation,
     Platform,
     UIManager,
-    Image,
 } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -22,6 +20,7 @@ import { StandardLayout } from '../components/StandardLayout';
 import { SoftCard } from '../components/SoftCard';
 import { Colors } from '../constants/Colors';
 import { GemmaAIChat } from '../components/GemmaAIChat';
+import { GemmaAvatar } from '../components/GemmaAvatar';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
 import { FAQ, GuideSection, getGuideSectionsForRole } from '../shared/helpCenterContent';
@@ -222,11 +221,7 @@ const GemmaFloatingButton = ({ onPress }: { onPress: () => void }) => {
                     gap: 8,
                 }}
             >
-                <Image
-                    source={require('../assets/images/gemma_avatar.png')}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#7c3aed20' }}
-                    resizeMode="contain"
-                />
+                <GemmaAvatar size={36} bordered />
                 <View>
                     <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }}>Chiedi a Gemma</Text>
                     <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Assistente AI</Text>

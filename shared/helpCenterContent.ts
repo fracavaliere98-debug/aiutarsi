@@ -346,3 +346,7 @@ export function buildHelpCenterContext(sections: GuideSection[] = getAllGuideSec
     })
     .join("\n\n");
 }
+
+export function buildHelpCenterContextForRole(role?: string | null): string {
+  return buildHelpCenterContext(getGuideSectionsForRole(role));
+}

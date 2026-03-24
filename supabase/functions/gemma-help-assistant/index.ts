@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
-import { buildHelpCenterContext } from "../../../shared/helpCenterContent.ts";
+import { buildHelpCenterContextForRole } from "../../../shared/helpCenterContent.ts";
 
 type AssistantMode = "help_center" | "shadow";
 
@@ -46,8 +46,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/json",
 };
-
-const HELP_CENTER_CONTEXT = `=== GUIDE CENTRO ASSISTENZA AIUTARSI ===\n\n${buildHelpCenterContext()}`;
 
 function getTokenFromAuthHeader(authHeader: string | null): string | null {
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -178,7 +176,12 @@ function parseJsonResponse(text: string) {
   return JSON.parse(jsonText);
 }
 
-function buildSystemPrompt(mode: AssistantMode, userContext: string, suggestedActivitiesText: string) {
+function buildSystemPrompt(
+  mode: AssistantMode,
+  userContext: string,
+  suggestedActivitiesText: string,
+  roleScopedHelpCenterContext: string,
+) {
   const sharedRules = `
 Il tuo unico scopo è aiutare gli utenti di AiutarSì usando ESCLUSIVAMENTE le informazioni che ti vengono fornite in questo prompt.
 Non inventare MAI informazioni, policy, nomi di enti, luoghi o funzionalità che non sono presenti nel contesto.
@@ -203,12 +206,16 @@ Sei un agente conversazionale di supporto prodotto. Devi aiutare l'utente a capi
 Non fare raccomandazioni personalizzate se non ci sono dati sufficienti. Se hai suggerimenti attività reali, puoi citarli solo quando l'utente chiede cosa fare o quali opportunità vedere.
 Rispondi in modo cordiale, chiaro e conciso, massimo 3-4 frasi.
 Puoi usare emoji con moderazione.
+Se l'utente è un VOLUNTEER, usa solo FAQ comuni + volunteer. Se l'utente è una NPO, usa solo FAQ comuni + NPO.
+Non dare risposte dell'altro profilo se non sono rilevanti per il ruolo corrente. Se la domanda riguarda funzionalità non previste per quel ruolo, dillo chiaramente.
 
 ${sharedRules}
 ${userContext}
 ${suggestedActivitiesText}
 
-${HELP_CENTER_CONTEXT}`;
+=== GUIDE CENTRO ASSISTENZA AIUTARSI ===
+
+${roleScopedHelpCenterContext}`;
 }
 
 Deno.serve(async (req) => {
@@ -246,6 +253,7 @@ Deno.serve(async (req) => {
 
     const profile = await getUserProfile(serviceClient, authData.user.id);
     const userContext = buildUserContext(profile);
+    const roleScopedHelpCenterContext = buildHelpCenterContextForRole(profile?.role);
 
     let suggestedActivitiesText = "";
     if (profile?.role === "VOLUNTEER") {
@@ -268,6 +276,7 @@ Deno.serve(async (req) => {
       assistantMode,
       userContext,
       suggestedActivitiesText + matchedActivitiesContext + npoInsightsContext,
+      roleScopedHelpCenterContext,
     );
 
     const messages = [

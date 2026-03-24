@@ -8,7 +8,6 @@ import {
     Modal,
     KeyboardAvoidingView,
     Platform,
-    Image,
     SafeAreaView,
 } from 'react-native';
 import Animated, {
@@ -21,6 +20,7 @@ import Animated, {
 import { X, Send } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 import { supabase } from '../utils/supabase';
+import { GemmaAvatar } from './GemmaAvatar';
 
 interface Message {
     role: 'user' | 'model';
@@ -213,11 +213,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                     borderBottomColor: '#f1f5f9',
                     gap: 12,
                 }}>
-                    <Image
-                        source={require('../assets/images/gemma_avatar.png')}
-                        style={{ width: 44, height: 44, borderRadius: 22 }}
-                        resizeMode="contain"
-                    />
+                    <GemmaAvatar size={44} />
                     <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>{title}</Text>
                         <Text style={{ fontSize: 12, color: Colors.secondary }}>{subtitle}</Text>
@@ -247,11 +243,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                         >
                             {msg.role === 'model' && (
                                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '85%' }}>
-                                    <Image
-                                        source={require('../assets/images/gemma_avatar.png')}
-                                        style={{ width: 28, height: 28, borderRadius: 14, marginBottom: 4 }}
-                                        resizeMode="contain"
-                                    />
+                                    <GemmaAvatar size={28} style={{ marginBottom: 4 }} />
                                     <View style={{
                                         backgroundColor: '#f8f4ff',
                                         borderRadius: 18,
