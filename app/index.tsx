@@ -347,13 +347,17 @@ const TrustIcons = () => (
     </View>
 );
 
+import { Layout, moderateScale } from "../utils/layout";
+
+// ... existing code ...
+
 // ── Styles ────────────────────────────────────────────────────────────────
-const SLOGAN = Math.min(width * 0.085, 34);
-const SLOGAN_GRAD = Math.min(width * 0.072, 28);
+const SLOGAN = Math.min(Layout.window.width * 0.085, 34);
+const SLOGAN_GRAD = Math.min(Layout.window.width * 0.072, 28);
 
 const styles = StyleSheet.create({
     root: { flex: 1, backgroundColor: '#07000f' },
-    hero: { width, height, overflow: 'hidden' },
+    hero: { width: Layout.window.width, height: Layout.window.height, overflow: 'hidden' },
     // Overlay — content groups from top, no space-between
     overlay: {
         ...StyleSheet.absoluteFillObject,
@@ -363,7 +367,7 @@ const styles = StyleSheet.create({
     // Header
     headerWrap: { alignItems: 'center' },
     appName: {
-        fontSize: 34,
+        fontSize: Layout.fontSize['3xl'] + 4,
         fontWeight: '900',
         fontStyle: 'italic',
         letterSpacing: -1,
@@ -386,7 +390,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         marginRight: 8,
     },
-    bubbleText: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600', textAlign: 'right', lineHeight: 16 },
+    bubbleText: { color: 'rgba(255,255,255,0.85)', fontSize: Layout.fontSize.xs - 1, fontWeight: '600', textAlign: 'right', lineHeight: 16 },
     bubbleTail: {
         position: 'absolute', bottom: -7, right: 16,
         width: 0, height: 0,
@@ -442,7 +446,7 @@ const styles = StyleSheet.create({
         maxWidth: '100%',
     },
     pillDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' },
-    pillText: { color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700', letterSpacing: 0.4, flexShrink: 1 },
+    pillText: { color: 'rgba(255,255,255,0.7)', fontSize: Layout.fontSize.xs - 3, fontWeight: '700', letterSpacing: 0.4, flexShrink: 1 },
 
     // Bottom CTA block — absolute at bottom, pushed higher
     bottom: {
@@ -469,10 +473,10 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(99,102,241,0.3)',
         alignItems: 'center', justifyContent: 'center',
     },
-    btnLabel: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+    btnLabel: { flex: 1, color: '#fff', fontSize: Layout.fontSize.base - 1, fontWeight: '800', letterSpacing: -0.2 },
     loginRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 2 },
-    loginText: { color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: '500' },
-    loginLink: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '800', textDecorationLine: 'underline' },
+    loginText: { color: 'rgba(255,255,255,0.38)', fontSize: Layout.fontSize.xs - 1, fontWeight: '500' },
+    loginLink: { color: 'rgba(255,255,255,0.7)', fontSize: Layout.fontSize.xs - 1, fontWeight: '800', textDecorationLine: 'underline' },
 
     // Ticker — absolute bottom
     ticker: {
@@ -486,21 +490,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     tickerDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#cf057f', opacity: 0.8 },
-    tickerText: { color: 'rgba(255,255,255,0.38)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, flexShrink: 1 },
+    tickerText: { color: 'rgba(255,255,255,0.38)', fontSize: Layout.fontSize.xs - 3, fontWeight: '700', letterSpacing: 1.2, flexShrink: 1 },
 
     // Feature section
     featureSection: { paddingHorizontal: 24, paddingTop: 56, backgroundColor: '#f8fafc' },
     dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 28 },
     dividerLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
-    dividerLabel: { fontSize: 20, fontWeight: '900', color: '#1a237e', letterSpacing: -0.5 },
+    dividerLabel: { fontSize: Layout.fontSize.xl, fontWeight: '900', color: '#1a237e', letterSpacing: -0.5 },
     featureCard: {
         backgroundColor: '#fff', borderRadius: 32, padding: 26, marginBottom: 14,
         borderWidth: 1, borderColor: '#f1f5f9', alignItems: 'center',
         shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
     },
     featureIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-    featureTitle: { fontSize: 18, fontWeight: '900', color: '#1a237e', marginBottom: 6, textAlign: 'center' },
-    featureDesc: { fontSize: 13, color: '#64748b', lineHeight: 20, fontWeight: '500', textAlign: 'center' },
+    featureTitle: { fontSize: Layout.fontSize.lg, fontWeight: '900', color: '#1a237e', marginBottom: 6, textAlign: 'center' },
+    featureDesc: { fontSize: Layout.fontSize.sm - 1, color: '#64748b', lineHeight: 20, fontWeight: '500', textAlign: 'center' },
     trustRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 36, opacity: 0.3 },
     trustDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: '#94a3b8' },
 });

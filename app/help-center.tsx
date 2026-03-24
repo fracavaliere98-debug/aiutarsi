@@ -23,7 +23,8 @@ import { SoftCard } from '../components/SoftCard';
 import { Colors } from '../constants/Colors';
 import { GemmaAIChat } from '../components/GemmaAIChat';
 import { supabase } from '../utils/supabase';
-import { FAQ, GuideSection, GUIDE_SECTIONS } from '../shared/helpCenterContent';
+import { useAuth } from '../context/AuthContext';
+import { FAQ, GuideSection, getGuideSectionsForRole } from '../shared/helpCenterContent';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -237,7 +238,9 @@ const GemmaFloatingButton = ({ onPress }: { onPress: () => void }) => {
 
 export default function HelpCenterScreen() {
     const router = useRouter();
+    const { user } = useAuth();
     const [chatVisible, setChatVisible] = useState(false);
+    const guideSections = getGuideSectionsForRole(user?.role);
 
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -274,7 +277,7 @@ export default function HelpCenterScreen() {
                 </View>
 
                 {/* Guide Sections */}
-                {GUIDE_SECTIONS.map((section) => (
+                {guideSections.map((section) => (
                     <GuideSectionCard key={section.id} section={section} />
                 ))}
 

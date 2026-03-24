@@ -54,6 +54,8 @@ interface VolunteerProfileViewProps {
     children?: React.ReactNode;
 }
 
+import { Layout } from "../utils/layout";
+
 export function VolunteerProfileView({
     user,
     gamificationState,
@@ -72,6 +74,8 @@ export function VolunteerProfileView({
     npoApplications = [],
     children
 }: VolunteerProfileViewProps) {
+    const iconSize = Layout.iconSize.md;
+
     const HeaderActions = (
         <View className="flex-row gap-2">
             {!isOwnProfile && onMessagePress && (
@@ -79,7 +83,7 @@ export function VolunteerProfileView({
                     onPress={onMessagePress}
                     className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
-                    <MessageCircle size={20} color="white" />
+                    <MessageCircle size={iconSize} color="white" />
                 </TouchableOpacity>
             )}
             {!isOwnProfile && onReportPress && (
@@ -87,7 +91,7 @@ export function VolunteerProfileView({
                     onPress={onReportPress}
                     className="bg-red-500/20 p-2.5 rounded-xl border border-red-500/20"
                 >
-                    <AlertTriangle size={20} color="white" />
+                    <AlertTriangle size={iconSize} color="white" />
                 </TouchableOpacity>
             )}
             {onSharePress && (
@@ -95,7 +99,7 @@ export function VolunteerProfileView({
                     onPress={onSharePress}
                     className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
-                    <Share2 size={20} color="white" />
+                    <Share2 size={iconSize} color="white" />
                 </TouchableOpacity>
             )}
             {isOwnProfile && (
@@ -103,7 +107,7 @@ export function VolunteerProfileView({
                     onPress={onSettingsPress}
                     className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
-                    <Settings size={20} color="white" />
+                    <Settings size={iconSize} color="white" />
                 </TouchableOpacity>
             )}
         </View>

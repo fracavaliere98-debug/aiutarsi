@@ -20,6 +20,8 @@ interface StandardLayoutProps {
     refreshControl?: ReactNode;
 }
 
+import { Layout } from "../utils/layout";
+
 export function StandardLayout({
     children,
     label,
@@ -61,20 +63,37 @@ export function StandardLayout({
         <ScreenWrapper bg={bg} className="px-0" withPadding={false} edges={["top"]}>
             <View
                 className={`${getHeaderColor()} pt-6 pb-4 px-6 rounded-b-[32px] shadow-lg mb-4 justify-center`}
-                style={{ height: 104 }}
+                style={{ height: Layout.headerHeight }}
             >
                 <View className="flex-row justify-between items-center">
                     <View className="flex-row items-center flex-1 gap-4">
                         {showBackButton && (
                             <TouchableOpacity onPress={handleBack} className="bg-white/10 p-2 rounded-full">
-                                <ArrowLeft size={20} color="white" />
+                                <ArrowLeft size={Layout.iconSize.md} color="white" />
                             </TouchableOpacity>
                         )}
                         <View className="flex-1">
-                            <Text className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1" numberOfLines={1}>{label}</Text>
-                            <Text className="text-white text-2xl font-black" numberOfLines={1}>{title}</Text>
+                            <Text 
+                                className="text-white/70 font-bold uppercase tracking-widest mb-1" 
+                                style={{ fontSize: Layout.fontSize.xs }}
+                                numberOfLines={1}
+                            >
+                                {label}
+                            </Text>
+                            <Text 
+                                className="text-white font-black" 
+                                style={{ fontSize: Layout.fontSize['2xl'] }}
+                                numberOfLines={1}
+                            >
+                                {title}
+                            </Text>
                             {subtitle && (
-                                <Text className="text-white/60 text-xs font-medium mt-1">{subtitle}</Text>
+                                <Text 
+                                    className="text-white/60 font-medium mt-1"
+                                    style={{ fontSize: Layout.fontSize.xs }}
+                                >
+                                    {subtitle}
+                                </Text>
                             )}
                         </View>
                     </View>

@@ -6,10 +6,15 @@ import { UserAvatar } from "./UserAvatar";
 import { useNotifications } from "../context/NotificationContext";
 import { useChat } from "../context/ChatContext";
 
+import { Layout } from "../utils/layout";
+
 export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const router = useRouter();
     const { unreadCount: notifUnreadCount } = useNotifications();
     const { unreadCount: chatUnreadCount } = useChat();
+
+    const iconSize = Layout.iconSize.md;
+    const avatarSize = Layout.isTablet ? 52 : 44;
 
     return (
         <View className="flex-row items-center gap-2.5 h-full">
@@ -17,7 +22,7 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
                 onPress={() => router.push("/messages" as any)}
                 className="bg-white/10 p-2 rounded-2xl active:scale-90 relative"
             >
-                <MessageSquare color="white" size={22} />
+                <MessageSquare color="white" size={iconSize} />
                 {chatUnreadCount > 0 && (
                     <View className="absolute -top-1 -right-1 bg-pink-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
                         <Text className="text-white text-[10px] font-black">{chatUnreadCount}</Text>
@@ -29,7 +34,7 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
                 onPress={() => router.push("/(npo)/notifications" as any)}
                 className="relative bg-white/10 p-2 rounded-2xl active:scale-90"
             >
-                <Bell color="white" size={22} />
+                <Bell color="white" size={iconSize} />
                 {notifUnreadCount > 0 && (
                     <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
                         <Text className="text-white text-[10px] font-black">{notifUnreadCount}</Text>
@@ -43,14 +48,15 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
                     className="bg-white/20 p-2.5 rounded-2xl border border-white/20 active:scale-90"
                     activeOpacity={0.85}
                 >
-                    <Plus size={22} color="white" />
+                    <Plus size={iconSize} color="white" />
                 </TouchableOpacity>
             ) : (
                 <TouchableOpacity
                     onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
-                    className="w-11 h-11 rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
+                    className="rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
+                    style={{ width: avatarSize, height: avatarSize }}
                 >
-                    <UserAvatar size={44} fontSize={15} useAuthFallback={true} />
+                    <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
                 </TouchableOpacity>
             )}
         </View>
