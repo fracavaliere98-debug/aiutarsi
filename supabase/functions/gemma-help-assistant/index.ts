@@ -1,213 +1,277 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
+import { buildHelpCenterContext } from "../../../shared/helpCenterContent.ts";
 
-const hfApiKey = Deno.env.get('HUGGINGFACE_API_KEY')!;
+type AssistantMode = "help_center" | "shadow";
 
-const HELP_CENTER_CONTEXT = `
-=== GUIDE CENTRO ASSISTENZA AIUTARSI ===
+type ChatHistoryItem = {
+  role?: "user" | "model";
+  parts?: { text?: string }[];
+};
 
---- SEZIONE 1: INIZIARE CON AIUTARSI ---
-Q: Come mi registro su AiutarSi?
-A: Scarica l'app dal tuo store, apri l'app e scegli "Registrati". Puoi registrarti come Volontario (per partecipare alle attività) o come NPO (ente non-profit, per pubblicare opportunità). Segui l'onboarding passo per passo.
+type MatchedActivityInput = {
+  id: string;
+  title: string;
+  npoName?: string;
+  category?: string;
+  description?: string;
+  matchPercentage?: number;
+};
 
-Q: Ho dimenticato la password, come la recupero?
-A: Nella schermata di accesso, tocca "Password dimenticata?" e inserisci la tua email. Riceverai un link per reimpostare la password entro pochi minuti.
+const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-Q: Posso usare AiutarSi senza condividere la mia posizione?
-A: Sì. La posizione è opzionale e serve solo per trovare attività vicine a te. Puoi impostarla manualmente nelle impostazioni oppure negarla e cercare manualmente per città.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
+};
 
---- SEZIONE 2: PUNTI E BADGE (XP) ---
-Q: Come funziona il sistema di livelli?
-A: Guadagni XP (Punti Esperienza) completando azioni nella piattaforma. All'aumentare degli XP sali di livello: Livello 1 (0 XP), Lvl 2 (110 XP), Lvl 3 (450 XP), Lvl 4 (1000 XP), Lvl 5 (2000 XP), Lvl 6 (3500 XP), Lvl 7 (5500 XP), Lvl 8 (8000 XP), Lvl 9 (11000 XP), Lvl 10+ (ogni +5000 XP).
+const HELP_CENTER_CONTEXT = `=== GUIDE CENTRO ASSISTENZA AIUTARSI ===\n\n${buildHelpCenterContext()}`;
 
-Q: Come guadagno XP?
-A: Ecco come guadagnare XP: Candidatura accettata da un NPO (+200 XP). Attività completata fino a 3h (+100 XP), tra 3 e 6h (+150 XP), oltre 6h (+200 XP). Ogni 10 attività completate (+1000 XP bonus). Condivisione di un'attività (+10 XP, 1 volta per attività). Seguire un NPO (+10 XP). Scrivere 5 recensioni (+150 XP bonus). Raggiungere 100 ore totali di volontariato (+1000 XP bonus una tantum).
+function getTokenFromAuthHeader(authHeader: string | null): string | null {
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  return authHeader.slice("Bearer ".length).trim();
+}
 
-Q: Cosa sono i badge?
-A: I badge sono distintivi speciali che si sbloccano al raggiungimento di traguardi specifici: Debuttante 🌱 (prima attività completata), Networker 🤝 (segui 5 NPO), Recensore d'Oro 🌟 (5 recensioni scritte), Stacanovista 🏎️ (un'attività di oltre 6 ore), Voce del Popolo 📢 (10 attività condivise), Pilastro 🏛️ (10 attività completate), Veterano 🏅 (100 ore totali raggiunte).
+function buildUserContext(profile: any): string {
+  if (!profile) return "";
 
-Q: Dove vedo i miei XP e badge?
-A: Nella sezione "Profilo" trovi il tuo livello attuale, la barra di avanzamento XP e tutti i badge sbloccati.
+  const skills = (profile.user_skills || []).map((s: any) => s.skill).filter(Boolean);
+  const interests = (profile.user_interests || []).map((i: any) => i.interest).filter(Boolean);
+  const followedNPOs = (profile.followed_entities || []).map((f: any) => f.npo_id).filter(Boolean);
 
-Q: Posso perdere XP o livelli?
-A: No. Gli XP accumulati non si perdono mai. Puoi solo salire di livello, mai scendere.
-
---- SEZIONE 3: ISCRIZIONI E ATTIVITÀ ---
-Q: Come mi iscrivo a un'attività?
-A: Cerca un'attività che ti interessa (nella Home, Esplora o sulla Mappa), apri il dettaglio e tocca "Iscriviti". Sarai confermato automaticamente per il turno.
-
-Q: Dove trovo le attività a cui sono registrato?
-A: Puoi verificare lo stato in "Le tue attività" dal tuo profilo. Lì troverai le attività imminenti e quelle passate.
-
-Q: Posso ritirarmi da un'attività?
-A: Sì. Finché l'attività non è completata, puoi ritirarla dalla sezione "Le tue attività" nel profilo.
-
---- SEZIONE 4: DIVENTARE MEMBRO DI UN NPO ---
-Q: Come mi candido a un NPO?
-A: Visita il profilo di un'organizzazione (NPO) che ti interessa e tocca "Candidati". Invia una breve presentazione. Il NPO valuterà la tua richiesta e potrà accettarla o rifiutarla.
-
-Q: Come faccio a sapere se la mia candidatura è stata accettata?
-A: Riceverai una notifica push quando il NPO prenderà una decisione. Puoi anche controllare nella sezione "I tuoi NPO" per vedere a quali organizzazioni sei attualmente affiliato.
-
-Q: Posso far parte di più NPO contemporaneamente?
-A: Sì, non c'è limite al numero di collaborazioni che puoi avere. Puoi candidarti ed essere membro di più NPO simultaneamente.
-
---- SEZIONE 5: NOTIFICHE ---
-Q: Non ricevo notifiche, cosa faccio?
-A: Verifica che le notifiche siano abilitate nelle impostazioni del dispositivo per AiutarSi. Puoi ricontrollare anche nelle Impostazioni dell'app > Notifiche.
-
-Q: Quali notifiche ricevo?
-A: Ricevi notifiche quando: una tua candidatura viene accettata o rifiutata, un NPO aggiorna lo stato di un'attività, ricevi un messaggio in chat, sali di livello o sblocchi un badge.
-
---- SEZIONE 6: ACCOUNT E PRIVACY ---
-Q: Come cambio la mia email o password?
-A: Vai su Impostazioni > Sicurezza e credenziali. Puoi modificare email e password da lì.
-
-Q: Chi può vedere il mio profilo?
-A: I tuoi dati (nome, foto, bio) sono visibili agli NPO a cui ti candidi e ad altri volontari nella Community. Puoi gestire la visibilità nelle Impostazioni > Privacy e Visibilità.
-
-Q: Come elimino il mio account?
-A: Vai in Impostazioni, scorri fino in fondo e tocca "Elimina Account". Avrai 30 giorni per cambiare idea prima che i dati vengano cancellati definitivamente.
-
---- SEZIONE 7: ASSISTENTE AI (GEMMA) ---
-Q: Chi è Gemma?
-A: Gemma è l'assistente virtuale ufficiale di AiutarSì. È qui per aiutarti a navigare nell'app, spiegarti le regole del volontariato e suggerirti attività interessanti basate sui tuoi gusti.
-
-Q: Come funziona lo "Smart Match"?
-A: Lo Smart Match è un sistema intelligente che analizza le tue preferenze e le attività disponibili per trovare l'abbinamento perfetto. Prova a chiedere a Gemma "Cosa posso fare oggi?" per ricevere suggerimenti personalizzati.
-
-Q: Le risposte di Gemma sono sempre corrette?
-A: Gemma risponde basandosi esclusivamente sulle informazioni ufficiali di AiutarSì e sulle attività presenti nel database. Se non conosce una risposta, ti inviterà a consultare le guide o a contattare il supporto, senza mai inventare informazioni.
+  return `
+=== CONTESTO UTENTE ===
+Ruolo: ${profile.role || "sconosciuto"}
+Profilo completato: ${profile.profile_completed ? "sì" : "no"}
+Nome: ${profile.full_name || profile.npo_name || "utente"}
+Bio: ${profile.bio || "non disponibile"}
+Competenze: ${skills.length > 0 ? skills.join(", ") : "nessuna"}
+Interessi: ${interests.length > 0 ? interests.join(", ") : "nessuno"}
+Posizione: ${profile.location_string || "non disponibile"}
+NPO seguiti: ${followedNPOs.length}
+XP: ${profile.impact_points || 0}
 `;
+}
 
-const SYSTEM_PROMPT = `Tu sei Gemma, l'assistente ufficiale di AiutarSì — un'app di volontariato che connette volontari e organizzazioni non-profit.
-Il tuo database di conoscenze è aggiornato al 18 Marzo 2026.
-Gemma, ora sei integrata con un sistema di matchmaking vettoriale (Hugging Face). Se un utente ti chiede 'Cosa posso fare?', cerca di incoraggiarlo a usare l'esplorazione Smart Match o farti guidare dalle attività suggerite con score > 0.7. Conosci i 10 livelli di carriera (da Novizio a Mito) e incoraggia chi è vicino al traguardo (-50 XP). Se un'attività è finita, ricorda all'utente di usare il tasto 'Recensisci'.
-Il tuo unico scopo è aiutare gli utenti (Volontari e NPO) usando ESCLUSIVAMENTE le informazioni che ti vengono fornite in questo prompt (attività da DB o testo del Centro Assistenza).
+async function getHfToken(serviceClient: any): Promise<string> {
+  const { data: secretData } = await serviceClient
+    .from("internal_secrets")
+    .select("value")
+    .eq("key", "HUGGINGFACE_API_KEY")
+    .single();
 
-REGOLA CRITICA E GUARDRAIL:
-Non inventare MAI informazioni, policy, nomi di enti, luoghi o funzionalità che non sono presenti nelle guide sottostanti o nelle attività esplicitamente fornite.
-Se un utente ti fa una domanda la cui risposta non è contenuta nel contesto fornito, DEVI rispondere: "Mi dispiace, non ho questa informazione a disposizione. Prova a cercare nell'app o a riformulare la domanda!"
-Se una domanda non riguarda AiutarSì, rispondi gentilmente che non puoi assisterlo su quell'argomento.
+  return secretData?.value || hfApiKey;
+}
 
-Rispondi sempre in italiano, in modo cordiale, chiaro e conciso (max 3-4 frasi).
-Puoi usare emoji per rendere la risposta più amichevole.
+async function getUserProfile(serviceClient: any, userId: string) {
+  const { data } = await serviceClient
+    .from("profiles")
+    .select(`
+      *,
+      user_skills (skill),
+      user_interests (interest),
+      followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+    `)
+    .eq("id", userId)
+    .single();
 
-${HELP_CENTER_CONTEXT}
-`;
+  return data;
+}
+
+async function getSuggestedActivities(serviceClient: any, userId: string, profile: any) {
+  const { data: enrollments } = await serviceClient
+    .from("activity_participants")
+    .select("activity_id")
+    .eq("user_id", userId);
+
+  const enrolledIds = new Set((enrollments || []).map((row: any) => row.activity_id));
+
+  const { data, error } = await serviceClient.rpc("get_activities_with_match", {
+    p_user_id: userId,
+    p_category: null,
+    p_search: null,
+    p_center_lat: profile?.location_lat || null,
+    p_center_lng: profile?.location_lng || null,
+    p_radius_km: 100,
+    p_limit: 5,
+    p_offset: 0,
+    p_skills: [],
+    p_only_urgent: false,
+    p_date_from: null,
+    p_date_to: null,
+    p_statuses: ["APERTA", "IN_CORSO"],
+  });
+
+  if (error) {
+    console.error("[GemmaHelp] Smart Match fetch failed:", error.message);
+    return [];
+  }
+
+  return (data || []).filter((activity: any) => !enrolledIds.has(activity.id)).slice(0, 3);
+}
+
+function formatSuggestedActivities(activities: any[]): string {
+  if (!activities.length) return "";
+
+  let text = "\n=== ATTIVITÀ PERSONALIZZATE CONSIGLIATE ===\n";
+  activities.forEach((activity: any, index: number) => {
+    text += `${index + 1}. Titolo: "${activity.title}" | Ente: ${activity.npo_name || "NPO"} | Categoria: ${activity.category || "Generale"} | Match: ${Math.round(activity.match_percentage || 0)}% | Descrizione: ${(activity.description || "").slice(0, 140)}\n`;
+  });
+  return text;
+}
+
+function formatMatchedActivitiesContext(activities: MatchedActivityInput[]): string {
+  if (!activities.length) return "";
+
+  let text = "\n=== ATTIVITÀ CORRENTI DA SPIEGARE ===\n";
+  activities.forEach((activity, index) => {
+    text += `${index + 1}. ID: ${activity.id} | Titolo: "${activity.title}" | Ente: ${activity.npoName || "NPO"} | Categoria: ${activity.category || "Generale"} | Match: ${Math.round(activity.matchPercentage || 0)}% | Descrizione: ${(activity.description || "").slice(0, 160)}\n`;
+  });
+  return text;
+}
+
+function parseJsonResponse(text: string) {
+  const trimmed = text.trim();
+  const jsonText = trimmed.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+  return JSON.parse(jsonText);
+}
+
+function buildSystemPrompt(mode: AssistantMode, userContext: string, suggestedActivitiesText: string) {
+  const sharedRules = `
+Il tuo unico scopo è aiutare gli utenti di AiutarSì usando ESCLUSIVAMENTE le informazioni che ti vengono fornite in questo prompt.
+Non inventare MAI informazioni, policy, nomi di enti, luoghi o funzionalità che non sono presenti nel contesto.
+Se non hai abbastanza informazioni, rispondi: "Mi dispiace, non ho questa informazione a disposizione. Prova a cercare nell'app o a riformulare la domanda!"
+Rispondi sempre in italiano.`;
+
+  if (mode === "shadow") {
+    return `Tu sei Gemma, shadow agent personale di AiutarSì.
+Agisci come una guida silenziosa e personalizzata durante onboarding, Smart Match e scoperta attività.
+Devi essere molto concreta: dai il prossimo passo utile, evidenzia 1-3 attività pertinenti se presenti, e collega sempre il consiglio al profilo dell'utente.
+Non comportarti come un help desk generale. Non fare chiacchiere lunghe. Massimo 3 frasi brevi o 3 bullet.
+Se l'utente è volontario e il profilo non è completo, priorità assoluta: spiegare quale informazione manca e perché aiuta i match.
+Se ci sono attività suggerite, usa solo quelle reali e non inventarne altre.
+
+${sharedRules}
+${userContext}
+${suggestedActivitiesText}`;
+  }
+
+  return `Tu sei Gemma, assistente virtuale ufficiale del Centro Assistenza di AiutarSì.
+Sei un agente conversazionale di supporto prodotto. Devi aiutare l'utente a capire come usare l'app, le regole, l'account, le notifiche e lo Smart Match.
+Non fare raccomandazioni personalizzate se non ci sono dati sufficienti. Se hai suggerimenti attività reali, puoi citarli solo quando l'utente chiede cosa fare o quali opportunità vedere.
+Rispondi in modo cordiale, chiaro e conciso, massimo 3-4 frasi.
+Puoi usare emoji con moderazione.
+
+${sharedRules}
+${userContext}
+${suggestedActivitiesText}
+
+${HELP_CENTER_CONTEXT}`;
+}
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { question, history } = await req.json();
-
-    if (!question) {
-      return new Response(JSON.stringify({ error: 'Domanda mancante' }), { status: 400 });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error(`Missing vars: URL=${!!supabaseUrl}, KEY=${!!serviceRoleKey}`);
+      throw new Error("Missing Supabase configuration");
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const authToken = getTokenFromAuthHeader(req.headers.get("Authorization"));
+    if (!authToken) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
 
-    // Fetch HF API Key from database or env (using the stored one as fallback)
-    const { data: secretData } = await supabase
-        .from('internal_secrets')
-        .select('value')
-        .eq('key', 'HUGGINGFACE_API_KEY')
-        .single();
-    
-    const tokenToUse = secretData?.value || hfApiKey;
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: authData, error: authError } = await serviceClient.auth.getUser(authToken);
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
 
-    // 1. Generate text embedding for the user's question
+    const { question, history, mode, responseFormat, matchedActivities } = await req.json();
+    const assistantMode: AssistantMode = mode === "shadow" ? "shadow" : "help_center";
+    const normalizedQuestion = String(question || "").trim() || (
+      assistantMode === "shadow"
+        ? "Dammi il prossimo consiglio utile e personalizzato per questo utente."
+        : ""
+    );
+
+    if (!normalizedQuestion) {
+      return new Response(JSON.stringify({ error: "Domanda mancante" }), { status: 400, headers: corsHeaders });
+    }
+
+    const profile = await getUserProfile(serviceClient, authData.user.id);
+    const userContext = buildUserContext(profile);
+
     let suggestedActivitiesText = "";
-    
-    try {
-        const hfEmbedResponse = await fetch(
-            `https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction`,
-            {
-                headers: {
-                    Authorization: `Bearer ${tokenToUse}`,
-                    "Content-Type": "application/json",
-                    "x-wait-for-model": "true",
-                },
-                method: "POST",
-                body: JSON.stringify({ inputs: question }),
-            }
-        );
+    if (profile?.role === "VOLUNTEER") {
+      const suggestedActivities = await getSuggestedActivities(serviceClient, authData.user.id, profile);
+      suggestedActivitiesText = formatSuggestedActivities(suggestedActivities);
+    }
+    const matchedActivitiesContext = Array.isArray(matchedActivities)
+      ? formatMatchedActivitiesContext(matchedActivities as MatchedActivityInput[])
+      : "";
 
-        if (hfEmbedResponse.ok) {
-            const hfResult = await hfEmbedResponse.json();
-            const queryEmbedding = Array.isArray(hfResult[0]) ? hfResult[0] : hfResult;
-
-            if (queryEmbedding && queryEmbedding.length === 384) {
-                // 2. Query Supabase for matching open activities (>0.70)
-                const { data: matchedActivities, error: matchError } = await supabase.rpc('match_activities', {
-                    query_embedding: queryEmbedding,
-                    match_threshold: 0.70,
-                    match_count: 3,
-                    user_lat: null,
-                    user_lng: null
-                });
-
-                if (!matchError && matchedActivities && matchedActivities.length > 0) {
-                    suggestedActivitiesText = "\n\nATTIVITÀ SUGGERITE (Smart Match > 0.70):\n";
-                    matchedActivities.forEach((act: any, index: number) => {
-                        suggestedActivitiesText += `${index + 1}. Titolo: "${act.title}" presso ${act.npo_name}. Categoria: ${act.category}. Descrizione breve: ${act.description.substring(0, 100)}...\n`;
-                    });
-                    suggestedActivitiesText += "\nSe l'utente cerca qualcosa da fare, proponi rigorosamente QUESTE attività reali disponibili sull'app e non inventarne altre. Suggerisci loro di cercarle nella Home o Esplora.";
-                }
-            }
-        }
-    } catch (embErr) {
-        console.error("Embedding / Match Error:", embErr);
-        // Continue even if embedding fails to still answer the question
+    const tokenToUse = await getHfToken(serviceClient);
+    if (!tokenToUse) {
+      throw new Error("Hugging Face token not configured");
     }
 
-    // 3. Construct messages array compatible with OpenAI API
+    const systemPrompt = buildSystemPrompt(
+      assistantMode,
+      userContext,
+      suggestedActivitiesText + matchedActivitiesContext,
+    );
+
     const messages = [
-      { role: "system", content: SYSTEM_PROMPT + suggestedActivitiesText },
-      { role: "assistant", content: "Ciao! Sono Gemma, il tuo assistente su AiutarSì 👋 Come posso aiutarti?" },
+      { role: "system", content: systemPrompt },
     ];
 
-    // Format old history
-    if (history && Array.isArray(history)) {
-      for (const msg of history) {
+    if (assistantMode === "help_center") {
+      messages.push({
+        role: "assistant",
+        content: "Ciao! Sono Gemma, il tuo assistente su AiutarSì 👋 Come posso aiutarti?",
+      });
+    }
+
+    if (Array.isArray(history)) {
+      for (const msg of (history as ChatHistoryItem[]).slice(-10)) {
         messages.push({
-          role: msg.role === 'model' ? 'assistant' : 'user',
-          content: msg.parts?.[0]?.text || ""
+          role: msg.role === "model" ? "assistant" : "user",
+          content: msg.parts?.[0]?.text || "",
         });
       }
     }
 
-    // Add current question
-    messages.push({ role: "user", content: question });
+    messages.push({ role: "user", content: normalizedQuestion });
 
-    // 4. Call HuggingFace LLM
-    const response = await fetch(
-      "https://router.huggingface.co/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${tokenToUse}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "meta-llama/Meta-Llama-3-8B-Instruct",
-          messages: messages,
-          temperature: 0.7,
-          max_tokens: 500,
-          frequency_penalty: 0.15,
-        }),
-      }
-    );
+    if (responseFormat === "smart_match_reasons") {
+      messages.push({
+        role: "user",
+        content:
+          'Restituisci solo JSON valido nel formato {"summary":"string","reasons":[{"activityId":"string","reason":"string"}]}. Ogni "reason" deve essere breve, concreta, personalizzata e riferita ai dati forniti. Massimo 18 parole per motivo.',
+      });
+    }
+
+    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenToUse}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/Meta-Llama-3-8B-Instruct",
+        messages,
+        temperature: assistantMode === "shadow" ? 0.45 : 0.7,
+        max_tokens: assistantMode === "shadow" ? 220 : 500,
+        frequency_penalty: 0.15,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -215,13 +279,45 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content || "Mi dispiace, non ho trovato una risposta. Prova a riformulare la domanda!";
+    const answer = data.choices?.[0]?.message?.content || "";
 
-    return new Response(JSON.stringify({ answer }), {
-      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
+    if (responseFormat === "smart_match_reasons") {
+      try {
+        const parsed = parseJsonResponse(answer);
+        return new Response(JSON.stringify({ ...parsed, mode: assistantMode }), {
+          headers: corsHeaders,
+        });
+      } catch (parseError) {
+        console.error("[GemmaHelp] Failed to parse smart_match_reasons JSON:", parseError);
+        const fallbackReasons = Array.isArray(matchedActivities)
+          ? (matchedActivities as MatchedActivityInput[]).map((activity) => ({
+              activityId: activity.id,
+              reason: `Match ${Math.round(activity.matchPercentage || 0)}% in linea con il tuo profilo.`,
+            }))
+          : [];
+
+        return new Response(
+          JSON.stringify({
+            mode: assistantMode,
+            summary: "Gemma ha selezionato attività in linea con il tuo profilo attuale.",
+            reasons: fallbackReasons,
+          }),
+          { headers: corsHeaders },
+        );
+      }
+    }
+
+    const safeAnswer =
+      answer || "Mi dispiace, non ho trovato una risposta. Prova a riformulare la domanda!";
+
+    return new Response(JSON.stringify({ answer: safeAnswer, mode: assistantMode }), {
+      headers: corsHeaders,
     });
   } catch (err: any) {
-    console.error('[GemmaHelp Error]', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    console.error("[GemmaHelp Error]", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });

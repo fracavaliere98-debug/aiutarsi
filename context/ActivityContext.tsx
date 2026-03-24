@@ -21,7 +21,6 @@ interface ActivityContextType {
     reviews: OldReview[];
     userActivities: AppActivity[];
     userReviews: OldReview[];
-    recommendedActivities: AppActivity[];
     volunteerReviews: OldVolunteerReview[];
     activityApplications: AppActivityApplication[];
     volunteerStats: VolunteerStats;
@@ -298,14 +297,13 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     }, [activities, user]);
 
     const userReviews = useMemo(() => (!user || user.role !== "VOLUNTEER") ? [] : reviews.filter(r => r.volunteerId === user.id), [reviews, user]);
-    const recommendedActivities = useMemo(() => (!user || user.role !== "VOLUNTEER") ? [] : activities.filter(act => (act.status === "APERTA" || act.status === "IN_CORSO") && !act.iscritti.includes(user.id)).map(act => ({ ...act, matchPercentage: 85 })).sort((a, b) => b.matchPercentage - a.matchPercentage), [activities, user]);
 
     const resetData = useCallback(async () => { console.warn("Reset not supported"); }, []);
 
     const value = useMemo(() => ({
-        activities, reviews, userActivities, userReviews, volunteerReviews, recommendedActivities, activityApplications, volunteerStats,
+        activities, reviews, userActivities, userReviews, volunteerReviews, activityApplications, volunteerStats,
         enrollInActivity, unenrollFromActivity, applyToActivity, createActivity, submitReview, submitVolunteerReviews, updateActivity, getNPORating, deleteActivity, approveActivityApplication, rejectActivityApplication, resetData, error, loadData, paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities
-    }), [activities, reviews, userActivities, userReviews, volunteerReviews, recommendedActivities, activityApplications, volunteerStats, enrollInActivity, unenrollFromActivity, applyToActivity, createActivity, submitReview, submitVolunteerReviews, updateActivity, getNPORating, deleteActivity, approveActivityApplication, rejectActivityApplication, resetData, error, loadData, paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities]);
+    }), [activities, reviews, userActivities, userReviews, volunteerReviews, activityApplications, volunteerStats, enrollInActivity, unenrollFromActivity, applyToActivity, createActivity, submitReview, submitVolunteerReviews, updateActivity, getNPORating, deleteActivity, approveActivityApplication, rejectActivityApplication, resetData, error, loadData, paginatedActivities, hasMore, isLoadingMore, fetchPaginatedActivities]);
 
     return (
         <ActivityContext.Provider value={value}>

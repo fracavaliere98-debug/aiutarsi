@@ -7,24 +7,11 @@ import React, {
     useRef,
     useMemo,
 } from 'react';
-import * as Location from 'expo-location';
 import { supabase } from '../utils/supabase';
 import { activityService } from '../services/ActivityService';
+import { gemmaService } from '../services/GemmaService';
 import { useAuth } from './AuthContext';
-import { OldActivity, OldUser, OldSmartMatchResult } from '../types';
-
-// Helper function for Haversine distance
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
+import { OldSmartMatchResult } from '../types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SmartMatchContextType {
@@ -89,41 +76,35 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
             const enrolledIds = new Set((enrollments || []).map(e => e.activity_id));
 
-            // 3. Mappiamo nel formato atteso dalla UI (generando la 'reason')
-            const mappedMatches: OldSmartMatchResult[] = activities
+            // 3. Mappiamo nel formato atteso dalla UI
+            const mappedMatchesBase: OldSmartMatchResult[] = activities
                 .filter(a => !enrolledIds.has(a.id))
                 .slice(0, 5) // prendiamo le migliori 5
-                .map((a: any) => {
-                    let reason = "Alta affinità con il tuo profilo.";
-                    const reasons: string[] = [];
+                .map((a: any) => ({
+                    id: a.id,
+                    score: a.matchPercentage || 0,
+                    reason: "Gemma sta preparando un consiglio personalizzato...",
+                    // AppActivity is backwards compatible enough for what SmartMatchCarousel needs
+                    activity: a as any
+                }));
 
-                    if (user.skills && a.description) {
-                        const matchingSkill = user.skills.find(s =>
-                            a.title.toLowerCase().includes(s.toLowerCase()) ||
-                            a.description.toLowerCase().includes(s.toLowerCase())
-                        );
-                        if (matchingSkill) reasons.push(`Competenza in ${matchingSkill}`);
-                    }
-                    if (user.interests && user.interests.includes(a.category) && reasons.length < 2) {
-                        reasons.push(`Interesse per ${a.category}`);
-                    }
-                    if (user.locationCoords && a.location?.coords?.lat) {
-                        const dist = calculateDistance(user.locationCoords.lat, user.locationCoords.lng, a.location.coords.lat, a.location.coords.lng);
-                        if (dist < 5) reasons.push("A pochi passi");
-                        else if (dist < 15) reasons.push(`A ${dist.toFixed(0)} km`);
-                    }
-                    if (a.isUrgent) reasons.push("Ubicazione Urgente");
-
-                    if (reasons.length > 0) reason = reasons.slice(0, 2).join(" • ");
-
-                    return {
-                        id: a.id,
-                        score: a.matchPercentage || 0,
-                        reason: reason,
-                        // AppActivity is backwards compatible enough for what SmartMatchCarousel needs
-                        activity: a as any
-                    };
-                });
+            const mappedMatches = mappedMatchesBase.length > 0
+                ? await gemmaService.getSmartMatchReasons(mappedMatchesBase)
+                    .then(result => {
+                        const reasonsMap = new Map(result.reasons.map((item: any) => [item.activityId, item.reason]));
+                        return mappedMatchesBase.map(match => ({
+                            ...match,
+                            reason: reasonsMap.get(match.id) || "Attività in linea con il tuo profilo attuale."
+                        }));
+                    })
+                    .catch((gemmaError) => {
+                        console.error('[SmartMatchContext] Gemma reasons failed:', gemmaError);
+                        return mappedMatchesBase.map(match => ({
+                            ...match,
+                            reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`
+                        }));
+                    })
+                : mappedMatchesBase;
 
             console.log(`[SmartMatchContext] Found ${mappedMatches.length} unified matches.`);
             setMatches(mappedMatches);

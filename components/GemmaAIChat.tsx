@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -17,8 +17,6 @@ import Animated, {
     withRepeat,
     withSequence,
     withTiming,
-    withSpring,
-    Easing,
 } from 'react-native-reanimated';
 import { X, Send } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
@@ -33,6 +31,10 @@ interface Message {
 interface GemmaAIChatProps {
     visible: boolean;
     onClose: () => void;
+    mode?: 'help_center' | 'shadow';
+    title?: string;
+    subtitle?: string;
+    initialMessage?: string;
 }
 
 // Typing dots animation component
@@ -67,7 +69,7 @@ const TypingDots = () => {
             ),
             -1
         );
-    }, []);
+    }, [dot1, dot2, dot3]);
 
     const s1 = useAnimatedStyle(() => ({ transform: [{ translateY: dot1.value }] }));
     const s2 = useAnimatedStyle(() => ({ transform: [{ translateY: dot2.value }] }));
@@ -82,31 +84,24 @@ const TypingDots = () => {
     );
 };
 
-export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) => {
+export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
+    visible,
+    onClose,
+    mode = 'help_center',
+    title = 'Chiedi a Gemma',
+    subtitle = 'Assistente AiutarSì · Solo argomenti app',
+    initialMessage = 'Ciao! Sono Gemma 👋 Il mio database di conoscenze è aggiornato al 18 Marzo 2026. Posso rispondere solo a domande su AiutarSì. Come posso aiutarti?'
+}) => {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'model', text: 'Ciao! Sono Gemma 👋 Il mio database di conoscenze è aggiornato al 18 Marzo 2026. Posso rispondere solo a domande su AiutarSì. Come posso aiutarti?' }
+        { role: 'model', text: initialMessage }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
 
-    // Typing effect for model responses
-    const typeMessage = useCallback((fullText: string, index: number) => {
-        let charIndex = 0;
-        const interval = setInterval(() => {
-            charIndex++;
-            setMessages(prev => {
-                const updated = [...prev];
-                if (updated[index]) {
-                    updated[index] = { ...updated[index], text: fullText.slice(0, charIndex), isTyping: charIndex < fullText.length };
-                }
-                return updated;
-            });
-            scrollRef.current?.scrollToEnd({ animated: false });
-            if (charIndex >= fullText.length) clearInterval(interval);
-        }, 18); // ~18ms per char ≈ very fast typing feel
-        return interval;
-    }, []);
+    useEffect(() => {
+        setMessages([{ role: 'model', text: initialMessage }]);
+    }, [initialMessage, visible]);
 
     const sendMessage = async () => {
         const question = input.trim();
@@ -117,8 +112,6 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
 
         // Add user message
         const userMsg: Message = { role: 'user', text: question };
-        const placeholderIndex = messages.length + 1;
-
         setMessages(prev => [
             ...prev,
             userMsg,
@@ -137,8 +130,12 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
                 }));
 
             const { data, error } = await supabase.functions.invoke('gemma-help-assistant', {
-                body: { question, history },
+                body: { question, history, mode },
             });
+
+            if (error) {
+                throw error;
+            }
 
             const answer = data?.answer || 'Mi dispiace, ho avuto un problema. Riprova!';
 
@@ -184,7 +181,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
                 }
             }, 18);
 
-        } catch (err) {
+        } catch {
             setMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
@@ -222,8 +219,8 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({ visible, onClose }) =>
                         resizeMode="contain"
                     />
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Chiedi a Gemma</Text>
-                        <Text style={{ fontSize: 12, color: Colors.secondary }}>Assistente AiutarSì · Solo argomenti app</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>{title}</Text>
+                        <Text style={{ fontSize: 12, color: Colors.secondary }}>{subtitle}</Text>
                     </View>
                     <TouchableOpacity
                         onPress={onClose}
