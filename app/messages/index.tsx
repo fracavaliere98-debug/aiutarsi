@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, RefreshControl, Animated, Clipboard } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, RefreshControl, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Clipboard from 'expo-clipboard';
 import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useChat } from '../../context/ChatContext';

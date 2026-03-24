@@ -23,6 +23,7 @@ import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import BannedScreen from "../components/BannedScreen";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -243,33 +244,35 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryProvider>
-      <ErrorBoundary>
-        <AuthProvider>
-          <ToastProvider>
-            <GamificationProvider>
-              <NotificationProvider>
-                <ActivityProvider>
-                  <SmartMatchProvider>
-                    <ApplicationProvider>
-                      <ChatProvider>
-                        <CommunityProvider>
-                          <StoriesProvider>
-                            <StatusBar style="dark" />
-                            <RootLayoutNav />
-                            <ToastContainer />
-                            <LevelUpOverlay />
-                          </StoriesProvider>
-                        </CommunityProvider>
-                      </ChatProvider>
-                    </ApplicationProvider>
-                  </SmartMatchProvider>
-                </ActivityProvider>
-              </NotificationProvider>
-            </GamificationProvider>
-          </ToastProvider>
-        </AuthProvider>
-      </ErrorBoundary>
-    </QueryProvider>
+    <SafeAreaProvider>
+      <QueryProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ToastProvider>
+              <GamificationProvider>
+                <NotificationProvider>
+                  <ActivityProvider>
+                    <SmartMatchProvider>
+                      <ApplicationProvider>
+                        <ChatProvider>
+                          <CommunityProvider>
+                            <StoriesProvider>
+                              <StatusBar style="dark" />
+                              <RootLayoutNav />
+                              <ToastContainer />
+                              <LevelUpOverlay />
+                            </StoriesProvider>
+                          </CommunityProvider>
+                        </ChatProvider>
+                      </ApplicationProvider>
+                    </SmartMatchProvider>
+                  </ActivityProvider>
+                </NotificationProvider>
+              </GamificationProvider>
+            </ToastProvider>
+          </AuthProvider>
+        </ErrorBoundary>
+      </QueryProvider>
+    </SafeAreaProvider>
   );
 }

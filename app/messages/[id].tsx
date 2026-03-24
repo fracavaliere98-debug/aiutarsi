@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, Linking, Alert, Clipboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Image, Modal, Linking, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff, AlertCircle, ShieldOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -472,7 +473,7 @@ export default function ChatDetailScreen() {
                             const buttons: any[] = [
                                 {
                                     text: 'Copia',
-                                    onPress: () => Clipboard.setString(item.content || ''),
+                                    onPress: () => Clipboard.setStringAsync(item.content || ''),
                                 },
                             ];
 
