@@ -5,8 +5,6 @@ import { useRouter } from 'expo-router';
 import { UserAvatar } from './UserAvatar';
 import { useChat } from '../context/ChatContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Colors } from '../constants/Colors';
-
 import { Layout } from '../utils/layout';
 
 export const VolunteerHeaderActions = () => {
@@ -14,14 +12,15 @@ export const VolunteerHeaderActions = () => {
     const { unreadCount: chatUnreadCount } = useChat();
     const { unreadCount: notificationsUnreadCount } = useNotifications();
 
-    const iconSize = Layout.iconSize.md - 2;
     const avatarSize = Layout.isTablet ? 52 : 44;
+    const iconSize = avatarSize > 44 ? 22 : 20;
 
     return (
         <View className="flex-row items-center gap-2" style={{ marginTop: 5 }}>
             <TouchableOpacity
                 onPress={() => router.push("/(volunteer)/notifications" as any)}
-                className="bg-white/10 p-2.5 rounded-2xl border border-white/20 relative"
+                className="bg-white/10 rounded-2xl border border-white/20 relative items-center justify-center"
+                style={{ width: avatarSize, height: avatarSize }}
             >
                 <Bell size={iconSize} color="white" />
                 {notificationsUnreadCount > 0 && (
@@ -33,7 +32,8 @@ export const VolunteerHeaderActions = () => {
 
             <TouchableOpacity
                 onPress={() => router.push("/messages" as any)}
-                className="bg-white/10 p-2.5 rounded-2xl border border-white/20 relative mr-1"
+                className="bg-white/10 rounded-2xl border border-white/20 relative mr-1 items-center justify-center"
+                style={{ width: avatarSize, height: avatarSize }}
             >
                 <MessageCircle size={iconSize} color="white" />
                 {chatUnreadCount > 0 && (

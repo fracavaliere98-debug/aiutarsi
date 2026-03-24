@@ -247,7 +247,7 @@ export default function CommunityScreen() {
 
     return (
         <StandardLayout
-            label="Storie di impatto condivise"
+            label="Storie di impatto"
             title="Community"
             bg="bg-slate-50"
             noScroll={true}

@@ -1,5 +1,5 @@
 import { supabase } from '../utils/supabase';
-import { Conversation, Message, ConversationParticipant, MessageMetadata } from '../types/chat';
+import { MessageMetadata } from '../types/chat';
 import { filterMessage, recordMessageSent, getFilterErrorMessage } from '../utils/chatFilter';
 
 /** Thrown when a message is blocked by the content filter */
@@ -47,11 +47,16 @@ class ChatService {
             throw error;
         }
 
+        const nonEmptyConversations = (data || []).filter((participant: any) => {
+            const conversation = participant.conversations;
+            return !!conversation?.last_message_at && !!conversation?.last_message_content?.trim();
+        });
+
         // Filter out conversations with blocked users
         try {
             const blockedIds = await this.getBlockedUserIds(userId);
             if (blockedIds.length > 0) {
-                return data.filter((p: any) => {
+                return nonEmptyConversations.filter((p: any) => {
                     if (p.conversations?.type === 'PRIVATE') {
                         const other = p.conversations.participants?.find((part: any) => part.user_id !== userId);
                         if (other && blockedIds.includes(other.user_id)) {
@@ -65,7 +70,7 @@ class ChatService {
             console.error('Error filtering blocked users in conversations:', e);
         }
 
-        return data;
+        return nonEmptyConversations;
     }
 
     /**
@@ -86,7 +91,7 @@ class ChatService {
             const convIds = existingParticipant.map(p => p.conversation_id);
 
             // Check if userId2 is also a participant in any of these private conversations
-            const { data: commonPart, error: errCommon } = await supabase
+            const { data: commonPart } = await supabase
                 .from('conversation_participants')
                 .select('conversation_id')
                 .in('conversation_id', convIds)
@@ -130,6 +135,7 @@ class ChatService {
                 ),
                 participants:conversation_participants (
                     user_id,
+                    last_read_at,
                     profiles (
                         name:full_name,
                         npo_name,
@@ -152,6 +158,38 @@ class ChatService {
             this.startGroupConversation(data.activity_id, data.activities?.title || '');
         }
 
+        return data;
+    }
+
+    async getConversationMetadata(conversationId: string) {
+        const { data, error } = await supabase
+            .from('conversations')
+            .select(`
+                *,
+                activities (
+                    title,
+                    npo:profiles!npo_id (
+                        npo_name
+                    )
+                ),
+                participants:conversation_participants (
+                    user_id,
+                    last_read_at,
+                    profiles (
+                        name:full_name,
+                        npo_name,
+                        avatar:avatar_url,
+                        role,
+                        phone,
+                        allow_calls,
+                        last_seen_at
+                    )
+                )
+            `)
+            .eq('id', conversationId)
+            .single();
+
+        if (error) throw error;
         return data;
     }
 
@@ -469,4 +507,3 @@ class ChatService {
 }
 
 export default new ChatService();
-

@@ -90,7 +90,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
     mode = 'help_center',
     title = 'Chiedi a Gemma',
     subtitle = 'Assistente AiutarSì · Solo argomenti app',
-    initialMessage = 'Ciao! Sono Gemma 👋 Il mio database di conoscenze è aggiornato al 18 Marzo 2026. Posso rispondere solo a domande su AiutarSì. Come posso aiutarti?'
+    initialMessage = 'Ciao! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?'
 }) => {
     const [messages, setMessages] = useState<Message[]>([
         { role: 'model', text: initialMessage }

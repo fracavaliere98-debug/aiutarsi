@@ -176,7 +176,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         if (!user) return;
 
         const targetUserId = notification.userId || user.id;
-        const isSelfNotification = targetUserId === user.id;
 
         try {
             const payload = {
@@ -190,38 +189,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 read: false
             };
 
-            if (isSelfNotification) {
-                const { data, error } = await supabase
-                    .from('notifications')
-                    .insert(payload)
-                    .select()
-                    .single();
+            const { error } = await supabase
+                .from('notifications')
+                .insert(payload);
 
-                if (error) throw error;
-
-                if (data) {
-                    const newNotif: AppNotification = {
-                        id: data.id,
-                        userId: data.user_id,
-                        type: data.type as any,
-                        title: data.title,
-                        message: data.message,
-                        read: data.read,
-                        activityId: data.related_activity_id,
-                        conversationId: data.related_conversation_id,
-                        timestamp: data.created_at,
-                        matchScore: data.match_score
-                    };
-
-                    setAllNotifications(prev => [newNotif, ...prev]);
-                }
-            } else {
-                const { error } = await supabase
-                    .from('notifications')
-                    .insert(payload);
-
-                if (error) throw error;
-            }
+            if (error) throw error;
         } catch (error) {
             console.error("Error adding notification:", error);
         }

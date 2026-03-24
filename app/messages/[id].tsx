@@ -36,6 +36,11 @@ export default function ChatDetailScreen() {
     const typingTimeoutRef = useRef<any>(null);
     const presenceChannelRef = useRef<any>(null);
     const flatListRef = useRef<FlatList>(null);
+    const messagesRef = useRef<any[]>([]);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Helper: format date to Italian day label
     const formatDayLabel = (dateStr: string) => {
@@ -179,7 +184,7 @@ export default function ChatDetailScreen() {
             const newMsg = await ChatService.sendMessage(id as string, user!.id, failedMsg.content);
             setMessages(prev => prev.filter(m => m.id !== failedMsg.id));
             setMessages(prev => mergeMessages(prev, [newMsg]));
-        } catch (e) {
+        } catch {
             setMessages(prev => prev.map(m => m.id === failedMsg.id ? { ...m, __failed: true, __pending: false } : m));
         }
     };
@@ -211,8 +216,9 @@ export default function ChatDetailScreen() {
                 setConversation(conv);
             }
 
-            const oldestTimestamp = !isInitial && messages.length > 0
-                ? messages[messages.length - 1].created_at
+            const currentMessages = messagesRef.current;
+            const oldestTimestamp = !isInitial && currentMessages.length > 0
+                ? currentMessages[currentMessages.length - 1].created_at
                 : undefined;
 
             const newMsgs = await ChatService.getMessages(id as string, oldestTimestamp);
@@ -234,7 +240,7 @@ export default function ChatDetailScreen() {
             setIsRefreshing(false);
             setIsLoadingMore(false);
         }
-    }, [id, user?.id, messages]);
+    }, [id, markAsRead, user?.id]);
 
     const handleLoadMore = () => {
         if (!hasMore || isLoadingMore || isRefreshing) return;
@@ -282,7 +288,7 @@ export default function ChatDetailScreen() {
         const timer = setInterval(() => {
             // Only refresh conversation metadata (online status, etc.), not messages
             if (id) {
-                ChatService.getConversationDetails(id as string)
+                ChatService.getConversationMetadata(id as string)
                     .then(conv => setConversation(conv))
                     .catch(() => { });
             }
@@ -294,7 +300,7 @@ export default function ChatDetailScreen() {
             clearInterval(timer);
             clearTimeout(typingTimeoutRef.current);
         };
-    }, [id, loadData]);
+    }, [id, loadData, user?.id]);
 
     const handleReportUser = async () => {
         if (!otherParticipant?.user_id) return;
@@ -329,7 +335,7 @@ export default function ChatDetailScreen() {
                                     }
                                 }
                             );
-                        } catch (e) {
+                        } catch {
                             showToast('error', 'Errore durante il blocco. Riprova.');
                         }
                     }

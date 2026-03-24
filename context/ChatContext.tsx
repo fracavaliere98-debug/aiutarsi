@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from './AuthContext';
 import ChatService from '../services/ChatService';
@@ -17,8 +17,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [conversations, setConversations] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const conversationIdsRef = useRef<string[]>([]);
 
-    const refreshConversations = async () => {
+    useEffect(() => {
+        conversationIdsRef.current = conversations.map((c: any) => c.conversation_id);
+    }, [conversations]);
+
+    const refreshConversations = useCallback(async () => {
         if (!user) return;
         try {
             const data = await ChatService.getConversations(user.id);
@@ -35,10 +40,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error("Error refreshing conversations:", error);
         }
-    };
+    }, [user]);
 
     // Optimistically update the preview for a conversation without a DB round-trip
-    const updateConversationPreview = (conversationId: string, content: string, senderId: string) => {
+    const updateConversationPreview = useCallback((conversationId: string, content: string, senderId: string) => {
         setConversations(prev => prev.map((c: any) => {
             if (c.conversation_id !== conversationId) return c;
             return {
@@ -51,17 +56,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
                 }
             };
         }));
-    };
+    }, []);
 
     // Mark a conversation as read and immediately refresh the badge count
-    const markAsRead = async (conversationId: string) => {
+    const markAsRead = useCallback(async (conversationId: string) => {
         if (!user) return;
         try {
             await ChatService.markAsRead(conversationId, user.id);
         } catch { /* best-effort */ }
         // Always refresh regardless of whether markAsRead threw
         await refreshConversations();
-    };
+    }, [refreshConversations, user]);
 
     useEffect(() => {
         if (!user) {
@@ -74,29 +79,34 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
         // Subscribe to conversations UPDATE (fires AFTER the DB trigger updates last_message_content)
         // This is the correct single source of truth for the preview.
-        const convsChannel = supabase.channel('public:conversations:context')
+        const messagesChannel = supabase.channel(`public:messages:context:${user.id}`)
             .on(
                 'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'conversations' },
-                () => { refreshConversations(); }
+                { event: 'INSERT', schema: 'public', table: 'messages' },
+                (payload) => {
+                    const conversationId = (payload.new as any)?.conversation_id;
+                    if (conversationId && conversationIdsRef.current.includes(conversationId)) {
+                        refreshConversations();
+                    }
+                }
             )
             .subscribe();
 
         // Subscribe to conversation_participants (new chats, read status changes)
-        const participantsChannel = supabase.channel('public:conv_participants:context')
+        const participantsChannel = supabase.channel(`public:conv_participants:context:${user.id}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'conversation_participants' },
+                { event: 'INSERT', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
                 () => { refreshConversations(); }
             )
             .on(
                 'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'conversation_participants' },
+                { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
                 () => { refreshConversations(); }
             )
             .on(
                 'postgres_changes',
-                { event: 'DELETE', schema: 'public', table: 'conversation_participants' },
+                { event: 'DELETE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
                 () => { refreshConversations(); }
             )
             .subscribe();
@@ -111,11 +121,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(convsChannel);
+            supabase.removeChannel(messagesChannel);
             supabase.removeChannel(participantsChannel);
             supabase.removeChannel(convsDeleteChannel);
         };
-    }, [user]);
+    }, [refreshConversations, user]);
 
     return (
         <ChatContext.Provider value={{ conversations, unreadCount, refreshConversations, markAsRead, updateConversationPreview }}>
