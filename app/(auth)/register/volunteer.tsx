@@ -111,7 +111,7 @@ export default function VolunteerRegister() {
                         {acceptedPrivacy && <Text className="text-white text-xs">✓</Text>}
                     </View>
                     <Text className="text-sm text-secondary flex-1">
-                        Accetto la <Text className="text-primary font-bold">Privacy Policy</Text> e i <Text className="text-primary font-bold">Termini di Servizio</Text>
+                        Accetto la <Text onPress={() => router.push("/(corporate)/privacy-policy")} className="text-primary font-bold underline">Privacy Policy</Text> e i <Text onPress={() => router.push("/(corporate)/terms")} className="text-primary font-bold underline">Termini di Servizio</Text>
                     </Text>
                 </TouchableOpacity>
 

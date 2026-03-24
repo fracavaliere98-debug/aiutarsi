@@ -13,7 +13,9 @@
       "bundleIdentifier": "com.aiutarsi.app",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo.",
+        "NSPhotoLibraryUsageDescription": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo."
       }
     },
     "android": {

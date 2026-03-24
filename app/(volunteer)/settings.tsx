@@ -394,6 +394,7 @@ export default function VolunteerSettings() {
                         icon={FileText}
                         label="Termini e Condizioni"
                         color={Colors.primary}
+                        onPress={() => router.push("/(corporate)/terms")}
                         last
                     />
                 </SoftCard>
