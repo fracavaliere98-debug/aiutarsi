@@ -7,7 +7,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Sparkles, MapPin, Calendar, ChevronRight, Bot, Zap } from 'lucide-react-native';
+import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Compass, Clock3, Briefcase, Flame } from 'lucide-react-native';
 import { useSmartMatch } from '../context/SmartMatchContext';
 import { Colors } from '../constants/Colors';
 import { OldSmartMatchResult } from '../types';
@@ -41,8 +41,18 @@ function SkeletonCard() {
 }
 
 // ─── Match Card ───────────────────────────────────────────────────────────────
+function getChipIcon(chip: string, color: string) {
+    const normalized = chip.toLowerCase();
+    if (normalized.includes('vicino') || normalized.includes('raggiungibile')) return <Compass size={14} color={color} />;
+    if (normalized.includes('settimana') || normalized.includes('giorni')) return <Clock3 size={14} color={color} />;
+    if (normalized.includes('skill') || normalized.includes('competenze')) return <Briefcase size={14} color={color} />;
+    if (normalized.includes('urgente')) return <Flame size={14} color={color} />;
+    return <Sparkles size={14} color={color} />;
+}
+
 function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number }) {
     const router = useRouter();
+    const { saveMatch, hideMatch, likeMatch, markMatchSeen } = useSmartMatch();
     const activity = match.activity;
     if (!activity) return null;
 
@@ -58,12 +68,16 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 ? '#7c3aed' // violet
                 : '#2563eb'; // blue
 
-    const isTopMatch = index === 0;
+    const isTopMatch = index === 0 || match.confidence === 'top';
+    const onOpen = async () => {
+        await markMatchSeen(match);
+        router.push(`/activity/${activity.id}` as any);
+    };
 
     return (
         <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => router.push(`/activity/${activity.id}` as any)}
+            onPress={onOpen}
             style={{
                 width: 300,
                 marginRight: 16,
@@ -101,24 +115,41 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                         fontWeight: '800',
                     }}
                 >
-                    {match.score}% Match
+                    {match.score}%
                 </Text>
             </View>
 
             {/* NPO Name */}
-            <Text
-                style={{
-                    color: isTopMatch ? 'rgba(255,255,255,0.65)' : Colors.secondary,
-                    fontSize: 11,
-                    fontWeight: '700',
-                    letterSpacing: 0.5,
-                    textTransform: 'uppercase',
-                    marginBottom: 4,
-                }}
-                numberOfLines={1}
-            >
-                {activity.npoName}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text
+                    style={{
+                        color: isTopMatch ? 'rgba(255,255,255,0.65)' : Colors.secondary,
+                        fontSize: 11,
+                        fontWeight: '700',
+                        letterSpacing: 0.5,
+                        textTransform: 'uppercase',
+                        flex: 1,
+                        marginRight: 8,
+                    }}
+                    numberOfLines={1}
+                >
+                    {activity.npoName}
+                </Text>
+                {activity.isUrgent ? (
+                    <View
+                        style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 999,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: isTopMatch ? 'rgba(255,255,255,0.16)' : '#fff1f2',
+                        }}
+                    >
+                        <Flame size={14} color={isTopMatch ? '#ffffff' : '#ef4444'} />
+                    </View>
+                ) : null}
+            </View>
 
             {/* OldActivity Title */}
             <Text
@@ -163,62 +194,124 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 </View>
             </View>
 
-            {/* AI Reason — the trust-building badge */}
+            {!!match.chips?.length && (
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                    {match.chips
+                        .filter((chip) => !chip.toLowerCase().includes('urgente'))
+                        .map((chip) => (
+                        <View
+                            key={chip}
+                            style={{
+                                backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#f3f0ff',
+                                width: 30,
+                                height: 30,
+                                borderRadius: 999,
+                                borderWidth: isTopMatch ? 1 : 0,
+                                borderColor: 'rgba(255,255,255,0.18)',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                            accessibilityLabel={chip}
+                        >
+                            {getChipIcon(chip, isTopMatch ? '#ffffff' : Colors.primary)}
+                        </View>
+                    ))}
+                </View>
+            )}
+
+            {/* Compact Gemma cue */}
             <View
                 style={{
                     backgroundColor: isTopMatch ? 'rgba(255,255,255,0.12)' : '#f8f4ff',
                     borderRadius: 14,
                     paddingHorizontal: 12,
-                    paddingVertical: 9,
+                    paddingVertical: 10,
                     flexDirection: 'row',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     gap: 7,
                     borderWidth: isTopMatch ? 1 : 0,
                     borderColor: 'rgba(255,255,255,0.2)',
+                    justifyContent: 'space-between',
                 }}
             >
-                <Bot size={14} color={isTopMatch ? 'rgba(255,255,255,0.85)' : Colors.accent} style={{ marginTop: 1 }} />
-                <Text
-                    style={{
-                        flex: 1,
-                        color: isTopMatch ? 'rgba(255,255,255,0.9)' : Colors.primary,
-                        fontSize: 12,
-                        fontWeight: '600',
-                        lineHeight: 17,
-                        fontStyle: 'italic',
-                    }}
-                >
-                    {match.reason}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <GemmaAvatar size={20} />
+                    <Text
+                        style={{
+                            color: isTopMatch ? 'rgba(255,255,255,0.9)' : Colors.primary,
+                            fontSize: 11,
+                            fontWeight: '700',
+                        }}
+                    >
+                        {match.confidenceLabel || 'Per te'}
+                    </Text>
+                </View>
+                <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.accent} />
             </View>
 
-            {/* CTA */}
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    marginTop: 12,
-                    gap: 4,
-                }}
-            >
-                <Text
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <TouchableOpacity
+                    onPress={(event) => {
+                        event.stopPropagation();
+                        likeMatch(match);
+                    }}
                     style={{
-                        color: isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.accent,
-                        fontSize: 12,
-                        fontWeight: '700',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#fff1f7',
+                        borderRadius: 999,
+                        paddingHorizontal: 10,
+                        paddingVertical: 7,
                     }}
                 >
-                    Scopri di più
-                </Text>
-                <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.accent} />
+                    <Heart size={13} color={isTopMatch ? '#ffffff' : Colors.accent} fill={match.liked ? (isTopMatch ? '#ffffff' : Colors.accent) : 'transparent'} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.accent, fontSize: 11, fontWeight: '700' }}>Più così</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={(event) => {
+                        event.stopPropagation();
+                        saveMatch(match);
+                    }}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#eef2ff',
+                        borderRadius: 999,
+                        paddingHorizontal: 10,
+                        paddingVertical: 7,
+                    }}
+                >
+                    <Bookmark size={13} color={isTopMatch ? '#ffffff' : Colors.info} fill={match.saved ? (isTopMatch ? '#ffffff' : Colors.info) : 'transparent'} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.info, fontSize: 11, fontWeight: '700' }}>Salva</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={(event) => {
+                        event.stopPropagation();
+                        hideMatch(match);
+                    }}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#f8fafc',
+                        borderRadius: 999,
+                        paddingHorizontal: 10,
+                        paddingVertical: 7,
+                    }}
+                >
+                    <EyeOff size={13} color={isTopMatch ? '#ffffff' : Colors.secondary} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.secondary, fontSize: 11, fontWeight: '700' }}>Nascondi</Text>
+                </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
 }
 
 export function SmartMatchCarousel() {
-    const { matches, isLoading, error, refresh, lastUpdated } = useSmartMatch();
+    const { matches, isLoading, error, refresh, lastUpdated, resetHiddenMatches } = useSmartMatch();
+    const router = useRouter();
     const [activeIndex, setActiveIndex] = React.useState(0);
 
     const handleScroll = (event: any) => {
@@ -257,13 +350,20 @@ export function SmartMatchCarousel() {
                     </Text>
                 </View>
             </View>
-            {lastUpdated && (
-                <TouchableOpacity onPress={refresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Text style={{ fontSize: 11, color: Colors.accent, fontWeight: '700' }}>
-                        Aggiorna
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                {lastUpdated && (
+                    <TouchableOpacity onPress={refresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Text style={{ fontSize: 11, color: Colors.accent, fontWeight: '700' }}>
+                            Aggiorna
+                        </Text>
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => router.push('/(volunteer)/smart-match' as any)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Text style={{ fontSize: 11, color: Colors.primary, fontWeight: '700' }}>
+                        Vedi tutti
                     </Text>
                 </TouchableOpacity>
-            )}
+            </View>
         </View>
     );
 
@@ -395,6 +495,11 @@ export function SmartMatchCarousel() {
                     <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>
                         Aggiorna il tuo profilo con bio e interessi per ricevere match personalizzati.
                     </Text>
+                    <TouchableOpacity onPress={resetHiddenMatches} style={{ marginTop: 10 }}>
+                        <Text style={{ fontSize: 12, color: Colors.accent, fontWeight: '700' }}>
+                            Ripristina attività nascoste
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         );

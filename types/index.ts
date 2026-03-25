@@ -272,4 +272,11 @@ export interface OldSmartMatchResult {
     score: number;
     reason: string;
     activity?: OldActivity;
+    confidence?: 'top' | 'good' | 'explore';
+    confidenceLabel?: string;
+    chips?: string[];
+    nextStep?: string;
+    saved?: boolean;
+    liked?: boolean;
+    seen?: boolean;
 }

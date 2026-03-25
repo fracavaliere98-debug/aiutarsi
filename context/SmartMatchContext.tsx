@@ -7,9 +7,9 @@ import React, {
     useRef,
     useMemo,
 } from 'react';
-import { supabase } from '../utils/supabase';
 import { activityService } from '../services/ActivityService';
 import { gemmaService } from '../services/GemmaService';
+import { smartMatchPreferencesService } from '../services/SmartMatchPreferencesService';
 import { useAuth } from './AuthContext';
 import { OldSmartMatchResult } from '../types';
 
@@ -20,6 +20,11 @@ interface SmartMatchContextType {
     error: string | null;
     refresh: () => Promise<void>;
     lastUpdated: Date | null;
+    saveMatch: (match: OldSmartMatchResult) => Promise<void>;
+    hideMatch: (match: OldSmartMatchResult) => Promise<void>;
+    likeMatch: (match: OldSmartMatchResult) => Promise<void>;
+    markMatchSeen: (match: OldSmartMatchResult) => Promise<void>;
+    resetHiddenMatches: () => Promise<void>;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -29,9 +34,113 @@ const SmartMatchContext = createContext<SmartMatchContextType>({
     error: null,
     refresh: async () => { },
     lastUpdated: null,
+    saveMatch: async () => { },
+    hideMatch: async () => { },
+    likeMatch: async () => { },
+    markMatchSeen: async () => { },
+    resetHiddenMatches: async () => { },
 });
 
 export const useSmartMatch = () => useContext(SmartMatchContext);
+
+const norm = (value?: string | null) => (value || '').trim().toLowerCase();
+
+function haversineKm(a?: { lat: number; lng: number }, b?: { lat: number; lng: number }) {
+    if (!a || !b || !a.lat || !a.lng || !b.lat || !b.lng) return null;
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 6371 * (2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
+}
+
+function deriveChips(user: any, activity: any, score: number) {
+    const chips: string[] = [];
+    const userSkills = (user?.skills || []).map((item: string) => norm(item));
+    const activitySkills = (activity?.skills || []).map((item: string) => norm(item));
+    const sharedSkills = activitySkills.filter((skill: string) => userSkills.includes(skill));
+    if (sharedSkills.length > 0) chips.push(sharedSkills.length > 1 ? 'Competenze utili' : `Skill: ${sharedSkills[0]}`);
+
+    const userInterests = (user?.interests || []).map((item: string) => norm(item));
+    const category = norm(activity?.category);
+    if (category && userInterests.some((interest: string) => category.includes(interest) || interest.includes(category))) {
+        chips.push('In linea coi tuoi interessi');
+    }
+
+    const distanceKm = haversineKm(user?.locationCoords, activity?.location?.coords);
+    if (distanceKm !== null && distanceKm <= 10) chips.push('Vicino a te');
+    else if (distanceKm !== null && distanceKm <= 25) chips.push('Raggiungibile');
+
+    if (activity?.isUrgent) chips.push('Urgente');
+
+    const activityDate = activity?.dateTime ? new Date(activity.dateTime).getTime() : null;
+    if (activityDate) {
+        const diffDays = (activityDate - Date.now()) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 0 && diffDays <= 3) chips.push('Nei prossimi giorni');
+        else if (diffDays > 3 && diffDays <= 7) chips.push('Questa settimana');
+    }
+
+    if (score >= 85) chips.push('Alta compatibilità');
+    else if (score >= 65) chips.push('Buon fit');
+
+    return Array.from(new Set(chips)).slice(0, 3);
+}
+
+function deriveConfidence(score: number): Pick<OldSmartMatchResult, 'confidence' | 'confidenceLabel' | 'nextStep'> {
+    if (score >= 85) {
+        return {
+            confidence: 'top',
+            confidenceLabel: 'Match forte',
+            nextStep: 'Apri e valuta questa per prima',
+        };
+    }
+    if (score >= 65) {
+        return {
+            confidence: 'good',
+            confidenceLabel: 'Buon fit',
+            nextStep: 'Confrontala con le altre opportunità',
+        };
+    }
+    return {
+        confidence: 'explore',
+        confidenceLabel: 'Da esplorare',
+        nextStep: 'Potrebbe interessarti se vuoi allargare il raggio',
+    };
+}
+
+function rerankWithPreferences(matches: OldSmartMatchResult[], user: any, prefs: Awaited<ReturnType<typeof smartMatchPreferencesService.getPreferences>>) {
+    return matches
+        .filter((match) => !prefs.hiddenActivityIds.includes(match.id))
+        .map((match) => {
+            const activity = match.activity;
+            let adjustedScore = match.score || 0;
+
+            if (prefs.savedActivityIds.includes(match.id)) adjustedScore += 8;
+            if (prefs.likedActivityIds.includes(match.id)) adjustedScore += 10;
+            if (activity?.category && prefs.likedCategories.includes(activity.category)) adjustedScore += 7;
+            if (activity?.npoId && prefs.likedNpoIds.includes(activity.npoId)) adjustedScore += 6;
+            if (prefs.seenActivityIds.includes(match.id)) adjustedScore -= 4;
+            if (activity?.isUrgent) adjustedScore += 3;
+
+            const chips = deriveChips(user, activity, adjustedScore);
+            const confidence = deriveConfidence(adjustedScore);
+
+            return {
+                ...match,
+                score: Math.max(0, Math.min(99, Math.round(adjustedScore))),
+                chips,
+                saved: prefs.savedActivityIds.includes(match.id),
+                liked: prefs.likedActivityIds.includes(match.id),
+                seen: prefs.seenActivityIds.includes(match.id),
+                ...confidence,
+            };
+        })
+        .sort((a, b) => b.score - a.score);
+}
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function SmartMatchProvider({ children }: { children: React.ReactNode }) {
@@ -46,6 +155,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         // Guard: only volunteers with a completed profile
         if (!user || user.role !== 'VOLUNTEER' || !user.profile_completed) {
             console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profile_completed:', user?.profile_completed);
+            setMatches([]);
+            setError(null);
+            setLastUpdated(null);
+            setIsLoading(false);
             return;
         }
 
@@ -68,18 +181,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 statuses: ['APERTA', 'IN_CORSO'],
             });
 
-            // 2. Filtriamo le attività a cui è già iscritto
-            const { data: enrollments } = await supabase
-                .from('activity_participants')
-                .select('activity_id')
-                .eq('user_id', user.id);
-
-            const enrolledIds = new Set((enrollments || []).map(e => e.activity_id));
-
-            // 3. Mappiamo nel formato atteso dalla UI
+            // 2. Filtriamo le attività a cui è già iscritto usando la lista già idratata dal service
+            // per evitare query duplicate e semantiche di stato divergenti.
             const mappedMatchesBase: OldSmartMatchResult[] = activities
-                .filter(a => !enrolledIds.has(a.id))
-                .slice(0, 5) // prendiamo le migliori 5
+                .filter(a => !a.iscritti.includes(user.id))
                 .map((a: any) => ({
                     id: a.id,
                     score: a.matchPercentage || 0,
@@ -88,7 +193,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     activity: a as any
                 }));
 
-            const mappedMatches = mappedMatchesBase.length > 0
+            const gemmaEnrichedMatches = mappedMatchesBase.length > 0
                 ? await gemmaService.getSmartMatchReasons(mappedMatchesBase)
                     .then(result => {
                         const reasonsMap = new Map(result.reasons.map((item: any) => [item.activityId, item.reason]));
@@ -99,6 +204,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     })
                     .catch((gemmaError) => {
                         console.error('[SmartMatchContext] Gemma reasons failed:', gemmaError);
+                        const message = String(gemmaError?.message || gemmaError || '');
+                        if (message.toLowerCase().includes('quota')) {
+                            setError('quota_daily');
+                        }
                         return mappedMatchesBase.map(match => ({
                             ...match,
                             reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`
@@ -106,12 +215,15 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     })
                 : mappedMatchesBase;
 
-            console.log(`[SmartMatchContext] Found ${mappedMatches.length} unified matches.`);
-            setMatches(mappedMatches);
+            const prefs = await smartMatchPreferencesService.getPreferences(user.id);
+            const personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs);
+
+            console.log(`[SmartMatchContext] Found ${personalizedMatches.length} unified matches.`);
+            setMatches(personalizedMatches);
             setLastUpdated(new Date());
         } catch (err: any) {
             console.error('[SmartMatchContext] Error fetching matches:', err);
-            setError('Impossibile caricare i suggerimenti. Riprova tra poco.');
+            setError((current) => current || 'Impossibile caricare i suggerimenti. Riprova tra poco.');
         } finally {
             setIsLoading(false);
             isFetchingRef.current = false;
@@ -123,12 +235,46 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         await fetchMatches();
     }, [fetchMatches]);
 
+    const saveMatch = useCallback(async (match: OldSmartMatchResult) => {
+        if (!user?.id) return;
+        await smartMatchPreferencesService.toggleSaved(user.id, match.id);
+        await fetchMatches();
+    }, [fetchMatches, user?.id]);
+
+    const hideMatch = useCallback(async (match: OldSmartMatchResult) => {
+        if (!user?.id) return;
+        await smartMatchPreferencesService.hideActivity(user.id, match.id);
+        await fetchMatches();
+    }, [fetchMatches, user?.id]);
+
+    const likeMatch = useCallback(async (match: OldSmartMatchResult) => {
+        if (!user?.id || !match.activity) return;
+        await smartMatchPreferencesService.toggleLikedActivity(
+            user.id,
+            match.id,
+            match.activity.category,
+            match.activity.npoId
+        );
+        await fetchMatches();
+    }, [fetchMatches, user?.id]);
+
+    const markMatchSeen = useCallback(async (match: OldSmartMatchResult) => {
+        if (!user?.id) return;
+        await smartMatchPreferencesService.markSeen(user.id, match.id);
+    }, [user?.id]);
+
+    const resetHiddenMatches = useCallback(async () => {
+        if (!user?.id) return;
+        await smartMatchPreferencesService.resetHidden(user.id);
+        await fetchMatches();
+    }, [fetchMatches, user?.id]);
+
     // Auto-fetch when a volunteer user loads the context
     useEffect(() => {
         if (user?.role === 'VOLUNTEER' && user?.profile_completed) {
             fetchMatches();
         }
-    }, [user?.id, user?.role, user?.profile_completed]);
+    }, [fetchMatches, user?.id, user?.role, user?.profile_completed]);
 
     // Re-fetch when the volunteer updates their bio/skills/interests
     const profileKey = [user?.bio, user?.skills?.join(','), user?.interests?.join(',')].join('|');
@@ -138,11 +284,22 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             prevProfileKey.current = profileKey;
             fetchMatches();
         }
-    }, [profileKey]);
+    }, [fetchMatches, profileKey, user?.role]);
 
     const value = useMemo(
-        () => ({ matches, isLoading, error, refresh, lastUpdated }),
-        [matches, isLoading, error, refresh, lastUpdated]
+        () => ({
+            matches,
+            isLoading,
+            error,
+            refresh,
+            lastUpdated,
+            saveMatch,
+            hideMatch,
+            likeMatch,
+            markMatchSeen,
+            resetHiddenMatches,
+        }),
+        [matches, isLoading, error, refresh, lastUpdated, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches]
     );
 
     return (
