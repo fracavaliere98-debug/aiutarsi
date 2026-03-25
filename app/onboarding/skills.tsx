@@ -1,26 +1,28 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { useRouter , useLocalSearchParams } from "expo-router";
-import { ScreenWrapper } from "../../components/ScreenWrapper";
-import { useAuth } from "../../context/AuthContext";
-import { Colors } from "../../constants/Colors";
-import { useState } from "react";
-import { ArrowLeft, Code, MessageSquare, Heart, Lightbulb, PenTool, BarChart, HardHat, Camera } from "lucide-react-native";
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    SafeAreaView,
+    ScrollView,
+    Dimensions,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
+import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { SKILLS } from '../../constants/Skills';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
-
-
-import { SKILLS } from "../../constants/Skills";
-
-// ... existing imports ...
+const { width } = Dimensions.get('window');
 
 export default function OnboardingSkills() {
     const router = useRouter();
-    const { user, logout } = useAuth(); // removed updateUserProfile
+    const { user, logout } = useAuth();
     const params = useLocalSearchParams();
-    const interestsJson = params.interests as string || "[]";
-
-    // We don't initialize from user.skills anymore if we want to be pure, 
-    // but for editing existing user it's fine. 
-    // For deferred flow, we assume we start fresh or from what we have.
+    const interestsJson = (params.interests as string) || '[]';
     const [selected, setSelected] = useState<string[]>(user?.skills || []);
 
     const toggleSkill = (label: string) => {
@@ -31,83 +33,171 @@ export default function OnboardingSkills() {
         }
     };
 
-    const [isLoading, setIsLoading] = useState(false);
-
     const handleContinue = async () => {
-        // DEFERRED UPDATE: Pass everything to next screen
         router.push({
-            pathname: "/onboarding/profile",
+            pathname: '/onboarding/profile',
             params: {
                 interests: interestsJson,
-                skills: JSON.stringify(selected)
-            }
+                skills: JSON.stringify(selected),
+            },
         });
     };
 
     return (
-        <ScreenWrapper className="px-0 bg-background-light">
-            <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View className="px-6 py-4 flex-row items-center justify-between">
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <ArrowLeft size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <Text className="text-lg font-bold text-primary">Competenze</Text>
-                    <TouchableOpacity onPress={() => logout()}>
-                        <Text className="text-primary font-medium text-sm text-red-500">Esci</Text>
-                    </TouchableOpacity>
-                </View>
+        <SafeAreaView style={styles.container}>
+            <OnboardingStepHeader
+                title="Cosa sai fare?"
+                subtitle="Scegli le competenze che vuoi mettere in campo. Gemma le userà per affinare Smart Match."
+                onBack={() => router.back()}
+                onClose={() => logout()}
+            />
 
-                {/* Progress Dots */}
-                <View className="flex-row justify-center gap-2 mb-8">
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                    <View className="w-8 h-2 rounded-full bg-primary" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                </View>
-
-                <View className="px-6">
-                    <Text className="text-3xl font-black text-primary mb-2">Cosa sai fare?</Text>
-                    <Text className="text-secondary mb-8">
-                        Seleziona le tue competenze principali per aiutarci a trovare le attività giuste per te.
-                    </Text>
-
-                    <View className="flex-row flex-wrap gap-4 justify-center">
-                        {SKILLS.map((item) => {
-                            const isSelected = selected.includes(item.label);
-                            const Icon = item.icon;
-                            return (
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.grid}>
+                    {SKILLS.map((item, index) => {
+                        const isSelected = selected.includes(item.label);
+                        const Icon = item.icon;
+                        return (
+                            <Animated.View
+                                key={item.id}
+                                entering={FadeInDown.delay(index * 50).springify()}
+                                style={styles.cardWrapper}
+                            >
                                 <TouchableOpacity
-                                    key={item.id}
                                     onPress={() => toggleSkill(item.label)}
-                                    className={`w-[45%] h-32 rounded-2xl p-3 justify-between border-2 ${isSelected ? "bg-primary/5 border-primary" : "bg-white border-primary/5 shadow-sm"
-                                        }`}
+                                    activeOpacity={0.7}
+                                    style={[
+                                        styles.card,
+                                        isSelected && styles.cardSelected,
+                                    ]}
                                 >
-                                    <Icon size={24} color={isSelected ? Colors.primary : Colors.secondary} />
-                                    <View>
-                                        <Text className={`font-bold text-sm ${isSelected ? "text-primary" : "text-secondary"}`}>
-                                            {item.label}
-                                        </Text>
-                                        {isSelected && <Text className="text-xs text-primary">Selezionato</Text>}
+                                    <View style={[styles.iconContainer, isSelected && styles.iconContainerSelected]}>
+                                        <Icon size={24} color={isSelected ? 'white' : Colors.primary} />
                                     </View>
+                                    <Text style={[styles.label, isSelected && styles.labelSelected]}>{item.label}</Text>
+                                    {isSelected && (
+                                        <View style={styles.checkIcon}>
+                                            <CheckCircle2 size={20} color={Colors.success} fill="white" />
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                            </Animated.View>
+                        );
+                    })}
                 </View>
             </ScrollView>
 
-            <View className="p-6 border-t border-primary/5 bg-background-light">
+            <View style={styles.footer}>
                 <TouchableOpacity
                     onPress={handleContinue}
-                    disabled={selected.length === 0 || isLoading}
-                    className={`py-4 rounded-xl shadow-lg items-center ${selected.length > 0 ? "bg-accent" : "bg-gray-300"
-                        }`}
+                    disabled={selected.length === 0}
+                    style={[styles.button, selected.length === 0 && styles.buttonDisabled]}
                 >
-                    <Text className="text-white text-lg font-bold">
-                        {isLoading ? "Salvataggio..." : "Continua"}
-                    </Text>
+                    <Text style={styles.buttonText}>Continua</Text>
+                    <ArrowRight size={22} color="white" strokeWidth={2.5} />
                 </TouchableOpacity>
             </View>
-        </ScreenWrapper>
+        </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F8F9FB',
+    },
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 100,
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    cardWrapper: {
+        width: (width - 48) / 2,
+        marginBottom: 12,
+    },
+    card: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 110,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    cardSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: '#F0F0FF',
+    },
+    iconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: '#F0F0FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    iconContainerSelected: {
+        backgroundColor: Colors.primary,
+    },
+    label: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#404060',
+        textAlign: 'center',
+    },
+    labelSelected: {
+        color: Colors.primary,
+    },
+    checkIcon: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 20,
+        paddingBottom: 30,
+        backgroundColor: 'rgba(248,249,251,0.9)',
+    },
+    button: {
+        backgroundColor: '#352F8B',
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        elevation: 5,
+        shadowColor: '#352F8B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+    },
+    buttonDisabled: {
+        backgroundColor: '#D1D1E0',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+});

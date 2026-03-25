@@ -1,15 +1,15 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
+import { OnboardingStepHeader } from "../../components/onboarding/OnboardingStepHeader";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
-import { useState } from "react";
-import { Camera, ArrowLeft, Loader2 } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from "../../services/AuthService";
-import { useEffect } from "react";
 
 
 
@@ -95,30 +95,14 @@ export default function OnboardingProfile() {
     return (
         <ScreenWrapper className="px-0 bg-background-light">
             <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View className="px-6 pt-2 pb-3 flex-row items-center justify-between">
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <ArrowLeft size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <Text className="text-base font-bold text-primary">Onboarding - Profilo</Text>
-                    <TouchableOpacity onPress={() => logout()}>
-                        <Text className="text-primary font-medium text-sm text-red-500">Esci</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Progress Dots */}
-                <View className="flex-row justify-center gap-2 mb-6">
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                    <View className="w-2 h-2 rounded-full bg-primary/20" />
-                    <View className="w-8 h-2 rounded-full bg-primary" />
-                </View>
+                <OnboardingStepHeader
+                    title="Completa il profilo"
+                    subtitle="Aggiungi una foto e due righe su di te. Bastano pochi dettagli per iniziare meglio."
+                    onBack={() => router.back()}
+                    onClose={() => logout()}
+                />
 
                 <View className="px-6">
-                    <Text className="text-3xl font-black text-primary mb-2">Completa il Profilo</Text>
-                    <Text className="text-secondary mb-6">
-                        Aggiungi una foto e una breve bio per farti conoscere dalle associazioni.
-                    </Text>
-
                     <View className="items-center mb-8">
                         <TouchableOpacity
                             onPress={pickImage}
@@ -165,7 +149,7 @@ export default function OnboardingProfile() {
                                 autoCapitalize="characters"
                             />
                             <Text className="text-[11px] text-secondary/60 mt-1 ml-1 leading-relaxed">
-                                Inserendo un codice amico, sbloccherete entrambi il badge "Coppia Vincente" e 500 XP dopo la tua prima missione.
+                                Inserendo un codice amico, sbloccherete entrambi il badge &quot;Coppia Vincente&quot; e 500 XP dopo la tua prima missione.
                             </Text>
                         </View>
                     </View>

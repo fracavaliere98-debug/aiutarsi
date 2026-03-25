@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +59,7 @@ const CATEGORIES = [
 
 export default function NPOCategoryScreen() {
     const router = useRouter();
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, logout } = useAuth();
     const [selected, setSelected] = useState<string[]>([]);
 
     const toggleCategory = (label: string) => {
@@ -81,13 +82,12 @@ export default function NPOCategoryScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>In quali settori operate?</Text>
-                <Text style={styles.subtitle}>
-                    Selezionate le aree di intervento principali del vostro ente.{'\n'}
-                    Questo garantirà il match perfetto con i volontari interessati.
-                </Text>
-            </View>
+            <OnboardingStepHeader
+                title="In quali settori operate?"
+                subtitle="Scegli le aree che raccontano meglio il vostro ente. Serviranno a posizionarvi meglio verso i volontari giusti."
+                onBack={() => router.back()}
+                onClose={() => logout()}
+            />
 
             <ScrollView 
                 contentContainerStyle={styles.scrollContent}

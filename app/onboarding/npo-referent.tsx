@@ -15,13 +15,14 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft, ArrowRight, Camera, MessageCircle, User } from 'lucide-react-native';
+import { ArrowRight, Camera, MessageCircle, User } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { UserAvatar } from '../../components/UserAvatar';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
 export default function NPOReferentScreen() {
     const router = useRouter();
-    const { user, updateUserProfile } = useAuth();
+    const { user, updateUserProfile, logout } = useAuth();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -85,12 +86,12 @@ export default function NPOReferentScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Il Volto dell'Ente</Text>
-                        <Text style={styles.subtitle}>
-                            Chi si occuperà di accogliere i volontari? Mostrate il lato umano della vostra associazione.
-                        </Text>
-                    </View>
+                    <OnboardingStepHeader
+                        title="Chi accoglie i volontari?"
+                        subtitle="Presenta il referente dell'ente. Rende il profilo più umano e più chiaro per chi si candida."
+                        onBack={() => router.back()}
+                        onClose={() => logout()}
+                    />
 
                     {/* Referent Photo */}
                     <View style={styles.photoSection}>
@@ -111,7 +112,7 @@ export default function NPOReferentScreen() {
                     {/* Form */}
                     <View style={styles.form}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>NOME E COGNOME REFEERENTE *</Text>
+                            <Text style={styles.inputLabel}>NOME E COGNOME REFERENTE *</Text>
                             <View style={styles.inputContainer}>
                                 <User size={20} color={Colors.primary} style={styles.inputIcon} />
                                 <TextInput 
@@ -124,7 +125,7 @@ export default function NPOReferentScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>RUOLO NELL'ORGANIZZAZIONE *</Text>
+                            <Text style={styles.inputLabel}>RUOLO NELL&apos;ORGANIZZAZIONE *</Text>
                             <View style={styles.inputContainer}>
                                 <User size={20} color={Colors.primary} style={styles.inputIcon} />
                                 <TextInput 
@@ -159,12 +160,6 @@ export default function NPOReferentScreen() {
 
                 <View style={styles.footer}>
                     <TouchableOpacity 
-                        onPress={() => router.back()}
-                        style={styles.backButton}
-                    >
-                        <ArrowLeft size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
                         onPress={handleContinue}
                         disabled={isLoading}
                         style={[styles.button, (!name || !role) && styles.buttonDisabled]}
@@ -191,22 +186,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 120,
-    },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 12,
-        paddingBottom: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#1A1A40',
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 15,
-        color: '#606080',
-        lineHeight: 22,
     },
     photoSection: {
         alignItems: 'center',
@@ -298,19 +277,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(248,249,251,0.95)',
         flexDirection: 'row',
         gap: 16,
-    },
-    backButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: 'white',
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
     },
     button: {
         flex: 1,

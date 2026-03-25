@@ -8,7 +8,6 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
-    Image,
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,14 +15,15 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft, ArrowRight, Camera, Globe, Info, Mail, MapPin, Phone, Search } from 'lucide-react-native';
+import { ArrowRight, Camera, Globe, Info, Phone, Search } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AddressAutocomplete } from '../../components/AddressAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
 export default function NPODetailsScreen() {
     const router = useRouter();
-    const { user, updateUserProfile } = useAuth();
+    const { user, updateUserProfile, logout } = useAuth();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -97,12 +97,12 @@ export default function NPODetailsScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Dettagli Ufficiali</Text>
-                        <Text style={styles.subtitle}>
-                            Parlateci della vostra missione e caricate il logo del vostro ente.
-                        </Text>
-                    </View>
+                    <OnboardingStepHeader
+                        title="Dettagli dell'ente"
+                        subtitle="Missione, sede e contatti: i dati essenziali per presentare bene il vostro profilo."
+                        onBack={() => router.back()}
+                        onClose={() => logout()}
+                    />
 
                     {/* Logo Upload */}
                     <View style={styles.logoSection}>
@@ -196,12 +196,6 @@ export default function NPODetailsScreen() {
 
                 <View style={styles.footer}>
                     <TouchableOpacity 
-                        onPress={() => router.back()}
-                        style={styles.backButton}
-                    >
-                        <ArrowLeft size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
                         onPress={handleContinue}
                         disabled={isLoading}
                         style={[styles.button, (!mission || !address || !vatId || !phone) && styles.buttonDisabled]}
@@ -228,22 +222,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 120,
-    },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 12,
-        paddingBottom: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#1A1A40',
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 15,
-        color: '#606080',
-        lineHeight: 22,
     },
     logoSection: {
         alignItems: 'center',
@@ -329,19 +307,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(248,249,251,0.95)',
         flexDirection: 'row',
         gap: 16,
-    },
-    backButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: 'white',
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
     },
     button: {
         flex: 1,

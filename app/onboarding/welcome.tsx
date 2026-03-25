@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, Switch, Animated, ScrollView, Platform, A
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
-import { MapPin, Bell, Shield, Heart, Rocket, ArrowLeft } from 'lucide-react-native';
+import { MapPin, Bell, Shield, Rocket, Heart } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UserAvatar } from '../../components/UserAvatar';
 import { GemmaAvatar } from '../../components/GemmaAvatar';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
 export default function WelcomeScreen() {
     const router = useRouter();
@@ -35,7 +36,7 @@ export default function WelcomeScreen() {
             // Progress bar animation (5 seconds)
             Animated.timing(progress, {
                 toValue: 1,
-                duration: 5000,
+                duration: 1600,
                 useNativeDriver: false,
             }).start();
 
@@ -50,14 +51,14 @@ export default function WelcomeScreen() {
                 } else {
                     router.replace("/(volunteer)/(tabs)/community" as any);
                 }
-            }, 5500);
+            }, 1800);
 
             return () => {
                 progress.removeListener(listener);
                 clearTimeout(timer);
             };
         }
-    }, [phase]);
+    }, [fadeAnim, phase, progress, router, updateUserProfile, user?.role]);
 
     const promptOpenSettings = (permissionLabel: string) => {
         Alert.alert(
@@ -138,8 +139,8 @@ export default function WelcomeScreen() {
                         </View>
 
                         <Text className="text-white text-4xl font-black mb-4">Tutto pronto!</Text>
-                        <Text className="text-white/80 text-lg text-center font-medium mb-16 px-10">
-                            Stiamo preparando la tua community...
+                        <Text className="text-white/80 text-lg text-center font-medium mb-12 px-10">
+                            Ti stiamo portando nella tua dashboard.
                         </Text>
 
                         <View className="w-full mb-3 flex-row justify-between items-end">
@@ -160,19 +161,14 @@ export default function WelcomeScreen() {
                             />
                         </View>
 
-                        {/* Branding */}
-                        <View className="absolute bottom-10 opacity-30">
-                             <Text className="text-white text-xs font-black tracking-[8px]">AIUTARSÌ</Text>
-                        </View>
-
                         {/* Gemma Transition Info */}
-                        <View className="absolute bottom-24 bg-white/10 px-4 py-2 rounded-2xl border border-white/20 flex-row items-center w-full">
+                        <View className="absolute bottom-16 bg-white/10 px-4 py-2 rounded-2xl border border-white/20 flex-row items-center w-full">
                             <View className="mr-3">
                                 <GemmaAvatar size={36} bordered />
                             </View>
                             <View className="flex-1">
-                                <Text className="text-white font-bold text-[12px]">Gemma sta arrivando</Text>
-                                <Text className="text-white/70 text-[10px]">Connettendo i nodi di assistenza locale</Text>
+                                <Text className="text-white font-bold text-[12px]">Gemma è pronta</Text>
+                                <Text className="text-white/70 text-[10px]">I tuoi suggerimenti iniziali sono in preparazione</Text>
                             </View>
                         </View>
                     </Animated.View>
@@ -189,21 +185,17 @@ export default function WelcomeScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View className="px-6">
-                    {/* Header with back button */}
-                    <View className="h-16 flex-row items-center justify-between">
-                        <TouchableOpacity 
-                            onPress={() => router.back()}
-                            className="w-10 h-10 bg-primary/5 rounded-full items-center justify-center"
-                        >
-                            <ArrowLeft size={20} color="#4c1d95" />
-                        </TouchableOpacity>
-                        <Text className="text-xl font-bold text-[#2d1b69]">Permessi e Privacy</Text>
-                        <View className="w-10" />
-                    </View>
+                    <OnboardingStepHeader
+                        title="Ultimo passaggio"
+                        subtitle={user?.role === "NPO"
+                            ? "Attiva i permessi che servono per far trovare il tuo ente e ricevere nuove candidature."
+                            : "Attiva i permessi che servono per ricevere match migliori e restare aggiornato."}
+                        onBack={() => router.back()}
+                        compact
+                    />
 
-                    {/* Gemma Insight Box (Compact layout) */}
                     <View 
-                        className="mb-3 mt-0 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 flex-row items-center"
+                        className="mb-4 bg-primary/5 px-4 py-3 rounded-2xl border border-primary/10 flex-row items-center"
                     >
                         <View className="mr-3">
                             <GemmaAvatar size={36} />
@@ -211,16 +203,17 @@ export default function WelcomeScreen() {
                         <View className="flex-1">
                             <Text 
                                 numberOfLines={2}
-                                className="text-primary/80 font-bold text-[12px] italic leading-tight"
+                                className="text-primary/80 font-bold text-[12px] leading-tight"
                             >
-                                Gemma sta già ricercando attività giuste per te, ma intanto...
+                                {user?.role === "NPO"
+                                    ? "Gemma userà questi segnali per aiutarti con candidature, post e visibilità."
+                                    : "Gemma userà questi segnali per proporti attività più rilevanti."}
                             </Text>
                         </View>
                     </View>
 
-                    {/* Main Illustration Area (Reduced Size) */}
-                    <View className="items-center mb-6">
-                        <View className="w-full h-44 rounded-[40px] overflow-hidden items-center justify-center bg-[#f3f0ff]">
+                    <View className="items-center mb-5">
+                        <View className="w-full h-36 rounded-[32px] overflow-hidden items-center justify-center bg-[#f3f0ff]">
                             <LinearGradient
                                 colors={['#f3f0ff', '#e9e4ff']}
                                 className="absolute inset-0"
@@ -234,14 +227,6 @@ export default function WelcomeScreen() {
                         </View>
                     </View>
 
-                    <View className="items-center mb-8">
-                        <Text className="text-3xl font-extrabold text-[#2d1b69] mb-3">Quasi pronti!</Text>
-                        <Text className="text-secondary/80 text-center leading-relaxed font-medium px-4 text-[13px]">
-                            AiutarSì funziona meglio quando siamo connessi. Ecco come utilizzeremo i tuoi dati per aiutarti a fare la differenza.
-                        </Text>
-                    </View>
-
-                    {/* Permissions List (Reduced Size ~20%) */}
                     <View className="gap-3">
                         <View className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex-row items-center">
                             <View className="w-11 h-11 bg-[#f3f0ff] rounded-xl items-center justify-center mr-3">
@@ -282,8 +267,7 @@ export default function WelcomeScreen() {
                         </View>
                     </View>
 
-                    {/* Bottom Indicator */}
-                    <View className="mt-12">
+                    <View className="mt-10">
                         <TouchableOpacity
                             onPress={startJourney}
                             className="h-16 rounded-2xl flex-row items-center justify-center shadow-xl active:scale-[0.98] bg-[#3b2391]"

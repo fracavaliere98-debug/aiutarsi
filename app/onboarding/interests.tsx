@@ -15,13 +15,11 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import { X, Heart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.3;
-const ROTATION_FACTOR = 8;
 
 const INTERESTS = [
     {
@@ -70,12 +68,10 @@ const INTERESTS = [
 
 export default function OnboardingInterests() {
     const router = useRouter();
-    const { updateUserProfile, user } = useAuth();
-    const { showToast } = useToast();
+    const { user } = useAuth();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
     const [likedInterests, setLikedInterests] = useState<string[]>([]);
-    const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null);
 
     // Refs for PanResponder and other closures to avoid stale state
     const currentIndexRef = useRef(0);
@@ -92,12 +88,22 @@ export default function OnboardingInterests() {
         const loadProgress = async () => {
             try {
                 const key = `onboarding_interest_index_${user.id}`;
-                const savedIndex = await AsyncStorage.getItem(key);
+                const savedLikesKey = `onboarding_interest_likes_${user.id}`;
+                const [savedIndex, savedLikes] = await Promise.all([
+                    AsyncStorage.getItem(key),
+                    AsyncStorage.getItem(savedLikesKey),
+                ]);
                 console.log("[DEBUG] Interests: Loading progress for user", user.id, "Index:", savedIndex);
                 if (savedIndex !== null) {
                     const idx = parseInt(savedIndex);
                     if (idx < INTERESTS.length) {
                         setCurrentIndex(idx);
+                    }
+                }
+                if (savedLikes) {
+                    const parsedLikes = JSON.parse(savedLikes);
+                    if (Array.isArray(parsedLikes)) {
+                        setLikedInterests(parsedLikes);
                     }
                 }
                 setIsLoaded(true);
@@ -116,6 +122,13 @@ export default function OnboardingInterests() {
             AsyncStorage.setItem(key, currentIndex.toString());
         }
     }, [currentIndex, isLoaded, user?.id]);
+
+    useEffect(() => {
+        if (isLoaded && user?.id) {
+            const key = `onboarding_interest_likes_${user.id}`;
+            AsyncStorage.setItem(key, JSON.stringify(likedInterests));
+        }
+    }, [isLoaded, likedInterests, user?.id]);
 
     const position = useRef(new RNAnimated.ValueXY()).current;
     const rotate = position.x.interpolate({
@@ -136,7 +149,6 @@ export default function OnboardingInterests() {
 
     const nextCard = (updatedInterests?: string[]) => {
         position.setValue({ x: 0, y: 0 });
-        setSwipeDir(null);
         
         const currentIdx = currentIndexRef.current;
         console.log("[DEBUG] nextCard: Current Index", currentIdx, "Array Length", INTERESTS.length);
@@ -151,6 +163,7 @@ export default function OnboardingInterests() {
             // Clear persistence
             if (user?.id) {
                 AsyncStorage.removeItem(`onboarding_interest_index_${user.id}`).catch(() => {});
+                AsyncStorage.removeItem(`onboarding_interest_likes_${user.id}`).catch(() => {});
             }
 
             router.replace({
@@ -162,6 +175,15 @@ export default function OnboardingInterests() {
         }
     };
 
+    const skipToSkills = () => {
+        router.replace({
+            pathname: "/onboarding/skills",
+            params: {
+                interests: JSON.stringify(likedInterestsRef.current),
+            },
+        } as any);
+    };
+
     const handleLike = async () => {
         const currentIdx = currentIndexRef.current;
         const interest = INTERESTS[currentIdx];
@@ -169,12 +191,6 @@ export default function OnboardingInterests() {
         
         const updated = [...likedInterestsRef.current, interest.label];
         setLikedInterests(updated);
-        
-        try {
-            await updateUserProfile({ interests: updated });
-        } catch (e) {
-            console.error("Save interest failed", e);
-        }
         nextCard(updated);
     };
 
@@ -231,8 +247,6 @@ export default function OnboardingInterests() {
     ).current;
 
     const currentInterest = INTERESTS[currentIndex] || INTERESTS[0];
-    const progress = (currentIndex + 1) / INTERESTS.length;
-
     if (!isLoaded) return <View style={styles.container} />;
 
     return (
@@ -241,7 +255,7 @@ export default function OnboardingInterests() {
             {/* Top Nav */}
             <View style={styles.topNav}>
                 <Text style={styles.logo}>AiutarSì</Text>
-                <TouchableOpacity onPress={() => router.replace('/onboarding/skills')}>
+                <TouchableOpacity onPress={skipToSkills}>
                     <Text style={styles.skipText}>Salta</Text>
                 </TouchableOpacity>
             </View>

@@ -1,403 +1,171 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Dimensions,
-    Image,
-    StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { ArrowRight, CheckCircle2, Clock, Globe, MapPin, MessageCircle, ShieldCheck, Star, Users } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, ArrowRight, CheckCircle2, Globe, MapPin, MessageCircle, ShieldCheck, User } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';
+import { Colors } from '../../constants/Colors';
+import { StandardLayout } from '../../components/StandardLayout';
+import { SoftCard } from '../../components/SoftCard';
+import { StatCard } from '../../components/StatCard';
 import { UserAvatar } from '../../components/UserAvatar';
-
-const { width } = Dimensions.get('window');
 
 export default function NPOPreviewScreen() {
     const router = useRouter();
     const { user } = useAuth();
 
-    const handleContinue = () => {
-        router.push('/onboarding/welcome');
-    };
-
     const categories = user?.interests || [];
     const soughtSkills = user?.sought_skills || [];
-    
-    const isVerified = user?.verification_status === 'verified';
-    const isPending = user?.verification_status === 'pending';
-    const badgeColor = isVerified ? '#8B5CF6' : (isPending ? Colors.primary : '#606080');
-    const badgeText = isVerified ? 'Bollino Viola' : (isPending ? 'In attesa di verifica' : 'Profilo non verificato');
+    const verificationStatus = user?.verification_status;
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <ScrollView 
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header / Hero */}
-                <View style={styles.hero}>
-                    <Image 
-                        source={{ uri: 'https://images.unsplash.com/photo-1559027615-cd937c9be54a?q=80&w=1000&auto=format&fit=crop' }} 
-                        style={styles.heroBackground}
-                    />
-                    <LinearGradient 
-                        colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
-                        style={styles.heroGradient}
-                    />
-                    
-                    <View style={styles.heroContent}>
-                        <Animated.View entering={FadeInUp.delay(200)}>
-                            <UserAvatar 
-                                size={90} 
-                                name={user?.npo_name || user?.name || "NPO"} 
-                                avatarUrl={(user?.avatar_url || user?.avatar) as string | undefined}
-                                fontSize={32}
-                            />
-                        </Animated.View>
-                        <Text style={styles.npoName}>{user?.npo_name || user?.name}</Text>
-                        <View style={[styles.verificationBadge, { backgroundColor: isVerified ? '#8B5CF630' : 'rgba(255,255,255,0.2)' }]}>
-                            <ShieldCheck size={16} color={isVerified ? '#8B5CF6' : "white"} />
-                            <Text style={styles.verificationText}>{badgeText}</Text>
-                        </View>
+        <StandardLayout
+            title="Anteprima profilo"
+            label="Onboarding NPO"
+            onBack={() => router.back()}
+            bg="bg-background-light"
+        >
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
+                <View className="items-center mb-6">
+                    <View className="relative mb-3">
+                        <UserAvatar
+                            size={100}
+                            fontSize={34}
+                            name={user?.npo_name || user?.name || 'Ente'}
+                            avatarUrl={(user?.avatar_url || user?.avatar) as string | undefined}
+                            role="NPO"
+                            isVerified={!!(user?.isVerified || user?.is_verified)}
+                            verificationStatus={verificationStatus}
+                        />
                     </View>
-                </View>
 
-                {/* Profile Stats mock */}
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statValue}>0</Text>
-                        <Text style={styles.statLabel}>Progetti</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statValue}>0</Text>
-                        <Text style={styles.statLabel}>Volontari</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statValue}>-</Text>
-                        <Text style={styles.statLabel}>Ranking</Text>
-                    </View>
-                </View>
+                    <Text className="text-primary font-black text-2xl text-center mb-1">
+                        {user?.npo_name || user?.name || 'Il tuo ente'}
+                    </Text>
+                    <Text className="text-secondary font-medium text-sm text-center mb-4 mt-1">
+                        Comitato locale • {user?.address_full || user?.locationString || 'Sede operativa da definire'}
+                    </Text>
 
-                {/* Info Sections */}
-                <View style={styles.infoContent}>
-                    {/* Mission */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>La Nostra Missione</Text>
-                        <Text style={styles.missionText}>
-                            {user?.bio || "Nessuna missione inserita."}
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 8,
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 999,
+                            backgroundColor: verificationStatus === 'pending' ? '#fff7ed' : '#f8f4ff',
+                        }}
+                    >
+                        <ShieldCheck size={16} color={verificationStatus === 'pending' ? '#c2410c' : Colors.primary} />
+                        <Text style={{ color: verificationStatus === 'pending' ? '#c2410c' : Colors.primary, fontSize: 12, fontWeight: '700' }}>
+                            {verificationStatus === 'pending' ? 'Verifica inviata' : 'Profilo in preparazione'}
                         </Text>
                     </View>
+                </View>
 
-                    {/* Meta Info */}
-                    <View style={styles.metaRow}>
-                        <View style={styles.metaItem}>
-                            <MapPin size={18} color={Colors.primary} />
-                            <Text style={styles.metaText} numberOfLines={1}>{user?.address_full || "Indirizzo non specificato"}</Text>
-                        </View>
-                        {user?.website && (
-                            <View style={styles.metaItem}>
-                                <Globe size={18} color={Colors.primary} />
-                                <Text style={styles.metaText} numberOfLines={1}>{user.website}</Text>
+                <View className="flex-row gap-3 mb-8">
+                    <View className="flex-1 h-24">
+                        <StatCard value="0.0" label="RATING" valueColor="text-yellow-500" icon={<Star size={14} color="#eab308" fill="#eab308" />} />
+                    </View>
+                    <View className="flex-1 h-24">
+                        <StatCard value="0" label="FOLLOWER" valueColor="text-pink-600" icon={<Users size={14} color="#db2777" />} />
+                    </View>
+                    <View className="flex-1 h-24">
+                        <StatCard value="0" label="ORE DONATE" valueColor="text-indigo-600" icon={<Clock size={14} color="#4f46e5" />} />
+                    </View>
+                </View>
+
+                <SoftCard className="p-5 mb-4">
+                    <Text className="text-primary font-bold text-base mb-3">Informazioni</Text>
+                    <View className="gap-4">
+                        {!!user?.website && (
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                    <Globe size={16} color={Colors.primary} />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-secondary text-xs font-bold uppercase">Sito web</Text>
+                                    <Text className="text-primary font-medium" numberOfLines={1}>{user.website}</Text>
+                                </View>
                             </View>
                         )}
-                    </View>
 
-                    {/* Categories (Interests) */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Aree di Intervento</Text>
-                        <View style={styles.tagCloud}>
-                            {categories.map((cat, i) => (
-                                <View key={i} style={styles.tag}>
-                                    <Text style={styles.tagText}>{cat}</Text>
-                                </View>
-                            ))}
-                            {categories.length === 0 && <Text style={styles.emptyText}>Nessun settore selezionato</Text>}
+                        <View className="flex-row items-center gap-3">
+                            <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                <MapPin size={16} color={Colors.primary} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-secondary text-xs font-bold uppercase">Sede operativa</Text>
+                                <Text className="text-primary font-medium">{user?.address_full || 'Da completare'}</Text>
+                            </View>
                         </View>
                     </View>
+                </SoftCard>
 
-                    {/* Referent */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Il tuo referente in AiutarSì</Text>
-                        <View style={styles.referentCard}>
-                            <UserAvatar 
-                                size={50} 
-                                name={user?.referent_name || "R"} 
+                <SoftCard className="p-5 mb-4">
+                    <Text className="text-primary font-bold text-base mb-2">Chi siete</Text>
+                    <Text className="text-secondary leading-relaxed text-sm">
+                        {user?.bio || 'Aggiungi una breve missione per raccontare meglio il tuo ente ai volontari.'}
+                    </Text>
+                </SoftCard>
+
+                <SoftCard className="p-5 mb-4">
+                    <Text className="text-primary font-bold text-base mb-3">Aree di intervento</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                        {categories.length > 0 ? categories.map((category, index) => (
+                            <View key={`${category}_${index}`} className="bg-gray-100 px-3 py-2 rounded-xl">
+                                <Text className="text-primary text-xs font-bold">{category}</Text>
+                            </View>
+                        )) : (
+                            <Text className="text-secondary text-sm">Nessun settore selezionato</Text>
+                        )}
+                    </View>
+                </SoftCard>
+
+                <SoftCard className="p-5 mb-4">
+                    <Text className="text-primary font-bold text-base mb-3">Skill ricercate</Text>
+                    <View className="gap-2">
+                        {soughtSkills.length > 0 ? soughtSkills.map((skill, index) => (
+                            <View key={`${skill}_${index}`} className="flex-row items-center gap-2">
+                                <CheckCircle2 size={14} color={Colors.accent} />
+                                <Text className="text-secondary text-sm">{skill}</Text>
+                            </View>
+                        )) : (
+                            <Text className="text-secondary text-sm">Nessuna skill selezionata</Text>
+                        )}
+                    </View>
+                </SoftCard>
+
+                <SoftCard className="p-5 mb-6">
+                    <Text className="text-primary font-bold text-base mb-3">Referente</Text>
+                    <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center gap-3 flex-1">
+                            <UserAvatar
+                                size={50}
+                                name={user?.referent_name || 'Referente'}
                                 avatarUrl={user?.referent_avatar_url as string | undefined}
                                 fontSize={20}
                             />
-                            <View style={styles.referentInfo}>
-                                <Text style={styles.referentName}>{user?.referent_name || "Non specificato"}</Text>
-                                <Text style={styles.referentRole}>{user?.referent_role || "Referente Ente"}</Text>
+                            <View className="flex-1">
+                                <Text className="text-primary font-bold text-sm">{user?.referent_name || 'Da completare'}</Text>
+                                <Text className="text-secondary text-xs">{user?.referent_role || 'Ruolo referente'}</Text>
                             </View>
-                            <TouchableOpacity style={styles.referentChatIcon}>
-                                <MessageCircle size={20} color={Colors.primary} />
-                            </TouchableOpacity>
+                        </View>
+                        <View className="bg-primary/10 p-2 rounded-full">
+                            <MessageCircle size={18} color={Colors.primary} />
                         </View>
                     </View>
+                </SoftCard>
 
-                    {/* Seeking */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Skill più ricercate</Text>
-                        <View style={styles.skillList}>
-                            {soughtSkills.map((skill, i) => (
-                                <View key={i} style={styles.skillItem}>
-                                    <CheckCircle2 size={16} color={Colors.accent} />
-                                    <Text style={styles.skillLabel}>{skill}</Text>
-                                </View>
-                            ))}
-                            {soughtSkills.length === 0 && <Text style={styles.emptyText}>Nessuna skill selezionata</Text>}
-                        </View>
-                    </View>
-                </View>
+                <TouchableOpacity
+                    onPress={() => router.push('/onboarding/welcome')}
+                    className="bg-primary py-4 rounded-2xl items-center justify-center flex-row"
+                    style={{ gap: 10 }}
+                >
+                    <Text className="text-white text-lg font-bold">Continua</Text>
+                    <ArrowRight size={20} color="white" />
+                </TouchableOpacity>
             </ScrollView>
-
-            <View style={styles.footer}>
-                <TouchableOpacity 
-                    onPress={() => router.back()}
-                    style={styles.backButton}
-                >
-                    <ArrowLeft size={24} color={Colors.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    onPress={handleContinue}
-                    style={styles.button}
-                >
-                    <Text style={styles.buttonText}>Sembra Perfetto!</Text>
-                    <ArrowRight size={22} color="white" strokeWidth={2.5} />
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+        </StandardLayout>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    scrollContent: {
-        paddingBottom: 120,
-    },
-    hero: {
-        height: 320,
-        position: 'relative',
-        justifyContent: 'flex-end',
-        padding: 24,
-    },
-    heroBackground: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    heroGradient: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    heroContent: {
-        alignItems: 'center',
-    },
-    npoName: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: 'white',
-        marginTop: 12,
-        textAlign: 'center',
-    },
-    verificationBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        marginTop: 8,
-    },
-    verificationText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    statsRow: {
-        flexDirection: 'row',
-        paddingVertical: 20,
-        backgroundColor: '#F8F9FB',
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEEEEE',
-    },
-    statItem: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    statValue: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: Colors.primary,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: Colors.secondary,
-        marginTop: 2,
-    },
-    divider: {
-        width: 1,
-        height: '60%',
-        backgroundColor: '#DDDDDD',
-        alignSelf: 'center',
-    },
-    infoContent: {
-        padding: 24,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#1A1A40',
-        marginBottom: 12,
-    },
-    missionText: {
-        fontSize: 15,
-        color: '#404060',
-        lineHeight: 24,
-    },
-    metaRow: {
-        backgroundColor: '#F0F0F5',
-        borderRadius: 20,
-        padding: 16,
-        gap: 12,
-        marginBottom: 24,
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    metaText: {
-        fontSize: 14,
-        color: '#1A1A40',
-        fontWeight: '600',
-        flex: 1,
-    },
-    tagCloud: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    tag: {
-        backgroundColor: `${Colors.primary}10`,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: `${Colors.primary}20`,
-    },
-    tagText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: Colors.primary,
-    },
-    referentCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        padding: 12,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#EEEEEE',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-    },
-    referentInfo: {
-        flex: 1,
-        marginLeft: 12,
-    },
-    referentName: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1A1A40',
-    },
-    referentRole: {
-        fontSize: 13,
-        color: Colors.secondary,
-    },
-    referentChatIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F0F0F5',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    skillList: {
-        gap: 10,
-    },
-    skillItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    skillLabel: {
-        fontSize: 14,
-        color: '#404060',
-        fontWeight: '500',
-    },
-    emptyText: {
-        fontSize: 14,
-        fontStyle: 'italic',
-        color: '#A0A0B0',
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 20,
-        paddingBottom: 30,
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        flexDirection: 'row',
-        gap: 16,
-    },
-    backButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: 'white',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#EEEEEE',
-    },
-    button: {
-        flex: 1,
-        backgroundColor: '#352F8B',
-        height: 56,
-        borderRadius: 28,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        elevation: 5,
-        shadowColor: '#352F8B',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-});

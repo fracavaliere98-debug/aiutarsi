@@ -14,12 +14,13 @@ import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SKILLS } from '../../constants/Skills';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 
 const { width } = Dimensions.get('window');
 
 export default function NPOSkillsScreen() {
     const router = useRouter();
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, logout } = useAuth();
     const [selected, setSelected] = useState<string[]>([]);
 
     const toggleSkill = (label: string) => {
@@ -43,13 +44,12 @@ export default function NPOSkillsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Quali skill cercate?</Text>
-                <Text style={styles.subtitle}>
-                    Selezionate le competenze che ricercate più spesso nei volontari.{'\n'}
-                    Avviseremo i talenti giusti non appena sarete pronti!
-                </Text>
-            </View>
+            <OnboardingStepHeader
+                title="Quali skill cercate?"
+                subtitle="Indicate le competenze che vi servono più spesso. Questo aiuterà Gemma e Smart Match a proporvi volontari più rilevanti."
+                onBack={() => router.back()}
+                onClose={() => logout()}
+            />
 
             <ScrollView 
                 contentContainerStyle={styles.scrollContent}
