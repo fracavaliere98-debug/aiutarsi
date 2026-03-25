@@ -1,6 +1,9 @@
 import { supabase } from "../utils/supabase";
 import { OldSmartMatchResult } from "../types";
 
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+
 export type SmartMatchReasonResult = {
   summary: string;
   reasons: { activityId: string; reason: string }[];
@@ -50,6 +53,12 @@ export type CommunityPostDraftInput = {
     location?: string;
     npoName?: string;
   };
+  metrics?: {
+    followerCount?: number;
+    openActivitiesCount?: number;
+    pendingApplicationsCount?: number;
+    totalImpactHours?: number;
+  };
 };
 
 export type CommunityPostDraftResult = {
@@ -58,6 +67,36 @@ export type CommunityPostDraftResult = {
 };
 
 class GemmaService {
+  private async invokeShadowGemma(body: Record<string, unknown>) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error("Sessione non valida. Effettua di nuovo l'accesso.");
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        mode: "shadow",
+        ...body,
+      }),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
+    }
+
+    return payload;
+  }
+
   async getSmartMatchReasons(matches: OldSmartMatchResult[]): Promise<SmartMatchReasonResult> {
     const matchedActivities = matches.map((match) => ({
       id: match.activity.id,
@@ -68,18 +107,11 @@ class GemmaService {
       matchPercentage: match.score,
     }));
 
-    const { data, error } = await supabase.functions.invoke("gemma-help-assistant", {
-      body: {
-        mode: "shadow",
-        question: "Spiega perché queste attività sono adatte a questo utente e qual è la migliore da valutare per prima.",
-        responseFormat: "smart_match_reasons",
-        matchedActivities,
-      },
+    const data = await this.invokeShadowGemma({
+      question: "Spiega perché queste attività sono adatte a questo utente e qual è la migliore da valutare per prima.",
+      responseFormat: "smart_match_reasons",
+      matchedActivities,
     });
-
-    if (error) {
-      throw error;
-    }
 
     return {
       summary: data?.summary || "Gemma ha selezionato attività in linea con il tuo profilo attuale.",
@@ -88,18 +120,11 @@ class GemmaService {
   }
 
   async getNPOInsightDrafts(insights: NPOInsightDraftInput[]): Promise<NPOInsightDraftResult> {
-    const { data, error } = await supabase.functions.invoke("gemma-help-assistant", {
-      body: {
-        mode: "shadow",
-        question: "Analizza queste priorità per un ente non profit e suggerisci le azioni più utili e immediate.",
-        responseFormat: "npo_insight_drafts",
-        npoInsights: insights,
-      },
+    const data = await this.invokeShadowGemma({
+      question: "Analizza queste priorità per un ente non profit e suggerisci le azioni più utili e immediate.",
+      responseFormat: "npo_insight_drafts",
+      npoInsights: insights,
     });
-
-    if (error) {
-      throw error;
-    }
 
     return {
       insights: Array.isArray(data?.insights) ? data.insights : [],
@@ -127,18 +152,11 @@ class GemmaService {
   }
 
   async getCommunityPostDraft(input: CommunityPostDraftInput): Promise<CommunityPostDraftResult> {
-    const { data, error } = await supabase.functions.invoke("gemma-help-assistant", {
-      body: {
-        mode: "shadow",
-        question: "Prepara una bozza breve e credibile per la community di un ente non profit.",
-        responseFormat: "community_post_draft",
-        communityDraft: input,
-      },
+    const data = await this.invokeShadowGemma({
+      question: "Prepara una bozza breve e credibile per la community di un ente non profit.",
+      responseFormat: "community_post_draft",
+      communityDraft: input,
     });
-
-    if (error) {
-      throw error;
-    }
 
     return {
       caption: data?.caption || "",

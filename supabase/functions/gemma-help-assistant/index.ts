@@ -47,6 +47,12 @@ type CommunityDraftInput = {
     location?: string;
     npoName?: string;
   };
+  metrics?: {
+    followerCount?: number;
+    openActivitiesCount?: number;
+    pendingApplicationsCount?: number;
+    totalImpactHours?: number;
+  };
 };
 
 const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
@@ -208,6 +214,15 @@ function formatCommunityDraftContext(draft?: CommunityDraftInput | null): string
       `Data: ${draft.activity.dateTime || "non disponibile"}`,
       `Luogo: ${draft.activity.location || "non disponibile"}`,
       `Ente: ${draft.activity.npoName || "non disponibile"}`,
+    );
+  }
+
+  if (draft.metrics) {
+    base.push(
+      `Followers: ${draft.metrics.followerCount ?? 0}`,
+      `Attività aperte: ${draft.metrics.openActivitiesCount ?? 0}`,
+      `Candidature pendenti: ${draft.metrics.pendingApplicationsCount ?? 0}`,
+      `Ore di impatto: ${draft.metrics.totalImpactHours ?? 0}`,
     );
   }
 

@@ -60,18 +60,27 @@ export default function CommunityScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [storyViewer, setStoryViewer] = useState<{ stories: Story[], index: number } | null>(null);
+    const refreshLockRef = React.useRef(false);
 
     const isNPO = user?.role === 'NPO';
 
     const onRefresh = useCallback(async () => {
-        const startedAt = Date.now();
-        setRefreshing(true);
-        await Promise.all([fetchFeed(), fetchStories(), refreshActivities()]);
-        const elapsed = Date.now() - startedAt;
-        if (elapsed < 500) {
-            await new Promise((resolve) => setTimeout(resolve, 500 - elapsed));
+        if (refreshLockRef.current) return;
+        refreshLockRef.current = true;
+        try {
+            const startedAt = Date.now();
+            setRefreshing(true);
+            await fetchFeed();
+            await fetchStories();
+            await refreshActivities();
+            const elapsed = Date.now() - startedAt;
+            if (elapsed < 650) {
+                await new Promise((resolve) => setTimeout(resolve, 650 - elapsed));
+            }
+        } finally {
+            setRefreshing(false);
+            refreshLockRef.current = false;
         }
-        setRefreshing(false);
     }, [fetchFeed, fetchStories, refreshActivities]);
 
     const onLoadMore = useCallback(async () => {

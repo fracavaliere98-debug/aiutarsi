@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { Sparkles, MapPin, Calendar, ArrowRight } from 'lucide-react-native';
+import { MapPin, Calendar } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
@@ -10,6 +10,8 @@ import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
 import { gemmaService } from '../../services/GemmaService';
+import { GemmaFloatingHint } from './GemmaFloatingHint';
+import { useAuth } from '../../context/AuthContext';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
@@ -39,20 +41,17 @@ export function VolunteerCommunityScreen({
     onStoryPress,
 }: VolunteerCommunityScreenProps) {
     const router = useRouter();
+    const { user } = useAuth();
     const [gemmaSummary, setGemmaSummary] = useState<string>('');
-
-    const highlightPost = useMemo(
-        () => posts.find((post) => post.linked_activity?.status === 'APERTA') || posts[0] || null,
-        [posts]
-    );
 
     const suggestedActivities = useMemo(
         () =>
             activities
+                .filter((activity) => !user?.id || !activity.iscritti.includes(user.id))
                 .filter((activity) => activity.status === 'APERTA')
                 .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
                 .slice(0, 5),
-        [activities]
+        [activities, user?.id]
     );
 
     const weekendActivity = useMemo(() => {
@@ -109,76 +108,16 @@ export function VolunteerCommunityScreen({
         <View>
             <StoriesRow onStoryPress={onStoryPress} />
 
-            <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
-                <View
-                    style={{
-                        backgroundColor: '#fff7ed',
-                        borderRadius: 24,
-                        padding: 18,
-                        borderWidth: 1,
-                        borderColor: '#fed7aa',
-                    }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                            <Sparkles size={18} color="#ea580c" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 12, fontWeight: '900', letterSpacing: 0.5, color: '#c2410c', textTransform: 'uppercase' }}>
-                                Gemma per te
-                            </Text>
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary, marginTop: 2 }}>
-                                Cosa merita attenzione
-                            </Text>
-                        </View>
-                    </View>
-                    <Text style={{ fontSize: 13, lineHeight: 20, color: '#7c2d12' }}>
-                        {gemmaSummary || 'Prima storie utili e attività aperte. Il resto viene dopo.'}
-                    </Text>
-                </View>
-            </View>
-
-            {highlightPost ? (
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => {
-                        if (highlightPost.linked_activity?.id) {
-                            router.push(`/activity/${highlightPost.linked_activity.id}` as any);
-                        } else {
-                            router.push(`/npo-profile/${highlightPost.author_id}` as any);
-                        }
-                    }}
-                    style={{
-                        marginHorizontal: 16,
-                        marginBottom: 18,
-                        backgroundColor: 'white',
-                        borderRadius: 24,
-                        padding: 18,
-                        borderWidth: 1,
-                        borderColor: '#e2e8f0',
-                        shadowColor: '#0f172a',
-                        shadowOpacity: 0.06,
-                        shadowRadius: 12,
-                        elevation: 3,
-                    }}
-                >
-                    <Text style={{ fontSize: 12, fontWeight: '900', color: Colors.accent, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
-                        Dal tuo feed
-                    </Text>
-                    <Text style={{ fontSize: 17, fontWeight: '900', color: Colors.primary, marginBottom: 6 }}>
-                        {highlightPost.linked_activity?.title || highlightPost.author?.npo_name || 'Aggiornamento dalla community'}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#475569', lineHeight: 20 }} numberOfLines={2}>
-                        {highlightPost.caption || 'Un nuovo aggiornamento dalla community che merita attenzione.'}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.primary }}>
-                            {highlightPost.linked_activity ? 'Apri attività' : 'Vai al profilo ente'}
-                        </Text>
-                        <ArrowRight size={16} color={Colors.primary} style={{ marginLeft: 6 }} />
-                    </View>
-                </TouchableOpacity>
-            ) : null}
+            <GemmaFloatingHint
+                eyebrow="Gemma"
+                message={gemmaSummary || 'Ti segnalo prima storie utili e attività aperte, poi il resto del feed.'}
+                ctaLabel="Guarda i match"
+                onPress={() => {
+                    if (suggestedActivities[0]) {
+                        router.push(`/activity/${suggestedActivities[0].id}` as any);
+                    }
+                }}
+            />
 
             {weekendActivity ? (
                 <TouchableOpacity
@@ -186,30 +125,30 @@ export function VolunteerCommunityScreen({
                     onPress={() => router.push(`/activity/${weekendActivity.id}` as any)}
                     style={{
                         marginHorizontal: 16,
-                        marginBottom: 22,
-                        backgroundColor: '#f5f3ff',
-                        borderRadius: 24,
-                        padding: 18,
+                        marginBottom: 18,
+                        backgroundColor: '#f8faff',
+                        borderRadius: 26,
+                        padding: 16,
                         borderWidth: 1,
-                        borderColor: '#ddd6fe',
+                        borderColor: '#dbe4ff',
                     }}
                 >
-                    <Text style={{ fontSize: 12, fontWeight: '900', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Questo weekend
                     </Text>
-                    <Text style={{ fontSize: 17, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>
                         {weekendActivity.title}
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Calendar size={14} color="#7c3aed" />
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6d28d9' }}>
+                            <Calendar size={14} color="#6366f1" />
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#4f46e5' }}>
                                 {new Date(weekendActivity.dateTime).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
                             </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <MapPin size={14} color="#7c3aed" />
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6d28d9' }}>
+                            <MapPin size={14} color="#6366f1" />
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#4f46e5' }}>
                                 {getCityLabel(weekendActivity.location?.address)}
                             </Text>
                         </View>
@@ -218,14 +157,14 @@ export function VolunteerCommunityScreen({
             ) : null}
 
             <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                        Aggiornamenti della community
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                        Storie e risultati prima. Opportunità dopo.
-                    </Text>
-                </View>
+                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                    Feed community
+                </Text>
+                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
+                    Storie, risultati e iniziative degli enti.
+                </Text>
             </View>
+        </View>
     );
 
     const listFooter = (
@@ -310,8 +249,7 @@ export function VolunteerCommunityScreen({
             contentContainerStyle={{ paddingBottom: 20 }}
             onEndReached={onLoadMore}
             onEndReachedThreshold={0.5}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
             ListHeaderComponent={listHeader}
             ListFooterComponent={listFooter}
             ListEmptyComponent={
