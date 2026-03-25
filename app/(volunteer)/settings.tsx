@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +18,7 @@ import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 
 export default function VolunteerSettings() {
+    const insets = useSafeAreaInsets();
     const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion, updateEmail, updatePassword } = useAuth();
     const { showToast } = useToast();
     const { resetData } = useActivities();
@@ -481,12 +482,15 @@ export default function VolunteerSettings() {
                 visible={showEditProfile}
                 onRequestClose={() => setShowEditProfile(false)}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
-                    <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                    <View
+                        className="flex-row items-center justify-between px-6 pb-4 border-b border-gray-100"
+                        style={{ paddingTop: Math.max(insets.top + 12, 24) }}
+                    >
                         <TouchableOpacity onPress={() => setShowEditProfile(false)}>
                             <Text className="text-secondary font-bold text-base">Annulla</Text>
                         </TouchableOpacity>
@@ -578,12 +582,15 @@ export default function VolunteerSettings() {
                 visible={showChangeEmail}
                 onRequestClose={() => setShowChangeEmail(false)}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
-                        <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                        <View
+                            className="flex-row items-center justify-between px-6 pb-4 border-b border-gray-100"
+                            style={{ paddingTop: Math.max(insets.top + 12, 24) }}
+                        >
                             <TouchableOpacity onPress={() => setShowChangeEmail(false)}>
                                 <Text className="text-secondary font-bold text-base">Annulla</Text>
                             </TouchableOpacity>
@@ -627,12 +634,15 @@ export default function VolunteerSettings() {
                 visible={showChangePassword}
                 onRequestClose={() => setShowChangePassword(false)}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
-                        <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                        <View
+                            className="flex-row items-center justify-between px-6 pb-4 border-b border-gray-100"
+                            style={{ paddingTop: Math.max(insets.top + 12, 24) }}
+                        >
                             <TouchableOpacity onPress={() => setShowChangePassword(false)}>
                                 <Text className="text-secondary font-bold text-base">Annulla</Text>
                             </TouchableOpacity>
