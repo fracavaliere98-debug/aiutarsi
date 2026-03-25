@@ -9,6 +9,12 @@ import { Colors } from '../../constants/Colors';
 export default function SmartMatchScreen() {
     const router = useRouter();
     const { matches, isLoading, refresh, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches } = useSmartMatch();
+    const [showSavedOnly, setShowSavedOnly] = React.useState(false);
+
+    const visibleMatches = React.useMemo(
+        () => (showSavedOnly ? matches.filter((match) => match.saved) : matches),
+        [matches, showSavedOnly]
+    );
 
     return (
         <ScreenWrapper edges={['top']} bg="bg-white" withPadding={false}>
@@ -35,9 +41,19 @@ export default function SmartMatchScreen() {
                     <View style={{ backgroundColor: '#f8f4ff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
                         <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '700' }}>Match forti prima</Text>
                     </View>
-                    <View style={{ backgroundColor: '#eef2ff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
-                        <Text style={{ color: Colors.info, fontSize: 12, fontWeight: '700' }}>Feedback salvato</Text>
-                    </View>
+                    <TouchableOpacity
+                        onPress={() => setShowSavedOnly((current) => !current)}
+                        style={{
+                            backgroundColor: showSavedOnly ? Colors.info : '#eef2ff',
+                            borderRadius: 999,
+                            paddingHorizontal: 12,
+                            paddingVertical: 7,
+                        }}
+                    >
+                        <Text style={{ color: showSavedOnly ? '#ffffff' : Colors.info, fontSize: 12, fontWeight: '700' }}>
+                            Attività salvate
+                        </Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={resetHiddenMatches} style={{ backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
                         <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '700' }}>Ripristina nascosti</Text>
                     </TouchableOpacity>
@@ -45,15 +61,19 @@ export default function SmartMatchScreen() {
 
                 {isLoading ? (
                     <Text style={{ color: Colors.secondary, fontSize: 14 }}>Gemma sta aggiornando i suggerimenti…</Text>
-                ) : matches.length === 0 ? (
+                ) : visibleMatches.length === 0 ? (
                     <View style={{ backgroundColor: '#f8fafc', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                        <Text style={{ color: Colors.primary, fontSize: 16, fontWeight: '800', marginBottom: 6 }}>Nessun match disponibile</Text>
+                        <Text style={{ color: Colors.primary, fontSize: 16, fontWeight: '800', marginBottom: 6 }}>
+                            {showSavedOnly ? 'Nessuna attività salvata' : 'Nessun match disponibile'}
+                        </Text>
                         <Text style={{ color: Colors.secondary, fontSize: 13, lineHeight: 20 }}>
-                            Aggiorna bio, interessi o posizione per far lavorare meglio Smart Match.
+                            {showSavedOnly
+                                ? 'Salva le attività che vuoi ritrovare più facilmente qui.'
+                                : 'Aggiorna bio, interessi o posizione per far lavorare meglio Smart Match.'}
                         </Text>
                     </View>
                 ) : (
-                    matches.map((match) => {
+                    visibleMatches.map((match) => {
                         const activity = match.activity;
                         if (!activity) return null;
 
@@ -123,7 +143,7 @@ export default function SmartMatchScreen() {
                                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                                     <TouchableOpacity onPress={() => likeMatch(match)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}>
                                         <Heart size={14} color={Colors.accent} fill={match.liked ? Colors.accent : 'transparent'} />
-                                        <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '700' }}>Più così</Text>
+                                        <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '700' }}>Mi piace</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity onPress={() => saveMatch(match)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#eef2ff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}>
                                         <Bookmark size={14} color={Colors.info} fill={match.saved ? Colors.info : 'transparent'} />

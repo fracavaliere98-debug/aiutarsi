@@ -178,22 +178,21 @@ export default function WelcomeScreen() {
     }
 
     return (
-        <ScreenWrapper className="bg-white">
+        <ScreenWrapper className="bg-background-light px-0">
             <ScrollView 
                 className="flex-1" 
                 contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="px-6">
-                    <OnboardingStepHeader
-                        title="Ultimo passaggio"
-                        subtitle={user?.role === "NPO"
-                            ? "Attiva i permessi che servono per far trovare il tuo ente e ricevere nuove candidature."
-                            : "Attiva i permessi che servono per ricevere match migliori e restare aggiornato."}
-                        onBack={() => router.back()}
-                        compact
-                    />
+                <OnboardingStepHeader
+                    title="Ultimo passaggio"
+                    subtitle={user?.role === "NPO"
+                        ? "Attiva i permessi che servono per far trovare il tuo ente e ricevere nuove candidature."
+                        : "Attiva i permessi che servono per ricevere match migliori e restare aggiornato."}
+                    onBack={() => router.back()}
+                />
 
+                <View className="px-6">
                     <View 
                         className="mb-4 bg-primary/5 px-4 py-3 rounded-2xl border border-primary/10 flex-row items-center"
                     >

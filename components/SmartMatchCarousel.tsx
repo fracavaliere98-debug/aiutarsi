@@ -7,7 +7,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Compass, Clock3, Briefcase, Flame } from 'lucide-react-native';
+import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Flame, RefreshCw } from 'lucide-react-native';
 import { useSmartMatch } from '../context/SmartMatchContext';
 import { Colors } from '../constants/Colors';
 import { OldSmartMatchResult } from '../types';
@@ -38,16 +38,6 @@ function SkeletonCard() {
             <View style={{ width: '95%', height: 32, backgroundColor: '#e2e8f0', borderRadius: 12 }} />
         </View>
     );
-}
-
-// ─── Match Card ───────────────────────────────────────────────────────────────
-function getChipIcon(chip: string, color: string) {
-    const normalized = chip.toLowerCase();
-    if (normalized.includes('vicino') || normalized.includes('raggiungibile')) return <Compass size={14} color={color} />;
-    if (normalized.includes('settimana') || normalized.includes('giorni')) return <Clock3 size={14} color={color} />;
-    if (normalized.includes('skill') || normalized.includes('competenze')) return <Briefcase size={14} color={color} />;
-    if (normalized.includes('urgente')) return <Flame size={14} color={color} />;
-    return <Sparkles size={14} color={color} />;
 }
 
 function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number }) {
@@ -194,31 +184,6 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 </View>
             </View>
 
-            {!!match.chips?.length && (
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                    {match.chips
-                        .filter((chip) => !chip.toLowerCase().includes('urgente'))
-                        .map((chip) => (
-                        <View
-                            key={chip}
-                            style={{
-                                backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#f3f0ff',
-                                width: 30,
-                                height: 30,
-                                borderRadius: 999,
-                                borderWidth: isTopMatch ? 1 : 0,
-                                borderColor: 'rgba(255,255,255,0.18)',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                            accessibilityLabel={chip}
-                        >
-                            {getChipIcon(chip, isTopMatch ? '#ffffff' : Colors.primary)}
-                        </View>
-                    ))}
-                </View>
-            )}
-
             {/* Compact Gemma cue */}
             <View
                 style={{
@@ -266,7 +231,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                     }}
                 >
                     <Heart size={13} color={isTopMatch ? '#ffffff' : Colors.accent} fill={match.liked ? (isTopMatch ? '#ffffff' : Colors.accent) : 'transparent'} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.accent, fontSize: 11, fontWeight: '700' }}>Più così</Text>
+                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.accent, fontSize: 11, fontWeight: '700' }}>Mi piace</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={(event) => {
@@ -353,9 +318,7 @@ export function SmartMatchCarousel() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 {lastUpdated && (
                     <TouchableOpacity onPress={refresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={{ fontSize: 11, color: Colors.accent, fontWeight: '700' }}>
-                            Aggiorna
-                        </Text>
+                        <RefreshCw size={16} color={Colors.accent} strokeWidth={2.2} />
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => router.push('/(volunteer)/smart-match' as any)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

@@ -37,7 +37,6 @@ import { authService } from "../services/AuthService";
 import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
 import { Layout } from "../utils/layout";
-import { GemmaAvatar } from "../components/GemmaAvatar";
 
 const BACKGROUND_GRADIENTS = [
     ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
@@ -305,10 +304,6 @@ export default function LandingPage() {
                         <Text style={styles.registrationText}>
                             Seleziona il tuo profilo e continua con un’iscrizione pensata per quello che vuoi fare.
                         </Text>
-                        <View style={styles.gemmaBadge}>
-                            <GemmaAvatar size={20} />
-                            <Text style={styles.gemmaBadgeText}>Onboarding guidato da Gemma</Text>
-                        </View>
                     </View>
 
                     <View style={styles.ctaStack}>
@@ -554,24 +549,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 21,
         fontWeight: "600",
-    },
-    gemmaBadge: {
-        marginTop: 12,
-        alignSelf: "flex-start",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 7,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 999,
-        backgroundColor: "rgba(205,5,127,0.08)",
-        borderWidth: 1,
-        borderColor: "rgba(205,5,127,0.10)",
-    },
-    gemmaBadgeText: {
-        color: Colors.accent,
-        fontSize: 12,
-        fontWeight: "800",
     },
     roleCardShadow: {
         borderRadius: 30,
