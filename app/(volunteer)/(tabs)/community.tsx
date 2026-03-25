@@ -64,8 +64,13 @@ export default function CommunityScreen() {
     const isNPO = user?.role === 'NPO';
 
     const onRefresh = useCallback(async () => {
+        const startedAt = Date.now();
         setRefreshing(true);
         await Promise.all([fetchFeed(), fetchStories(), refreshActivities()]);
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < 500) {
+            await new Promise((resolve) => setTimeout(resolve, 500 - elapsed));
+        }
         setRefreshing(false);
     }, [fetchFeed, fetchStories, refreshActivities]);
 

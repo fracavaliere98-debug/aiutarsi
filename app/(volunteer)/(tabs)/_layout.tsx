@@ -1,7 +1,7 @@
 import { Tabs, useRouter } from "expo-router";
 import { Home, Compass, Calendar as CalendarIcon, Globe, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from "../../../context/AuthContext";
-import { TouchableOpacity, View, Text } from "react-native";
+import { TouchableOpacity, View, Text, GestureResponderEvent } from "react-native";
 import { Colors } from "../../../constants/Colors";
 
 export default function VolunteerTabsLayout() {
@@ -40,6 +40,16 @@ export default function VolunteerTabsLayout() {
                 options={{
                     title: "Home",
                     tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+                    tabBarButton: (props) => (
+                        <TouchableOpacity
+                            testID="tab-home"
+                            onPress={props.onPress as (e: GestureResponderEvent) => void}
+                            style={props.style as any}
+                            accessibilityRole="button"
+                        >
+                            {props.children}
+                        </TouchableOpacity>
+                    ),
                 }}
             />
             <Tabs.Screen
@@ -47,6 +57,16 @@ export default function VolunteerTabsLayout() {
                 options={{
                     title: "Esplora",
                     tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
+                    tabBarButton: (props) => (
+                        <TouchableOpacity
+                            testID="tab-explore"
+                            onPress={props.onPress as (e: GestureResponderEvent) => void}
+                            style={props.style as any}
+                            accessibilityRole="button"
+                        >
+                            {props.children}
+                        </TouchableOpacity>
+                    ),
                 }}
             />
             {/* Community – raised center button */}

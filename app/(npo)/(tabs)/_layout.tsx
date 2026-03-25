@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { LayoutDashboard, Users, Calendar, Settings, Globe } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity, GestureResponderEvent } from "react-native";
 
 export default function NPOTabsLayout() {
     return (
@@ -40,6 +40,16 @@ export default function NPOTabsLayout() {
                 options={{
                     title: "Dashboard",
                     tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
+                    tabBarButton: (props) => (
+                        <TouchableOpacity
+                            testID="tab-home"
+                            onPress={props.onPress as (e: GestureResponderEvent) => void}
+                            style={props.style as any}
+                            accessibilityRole="button"
+                        >
+                            {props.children}
+                        </TouchableOpacity>
+                    ),
                 }}
             />
             <Tabs.Screen
@@ -47,6 +57,16 @@ export default function NPOTabsLayout() {
                 options={{
                     title: "Volontari",
                     tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+                    tabBarButton: (props) => (
+                        <TouchableOpacity
+                            testID="tab-volunteers"
+                            onPress={props.onPress as (e: GestureResponderEvent) => void}
+                            style={props.style as any}
+                            accessibilityRole="button"
+                        >
+                            {props.children}
+                        </TouchableOpacity>
+                    ),
                 }}
             />
             {/* Community – raised center button */}
