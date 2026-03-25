@@ -8,12 +8,10 @@ appId: com.aiutarsi.app
 - launchApp
 - waitForAnimationToEnd
 
-# Se siamo sulla Landing Page, premi "Accedi"
-- runScript:
-    condition: ${maestro.visible("btn-landing-login")}
-    commands:
-      - tapOn:
-          id: "btn-landing-login"
+# Se siamo sulla Landing Page, naviga al login (opzionale, ignorato se non visibile)
+- tapOn:
+    id: "btn-landing-login"
+    optional: true
 
 # ── Login rapido ──────────────────────────────────────────────────────────────
 - tapOn:
