@@ -162,13 +162,13 @@ jobs:
             adb install android/app/build/outputs/apk/debug/app-debug.apk
             maestro test maestro/flows/ --debug-output maestro-debug || true
 
-    - name: Upload Maestro debug logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: maestro-debug-logs
-        path: maestro-debug/
-        retention-days: 3
+      - name: Upload Maestro debug logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug-logs
+          path: maestro-debug/
+          retention-days: 3
 
   ota-update:
     name: Fast OTA Deploy
