@@ -109,7 +109,7 @@ export function VolunteerCommunityScreen({
             <StoriesRow onStoryPress={onStoryPress} />
 
             <GemmaFloatingHint
-                eyebrow="Gemma"
+                eyebrow={user?.name ? `Gemma per ${user.name.split(' ')[0]}` : 'Gemma per te'}
                 message={gemmaSummary || 'Ti segnalo prima storie utili e attività aperte, poi il resto del feed.'}
                 ctaLabel="Guarda i match"
                 onPress={() => {

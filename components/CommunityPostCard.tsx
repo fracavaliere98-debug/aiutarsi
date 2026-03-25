@@ -188,33 +188,33 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                     )}
                     {/* OldActivity anchor banner */}
                     {post.linked_activity && (
-                        <LinearGradient
-                            colors={['transparent', 'rgba(0,0,0,0.75)']}
-                            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => router.push(`/activity/${post.linked_activity!.id}` as any)}
+                            style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
                         >
-                            <View style={{ flex: 1, marginRight: 10 }}>
-                                <View style={{ backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
-                                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>Attività Collegata</Text>
+                            <LinearGradient
+                                colors={['transparent', 'rgba(0,0,0,0.75)']}
+                                style={{ padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            >
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <View style={{ backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
+                                        <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>Attività Collegata</Text>
+                                    </View>
+                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
+                                        {post.linked_activity.title}
+                                    </Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
+                                        {new Date(post.linked_activity.date_start).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                        {' · '}
+                                        {new Date(post.linked_activity.date_start).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
                                 </View>
-                                <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
-                                    {post.linked_activity.title}
-                                </Text>
-                                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
-                                    {new Date(post.linked_activity.date_start).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                    {' · '}
-                                    {new Date(post.linked_activity.date_start).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                                </Text>
-                            </View>
-                            {post.linked_activity.status === 'APERTA' && (
-                                <TouchableOpacity
-                                    onPress={() => router.push(`/activity/${post.linked_activity!.id}` as any)}
-                                    style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}
-                                    activeOpacity={0.85}
-                                >
+                                <View style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                                     <Text style={{ color: Colors.primary, fontWeight: '900', fontSize: 13 }}>Apri attività</Text>
-                                </TouchableOpacity>
-                            )}
-                        </LinearGradient>
+                                </View>
+                            </LinearGradient>
+                        </TouchableOpacity>
                     )}
                 </View>
             )}

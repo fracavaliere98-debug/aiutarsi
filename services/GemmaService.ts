@@ -54,6 +54,7 @@ export type CommunityPostDraftInput = {
     npoName?: string;
   };
   metrics?: {
+    npoName?: string;
     followerCount?: number;
     openActivitiesCount?: number;
     pendingApplicationsCount?: number;

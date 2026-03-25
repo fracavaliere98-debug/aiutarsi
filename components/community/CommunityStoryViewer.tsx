@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Story } from '../../types/stories';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -13,6 +14,7 @@ interface CommunityStoryViewerProps {
 }
 
 export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunityStoryViewerProps) {
+    const router = useRouter();
     if (!viewer) return null;
 
     const currentStory = viewer.stories[viewer.index];
@@ -40,7 +42,7 @@ export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunitySto
     return (
         <Modal visible={!!viewer} animationType="fade" transparent onRequestClose={onClose}>
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' }}>
-                <SafeAreaView style={{ flex: 1 }}>
+                <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
                     <View style={{ paddingHorizontal: 10, paddingTop: 10, paddingBottom: 10 }}>
                         <View style={{ flexDirection: 'row', gap: 4, marginBottom: 12 }}>
                             {viewer.stories.map((story, idx) => (
@@ -56,11 +58,20 @@ export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunitySto
                             ))}
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ede9fe', overflow: 'hidden', marginRight: 10 }}>
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    if (currentStory.author_id) {
+                                        onClose();
+                                        router.push(`/npo-profile/${currentStory.author_id}` as any);
+                                    }
+                                }}
+                                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ede9fe', overflow: 'hidden', marginRight: 10 }}
+                            >
                                 {authorData?.avatar_url ? (
                                     <Image source={{ uri: authorData.avatar_url }} style={{ width: 36, height: 36 }} />
                                 ) : null}
-                            </View>
+                            </TouchableOpacity>
                             <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, flex: 1 }}>{topName}</Text>
                             <TouchableOpacity onPress={onClose} style={{ padding: 10 }}>
                                 <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', lineHeight: 24 }}>×</Text>
@@ -86,7 +97,7 @@ export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunitySto
                             <View
                                 style={{
                                     position: 'absolute',
-                                    bottom: 40,
+                                    bottom: 12,
                                     left: 0,
                                     right: 0,
                                     padding: 20,

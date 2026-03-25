@@ -48,6 +48,7 @@ type CommunityDraftInput = {
     npoName?: string;
   };
   metrics?: {
+    npoName?: string;
     followerCount?: number;
     openActivitiesCount?: number;
     pendingApplicationsCount?: number;
@@ -219,6 +220,7 @@ function formatCommunityDraftContext(draft?: CommunityDraftInput | null): string
 
   if (draft.metrics) {
     base.push(
+      `NPO: ${draft.metrics.npoName ?? "non disponibile"}`,
       `Followers: ${draft.metrics.followerCount ?? 0}`,
       `Attività aperte: ${draft.metrics.openActivitiesCount ?? 0}`,
       `Candidature pendenti: ${draft.metrics.pendingApplicationsCount ?? 0}`,

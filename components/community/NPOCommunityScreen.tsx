@@ -9,7 +9,7 @@ import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
-import { gemmaService } from '../../services/GemmaService';
+import { CommunityPostDraftResult, gemmaService } from '../../services/GemmaService';
 import { useAuth } from '../../context/AuthContext';
 import { useApplications } from '../../context/ApplicationContext';
 import { GemmaFloatingHint } from './GemmaFloatingHint';
@@ -39,7 +39,7 @@ export function NPOCommunityScreen({
     const { user, getNPOFollowers } = useAuth();
     const { applications } = useApplications();
     const [draftLoadingId, setDraftLoadingId] = useState<string | null>(null);
-    const [todaySuggestion, setTodaySuggestion] = useState<string>('');
+    const [todayDraft, setTodayDraft] = useState<CommunityPostDraftResult | null>(null);
 
     const myOpenActivities = useMemo(
         () =>
@@ -71,6 +71,7 @@ export function NPOCommunityScreen({
             }, 0);
 
         return {
+            npoName: user?.npoName || user?.name || 'Ente',
             followerCount: user ? getNPOFollowers(user.id).length : 0,
             openActivitiesCount: myOpenActivities.length,
             pendingApplicationsCount: applications.filter((application) => application.npoId === user?.id && application.status === 'PENDING').length,
@@ -94,11 +95,11 @@ export function NPOCommunityScreen({
             metrics,
         }).then((draft) => {
             if (!cancelled) {
-                setTodaySuggestion(draft.caption);
+                setTodayDraft(draft);
             }
         }).catch(() => {
             if (!cancelled) {
-                setTodaySuggestion('');
+                setTodayDraft(null);
             }
         });
 
@@ -107,12 +108,33 @@ export function NPOCommunityScreen({
         };
     }, [metrics, recentCompletedActivity]);
 
+    const openDraftScreen = (draft: CommunityPostDraftResult, params: {
+        label: string;
+        activity?: AppActivity | null;
+    }) => {
+        router.push({
+            pathname: '/community/create-post',
+            params: {
+                mode: draft.suggestedMode,
+                prefillCaption: draft.caption,
+                prefillLinkedActivityId: params.activity?.id,
+                draftLabel: params.label,
+            },
+        } as any);
+    };
+
     const handleDraftFromGemma = async (params: {
         id: string;
         purpose: 'activity_promo' | 'recent_recap' | 'community_update';
         label: string;
         activity?: AppActivity | null;
+        useCachedTodayDraft?: boolean;
     }) => {
+        if (params.useCachedTodayDraft && todayDraft) {
+            openDraftScreen(todayDraft, params);
+            return;
+        }
+
         setDraftLoadingId(params.id);
         try {
             const draft = await gemmaService.getCommunityPostDraft({
@@ -127,16 +149,7 @@ export function NPOCommunityScreen({
                 } : undefined,
                 metrics,
             });
-
-            router.push({
-                pathname: '/community/create-post',
-                params: {
-                    mode: draft.suggestedMode,
-                    prefillCaption: draft.caption,
-                    prefillLinkedActivityId: params.activity?.id,
-                    draftLabel: params.label,
-                },
-            } as any);
+            openDraftScreen(draft, params);
         } catch {
             router.push({
                 pathname: '/community/create-post',
@@ -174,7 +187,7 @@ export function NPOCommunityScreen({
 
             <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
                 <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>
-                    Azioni rapide
+                    Pubblica
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                     {quickActions.map((action) => {
@@ -186,17 +199,17 @@ export function NPOCommunityScreen({
                                 onPress={action.onPress}
                                 style={{
                                     flex: 1,
-                                    backgroundColor: 'white',
-                                    borderRadius: 20,
-                                    paddingVertical: 16,
+                                    backgroundColor: '#fcfcff',
+                                    borderRadius: 24,
+                                    paddingVertical: 15,
                                     paddingHorizontal: 12,
                                     borderWidth: 1,
-                                    borderColor: '#e2e8f0',
+                                    borderColor: '#dbe4ff',
                                     alignItems: 'center',
                                     gap: 8,
                                 }}
                             >
-                                <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
+                                <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center' }}>
                                     <Icon size={18} color={Colors.primary} />
                                 </View>
                                 <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>{action.label}</Text>
@@ -209,10 +222,10 @@ export function NPOCommunityScreen({
             <GemmaFloatingHint
                 eyebrow="Gemma"
                 message={
-                    todaySuggestion || (
+                    todayDraft?.caption || (
                         recentCompletedActivity
-                            ? 'Ti suggerisco un recap con foto o un ringraziamento ai volontari.'
-                            : 'Ti suggerisco un aggiornamento breve per tenere viva la community.'
+                            ? `Per ${user?.npoName || 'la tua NPO'} ti suggerisco un recap con foto o un ringraziamento ai volontari.`
+                            : `Per ${user?.npoName || 'la tua NPO'} ti suggerisco un aggiornamento breve per tenere viva la community.`
                     )
                 }
                 ctaLabel={draftLoadingId === 'today_prompt' ? 'Gemma sta preparando...' : 'Apri bozza'}
@@ -222,6 +235,7 @@ export function NPOCommunityScreen({
                         purpose: recentCompletedActivity ? 'recent_recap' : 'community_update',
                         label: recentCompletedActivity ? 'Bozza per condividere foto o ringraziamenti' : 'Bozza rapida per aggiornare la community',
                         activity: recentCompletedActivity,
+                        useCachedTodayDraft: true,
                     })
                 }
             />
@@ -231,7 +245,7 @@ export function NPOCommunityScreen({
                     Feed community
                 </Text>
                 <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                    Idee, risultati e momenti condivisi dagli enti.
+                    Idee, risultati e momenti condivisi dagli enti che vale la pena guardare.
                 </Text>
             </View>
         </View>
@@ -246,7 +260,7 @@ export function NPOCommunityScreen({
                             Attività da valorizzare
                         </Text>
                         <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                            Tocca una card e Gemma apre una bozza pronta.
+                            Lascia che Gemma trasformi un’attività in un post pronto.
                         </Text>
                     </View>
                     <FlashList
@@ -270,10 +284,10 @@ export function NPOCommunityScreen({
                                 style={{
                                     width: 248,
                                     marginRight: 12,
-                                    backgroundColor: '#fff7ed',
-                                    borderRadius: 22,
+                                    backgroundColor: '#fffdf8',
+                                    borderRadius: 26,
                                     borderWidth: 1,
-                                    borderColor: '#fed7aa',
+                                    borderColor: '#fde6bf',
                                     padding: 16,
                                 }}
                             >
@@ -289,6 +303,16 @@ export function NPOCommunityScreen({
                                 <Text style={{ fontSize: 13, color: '#7c2d12', marginTop: 8, lineHeight: 19 }} numberOfLines={2}>
                                     Gemma ti suggerisce un post.
                                 </Text>
+                                <View style={{
+                                    marginTop: 12,
+                                    alignSelf: 'flex-start',
+                                    backgroundColor: '#ffffff',
+                                    borderRadius: 999,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 8,
+                                }}>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>Apri bozza</Text>
+                                </View>
                                 {draftLoadingId === item.id ? (
                                     <View style={{ position: 'absolute', top: 12, right: 12 }}>
                                         <ActivityIndicator size="small" color={Colors.primary} />
