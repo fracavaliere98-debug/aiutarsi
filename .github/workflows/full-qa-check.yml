@@ -112,5 +112,14 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
             adb install android/app/build/outputs/apk/release/app-release.apk
-            maestro test maestro/flows/
+            maestro test maestro/flows/ --debug-output maestro-debug || true
+
+    - name: Upload Maestro debug logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: maestro-debug-logs
+        path: maestro-debug/
+        retention-days: 3
