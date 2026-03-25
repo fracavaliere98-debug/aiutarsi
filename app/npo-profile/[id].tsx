@@ -515,7 +515,7 @@ export default function NPOProfileScreen() {
                 {activeTab === "referente" && (
                     <View>
                         <View className="flex-row justify-between items-center mb-4">
-                            <Text className="text-primary font-bold text-lg">Il Tuo Referente</Text>
+                            <Text className="text-primary font-bold text-lg">Referente dell&apos;ente</Text>
                         </View>
 
                         <SoftCard className="p-6 items-center">
@@ -534,8 +534,10 @@ export default function NPOProfileScreen() {
 
                             <View className="w-full h-[1px] bg-gray-100 my-6" />
 
-                            <Text className="text-secondary text-sm text-center leading-relaxed italic px-4 pb-4">
-                                &quot;Insieme possiamo fare la differenza. Il mio compito è guidarti nella tua missione di volontariato con {npoUser.npoName || 'il nostro ente'}.&quot;
+                            <Text className="text-secondary text-sm text-center leading-relaxed px-4 pb-4">
+                                {npoUser.auto_welcome_message
+                                    ? npoUser.auto_welcome_message
+                                    : `${npoUser.referent_name || "Il referente"} segue candidature, attività e primi contatti per ${npoUser.npoName || "questo ente"}.`}
                             </Text>
 
                             {user?.role === "VOLUNTEER" && (

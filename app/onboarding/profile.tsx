@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
 import { useEffect, useState } from "react";
-import { Camera } from "lucide-react-native";
+import { Camera, UserRound, Gift } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from "../../services/AuthService";
@@ -103,33 +103,52 @@ export default function OnboardingProfile() {
                 />
 
                 <View className="px-6">
-                    <View className="items-center mb-8">
-                        <TouchableOpacity
-                            onPress={pickImage}
-                            disabled={isUploading}
-                            className="w-32 h-32 bg-white rounded-full items-center justify-center border-2 border-dashed border-primary/30 relative shadow-sm overflow-hidden"
-                        >
-                            {avatar ? (
-                                <Image source={{ uri: avatar }} className="w-full h-full" />
-                            ) : (
-                                <Camera size={40} color={Colors.primary} opacity={0.5} />
-                            )}
-                            <View className="absolute bottom-0 right-0 bg-accent p-2 rounded-full">
-                                {isUploading ? (
-                                    <ActivityIndicator size="small" color="white" />
+                    <View className="bg-white rounded-[28px] p-5 border border-primary/10 shadow-sm mb-6">
+                        <View className="mb-4">
+                            <Text className="text-primary font-black text-base mb-1">Fatti riconoscere subito</Text>
+                            <Text className="text-secondary text-xs leading-5">
+                                Una foto e una bio breve rendono il profilo più umano e più credibile per gli enti.
+                            </Text>
+                        </View>
+
+                        <View className="items-center">
+                            <TouchableOpacity
+                                onPress={pickImage}
+                                disabled={isUploading}
+                                className="w-32 h-32 bg-white rounded-full items-center justify-center border-2 border-dashed border-primary/25 relative shadow-sm overflow-hidden"
+                            >
+                                {avatar ? (
+                                    <Image source={{ uri: avatar }} className="w-full h-full" />
                                 ) : (
-                                    <Text className="text-white text-xs font-bold">+</Text>
+                                    <View className="items-center justify-center">
+                                        <UserRound size={38} color={Colors.primary} opacity={0.55} />
+                                    </View>
                                 )}
-                            </View>
-                        </TouchableOpacity>
-                        <Text className="text-sm text-primary/60 mt-2 font-medium">Carica foto profilo</Text>
+                                <View className="absolute bottom-0 right-0 bg-accent p-2 rounded-full">
+                                    {isUploading ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                    ) : (
+                                        <Camera size={14} color="white" />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <Text className="text-sm text-primary/70 mt-3 font-bold">Carica foto profilo</Text>
+                            <Text className="text-[11px] text-secondary/70 mt-1 text-center">
+                                Va bene anche una foto semplice, purché chiara.
+                            </Text>
+                        </View>
                     </View>
 
                     <View className="gap-4 mb-10">
-                        <View>
-                            <Text className="text-sm font-bold text-primary mb-2 ml-1">Bio</Text>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
+                            <View className="flex-row items-center gap-2 mb-3">
+                                <View className="w-8 h-8 rounded-full items-center justify-center bg-primary/10">
+                                    <UserRound size={15} color={Colors.primary} />
+                                </View>
+                                <Text className="text-sm font-bold text-primary">Biografia</Text>
+                            </View>
                             <TextInput
-                                className="bg-white p-4 rounded-xl border border-primary/10 text-primary h-32 shadow-sm"
+                                className="bg-background-light p-4 rounded-2xl border border-primary/10 text-primary h-32"
                                 placeholder="Raccontaci qualcosa di te, le tue esperienze o perché vuoi fare volontariato..."
                                 placeholderTextColor="#9ca3af"
                                 multiline
@@ -138,10 +157,16 @@ export default function OnboardingProfile() {
                                 onChangeText={setBio}
                             />
                         </View>
-                        <View>
-                            <Text className="text-sm font-bold text-primary mb-2 ml-1">Codice Amico (Opzionale)</Text>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
+                            <View className="flex-row items-center gap-2 mb-3">
+                                <View className="w-8 h-8 rounded-full items-center justify-center bg-accent/10">
+                                    <Gift size={15} color={Colors.accent} />
+                                </View>
+                                <Text className="text-sm font-bold text-primary">Codice amico</Text>
+                                <Text className="text-[11px] text-secondary">(Opzionale)</Text>
+                            </View>
                             <TextInput
-                                className="bg-white p-4 rounded-xl border border-primary/10 text-primary shadow-sm"
+                                className="bg-background-light p-4 rounded-2xl border border-primary/10 text-primary"
                                 placeholder="Inserisci il codice di chi ti ha invitato"
                                 placeholderTextColor="#9ca3af"
                                 value={referralCode}

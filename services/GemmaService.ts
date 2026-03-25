@@ -68,9 +68,22 @@ export type CommunityPostDraftResult = {
 };
 
 class GemmaService {
-  private async invokeShadowGemma(body: Record<string, unknown>) {
+  private async getShadowAccessToken() {
     const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData.session?.access_token;
+    if (sessionData.session?.access_token) {
+      return sessionData.session.access_token;
+    }
+
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      console.warn("[GemmaService] Session refresh failed:", refreshError.message);
+    }
+
+    return refreshData.session?.access_token || null;
+  }
+
+  private async invokeShadowGemma(body: Record<string, unknown>) {
+    const accessToken = await this.getShadowAccessToken();
 
     if (!accessToken) {
       throw new Error("Sessione non valida. Effettua di nuovo l'accesso.");

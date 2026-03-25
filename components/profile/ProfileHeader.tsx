@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Award, Settings, Camera, Mail } from "lucide-react-native";
+import { Award, Camera, Mail, Sparkles, ChevronRight } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
@@ -17,6 +17,9 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: ProfileHeaderProps) {
     const { updateUserProfile } = useAuth();
+    const shouldShowProfilePrompt =
+        !!isOwnProfile &&
+        (!user?.profile_completed || !user?.bio || !user?.avatar_url);
 
     const pickImage = async () => {
         if (!isOwnProfile) return;
@@ -82,16 +85,28 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                         {user.bio}
                     </Text>
                 ) : (
-                    isOwnProfile && (
-                        <TouchableOpacity
-                            onPress={onSettingsPress}
-                            className="bg-primary/5 px-6 py-3 rounded-full mb-4 border border-primary/10 flex-row items-center justify-center gap-2 self-center"
-                            activeOpacity={0.7}
-                        >
-                            <Settings size={18} color={Colors.primary} />
-                            <Text className="text-primary font-bold text-sm">Completa il tuo profilo</Text>
-                        </TouchableOpacity>
-                    )
+                    <View className="mb-2" />
+                )}
+
+                {shouldShowProfilePrompt && (
+                    <TouchableOpacity
+                        onPress={onSettingsPress}
+                        className="bg-primary/5 px-4 py-3 rounded-2xl mb-4 border border-primary/10 self-center min-w-[260px]"
+                        activeOpacity={0.8}
+                    >
+                        <View className="flex-row items-center">
+                            <View className="w-9 h-9 rounded-2xl bg-primary/10 items-center justify-center mr-3">
+                                <Sparkles size={16} color={Colors.primary} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-primary font-bold text-sm">Completa il tuo profilo</Text>
+                                <Text className="text-secondary text-xs mt-0.5">
+                                    Aggiungi foto e bio per presentarti meglio agli enti.
+                                </Text>
+                            </View>
+                            <ChevronRight size={16} color={Colors.primary} />
+                        </View>
+                    </TouchableOpacity>
                 )}
             </View>
 

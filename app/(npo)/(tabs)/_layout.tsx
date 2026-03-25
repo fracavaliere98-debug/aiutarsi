@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, Users, Calendar, Settings, Globe } from "lucide-react-native";
+import { LayoutDashboard, Users, Calendar, User, Globe } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { View, Text, TouchableOpacity, GestureResponderEvent } from "react-native";
 
@@ -103,8 +103,8 @@ export default function NPOTabsLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: "Impostazioni",
-                    tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+                    title: "Profilo",
+                    tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
                 }}
             />
         </Tabs>

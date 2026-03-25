@@ -6,12 +6,12 @@ import {
     Image,
     Dimensions,
     StyleSheet,
-    SafeAreaView,
     PanResponder,
     Animated as RNAnimated,
     StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';

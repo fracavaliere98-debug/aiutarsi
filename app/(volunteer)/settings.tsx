@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
@@ -479,9 +480,8 @@ export default function VolunteerSettings() {
                 animationType="slide"
                 visible={showEditProfile}
                 onRequestClose={() => setShowEditProfile(false)}
-                statusBarTranslucent={true}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -577,9 +577,8 @@ export default function VolunteerSettings() {
                 animationType="slide"
                 visible={showChangeEmail}
                 onRequestClose={() => setShowChangeEmail(false)}
-                statusBarTranslucent={true}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -613,7 +612,7 @@ export default function VolunteerSettings() {
                                         />
                                     </View>
                                     <Text className="text-secondary/60 text-xs mt-3 px-1 leading-5">
-                                        Per motivi di sicurezza, riceverai un link di conferma al nuovo indirizzo. L'email non verrà cambiata finché non confermerai il link.
+                                        Per motivi di sicurezza, riceverai un link di conferma al nuovo indirizzo. L&apos;email non verrà cambiata finché non confermerai il link.
                                     </Text>
                                 </View>
                             </View>
@@ -627,9 +626,8 @@ export default function VolunteerSettings() {
                 animationType="slide"
                 visible={showChangePassword}
                 onRequestClose={() => setShowChangePassword(false)}
-                statusBarTranslucent={true}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

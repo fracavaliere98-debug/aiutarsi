@@ -39,6 +39,7 @@ export class NPOService {
             id: dbApp.id,
             npoId: dbApp.npo_id,
             npoName: dbApp.npo?.npo_name || 'NPO',
+            npoAvatar: dbApp.npo?.avatar_url || '',
             volunteerId: dbApp.volunteer_id,
             volunteerName: dbApp.volunteer?.full_name || 'Volontario',
             volunteerAvatar: dbApp.volunteer?.avatar_url || '',
@@ -156,7 +157,7 @@ export class NPOService {
                     avatar_url,
                     user_skills (skill)
                 ),
-                npo:npo_id (npo_name)
+                npo:npo_id (npo_name, avatar_url)
             `)
             .eq('npo_id', npoId)
             .order('created_at', { ascending: false });
@@ -175,7 +176,7 @@ export class NPOService {
             .select(`
                 *,
                 volunteer:volunteer_id (full_name, avatar_url),
-                npo:npo_id (npo_name)
+                npo:npo_id (npo_name, avatar_url)
             `)
             .eq('volunteer_id', volunteerId)
             .order('created_at', { ascending: false });

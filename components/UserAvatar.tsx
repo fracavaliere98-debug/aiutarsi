@@ -76,7 +76,19 @@ export function UserAvatar({
                     />
                 ) : (
                     <View className="items-center justify-center bg-slate-100 w-full h-full">
-                        <UserIcon size={size * 0.6} color="#94a3b8" />
+                        {initials ? (
+                            <Text
+                                style={{
+                                    fontSize,
+                                    fontWeight: "800",
+                                    color: role === "NPO" ? Colors.primary : "#64748b",
+                                }}
+                            >
+                                {initials}
+                            </Text>
+                        ) : (
+                            <UserIcon size={size * 0.6} color="#94a3b8" />
+                        )}
                     </View>
                 )}
             </View>

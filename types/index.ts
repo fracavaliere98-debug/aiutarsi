@@ -237,6 +237,7 @@ export interface OldApplication {
     id: string;
     npoId: string;
     npoName: string;
+    npoAvatar?: string;
     volunteerId: string;
     volunteerName: string;
     volunteerAvatar: string;

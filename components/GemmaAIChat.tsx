@@ -8,8 +8,8 @@ import {
     Modal,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -226,7 +226,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent={true}>
-            <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

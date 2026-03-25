@@ -1,16 +1,20 @@
-import { View, Share } from "react-native";
+import { Share } from "react-native";
+import React from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { useGamification } from "../../../context/GamificationContext";
 import { useRouter } from "expo-router";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
+import { AppUser } from "../../../types";
 
 export default function VolunteerProfile() {
-    const { user, users } = useAuth();
-    const { volunteerStats, activityApplications, reviews } = useActivities();
+    const { user, users, fetchUserById } = useAuth();
+    const { volunteerStats, reviews } = useActivities();
     const { state, levelProgress, nextLevelXP, currentLevelXP } = useGamification();
     const router = useRouter();
+    const [affiliatedNPOs, setAffiliatedNPOs] = React.useState<AppUser[]>([]);
+    const [followedNPOs, setFollowedNPOs] = React.useState<AppUser[]>([]);
 
     const xpInLevel = state.totalXP - currentLevelXP;
     const xpNeededForLevel = nextLevelXP - currentLevelXP;
@@ -19,13 +23,61 @@ export default function VolunteerProfile() {
     const { getVolunteerApplications } = useApplications();
     const myApplications = getVolunteerApplications(user?.id || "");
 
-    const affiliatedNPOIds = myApplications
-        .filter(app => app.status === "APPROVED")
-        .map(app => app.npoId);
+    const affiliatedNPOIds = React.useMemo(
+        () => myApplications
+            .filter(app => app.status === "APPROVED")
+            .map(app => app.npoId),
+        [myApplications]
+    );
 
-    const affiliatedNPOs = users.filter(u => affiliatedNPOIds.includes(u.id));
+    const followedNPOIds = React.useMemo(
+        () => user?.followedNPOs || [],
+        [user?.followedNPOs]
+    );
 
-    const followedNPOs = users.filter(u => user?.followedNPOs?.includes(u.id));
+    React.useEffect(() => {
+        let isMounted = true;
+
+        const loadNpoLists = async () => {
+            if (!user?.id) {
+                if (isMounted) {
+                    setAffiliatedNPOs([]);
+                    setFollowedNPOs([]);
+                }
+                return;
+            }
+
+            const uniqueAffiliatedIds = Array.from(new Set(affiliatedNPOIds.filter(Boolean)));
+            const uniqueFollowedIds = Array.from(new Set(followedNPOIds.filter(Boolean)));
+
+            const resolveProfiles = async (ids: string[]) => {
+                const cached = ids
+                    .map((id) => users.find((profile) => profile.id === id && profile.role === "NPO"))
+                    .filter(Boolean) as AppUser[];
+
+                const missingIds = ids.filter((id) => !cached.some((profile) => profile.id === id));
+                const fetched = await Promise.all(missingIds.map((id) => fetchUserById(id)));
+
+                return [...cached, ...fetched.filter((profile): profile is AppUser => !!profile && profile.role === "NPO")];
+            };
+
+            const [affiliated, followed] = await Promise.all([
+                resolveProfiles(uniqueAffiliatedIds),
+                resolveProfiles(uniqueFollowedIds),
+            ]);
+
+            if (isMounted) {
+                setAffiliatedNPOs(affiliated);
+                setFollowedNPOs(followed);
+            }
+        };
+
+        void loadNpoLists();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [affiliatedNPOIds, fetchUserById, followedNPOIds, user?.id, users]);
 
     // Calculate rating from real reviews
     const myReviews = reviews.filter(r => r.volunteerId === user?.id);
