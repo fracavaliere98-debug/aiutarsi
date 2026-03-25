@@ -208,7 +208,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                             fontWeight: '700',
                         }}
                     >
-                        {match.confidenceLabel || 'Per te'}
+                        {match.confidenceLabel || 'Consiglio di Gemma'}
                     </Text>
                 </View>
                 <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.accent} />

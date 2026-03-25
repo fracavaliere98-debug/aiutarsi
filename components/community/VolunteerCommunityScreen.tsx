@@ -109,9 +109,9 @@ export function VolunteerCommunityScreen({
             <StoriesRow onStoryPress={onStoryPress} />
 
             <GemmaFloatingHint
-                eyebrow={user?.name ? `Gemma per ${user.name.split(' ')[0]}` : 'Gemma per te'}
-                message={gemmaSummary || 'Ti segnalo prima storie utili e attività aperte, poi il resto del feed.'}
-                ctaLabel="Guarda i match"
+                eyebrow={user?.name ? `Consiglio di Gemma per ${user.name.split(' ')[0]}` : 'Consiglio di Gemma'}
+                message={gemmaSummary || 'Oggi partirei da qui: enti attivi, storie che fanno venir voglia di esserci e opportunita aperte vicino a te.'}
+                ctaLabel="Apri i suggerimenti di Gemma"
                 onPress={() => {
                     if (suggestedActivities[0]) {
                         router.push(`/activity/${suggestedActivities[0].id}` as any);
@@ -161,7 +161,7 @@ export function VolunteerCommunityScreen({
                     Feed community
                 </Text>
                 <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                    Storie, risultati e iniziative degli enti.
+                    Aggiornamenti, risultati e nuove iniziative dagli enti della community.
                 </Text>
             </View>
         </View>
@@ -176,7 +176,7 @@ export function VolunteerCommunityScreen({
                             Opportunità dalla community
                         </Text>
                         <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                            Se vuoi passare all’azione, parti da qui.
+                            Se vuoi partecipare, queste sono quelle che meritano uno sguardo adesso.
                         </Text>
                     </View>
                     <FlashList

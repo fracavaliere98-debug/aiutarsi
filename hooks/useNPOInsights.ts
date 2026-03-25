@@ -176,8 +176,8 @@ export const useNPOInsights = () => {
                 id: 'npo_overview',
                 type: 'OVERVIEW',
                 priority: 99,
-                title: "Gemma ha controllato la tua dashboard",
-                description: "La situazione sembra stabile. Ti consiglio di pubblicare una nuova attività o curare i follower più attivi.",
+                title: "C'e qualcosa di buono da far vedere",
+                description: "La situazione e stabile. Questo e il momento giusto per farti sentire con un aggiornamento o una nuova attivita.",
                 actionLabel: "Apri dashboard",
                 onAction: () => {
                     router.push("/(npo)/(tabs)/projects" as any);

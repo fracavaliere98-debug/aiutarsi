@@ -253,6 +253,7 @@ Rispondi sempre in italiano.`;
     return `Tu sei Gemma, shadow agent personale di AiutarSì.
 Agisci come una guida silenziosa e personalizzata durante onboarding, Smart Match e scoperta attività.
 Devi essere molto concreta: dai il prossimo passo utile, evidenzia 1-3 attività pertinenti se presenti, e collega sempre il consiglio al profilo dell'utente.
+Parla in modo umano, vicino e incoraggiante. Non sembrare un widget o una funzione di sistema.
 Non comportarti come un help desk generale. Non fare chiacchiere lunghe. Massimo 3 frasi brevi o 3 bullet.
 Se l'utente è volontario e il profilo non è completo, priorità assoluta: spiegare quale informazione manca e perché aiuta i match.
 Se ci sono attività suggerite, usa solo quelle reali e non inventarne altre.
@@ -377,7 +378,7 @@ Deno.serve(async (req) => {
       messages.push({
         role: "user",
         content:
-          'Restituisci solo JSON valido nel formato {"summary":"string","reasons":[{"activityId":"string","reason":"string"}]}. Ogni "reason" deve essere breve, concreta, personalizzata e riferita ai dati forniti. Massimo 18 parole per motivo.',
+          'Restituisci solo JSON valido nel formato {"summary":"string","reasons":[{"activityId":"string","reason":"string"}]}. "summary" deve sembrare un consiglio personale di Gemma, caldo ma concreto, massimo 18 parole. Ogni "reason" deve essere breve, concreta, personalizzata e riferita ai dati forniti. Massimo 12 parole per motivo. Evita tono burocratico o tecnico.',
       });
     }
 
@@ -385,7 +386,7 @@ Deno.serve(async (req) => {
       messages.push({
         role: "user",
         content:
-          'Restituisci solo JSON valido nel formato {"insights":[{"id":"string","title":"string","description":"string","actionLabel":"string"}]}. Riscrivi le priorità NPO in modo concreto, orientato all\'azione e coerente con i dati reali. Ogni "description" deve stare entro 24 parole. Ogni "actionLabel" entro 4 parole.',
+          'Restituisci solo JSON valido nel formato {"insights":[{"id":"string","title":"string","description":"string","actionLabel":"string"}]}. Riscrivi le priorita NPO in modo concreto, caldo e orientato all\'azione, coerente con i dati reali di questo ente. Deve sembrare che Gemma conosca davvero il momento che sta vivendo l\'ente. Ogni "description" deve stare entro 22 parole. Ogni "actionLabel" entro 4 parole.',
       });
     }
 
@@ -393,7 +394,7 @@ Deno.serve(async (req) => {
       messages.push({
         role: "user",
         content:
-          'Restituisci solo JSON valido nel formato {"caption":"string","suggestedMode":"post|story"}. La caption deve essere naturale, breve, pronta da pubblicare, massimo 55 parole. "story" solo se il contenuto sembra un aggiornamento rapido o dietro le quinte; altrimenti usa "post".',
+          'Restituisci solo JSON valido nel formato {"caption":"string","suggestedMode":"post|story"}. La caption deve essere naturale, breve, pronta da pubblicare, massimo 55 parole. Deve sembrare vera, sentita e vicina alle persone, non corporate. "story" solo se il contenuto sembra un aggiornamento rapido o dietro le quinte; altrimenti usa "post".',
       });
     }
 
@@ -438,7 +439,7 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({
             mode: assistantMode,
-            summary: "Gemma ha selezionato attività in linea con il tuo profilo attuale.",
+            summary: "Partirei da queste: qui c'e piu possibilita di sentirti nel posto giusto.",
             reasons: fallbackReasons,
           }),
           { headers: corsHeaders },
@@ -484,10 +485,10 @@ Deno.serve(async (req) => {
         const draftInput = communityDraft as CommunityDraftInput | undefined;
         const fallbackCaption =
           draftInput?.purpose === "activity_promo" && draftInput.activity?.title
-            ? `Stiamo preparando ${draftInput.activity.title}. Se vuoi dare una mano, trovi tutti i dettagli nell'attività appena pubblicata.`
+            ? `Stiamo preparando ${draftInput.activity.title}. Se ti va di esserci, trovi tutti i dettagli nell'attivita collegata.`
             : draftInput?.purpose === "recent_recap"
-              ? "Oggi condividiamo un momento semplice ma importante della nostra community. Grazie a chi c’era e a chi continua a seguirci."
-              : "Stiamo continuando a costruire impatto insieme alla nostra community. Presto condivideremo nuovi aggiornamenti e opportunità.";
+              ? "Un momento semplice, ma importante per noi. Grazie a chi c'era e a chi continua a camminare con la nostra community."
+              : "Oggi volevamo farci sentire: la nostra community continua a muoversi, un passo alla volta, insieme.";
 
         return new Response(
           JSON.stringify({

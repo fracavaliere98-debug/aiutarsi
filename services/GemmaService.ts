@@ -122,20 +122,20 @@ class GemmaService {
     }));
 
     const data = await this.invokeShadowGemma({
-      question: "Spiega perché queste attività sono adatte a questo utente e qual è la migliore da valutare per prima.",
+      question: "Parla come Gemma in modo umano e incoraggiante: spiega quali attivita senti piu adatte a questa persona e da quale partiresti oggi.",
       responseFormat: "smart_match_reasons",
       matchedActivities,
     });
 
     return {
-      summary: data?.summary || "Gemma ha selezionato attività in linea con il tuo profilo attuale.",
+      summary: data?.summary || "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
       reasons: Array.isArray(data?.reasons) ? data.reasons : [],
     };
   }
 
   async getNPOInsightDrafts(insights: NPOInsightDraftInput[]): Promise<NPOInsightDraftResult> {
     const data = await this.invokeShadowGemma({
-      question: "Analizza queste priorità per un ente non profit e suggerisci le azioni più utili e immediate.",
+      question: "Parla come Gemma con tono caldo e concreto: guarda le priorita di questo ente e suggerisci l'azione piu utile da fare adesso, senza suonare generica.",
       responseFormat: "npo_insight_drafts",
       npoInsights: insights,
     });
@@ -167,7 +167,7 @@ class GemmaService {
 
   async getCommunityPostDraft(input: CommunityPostDraftInput): Promise<CommunityPostDraftResult> {
     const data = await this.invokeShadowGemma({
-      question: "Prepara una bozza breve e credibile per la community di un ente non profit.",
+      question: "Scrivi come Gemma una bozza breve, credibile e sentita per la community di questo ente: deve sembrare vera, vicina alle persone e pronta da pubblicare.",
       responseFormat: "community_post_draft",
       communityDraft: input,
     });

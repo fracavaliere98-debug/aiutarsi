@@ -220,15 +220,15 @@ export function NPOCommunityScreen({
             </View>
 
             <GemmaFloatingHint
-                eyebrow="Gemma"
+                eyebrow="Consiglio di Gemma"
                 message={
                     todayDraft?.caption || (
                         recentCompletedActivity
-                            ? `Per ${user?.npoName || 'la tua NPO'} ti suggerisco un recap con foto o un ringraziamento ai volontari.`
-                            : `Per ${user?.npoName || 'la tua NPO'} ti suggerisco un aggiornamento breve per tenere viva la community.`
+                            ? 'Hai gia qualcosa di bello da raccontare: un recap con foto o un grazie ai volontari puo far sentire il vostro impatto.'
+                            : 'Oggi ti conviene pubblicare un aggiornamento breve: basta poco per far sentire il tuo ente presente e vicino alla community.'
                     )
                 }
-                ctaLabel={draftLoadingId === 'today_prompt' ? 'Gemma sta preparando...' : 'Apri bozza'}
+                ctaLabel={draftLoadingId === 'today_prompt' ? 'Gemma sta preparando...' : 'Apri la bozza di Gemma'}
                 onPress={() =>
                     handleDraftFromGemma({
                         id: 'today_prompt',
@@ -245,7 +245,7 @@ export function NPOCommunityScreen({
                     Feed community
                 </Text>
                 <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                    Idee, risultati e momenti condivisi dagli enti che vale la pena guardare.
+                    Post, risultati e spunti utili da altri enti della community.
                 </Text>
             </View>
         </View>
@@ -260,7 +260,7 @@ export function NPOCommunityScreen({
                             Attività da valorizzare
                         </Text>
                         <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                            Lascia che Gemma trasformi un’attività in un post pronto.
+                            Gemma puo trasformare una tua attivita aperta in un post pronto da rifinire.
                         </Text>
                     </View>
                     <FlashList
@@ -301,7 +301,7 @@ export function NPOCommunityScreen({
                                     {item.title}
                                 </Text>
                                 <Text style={{ fontSize: 13, color: '#7c2d12', marginTop: 8, lineHeight: 19 }} numberOfLines={2}>
-                                    Gemma ti suggerisce un post.
+                                    Questa attivita ha gia il potenziale per un buon post.
                                 </Text>
                                 <View style={{
                                     marginTop: 12,
@@ -311,7 +311,7 @@ export function NPOCommunityScreen({
                                     paddingHorizontal: 12,
                                     paddingVertical: 8,
                                 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>Apri bozza</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>Apri la bozza di Gemma</Text>
                                 </View>
                                 {draftLoadingId === item.id ? (
                                     <View style={{ position: 'absolute', top: 12, right: 12 }}>

@@ -94,20 +94,20 @@ function deriveConfidence(score: number): Pick<OldSmartMatchResult, 'confidence'
     if (score >= 85) {
         return {
             confidence: 'top',
-            confidenceLabel: 'Match forte',
+            confidenceLabel: 'Consiglio di Gemma',
             nextStep: 'Apri e valuta questa per prima',
         };
     }
     if (score >= 65) {
         return {
             confidence: 'good',
-            confidenceLabel: 'Buon fit',
+            confidenceLabel: 'Vale la pena',
             nextStep: 'Confrontala con le altre opportunità',
         };
     }
     return {
         confidence: 'explore',
-        confidenceLabel: 'Da esplorare',
+        confidenceLabel: 'Da valutare',
         nextStep: 'Potrebbe interessarti se vuoi allargare il raggio',
     };
 }
