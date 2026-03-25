@@ -7,6 +7,7 @@ jobs:
   build_preview:
     name: Build Android Preview
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,16 +22,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup EAS CLI
-        run: npm install -g eas-cli
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Inject Environment Variables
+        run: |
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" > .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
 
       - name: Build Android APK (Preview)
         id: build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          # Esegue la build su EAS Cloud e cattura l'ID della build
           BUILD_ID=$(eas build --platform android --profile preview --non-interactive --json | jq -r '.[0].id')
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
+            echo "Failed to resolve EAS build ID"
+            exit 1
+          fi
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: Get Build URL
@@ -38,9 +51,29 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          # Recupera l'URL dell'artifact (APK) usando l'ID della build
           URL=$(eas build:view ${{ steps.build.outputs.build_id }} --json | jq -r '.artifacts.buildUrl')
+          if [ -z "$URL" ] || [ "$URL" = "null" ]; then
+            echo "Failed to resolve build artifact URL"
+            exit 1
+          fi
           echo "build_url=$URL" >> $GITHUB_OUTPUT
 
       - name: Download APK
-        run: curl -L "${{ steps.get_url.outputs.build_url }}" -o app.apk
+        run: curl -L "${{ steps.get_url.outputs.build_url }}" -o aiutarsi-preview.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiutarsi-preview-apk
+          path: aiutarsi-preview.apk
+          retention-days: 7
+
+      - name: Add Build Summary
+        run: |
+          {
+            echo "## EAS Preview Build"
+            echo ""
+            echo "- Build ID: \`${{ steps.build.outputs.build_id }}\`"
+            echo "- APK Artifact: \`aiutarsi-preview-apk\`"
+            echo "- Download URL: ${{ steps.get_url.outputs.build_url }}"
+          } >> $GITHUB_STEP_SUMMARY
