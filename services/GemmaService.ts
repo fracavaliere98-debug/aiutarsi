@@ -68,6 +68,16 @@ export type CommunityPostDraftResult = {
 };
 
 class GemmaService {
+  private buildSmartMatchFallback(matches: OldSmartMatchResult[]): SmartMatchReasonResult {
+    return {
+      summary: "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
+      reasons: matches.map((match) => ({
+        activityId: match.activity.id,
+        reason: `${Math.round(match.score || 0)}% in linea con il tuo profilo.`,
+      })),
+    };
+  }
+
   private async getShadowAccessToken() {
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData.session?.access_token) {
@@ -82,10 +92,16 @@ class GemmaService {
     return refreshData.session?.access_token || null;
   }
 
-  private async invokeShadowGemma(body: Record<string, unknown>) {
+  private async invokeShadowGemma(
+    body: Record<string, unknown>,
+    options?: { allowMissingAuth?: boolean }
+  ) {
     const accessToken = await this.getShadowAccessToken();
 
     if (!accessToken) {
+      if (options?.allowMissingAuth) {
+        return null;
+      }
       throw new Error("Sessione non valida. Effettua di nuovo l'accesso.");
     }
 
@@ -112,6 +128,11 @@ class GemmaService {
   }
 
   async getSmartMatchReasons(matches: OldSmartMatchResult[]): Promise<SmartMatchReasonResult> {
+    const accessToken = await this.getShadowAccessToken();
+    if (!accessToken) {
+      return this.buildSmartMatchFallback(matches);
+    }
+
     const matchedActivities = matches.map((match) => ({
       id: match.activity.id,
       title: match.activity.title,
@@ -121,16 +142,25 @@ class GemmaService {
       matchPercentage: match.score,
     }));
 
-    const data = await this.invokeShadowGemma({
-      question: "Parla come Gemma in modo umano e incoraggiante: spiega quali attivita senti piu adatte a questa persona e da quale partiresti oggi.",
-      responseFormat: "smart_match_reasons",
-      matchedActivities,
-    });
+    try {
+      const data = await this.invokeShadowGemma({
+        question: "Parla come Gemma in modo umano e incoraggiante: spiega quali attivita senti piu adatte a questa persona e da quale partiresti oggi.",
+        responseFormat: "smart_match_reasons",
+        matchedActivities,
+      }, { allowMissingAuth: true });
 
-    return {
-      summary: data?.summary || "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
-      reasons: Array.isArray(data?.reasons) ? data.reasons : [],
-    };
+      if (!data) {
+        return this.buildSmartMatchFallback(matches);
+      }
+
+      return {
+        summary: data?.summary || "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
+        reasons: Array.isArray(data?.reasons) ? data.reasons : [],
+      };
+    } catch (error) {
+      console.warn("[GemmaService] Smart Match fallback:", error);
+      return this.buildSmartMatchFallback(matches);
+    }
   }
 
   async getNPOInsightDrafts(insights: NPOInsightDraftInput[]): Promise<NPOInsightDraftResult> {

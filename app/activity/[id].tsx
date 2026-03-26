@@ -7,14 +7,12 @@ import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-rou
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useGamification } from "../../context/GamificationContext";
-import { useApplications } from "../../context/ApplicationContext";
-import { useToast } from "../../context/ToastContext";
 import { activityService } from "../../services/ActivityService";
 import { AppActivity, AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
-    RefreshCw, ChevronRight, Users, Star, CheckCircle2, Zap, FileText, MessageSquare
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -65,10 +63,9 @@ export default function ActivityDetail() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user, users, fetchUserById } = useAuth();
-    const { showToast } = useToast();
     const {
         activities, reviews, unenrollFromActivity, error, loadData,
-        activityApplications, volunteerReviews
+        volunteerReviews
     } = useActivities();
     const { handleActivityShare } = useGamification();
 
@@ -91,10 +88,11 @@ export default function ActivityDetail() {
     const activity = activityFromContext ?? fetchedActivity;
 
     useEffect(() => {
-        if (!activity) return;
+        const currentActivityId = activity?.id;
+        if (!currentActivityId) return;
         const channel = supabase
-            .channel(`activity_detail_${activity.id}`)
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities', filter: `id=eq.${activity.id}` },
+            .channel(`activity_detail_${currentActivityId}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities', filter: `id=eq.${currentActivityId}` },
                 () => setLocalIscrittiOverride(null))
             .subscribe();
         return () => { supabase.removeChannel(channel); };
@@ -116,30 +114,24 @@ export default function ActivityDetail() {
     const [npoUser, setNpoUser] = useState<AppUser | null>(null);
 
     useEffect(() => {
+        const currentActivity = activity;
+        if (!currentActivity) return;
+
         const loadProfiles = async () => {
-            if (!activity) return;
-            
             // 1. Fetch NPO
-            fetchUserById(activity.npoId).then(setNpoUser);
-            
+            fetchUserById(currentActivity.npoId).then(setNpoUser);
+
             // 2. Fetch Participants (first few for avatars)
-            const participantIds = activity.iscritti.slice(0, 10);
+            const participantIds = currentActivity.iscritti.slice(0, 10);
             await Promise.all(participantIds.map(pid => fetchUserById(pid)));
-            
+
             // 3. Fetch Reviewers
-            const reviewerIds = reviews.filter(r => r.activityId === activity.id).map(r => r.volunteerId);
+            const reviewerIds = reviews.filter(r => r.activityId === currentActivity.id).map(r => r.volunteerId);
             await Promise.all(reviewerIds.slice(0, 5).map(rid => fetchUserById(rid)));
         };
-        
+
         loadProfiles();
-    }, [activity?.id, activity?.npoId, activity?.iscritti, reviews, fetchUserById]);
-
-    const currentUserApplication = useMemo(() => {
-        if (!user || !activity) return null;
-        return activityApplications.find(app => app.activityId === activity.id && app.volunteerId === user.id);
-    }, [activityApplications, activity, user]);
-
-    const isPending = currentUserApplication?.status === "PENDING";
+    }, [activity, reviews, fetchUserById]);
 
     const hasReviewed = !!user && !!activity &&
         reviews.some(r => r.activityId === activityId && r.volunteerId === user.id);
@@ -427,7 +419,6 @@ export default function ActivityDetail() {
                             <Text style={{ fontSize: 17, fontWeight: '900', color: Colors.primary, marginBottom: 12 }}>Gestione Volontari</Text>
                             {currentIscritti.map(volId => {
                                 const v = users.find(u => u.id === volId);
-                                const app = activityApplications.find(a => a.activityId === activity.id && a.volunteerId === volId);
                                 if (!v) return null;
                                 return (
                                     <TouchableOpacity
@@ -692,6 +683,7 @@ export default function ActivityDetail() {
                     <TouchableOpacity
                         onPress={() => !isFull && activity.status !== 'COMPLETATA' && router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
                         disabled={isFull || activity.status === 'COMPLETATA'}
+                        testID="btn-activity-apply"
                         style={{
                             backgroundColor: (isFull || activity.status === 'COMPLETATA') ? '#e2e8f0' : Colors.accent,
                             paddingHorizontal: 26, paddingVertical: 16, borderRadius: 28,

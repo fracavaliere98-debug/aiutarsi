@@ -40,14 +40,16 @@ appId: com.aiutarsi.app
 
 # ── Pagina Dettaglio: verifica presenza pulsante Candidati ───────────────────
 - assertVisible:
-    text: "CANDIDATI"
+    id: "btn-activity-apply"
 
-# Tap Candidati
+# Tap iscrizione attivita
 - tapOn:
-    text: "CANDIDATI"
+    id: "btn-activity-apply"
 - waitForAnimationToEnd
 
-# Verifica che il modal di candidatura si apra
-# (verifica la presenza del campo messaggio o della scritta "Candidatura")
+# Verifica che la pagina riepilogo iscrizione si apra
 - assertVisible:
-    text: "Candidatura"
+    text: "Riepilogo Iscrizione"
+
+- assertVisible:
+    id: "btn-confirm-application"

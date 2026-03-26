@@ -1,19 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2, User } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2 } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { Colors } from "../../constants/Colors";
-import { UserAvatar } from "../../components/UserAvatar";
 
 export default function ReviewApplication() {
     const router = useRouter();
     const { activityId, npoId, type } = useLocalSearchParams<{ activityId: string, npoId: string, type: "ACTIVITY" | "NPO" }>();
     const { user, users } = useAuth();
-    const { activities, applyToActivity, enrollInActivity } = useActivities();
+    const { activities, enrollInActivity } = useActivities();
     const { applyToNPO } = useApplications();
 
     // 1. Resolve Data based on Type
@@ -178,6 +177,7 @@ export default function ReviewApplication() {
                 <TouchableOpacity
                     onPress={handleConfirm}
                     disabled={isSubmitting}
+                    testID="btn-confirm-application"
                     className={`bg-accent rounded-full py-4 items-center flex-row justify-center gap-2 ${isSubmitting ? 'opacity-70' : ''}`}
                 >
                     <Text className="text-white font-bold text-lg">

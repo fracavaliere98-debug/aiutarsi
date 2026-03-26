@@ -4,23 +4,20 @@ import {
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { Colors } from "../../../constants/Colors";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Search, MapPin, Calendar, X, Map as MapIcon,
-    Bell, Globe, BookOpen, Dog, Palette, Heart, Code,
-    MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
-    ChevronDown, CheckCircle2, Users, TreePine, SlidersHorizontal, Share2, Sparkles, Zap
+    BookOpen, Dog, Palette, Heart,
+    ChevronDown, CheckCircle2, Users, TreePine, Share2, Sparkles, Zap
 } from "lucide-react-native";
-import { OldActivity, AppActivity } from "../../../types";
+import { AppActivity } from "../../../types";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../hooks/useActivities";
 import { activityService } from "../../../services/ActivityService";
 import { supabase } from "../../../utils/supabase";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
-import { SoftCard } from "../../../components/SoftCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
@@ -254,7 +251,6 @@ function FilterModal({
 // ─── Esplora (Search) Screen ──────────────────────────────────────────────────
 export default function SearchScreen() {
     const router = useRouter();
-    const { user } = useAuth();
     const { showToast } = useToast();
 
     // Search state
@@ -304,16 +300,6 @@ export default function SearchScreen() {
         radiusKm: searchCenter ? filters.radiusKm : undefined,
         statuses: ['APERTA', 'IN_CORSO'],
     });
-
-    // Active filter count
-    const activeFilterCount = [
-        filters.interests.length > 0,
-        filters.skills.length > 0,
-        filters.onlyAvailable,
-        filters.onlyUrgent,
-        !!filters.dateFrom,
-        filters.radiusKm !== DEFAULT_FILTERS.radiusKm,
-    ].filter(Boolean).length;
 
     // Search debounce
     useEffect(() => {
@@ -388,7 +374,7 @@ export default function SearchScreen() {
         }
     };
 
-    const renderActivityItem = ({ item }: { item: AppActivity }) => {
+    const renderActivityItem = ({ item, index }: { item: AppActivity; index: number }) => {
         const isExpanded = expandedId === item.id;
         const isFocusedMode = expandedId !== null;
         const isDimmed = isFocusedMode && !isExpanded;
@@ -399,6 +385,7 @@ export default function SearchScreen() {
             <TouchableOpacity
                 onPress={() => setExpandedId(isExpanded ? null : item.id)}
                 activeOpacity={0.9}
+                testID={`activity-card-${index}`}
                 className="mb-5"
                 style={{ opacity: isDimmed ? 0.35 : 1, transform: [{ scale: isExpanded ? 1.02 : 1 }] }}
             >
@@ -810,6 +797,7 @@ export default function SearchScreen() {
 
             {/* Activities List */}
             <FlashList
+                testID="activity-list"
                 data={sortedActivities}
                 keyExtractor={(item) => item.id}
                 renderItem={renderActivityItem}

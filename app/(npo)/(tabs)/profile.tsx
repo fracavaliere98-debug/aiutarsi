@@ -1,319 +1,262 @@
-import React from "react";
-import { Alert, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
-import Constants from "expo-constants";
-import * as ImagePicker from "expo-image-picker";
+import React, { useMemo, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import {
-    Camera,
-    ChevronRight,
-    Eye,
-    FileText,
-    Key,
-    LifeBuoy,
-    LogOut,
-    ShieldBan,
-    Target,
-    UserCircle,
+    Settings,
     Users,
     Globe,
-    MessageCircle,
+    Star,
+    Clock,
+    MapPin,
+    Mail,
+    Phone,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
 import { UserAvatar } from "../../../components/UserAvatar";
-import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
-import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
-import { useApplications } from "../../../context/ApplicationContext";
+import { ActivityCard } from "../../../components/ActivityCard";
+import { useActivities } from "../../../context/ActivityContext";
 import { useAuth } from "../../../context/AuthContext";
-import { useToast } from "../../../context/ToastContext";
 import { Colors } from "../../../constants/Colors";
 
-const SectionHeader = ({ title }: { title: string }) => (
-    <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-1">
-        {title}
-    </Text>
-);
-
-const MenuItem = ({
-    icon: Icon,
-    label,
-    description,
-    color,
-    onPress,
-    badge,
-    last = false,
-}: {
-    icon: any;
-    label: string;
-    description?: string;
-    color: string;
-    onPress?: () => void;
-    badge?: string | number;
-    last?: boolean;
-}) => (
-    <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.7}
-        className={`flex-row items-center justify-between py-4 ${!last ? "border-b border-gray-50" : ""}`}
-    >
-        <View className="flex-row items-center gap-4 flex-1 pr-3">
-            <View style={{ backgroundColor: color + "15" }} className="p-2.5 rounded-2xl">
-                <Icon size={20} color={color} />
-            </View>
-            <View className="flex-1">
-                <Text className="text-primary font-bold text-base">{label}</Text>
-                {!!description && (
-                    <Text className="text-secondary text-xs mt-0.5">{description}</Text>
-                )}
-            </View>
-        </View>
-        <View className="flex-row items-center gap-2">
-            {badge !== undefined && (
-                <View className="bg-gray-100 px-2.5 py-1 rounded-lg">
-                    <Text className="text-secondary font-bold text-xs">{badge}</Text>
-                </View>
-            )}
-            <ChevronRight size={18} color="#cbd5e1" />
-        </View>
-    </TouchableOpacity>
-);
-
 export default function NPOProfileScreen() {
-    const { user, logout, isLoading: isAuthLoading, updateUserProfile, requestAccountDeletion } = useAuth();
-    const { getNPOApplications } = useApplications();
-    const { showToast } = useToast();
+    const { user, getNPOFollowers } = useAuth();
+    const { activities, reviews } = useActivities();
     const router = useRouter();
-    const appVersion = Constants.expoConfig?.version || "1.0.0";
+    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
 
-    const applications = getNPOApplications(user?.id || "");
-    const teamCount = applications.filter((a) => a.status === "APPROVED").length;
-    const pendingCount = applications.filter((a) => a.status === "PENDING").length;
-    const activeCategories = user?.interests?.length || 0;
-    const soughtSkills = user?.sought_skills?.length || 0;
+    const npoActivities = (activities || []).filter((a: any) => a.npoId === user?.id);
+    const openActivities = npoActivities.filter((a: any) => a.status === "APERTA");
+    const pastActivities = npoActivities.filter((a: any) => a.status === "COMPLETATA");
+    const followerCount = user?.id ? getNPOFollowers(user.id).length : 0;
+    const npoReviews = (reviews || []).filter((r: any) => {
+        const activity = (activities || []).find((a: any) => a.id === r.activityId);
+        return activity?.npoId === user?.id;
+    });
+    const averageRating = npoReviews.length > 0
+        ? (npoReviews.reduce((sum: number, r: any) => sum + r.stars, 0) / npoReviews.length).toFixed(1)
+        : "0.0";
 
-    const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-            showToast("error", "Permesso galleria necessario.");
-            return;
-        }
+    const impactHours = useMemo(() => {
+        return pastActivities.reduce((total: number, act: any) => {
+            const start = new Date(act.dateTime).getTime();
+            const end = new Date(act.endDateTime).getTime();
+            const durationHours = (end - start) / (1000 * 60 * 60);
+            return total + (durationHours * act.iscritti.length);
+        }, 0).toFixed(0);
+    }, [pastActivities]);
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.7,
-        });
-
-        if (!result.canceled) {
-            await updateUserProfile({ avatar_url: result.assets[0].uri });
-            showToast("success", "Logo aggiornato.");
-        }
-    };
+    const HeaderActions = (
+        <View className="flex-row gap-2">
+            <TouchableOpacity onPress={() => router.push("/(npo)/settings" as any)} className="bg-white/10 p-2.5 rounded-xl border border-white/20">
+                <Settings size={18} color="white" />
+            </TouchableOpacity>
+        </View>
+    );
 
     return (
-        <View style={{ flex: 1, backgroundColor: "white" }}>
-            <StandardLayout
-                label="Il tuo ente"
-                title="Profilo"
-                rightElement={<NPOHeaderActions />}
-                hideBack={true}
-            >
-                <AccountDeletionAlert />
+        <StandardLayout
+            label="Il tuo ente"
+            title="Profilo"
+            rightElement={HeaderActions}
+            bg="bg-background-light"
+            hideBack={true}
+        >
+            <View className="items-center mb-6">
+                <View className="relative mb-3">
+                    <UserAvatar
+                        size={100}
+                        fontSize={36}
+                        name={user?.npoName || user?.name}
+                        avatarUrl={user?.avatar || user?.avatar_url}
+                        role="NPO"
+                        isVerified={!!(user?.isVerified || user?.is_verified)}
+                        verificationStatus={user?.verification_status}
+                    />
+                </View>
 
-                <SoftCard className="mb-6 mt-2 p-6">
-                    <View className="items-center">
-                        <TouchableOpacity onPress={pickImage} activeOpacity={0.8} className="relative">
-                            <UserAvatar
-                                size={104}
-                                fontSize={34}
-                                useAuthFallback={true}
-                                role="NPO"
-                                isVerified={!!(user?.isVerified || user?.is_verified)}
-                                verificationStatus={user?.verification_status}
-                            />
-                            <View
-                                className="absolute bottom-0 right-0 p-2 rounded-full border-4 border-white"
-                                style={{ backgroundColor: Colors.primary }}
-                            >
-                                <Camera size={16} color="white" />
+                <Text className="text-primary font-black text-2xl text-center mb-1">
+                    {user?.npoName || user?.name || "Ente Solidale"}
+                </Text>
+                <Text className="text-secondary font-medium text-sm text-center mb-4 mt-1">
+                    {user?.locationString || user?.address_full || "Sede da completare"}
+                </Text>
+            </View>
+
+            <View className="flex-row gap-3 mb-8">
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={averageRating}
+                        label="RATING"
+                        valueColor="text-yellow-500"
+                        icon={<Star size={14} color="#eab308" fill="#eab308" />}
+                    />
+                </View>
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={followerCount.toString()}
+                        label="FOLLOWER"
+                        valueColor="text-pink-600"
+                        icon={<Users size={14} color="#db2777" />}
+                    />
+                </View>
+                <View className="flex-1 h-24">
+                    <StatCard
+                        value={impactHours}
+                        label="ORE DONATE"
+                        valueColor="text-indigo-600"
+                        icon={<Clock size={14} color="#4f46e5" />}
+                    />
+                </View>
+            </View>
+
+            <View className="flex-row border-b border-gray-100 mb-6 justify-between px-2">
+                <TouchableOpacity onPress={() => setActiveTab("attivita")} className={`px-2 py-3 border-b-2 ${activeTab === "attivita" ? "border-primary" : "border-transparent"}`}>
+                    <Text className={`font-bold text-sm ${activeTab === "attivita" ? "text-primary" : "text-gray-400"}`}>Attività</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setActiveTab("info")} className={`px-2 py-3 border-b-2 ${activeTab === "info" ? "border-primary" : "border-transparent"}`}>
+                    <Text className={`font-bold text-sm ${activeTab === "info" ? "text-primary" : "text-gray-400"}`}>Chi siamo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setActiveTab("recensioni")} className={`px-2 py-3 border-b-2 ${activeTab === "recensioni" ? "border-primary" : "border-transparent"}`}>
+                    <Text className={`font-bold text-sm ${activeTab === "recensioni" ? "text-primary" : "text-gray-400"}`}>Recensioni</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setActiveTab("referente")} className={`px-2 py-3 border-b-2 ${activeTab === "referente" ? "border-primary" : "border-transparent"}`}>
+                    <Text className={`font-bold text-sm ${activeTab === "referente" ? "text-primary" : "text-gray-400"}`}>Referente</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View className="pb-10">
+                {activeTab === "attivita" && (
+                    <View>
+                        <Text className="text-primary font-bold text-lg mb-4">Prossime attività</Text>
+                        {openActivities.length > 0 ? (
+                            openActivities.map((activity: any) => (
+                                <ActivityCard
+                                    key={activity.id}
+                                    activity={activity}
+                                    style={{ marginBottom: 16 }}
+                                    onPress={() => router.push(`/activity/${activity.id}` as any)}
+                                />
+                            ))
+                        ) : (
+                            <View className="items-center py-8">
+                                <Text className="text-secondary/60 text-center">Nessuna attività programmata al momento.</Text>
                             </View>
-                        </TouchableOpacity>
-
-                        <Text className="text-primary font-black text-2xl mt-4 text-center">
-                            {user?.npoName || user?.name || "Ente Solidale"}
-                        </Text>
-                        <Text className="text-secondary font-bold text-sm mt-1 text-center">
-                            {user?.locationString || user?.address_full || "Sede da completare"}
-                        </Text>
-                        {!!user?.bio && (
-                            <Text className="text-secondary text-sm leading-6 text-center mt-4">
-                                {user.bio}
-                            </Text>
                         )}
                     </View>
-                </SoftCard>
+                )}
 
-                <View className="flex-row gap-3 mb-8">
-                    <View className="flex-1 h-24">
-                        <StatCard
-                            value={teamCount.toString()}
-                            label="TEAM ATTIVO"
-                            valueColor="text-pink-600"
-                            icon={<Users size={14} color="#db2777" />}
-                        />
-                    </View>
-                    <View className="flex-1 h-24">
-                        <StatCard
-                            value={pendingCount.toString()}
-                            label="IN ATTESA"
-                            valueColor="text-amber-600"
-                            icon={<MessageCircle size={14} color="#d97706" />}
-                        />
-                    </View>
-                    <View className="flex-1 h-24">
-                        <StatCard
-                            value={`${activeCategories}/${soughtSkills}`}
-                            label="SETTORI/SKILL"
-                            valueColor="text-indigo-600"
-                            icon={<Target size={14} color="#4f46e5" />}
-                        />
-                    </View>
-                </View>
+                {activeTab === "info" && (
+                    <View className="gap-4">
+                        <SoftCard className="p-5">
+                            <Text className="text-primary font-bold text-base mb-2">Chi siamo</Text>
+                            <Text className="text-secondary leading-relaxed text-sm">
+                                {user?.bio || "Completa la missione del tuo ente per raccontare meglio chi siete e l'impatto che create sul territorio."}
+                            </Text>
+                        </SoftCard>
 
-                <SectionHeader title="Profilo ente" />
-                <SoftCard className="mb-8 px-5">
-                    <MenuItem
-                        icon={Globe}
-                        label="Modifica profilo"
-                        description="Logo, missione, contatti e sede operativa"
-                        color={Colors.primary}
-                        onPress={() => router.push("/(npo)/edit-profile" as any)}
-                    />
-                    <MenuItem
-                        icon={Target}
-                        label="Settori e competenze"
-                        description="Aree di intervento e skill che cercate nei volontari"
-                        color={Colors.primary}
-                        onPress={() => router.push("/(npo)/interests-skills" as any)}
-                    />
-                    <MenuItem
-                        icon={UserCircle}
-                        label="Referente principale"
-                        description="Persona di riferimento visibile sul profilo pubblico"
-                        color={Colors.primary}
-                        onPress={() => router.push("/(npo)/referent-details" as any)}
-                        last
-                    />
-                </SoftCard>
-
-                <SectionHeader title="Gestione e sicurezza" />
-                <SoftCard className="mb-8 px-5">
-                    <MenuItem
-                        icon={Users}
-                        label="Membri del team"
-                        description="Gestisci iscritti e candidature ricevute"
-                        color={Colors.primary}
-                        badge={teamCount}
-                        onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
-                    />
-                    <MenuItem
-                        icon={Eye}
-                        label="Privacy e visibilità"
-                        description="Controlla cosa è visibile agli utenti"
-                        color={Colors.success}
-                        onPress={() => router.push("/(npo)/settings/privacy" as any)}
-                    />
-                    <MenuItem
-                        icon={ShieldBan}
-                        label="Account bloccati"
-                        description="Gestisci i profili che non possono interagire"
-                        color={Colors.accent}
-                        onPress={() => router.push("/blocked-users" as any)}
-                    />
-                    <MenuItem
-                        icon={Key}
-                        label="Credenziali accesso"
-                        description="Email, password e sicurezza"
-                        color={Colors.primary}
-                        onPress={() => router.push("/(npo)/security" as any)}
-                        last
-                    />
-                </SoftCard>
-
-                <SectionHeader title="Supporto" />
-                <SoftCard className="mb-8 px-5">
-                    <MenuItem
-                        icon={LifeBuoy}
-                        label="Centro assistenza"
-                        description="FAQ e supporto con Gemma"
-                        color="#ef4444"
-                        onPress={() => router.push("/help-center" as any)}
-                    />
-                    <MenuItem
-                        icon={FileText}
-                        label="Termini e condizioni"
-                        description="Informazioni legali e condizioni d'uso"
-                        color={Colors.primary}
-                        last
-                    />
-                </SoftCard>
-
-                <SoftCard className="mb-8 px-5">
-                    <TouchableOpacity
-                        onPress={async () => await logout()}
-                        disabled={isAuthLoading}
-                        activeOpacity={0.7}
-                        className="flex-row items-center justify-between py-4"
-                    >
-                        <View className="flex-row items-center gap-4">
-                            <View className="bg-red-50 p-2.5 rounded-2xl">
-                                {isAuthLoading ? (
-                                    <ActivityIndicator size={20} color="#ef4444" />
-                                ) : (
-                                    <LogOut size={20} color="#ef4444" />
+                        <SoftCard className="p-5">
+                            <Text className="text-primary font-bold text-base mb-3">Informazioni</Text>
+                            <View className="gap-4">
+                                {user?.publicEmail && (
+                                    <View className="flex-row items-center gap-3">
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Mail size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Email</Text>
+                                            <Text className="text-primary font-medium">{user.publicEmail}</Text>
+                                        </View>
+                                    </View>
                                 )}
+                                {user?.phone && (
+                                    <View className="flex-row items-center gap-3">
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Phone size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Telefono</Text>
+                                            <Text className="text-primary font-medium">{user.phone}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                {user?.website && (
+                                    <View className="flex-row items-center gap-3">
+                                        <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                            <Globe size={16} color={Colors.primary} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-secondary text-xs font-bold uppercase">Sito Web</Text>
+                                            <Text className="text-primary font-medium" numberOfLines={1}>{user.website}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                <View className="flex-row items-center gap-3">
+                                    <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
+                                        <MapPin size={16} color={Colors.primary} />
+                                    </View>
+                                    <View>
+                                        <Text className="text-secondary text-xs font-bold uppercase">Sede Operativa</Text>
+                                        <Text className="text-primary font-medium">{user?.locationString || "Sede Principale"}</Text>
+                                    </View>
+                                </View>
                             </View>
-                            <Text className="text-red-500 font-bold text-base">Esci dall&apos;account</Text>
-                        </View>
-                        <ChevronRight size={18} color="#fca5a5" />
-                    </TouchableOpacity>
-                </SoftCard>
+                        </SoftCard>
+                    </View>
+                )}
 
-                <TouchableOpacity
-                    className="mb-8 items-center"
-                    onPress={() => {
-                        Alert.alert(
-                            "Elimina account",
-                            "Sei sicuro di voler eliminare il tuo account? Avrai 30 giorni per annullare la richiesta dal profilo.",
-                            [
-                                { text: "Annulla", style: "cancel" },
-                                {
-                                    text: "Elimina",
-                                    style: "destructive",
-                                    onPress: async () => {
-                                        try {
-                                            await requestAccountDeletion();
-                                            showToast("success", "Richiesta di eliminazione inviata correttamente.");
-                                        } catch (error: any) {
-                                            Alert.alert("Errore", error.message);
-                                        }
-                                    },
-                                },
-                            ]
-                        );
-                    }}
-                >
-                    <Text className="text-red-400 font-bold">Elimina account</Text>
-                </TouchableOpacity>
+                {activeTab === "recensioni" && (
+                    <View>
+                        <Text className="text-primary font-bold text-lg mb-4">Cosa dicono di noi</Text>
+                        {npoReviews.length > 0 ? (
+                            npoReviews.map((review: any) => (
+                                <SoftCard key={review.id} className="p-4 mb-3">
+                                    <View className="flex-row justify-between items-start mb-2">
+                                        <View className="flex-row gap-0.5">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <Star key={s} size={14} color={s <= review.stars ? Colors.accent : "#e2e8f0"} fill={s <= review.stars ? Colors.accent : "transparent"} />
+                                            ))}
+                                        </View>
+                                        <Text className="text-secondary/40 text-[10px] font-bold">{new Date(review.date).toLocaleDateString()}</Text>
+                                    </View>
+                                    <Text className="text-primary italic text-sm mb-2">&quot;{review.comment}&quot;</Text>
+                                </SoftCard>
+                            ))
+                        ) : (
+                            <View className="py-12 items-center">
+                                <Text className="text-secondary/50 text-center">Nessuna recensione ancora.</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
 
-                <View className="mb-10 items-center">
-                    <Text className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">
-                        AiutarSi v{appVersion}
-                    </Text>
-                </View>
-            </StandardLayout>
-        </View>
+                {activeTab === "referente" && (
+                    <View>
+                        <Text className="text-primary font-bold text-lg mb-4">Referente dell&apos;ente</Text>
+                        <SoftCard className="p-6 items-center">
+                            <UserAvatar
+                                size={120}
+                                fontSize={42}
+                                name={user?.referent_name || "R"}
+                                avatarUrl={user?.referent_avatar_url || undefined}
+                            />
+                            <Text className="text-primary font-black text-xl mt-4 text-center">
+                                {user?.referent_name || "Referente non specificato"}
+                            </Text>
+                            <Text className="text-secondary font-bold text-[10px] uppercase tracking-widest text-center">
+                                {user?.referent_role || "Ruolo non specificato"}
+                            </Text>
+                            <View className="w-full h-[1px] bg-gray-100 my-6" />
+                            <Text className="text-secondary text-sm text-center leading-relaxed px-4 pb-4">
+                                {user?.auto_welcome_message
+                                    ? user.auto_welcome_message
+                                    : `${user?.referent_name || "Il referente"} segue candidature, attività e primi contatti per ${user?.npoName || "questo ente"}.`}
+                            </Text>
+                        </SoftCard>
+                    </View>
+                )}
+            </View>
+        </StandardLayout>
     );
 }
