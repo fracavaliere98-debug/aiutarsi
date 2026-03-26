@@ -245,7 +245,7 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
 
             {/* Modal: All Badges Info */}
             <SheetModal visible={showInfoModal} onClose={() => setShowInfoModal(false)}>
-                <View className="flex-1 bg-white px-8 pt-10">
+                <View className="flex-1 bg-white px-8 pt-12">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Text className="text-2xl font-black text-primary">Tutti i Badge</Text>

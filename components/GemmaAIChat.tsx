@@ -22,6 +22,7 @@ import { Colors } from '../constants/Colors';
 import { supabase } from '../utils/supabase';
 import { GemmaAvatar } from './GemmaAvatar';
 import { useAuth } from '../context/AuthContext';
+import { getFirstName } from '../utils/getFirstName';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -97,16 +98,20 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
     initialMessage = 'Ciao! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?'
 }) => {
     const { user } = useAuth();
+    const firstName = getFirstName(user?.full_name || user?.name);
+    const resolvedInitialMessage = firstName
+        ? `Ciao ${firstName}! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?`
+        : initialMessage;
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'model', text: initialMessage }
+        { role: 'model', text: resolvedInitialMessage }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
 
     useEffect(() => {
-        setMessages([{ role: 'model', text: initialMessage }]);
-    }, [initialMessage, visible]);
+        setMessages([{ role: 'model', text: resolvedInitialMessage }]);
+    }, [resolvedInitialMessage, visible]);
 
     const sendMessage = async () => {
         const question = input.trim();

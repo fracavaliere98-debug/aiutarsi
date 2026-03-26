@@ -71,18 +71,27 @@ function getTokenFromAuthHeader(authHeader: string | null): string | null {
   return authHeader.slice("Bearer ".length).trim();
 }
 
+function getFirstName(rawName?: string | null): string {
+  const normalized = String(rawName || "").trim().replace(/\s+/g, " ");
+  if (!normalized) return "utente";
+  return normalized.split(" ")[0] || "utente";
+}
+
 function buildUserContext(profile: any): string {
   if (!profile) return "";
 
   const skills = (profile.user_skills || []).map((s: any) => s.skill).filter(Boolean);
   const interests = (profile.user_interests || []).map((i: any) => i.interest).filter(Boolean);
   const followedNPOs = (profile.followed_entities || []).map((f: any) => f.npo_id).filter(Boolean);
+  const displayName = profile.role === "VOLUNTEER"
+    ? getFirstName(profile.full_name || profile.npo_name)
+    : (profile.npo_name || profile.full_name || "utente");
 
   return `
 === CONTESTO UTENTE ===
 Ruolo: ${profile.role || "sconosciuto"}
 Profilo completato: ${profile.profile_completed ? "sì" : "no"}
-Nome: ${profile.full_name || profile.npo_name || "utente"}
+Nome: ${displayName}
 Bio: ${profile.bio || "non disponibile"}
 Competenze: ${skills.length > 0 ? skills.join(", ") : "nessuna"}
 Interessi: ${interests.length > 0 ? interests.join(", ") : "nessuno"}
@@ -257,6 +266,7 @@ Parla in modo umano, vicino e incoraggiante. Non sembrare un widget o una funzio
 Non comportarti come un help desk generale. Non fare chiacchiere lunghe. Massimo 3 frasi brevi o 3 bullet.
 Se l'utente è volontario e il profilo non è completo, priorità assoluta: spiegare quale informazione manca e perché aiuta i match.
 Se ci sono attività suggerite, usa solo quelle reali e non inventarne altre.
+Se ti rivolgi direttamente a un volontario, usa solo il nome proprio. Non usare mai nome e cognome insieme.
 
 ${sharedRules}
 ${userContext}
@@ -270,6 +280,7 @@ Rispondi in modo cordiale, chiaro e conciso, massimo 3-4 frasi.
 Puoi usare emoji con moderazione.
 Se l'utente è un VOLUNTEER, usa solo FAQ comuni + volunteer. Se l'utente è una NPO, usa solo FAQ comuni + NPO.
 Non dare risposte dell'altro profilo se non sono rilevanti per il ruolo corrente. Se la domanda riguarda funzionalità non previste per quel ruolo, dillo chiaramente.
+Se ti rivolgi direttamente a un volontario, usa solo il nome proprio. Non usare mai nome e cognome insieme.
 
 ${sharedRules}
 ${userContext}
