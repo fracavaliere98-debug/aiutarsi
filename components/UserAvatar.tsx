@@ -52,6 +52,8 @@ export function UserAvatar({
 
     const initials = finalName ? getInitials(finalName) : "";
 
+    const npoAccent = Colors.primary;
+
     return (
         <View style={{ width: size, height: size }}>
             <View
@@ -61,8 +63,8 @@ export function UserAvatar({
                     borderRadius: size / 2, 
                     overflow: "hidden",
                     borderWidth: role === 'NPO' ? 2 : 1,
-                    borderColor: role === 'NPO' 
-                        ? (isVerified ? Colors.primary : Colors.info)
+                    borderColor: role === 'NPO'
+                        ? npoAccent
                         : 'rgba(255,255,255,0.3)'
                 }}
                 className={`bg-slate-200 items-center justify-center ${className}`}
@@ -123,7 +125,7 @@ export function UserAvatar({
                         borderColor: 'white',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: isVerified ? Colors.primary : Colors.info
+                        backgroundColor: npoAccent
                     }}
                     className="shadow-sm"
                 >

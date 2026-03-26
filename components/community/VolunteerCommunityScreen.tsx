@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { MapPin, Calendar, ChevronRight } from 'lucide-react-native';
+import { MapPin, Calendar } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
@@ -77,29 +77,13 @@ export function VolunteerCommunityScreen({
                 style={{
                     marginHorizontal: 16,
                     marginTop: 4,
-                    marginBottom: 16,
-                    borderRadius: 20,
-                    backgroundColor: '#f5f3ff',
-                    borderWidth: 1,
-                    borderColor: '#ddd6fe',
-                    paddingHorizontal: 14,
-                    paddingVertical: 14,
+                    marginBottom: 14,
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 10,
                 }}
             >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-                        <GemmaAvatar size={34} bordered />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: Colors.primary, fontSize: 15, fontWeight: '900', lineHeight: 20 }}>
-                            {gemmaSummary || 'Da qui partirei oggi.'}
-                        </Text>
-                        <Text style={{ color: '#64748b', fontSize: 12, lineHeight: 18, marginTop: 4 }}>
-                            {gemmaTarget ? gemmaTarget.title : 'Esplora la community e trova una causa vicina.'}
-                        </Text>
-                    </View>
-                </View>
-
+                <GemmaAvatar size={36} />
                 <TouchableOpacity
                     activeOpacity={0.88}
                     disabled={!gemmaTarget && !weekendActivity}
@@ -114,21 +98,16 @@ export function VolunteerCommunityScreen({
                         }
                     }}
                     style={{
-                        marginTop: 10,
-                        alignSelf: 'flex-start',
-                        borderRadius: 999,
-                        backgroundColor: '#4c1d95',
-                        paddingHorizontal: 12,
-                        paddingVertical: 9,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        borderRadius: 18,
+                        paddingHorizontal: 14,
+                        paddingVertical: 12,
                     }}
                 >
-                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '900' }}>
-                        {gemmaTarget ? 'Apri attività' : 'Continua'}
+                    <Text style={{ color: Colors.primary, fontSize: 14, fontWeight: '800', lineHeight: 19 }}>
+                        {gemmaTarget ? `Se ti va, possiamo partire da ${gemmaTarget.title}.` : gemmaSummary || 'Se ti va, qui c’è un bel punto da cui partire.'}
                     </Text>
-                    <ChevronRight size={14} color="white" />
                 </TouchableOpacity>
             </View>
 

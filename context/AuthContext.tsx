@@ -323,11 +323,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(updatedUser);
 
             // 3. Sync to Backend (Awaited)
-            await authService.updateProfile(user.id, data);
+            const persistedUser = await authService.updateProfile(user.id, data);
 
-            console.log("[DEBUG USER] Profile Updated:", updatedUser);
+            if (persistedUser) {
+                setUser(persistedUser);
+            }
 
-            await refreshUsers();
+            console.log("[DEBUG USER] Profile Updated:", persistedUser || updatedUser);
+
+            void refreshUsers().catch((refreshError) => {
+                console.warn("Background users refresh failed after profile update:", refreshError);
+            });
 
             return true;
         } catch (error: any) {

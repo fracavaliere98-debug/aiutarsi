@@ -14,7 +14,7 @@ import { Colors } from "../../constants/Colors";
 import { CommunityPost } from "../../types/community";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
-    RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare, AlertTriangle
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -177,6 +177,12 @@ export default function ActivityDetail() {
     const canLeaveReview = user?.role === 'VOLUNTEER' && isEnrolled &&
         activity?.status === 'COMPLETATA' && !hasReviewed && daysSinceEnd <= 10 &&
         isConfirmedPresent;
+    const isWaitingPresenceConfirmation = user?.role === 'VOLUNTEER' &&
+        isEnrolled &&
+        activity?.status === 'COMPLETATA' &&
+        !hasReviewed &&
+        !isConfirmedPresent;
+    const hasSubmittedReview = user?.role === 'VOLUNTEER' && isEnrolled && hasReviewed;
 
     // ─── Share ──────────────────────────────────────────────────────────────
     const handleShare = async () => {
@@ -718,6 +724,23 @@ export default function ActivityDetail() {
                         <Star size={16} color="white" />
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Recensisci</Text>
                     </TouchableOpacity>
+                ) : isWaitingPresenceConfirmation ? (
+                    <View style={{ backgroundColor: '#fff7ed', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderWidth: 1, borderColor: '#fed7aa', maxWidth: SCREEN_W * 0.56 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <AlertTriangle size={14} color="#c2410c" />
+                            <Text style={{ color: '#c2410c', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
+                                In attesa conferma
+                            </Text>
+                        </View>
+                        <Text style={{ color: '#9a3412', fontWeight: '700', fontSize: 12, lineHeight: 17 }}>
+                            In attesa conferma presenza da {npoUser?.npoName || npoUser?.name || activity.npoName || 'questo ente'}.
+                        </Text>
+                    </View>
+                ) : hasSubmittedReview ? (
+                    <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#ddd6fe', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <CheckCircle2 size={16} color={Colors.primary} />
+                        <Text style={{ color: Colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
+                    </View>
                 ) : isEnrolled ? (
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                         {activity.status !== 'COMPLETATA' && (

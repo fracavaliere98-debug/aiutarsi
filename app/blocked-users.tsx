@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { ShieldBan, UserX, Unlock, ChevronLeft } from "lucide-react-native";
+import { ShieldBan, Unlock } from "lucide-react-native";
 import * as Updates from 'expo-updates';
 import { supabase } from "../utils/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -31,12 +31,12 @@ export default function BlockedUsersScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchBlockedUsers();
-    }, []);
-
-    const fetchBlockedUsers = async () => {
-        if (!user?.id) return;
+    const fetchBlockedUsers = useCallback(async () => {
+        if (!user?.id) {
+            setBlockedUsers([]);
+            setIsLoading(false);
+            return;
+        }
         
         setIsLoading(true);
         try {
@@ -63,7 +63,11 @@ export default function BlockedUsersScreen() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showToast, user?.id]);
+
+    useEffect(() => {
+        fetchBlockedUsers();
+    }, [fetchBlockedUsers]);
 
     const handleUnblock = async (blockId: string, blockedName: string) => {
         Alert.alert(

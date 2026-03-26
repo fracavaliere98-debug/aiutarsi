@@ -173,6 +173,7 @@ function RootLayoutNav() {
         <Stack.Screen name="activity/[id]" options={STACK_TRANSITIONS.push} />
         <Stack.Screen name="feedback/[id]" options={STACK_TRANSITIONS.modal} />
         <Stack.Screen name="npo-profile/[id]" options={STACK_TRANSITIONS.push} />
+        <Stack.Screen name="blocked-users" options={STACK_TRANSITIONS.push} />
         <Stack.Screen name="community/create-post" options={STACK_TRANSITIONS.modal} />
         <Stack.Screen name="help-center" options={STACK_TRANSITIONS.modal} />
         <Stack.Screen name="terms" options={STACK_TRANSITIONS.push} />

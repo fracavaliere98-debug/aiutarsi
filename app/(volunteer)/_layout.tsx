@@ -7,6 +7,8 @@ export default function VolunteerStackLayout() {
             <Stack.Screen name="(tabs)" options={STACK_TRANSITIONS.root} />
             <Stack.Screen name="notifications" options={STACK_TRANSITIONS.modal} />
             <Stack.Screen name="interests-skills" options={STACK_TRANSITIONS.modal} />
+            <Stack.Screen name="privacy" options={STACK_TRANSITIONS.modal} />
+            <Stack.Screen name="referral" options={STACK_TRANSITIONS.push} />
             <Stack.Screen name="smart-match" options={STACK_TRANSITIONS.push} />
         </Stack>
     );

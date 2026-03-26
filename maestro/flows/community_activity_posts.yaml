@@ -41,7 +41,7 @@ appId: ${APP_ID}
 - waitForAnimationToEnd
 
 - assertVisible:
-    text: "Gemma"
+    id: "community-gemma-cta"
 
 - tapOn:
     id: "community-gemma-cta"

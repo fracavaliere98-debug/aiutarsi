@@ -4,7 +4,7 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { Colors } from "../../constants/Colors";
 import { Share2, Users, Trophy, Gift } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 
 export default function ReferralScreen() {
@@ -13,16 +13,31 @@ export default function ReferralScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
-    useEffect(() => {
-        const fetchCount = async () => {
-            if (user) {
-                const c = await getReferralCount();
-                setCount(c);
+    const fetchCount = useCallback(async () => {
+            if (!user?.id) {
+                setCount(0);
+                setIsLoading(false);
+                return;
             }
-            setIsLoading(false);
-        };
+
+            setIsLoading(true);
+            try {
+                const c = await Promise.race<number>([
+                    getReferralCount(),
+                    new Promise<number>((resolve) => setTimeout(() => resolve(0), 5000)),
+                ]);
+                setCount(c);
+            } catch (error) {
+                console.error("Error fetching referral count:", error);
+                setCount(0);
+            } finally {
+                setIsLoading(false);
+            }
+        }, [getReferralCount, user?.id]);
+
+    useEffect(() => {
         fetchCount();
-    }, [user?.id]);
+    }, [fetchCount]);
 
     const referralCode = user?.referral_code || user?.id?.substring(0, 8).toUpperCase() || "N/A";
     const shareLink = `https://aiutarsi.app/referral/${referralCode}`;

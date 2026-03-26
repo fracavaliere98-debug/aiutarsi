@@ -825,7 +825,7 @@ export class AuthService {
         try {
             const { count, error } = await supabase
                 .from('profiles')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: true })
                 .eq('referred_by', userId);
 
             if (error) throw error;

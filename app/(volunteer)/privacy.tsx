@@ -6,11 +6,10 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { supabase } from "../../utils/supabase";
 import { Colors } from "../../constants/Colors";
 
 export default function VolunteerPrivacyScreen() {
-    const { user } = useAuth();
+    const { user, updateUserProfile } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
@@ -23,38 +22,34 @@ export default function VolunteerPrivacyScreen() {
     const [showVolunteeringHistory, setShowVolunteeringHistory] = useState(true);
 
     useEffect(() => {
-        const fetchPrivacy = async () => {
-            if (!user) return;
-            const { data } = await supabase
-                .from('profiles')
-                .select('allow_calls, profile_public, show_email, show_volunteering_history')
-                .eq('id', user.id)
-                .single();
-            if (data) {
-                setAllowCalls(data.allow_calls !== false);
-                setProfilePublic(data.profile_public !== false);
-                setShowEmail(!!data.show_email);
-                setShowVolunteeringHistory(data.show_volunteering_history !== false);
-            }
+        if (!user?.id) {
             setIsFetching(false);
-        };
-        fetchPrivacy();
-    }, [user]);
+            return;
+        }
+
+        setAllowCalls(user.allow_calls !== false);
+        setProfilePublic(user.profile_public !== false);
+        setShowEmail(!!user.show_email);
+        setShowVolunteeringHistory(user.show_volunteering_history !== false);
+        setIsFetching(false);
+    }, [
+        user?.id,
+        user?.allow_calls,
+        user?.profile_public,
+        user?.show_email,
+        user?.show_volunteering_history,
+    ]);
 
     const handleSave = async () => {
         if (!user) return;
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    allow_calls: allowCalls,
-                    profile_public: profilePublic,
-                    show_email: showEmail,
-                    show_volunteering_history: showVolunteeringHistory,
-                })
-                .eq('id', user.id);
-            if (error) throw error;
+            await updateUserProfile({
+                allow_calls: allowCalls,
+                profile_public: profilePublic,
+                show_email: showEmail,
+                show_volunteering_history: showVolunteeringHistory,
+            });
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
         } catch (e: any) {
@@ -117,6 +112,8 @@ export default function VolunteerPrivacyScreen() {
                     onValueChange={setShowVolunteeringHistory}
                 />
             </SoftCard>
+
+            <View style={{ height: 96 }} />
 
             {/* Save */}
             <View className="absolute bottom-6 left-6 right-6">
