@@ -13,6 +13,7 @@ import { AddressAutocomplete } from "../../components/AddressAutocomplete";
 import { CalendarPicker } from "../../components/CalendarPicker";
 import { SKILLS } from "../../constants/Skills";
 import { gemmaService } from "../../services/GemmaService";
+import { requestMediaLibraryPermission } from "../../utils/permissions";
 
 export default function CreateActivityScreen() {
     const router = useRouter();
@@ -144,8 +145,12 @@ export default function CreateActivityScreen() {
     }, [params.ai_draft, formData.title, hasAutoCuratedDraft, isCuratingDraft]);
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiungere un'immagine all'attivita.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
             showToast('error', 'Permesso galleria necessario per aggiungere una foto.');
             return;
         }

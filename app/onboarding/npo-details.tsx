@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { AddressAutocomplete } from '../../components/AddressAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
+import { requestMediaLibraryPermission } from '../../utils/permissions';
 
 export default function NPODetailsScreen() {
     const router = useRouter();
@@ -42,8 +43,12 @@ export default function NPODetailsScreen() {
     );
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: 'Accesso alla galleria',
+            message: 'AiutarSi ti chiede l’accesso alla galleria per caricare il logo del tuo ente.',
+            settingsLabel: 'la galleria',
+        });
+        if (!granted) {
             showToast("error", "Permesso galleria necessario.");
             return;
         }

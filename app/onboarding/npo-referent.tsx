@@ -19,6 +19,7 @@ import { ArrowRight, Camera, MessageCircle, User } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
+import { requestMediaLibraryPermission } from '../../utils/permissions';
 
 export default function NPOReferentScreen() {
     const router = useRouter();
@@ -36,8 +37,12 @@ export default function NPOReferentScreen() {
     );
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: 'Accesso alla galleria',
+            message: 'AiutarSi ti chiede l’accesso alla galleria per aggiungere la foto del referente.',
+            settingsLabel: 'la galleria',
+        });
+        if (!granted) {
             showToast("error", "Permesso galleria necessario.");
             return;
         }

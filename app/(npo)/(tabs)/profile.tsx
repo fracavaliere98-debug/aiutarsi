@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Share, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshControl, Share, Text, TouchableOpacity, View } from "react-native";
 import {
     Settings,
     Share2,
@@ -20,12 +20,15 @@ import { ActivityCard } from "../../../components/ActivityCard";
 import { useActivities } from "../../../context/ActivityContext";
 import { useAuth } from "../../../context/AuthContext";
 import { Colors } from "../../../constants/Colors";
+import { supabase } from "../../../utils/supabase";
 
 export default function NPOProfileScreen() {
-    const { user, getNPOFollowers } = useAuth();
-    const { activities, reviews } = useActivities();
+    const { user, getNPOFollowers, fetchUserById, setUser } = useAuth();
+    const { activities, reviews, loadData } = useActivities();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
+    const [refreshing, setRefreshing] = useState(false);
+    const [hasPendingVerificationRequest, setHasPendingVerificationRequest] = useState(false);
 
     const npoActivities = (activities || []).filter((a: any) => a.npoId === user?.id);
     const openActivities = npoActivities.filter((a: any) => a.status === "APERTA");
@@ -50,6 +53,44 @@ export default function NPOProfileScreen() {
 
     const shouldShowProfilePrompt =
         !user?.profile_completed || !user?.avatar_url || !(user?.publicEmail || user?.public_email) || !user?.phone;
+    const isVerified = !!(user?.isVerified || user?.is_verified);
+    const isPendingVerification = !isVerified && (user?.verification_status === "pending" || hasPendingVerificationRequest);
+    const shouldShowVerificationPrompt = !isVerified && !isPendingVerification;
+    const shouldShowPendingVerification = isPendingVerification;
+
+    const syncPendingVerificationStatus = useCallback(async () => {
+        if (!user?.id || isVerified) {
+            setHasPendingVerificationRequest(false);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from("verification_requests")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("status", "pending")
+                .limit(1);
+
+            if (error) throw error;
+
+            const hasPending = !!data && data.length > 0;
+            setHasPendingVerificationRequest(hasPending);
+
+            if (hasPending && user.verification_status !== "pending") {
+                setUser({
+                    ...user,
+                    verification_status: "pending",
+                });
+            }
+        } catch (error) {
+            console.error("Failed to check pending verification request:", error);
+        }
+    }, [isVerified, setUser, user]);
+
+    useEffect(() => {
+        void syncPendingVerificationStatus();
+    }, [syncPendingVerificationStatus]);
 
     const handleShare = async () => {
         if (!user) return;
@@ -73,6 +114,22 @@ export default function NPOProfileScreen() {
         </View>
     );
 
+    const handleRefresh = useCallback(async () => {
+        if (!user?.id) return;
+
+        setRefreshing(true);
+        try {
+            await loadData();
+            const freshUser = await fetchUserById(user.id);
+            if (freshUser) {
+                setUser(freshUser);
+            }
+            await syncPendingVerificationStatus();
+        } finally {
+            setRefreshing(false);
+        }
+    }, [fetchUserById, loadData, setUser, syncPendingVerificationStatus, user?.id]);
+
     return (
         <StandardLayout
             label="Il tuo ente"
@@ -80,6 +137,14 @@ export default function NPOProfileScreen() {
             rightElement={HeaderActions}
             bg="bg-background-light"
             hideBack={true}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    tintColor={Colors.primary}
+                    colors={[Colors.primary]}
+                />
+            }
         >
             <View className="items-center mb-6">
                 <View className="relative mb-3">
@@ -119,6 +184,35 @@ export default function NPOProfileScreen() {
                             </View>
                         </View>
                     </TouchableOpacity>
+                )}
+
+                {shouldShowVerificationPrompt && (
+                    <TouchableOpacity
+                        onPress={() => router.push("/(npo)/verification" as any)}
+                        activeOpacity={0.85}
+                        className="w-full mt-3 bg-[#f8f4ff] border border-[#e9d5ff] rounded-2xl px-4 py-4"
+                    >
+                        <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-2xl bg-[#ede9fe] items-center justify-center mr-3">
+                                <Star size={18} color="#7c3aed" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-primary font-bold text-sm">Completa la verifica per il Bollino Viola</Text>
+                                <Text className="text-secondary text-xs mt-0.5">
+                                    Tocca qui per caricare i documenti del tuo ente e ottenere il badge di verifica.
+                                </Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {shouldShowPendingVerification && (
+                    <View className="w-full mt-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-4">
+                        <Text className="text-orange-700 font-bold text-sm">Verifica in revisione</Text>
+                        <Text className="text-orange-700/80 text-xs mt-0.5">
+                            La richiesta per il Bollino Viola è stata inviata. Ti aggiorneremo appena completata la revisione.
+                        </Text>
+                    </View>
                 )}
             </View>
 

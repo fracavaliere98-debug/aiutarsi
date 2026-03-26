@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { ScreenWrapper } from "./ScreenWrapper";
 import { ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
+import { useBottomScreenInset } from "../hooks/useBottomScreenInset";
+import { Layout } from "../utils/layout";
 
 interface StandardLayoutProps {
     children: ReactNode;
@@ -20,8 +22,6 @@ interface StandardLayoutProps {
     refreshControl?: ReactNode;
     hideBack?: boolean;
 }
-
-import { Layout } from "../utils/layout";
 
 export function StandardLayout({
     children,
@@ -41,6 +41,7 @@ export function StandardLayout({
     const { user } = useAuth();
     const router = useRouter();
     const Content = noScroll ? View : ScrollView;
+    const bottomInset = useBottomScreenInset(24);
 
     const handleBack = () => {
         if (onBack) {
@@ -115,8 +116,8 @@ export function StandardLayout({
 
             <Content
                 className="flex-1"
-                contentContainerStyle={!noScroll ? { paddingBottom: 40, paddingHorizontal: noPadding ? 0 : 24 } : undefined}
-                style={noScroll ? { flex: 1, paddingHorizontal: noPadding ? 0 : 24 } : { flex: 1 }}
+                contentContainerStyle={!noScroll ? { paddingBottom: bottomInset, paddingHorizontal: noPadding ? 0 : 24 } : undefined}
+                style={noScroll ? { flex: 1, paddingHorizontal: noPadding ? 0 : 24, paddingBottom: bottomInset } : { flex: 1 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={refreshControl as any}
             >

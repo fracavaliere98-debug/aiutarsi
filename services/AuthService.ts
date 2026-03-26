@@ -555,7 +555,8 @@ export class AuthService {
             'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
             'allow_calls', 'expo_push_token', 'deletion_requested_at',
             'npo_vat_id', 'npo_website', 'referent_name', 'referent_role', 'referent_avatar_url',
-            'auto_welcome_message', 'address_full', 'sought_skills', 'verification_doc_url'
+            'auto_welcome_message', 'address_full', 'sought_skills', 'verification_doc_url',
+            'verification_status'
         ];
 
         const payload: any = {
@@ -567,7 +568,8 @@ export class AuthService {
         const legacyMapping: Record<string, string> = {
             'publicEmail': 'public_email',
             'avatar': 'avatar_url',
-            'name': 'full_name'
+            'name': 'full_name',
+            'locationString': 'location_string'
         };
 
         const finalUpdates = { ...updates };
@@ -784,6 +786,18 @@ export class AuthService {
      */
     async submitVerificationRequest(userId: string, npoDetails: any): Promise<boolean> {
         try {
+            const { data: existingPending, error: existingError } = await supabase
+                .from('verification_requests')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('status', 'pending')
+                .limit(1);
+
+            if (existingError) throw existingError;
+            if (existingPending && existingPending.length > 0) {
+                throw new Error("Hai gia una richiesta di verifica in revisione.");
+            }
+
             const { error } = await supabase
                 .from('verification_requests')
                 .insert({

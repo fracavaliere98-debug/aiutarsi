@@ -117,7 +117,7 @@ export default function VolunteerRegister() {
                             Privacy Policy
                         </Text>
                         {" "}e i{" "}
-                        <Text onPress={() => router.push("/(corporate)/terms")} style={styles.inlineLink}>
+                        <Text onPress={() => router.push("/terms" as any)} style={styles.inlineLink}>
                             Termini di Servizio
                         </Text>
                     </Text>

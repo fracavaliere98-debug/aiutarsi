@@ -299,6 +299,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // PREVENTIVE BLOCK: Ignore updates if logout is in progress
         if (!user || isLoggingOutRef.current) return false;
 
+        const previousUser = user;
+
         try {
             console.log("[DEBUG] AuthContext: Update started for", data);
 
@@ -329,6 +331,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             return true;
         } catch (error: any) {
+            setUser(previousUser);
             console.error("Update profile local error:", error);
             throw error;
         }

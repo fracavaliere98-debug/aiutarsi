@@ -10,6 +10,7 @@ import { Camera, UserRound, Gift } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from "../../services/AuthService";
+import { requestMediaLibraryPermission } from "../../utils/permissions";
 
 
 
@@ -37,6 +38,16 @@ export default function OnboardingProfile() {
     }, []);
 
     const pickImage = async () => {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per scegliere la tua foto profilo.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
+            showToast("error", "Permesso galleria necessario.");
+            return;
+        }
+
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: true,

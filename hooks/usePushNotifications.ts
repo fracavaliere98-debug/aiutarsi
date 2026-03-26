@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
+import { requestNotificationPermission } from '../utils/permissions';
 
 /**
  * usePushNotifications
@@ -29,16 +30,13 @@ export function usePushNotifications() {
                 return;
             }
 
-            // Check/request permission
-            const { status: existingStatus } = await Notifications.getPermissionsAsync();
-            let finalStatus = existingStatus;
+            const granted = await requestNotificationPermission({
+                title: 'Attiva le notifiche',
+                message: 'AiutarSi ti invia notifiche su messaggi, candidature, attivita e aggiornamenti rilevanti del tuo account.',
+                settingsLabel: 'le notifiche',
+            });
 
-            if (existingStatus !== 'granted') {
-                const { status } = await Notifications.requestPermissionsAsync();
-                finalStatus = status;
-            }
-
-            if (finalStatus !== 'granted') {
+            if (!granted) {
                 console.log('[Push] Permission not granted by user');
                 return;
             }

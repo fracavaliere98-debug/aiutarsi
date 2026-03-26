@@ -7,6 +7,7 @@ import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { saveImageToPermanentStorage } from "../../utils/FileStorage";
+import { requestMediaLibraryPermission } from "../../utils/permissions";
 
 interface ProfileHeaderProps {
     user: AppUser | null;
@@ -24,9 +25,12 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
     const pickImage = async () => {
         if (!isOwnProfile) return;
 
-        // Request permission
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiornare la tua foto profilo.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
             alert('Scusa, abbiamo bisogno dei permessi della galleria per farlo funzionare!');
             return;
         }

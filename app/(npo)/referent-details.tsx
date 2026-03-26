@@ -7,6 +7,7 @@ import { Save, User, Briefcase, MessageSquare, Camera } from "lucide-react-nativ
 import { useToast } from "../../context/ToastContext";
 import { UserAvatar } from "../../components/UserAvatar";
 import * as ImagePicker from 'expo-image-picker';
+import { requestMediaLibraryPermission } from "../../utils/permissions";
 
 const InputField = ({ label, value, onChangeText, placeholder, icon: Icon, multiline = false }: any) => (
     <View className="mb-6">
@@ -40,8 +41,12 @@ export default function ReferentDetailsSettings({ onClose }: { onClose?: () => v
     const [saving, setSaving] = useState(false);
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiornare la foto del referente.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
             showToast("error", "Permesso galleria necessario.");
             return;
         }

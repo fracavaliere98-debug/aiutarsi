@@ -9,6 +9,7 @@ import { UserAvatar } from "../../components/UserAvatar";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
+import { requestMediaLibraryPermission } from "../../utils/permissions";
 
 export default function EditProfileScreen({ onClose }: { onClose?: () => void }) {
     const { user, updateUserProfile } = useAuth();
@@ -31,8 +32,12 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
     const [avatar, setAvatar] = useState(user?.avatar || "");
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiornare il logo del tuo ente.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
             alert('Permesso galleria necessario.');
             return;
         }

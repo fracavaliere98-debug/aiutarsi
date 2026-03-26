@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StandardLayout } from '../../components/StandardLayout';
 import { SoftCard } from '../../components/SoftCard';
@@ -25,7 +25,7 @@ export default function PrivacyPolicyScreen() {
                     
                     <Text className="text-primary font-bold text-lg mb-2">1. Dati Raccolti</Text>
                     <Text className="text-secondary text-sm leading-6 mb-4">
-                        Raccogliamo dati necessari per il funzionamento dell'app: nome, email, posizione (opzionale), interessi e competenze di volontariato.
+                        Raccogliamo dati necessari per il funzionamento dell&apos;app: nome, email, posizione (opzionale), interessi e competenze di volontariato.
                     </Text>
 
                     <Text className="text-primary font-bold text-lg mb-2">2. Finalità del Trattamento</Text>
@@ -40,7 +40,7 @@ export default function PrivacyPolicyScreen() {
 
                     <Text className="text-primary font-bold text-lg mb-2">4. I tuoi Diritti</Text>
                     <Text className="text-secondary text-sm leading-6 mb-4">
-                        Puoi richiedere la cancellazione del tuo account direttamente dalle impostazioni dell'app in qualsiasi momento.
+                        Puoi richiedere la cancellazione del tuo account direttamente dalle impostazioni dell&apos;app in qualsiasi momento.
                     </Text>
 
                     <Text className="text-secondary text-xs italic mt-6">

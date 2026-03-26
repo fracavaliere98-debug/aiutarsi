@@ -9,6 +9,7 @@ import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 
 import * as ImagePicker from 'expo-image-picker';
 import { SKILLS } from "../../../constants/Skills";
+import { requestMediaLibraryPermission } from "../../../utils/permissions";
 
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
@@ -57,6 +58,16 @@ export default function EditActivityScreen() {
     }, [id, activities]);
 
     const pickImage = async () => {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiornare l'immagine dell'attivita.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
+            Alert.alert("Permesso negato", "Serve accesso alla galleria per caricare l'immagine dell'attivita.");
+            return;
+        }
+
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
@@ -33,6 +33,8 @@ export default function AdminVerificationDetail() {
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionNotes, setRejectionNotes] = useState('');
   const router = useRouter();
 
   const fetchDetails = async () => {
@@ -61,34 +63,42 @@ export default function AdminVerificationDetail() {
 
   const handleAction = async (action: 'approved' | 'rejected') => {
     if (actionLoading) return;
+
+    if (action === 'rejected') {
+      setShowRejectModal(true);
+      return;
+    }
     
-    const confirmMsg = action === 'approved' 
-      ? "Sei sicuro di voler APPROVARE questa richiesta? L'ente riceverà il Bollino Viola."
-      : "Sei sicuro di voler RIFIUTARE questa richiesta?";
+    const confirmMsg = "Sei sicuro di voler APPROVARE questa richiesta? L'ente riceverà il Bollino Viola.";
 
     Alert.alert(
-      action === 'approved' ? "Approva Verifica" : "Rifiuta Verifica",
+      "Approva Verifica",
       confirmMsg,
       [
         { text: "Annulla", style: "cancel" },
         { 
-          text: action === 'approved' ? "Approva" : "Rifiuta", 
-          style: action === 'approved' ? "default" : "destructive",
+          text: "Approva", 
+          style: "default",
           onPress: () => processAction(action)
         }
       ]
     );
   };
 
-  const processAction = async (action: 'approved' | 'rejected') => {
+  const processAction = async (action: 'approved' | 'rejected', notes?: string) => {
     setActionLoading(true);
     try {
+      const cleanedNotes = notes?.trim() || '';
+      const adminNotes = action === 'rejected'
+        ? `Gestita da admin ${adminUser?.full_name || 'N/D'} | Motivo rifiuto: ${cleanedNotes}`
+        : `Gestita da admin ${adminUser?.full_name || 'N/D'}`;
+
       // 1. Update verification_requests status
       const { error: requestError } = await supabase
         .from('verification_requests')
         .update({ 
           status: action,
-          admin_notes: `Gestita da admin ${adminUser?.full_name}`
+          admin_notes: adminNotes
         })
         .eq('id', id);
 
@@ -113,6 +123,8 @@ export default function AdminVerificationDetail() {
       if (profileError) throw profileError;
 
       // 3. Notify user
+      const rejectionReasonSuffix = cleanedNotes ? ` Motivo: ${cleanedNotes}` : '';
+
       if (addNotification) {
         addNotification({
           userId: request.user_id,
@@ -120,7 +132,7 @@ export default function AdminVerificationDetail() {
           title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
           message: action === 'approved' 
             ? `Congratulazioni! ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'Il tuo ente'} ha ottenuto il Bollino Viola.`
-            : `La tua richiesta di verifica per ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'il tuo ente'} non è stata approvata. Controlla i dati inseriti.`
+            : `La tua richiesta di verifica per ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'il tuo ente'} non è stata approvata.${rejectionReasonSuffix}`
         });
       }
 
@@ -132,7 +144,9 @@ export default function AdminVerificationDetail() {
             title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
             body: action === 'approved' 
               ? `Ottime notizie! Il tuo ente è stato verificato ufficialmente.`
-              : `La tua richiesta di verifica non è stata approvata. Accedi per maggiori dettagli.`,
+              : cleanedNotes
+                ? `La tua richiesta di verifica non è stata approvata. Motivo: ${cleanedNotes}`
+                : `La tua richiesta di verifica non è stata approvata. Accedi per maggiori dettagli.`,
             data: { type: 'verification_update', status: action }
           }
         });
@@ -141,6 +155,8 @@ export default function AdminVerificationDetail() {
       }
 
       Alert.alert('Successo', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);
+      setShowRejectModal(false);
+      setRejectionNotes('');
       router.back();
     } catch (error: any) {
       console.error('Action failed:', error);
@@ -260,8 +276,77 @@ export default function AdminVerificationDetail() {
           </TouchableOpacity>
         </View>
 
+        {request.admin_notes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>NOTE AMMINISTRATIVE</Text>
+            <View style={styles.notesCard}>
+              <Text style={styles.notesCardText}>{request.admin_notes}</Text>
+            </View>
+          </View>
+        )}
+
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <Modal
+        visible={showRejectModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (actionLoading) return;
+          setShowRejectModal(false);
+          setRejectionNotes('');
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Rifiuta richiesta</Text>
+            <Text style={styles.modalSubtitle}>
+              Inserisci una spiegazione da inviare alla NPO. La nota verrà salvata nella richiesta e riportata nelle notifiche.
+            </Text>
+
+            <TextInput
+              value={rejectionNotes}
+              onChangeText={setRejectionNotes}
+              placeholder="Es. Documento non leggibile, dati dell'ente incompleti, referente non coerente..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              textAlignVertical="top"
+              style={styles.notesInput}
+              editable={!actionLoading}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => {
+                  if (actionLoading) return;
+                  setShowRejectModal(false);
+                  setRejectionNotes('');
+                }}
+                disabled={actionLoading}
+              >
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalRejectButton, !rejectionNotes.trim() && styles.modalRejectButtonDisabled]}
+                onPress={() => processAction('rejected', rejectionNotes)}
+                disabled={actionLoading || !rejectionNotes.trim()}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.modalRejectText}>Conferma rifiuto</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Action Bar */}
       {request.status === 'pending' && (
@@ -350,6 +435,8 @@ const styles = StyleSheet.create({
   docInfo: { flex: 1 },
   docTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
   docSubtitle: { fontSize: 13, color: '#9CA3AF' },
+  notesCard: { backgroundColor: 'white', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F3F4F6' },
+  notesCardText: { fontSize: 14, lineHeight: 22, color: '#374151' },
   footerActions: { 
     position: 'absolute', 
     bottom: 0, 
@@ -367,5 +454,27 @@ const styles = StyleSheet.create({
   rejectButton: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FEE2E2' },
   approveButton: { backgroundColor: '#311b92', elevation: 4, shadowColor: '#311b92', shadowOpacity: 0.3, shadowRadius: 10 },
   rejectText: { fontSize: 16, fontWeight: '800', color: '#EF4444' },
-  approveText: { fontSize: 16, fontWeight: '800', color: 'white' }
+  approveText: { fontSize: 16, fontWeight: '800', color: 'white' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(17,24,39,0.45)', justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: 'white', borderRadius: 24, padding: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: '#111827', marginBottom: 8 },
+  modalSubtitle: { fontSize: 13, lineHeight: 20, color: '#6B7280', marginBottom: 14 },
+  notesInput: {
+    minHeight: 140,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: '#F9FAFB'
+  },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  modalButton: { flex: 1, minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  modalCancelButton: { backgroundColor: '#F3F4F6' },
+  modalRejectButton: { backgroundColor: '#DC2626' },
+  modalRejectButtonDisabled: { opacity: 0.5 },
+  modalCancelText: { color: '#374151', fontWeight: '800', fontSize: 15 },
+  modalRejectText: { color: 'white', fontWeight: '800', fontSize: 15 }
 });

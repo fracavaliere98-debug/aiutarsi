@@ -32,7 +32,9 @@ export default function VolunteerPrivacyScreen() {
                 .single();
             if (data) {
                 setAllowCalls(data.allow_calls !== false);
+                setProfilePublic(data.profile_public !== false);
                 setShowEmail(!!data.show_email);
+                setShowVolunteeringHistory(data.show_volunteering_history !== false);
             }
             setIsFetching(false);
         };
@@ -47,7 +49,9 @@ export default function VolunteerPrivacyScreen() {
                 .from('profiles')
                 .update({
                     allow_calls: allowCalls,
+                    profile_public: profilePublic,
                     show_email: showEmail,
+                    show_volunteering_history: showVolunteeringHistory,
                 })
                 .eq('id', user.id);
             if (error) throw error;
@@ -87,12 +91,30 @@ export default function VolunteerPrivacyScreen() {
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
             <SoftCard className="p-5 mb-8">
                 <PrivacyRow
+                    icon={<Eye size={22} color={profilePublic ? Colors.primary : Colors.secondary} />}
+                    iconBg={profilePublic ? "bg-blue-50" : "bg-slate-100"}
+                    title="Profilo pubblico"
+                    subtitle={profilePublic ? "Il tuo profilo puo essere scoperto dagli enti" : "Il tuo profilo e meno visibile nelle aree pubbliche"}
+                    value={profilePublic}
+                    onValueChange={setProfilePublic}
+                />
+                <View className="h-px bg-gray-100 my-4" />
+                <PrivacyRow
                     icon={<Mail size={22} color={Colors.primary} />}
                     iconBg="bg-blue-50"
                     title="Mostra email di contatto"
                     subtitle="L'email è visibile sul tuo profilo"
                     value={showEmail}
                     onValueChange={setShowEmail}
+                />
+                <View className="h-px bg-gray-100 my-4" />
+                <PrivacyRow
+                    icon={<BookOpen size={22} color={showVolunteeringHistory ? Colors.primary : Colors.secondary} />}
+                    iconBg={showVolunteeringHistory ? "bg-amber-50" : "bg-slate-100"}
+                    title="Mostra storico volontariato"
+                    subtitle={showVolunteeringHistory ? "Gli enti vedono le tue esperienze precedenti" : "Lo storico resta nascosto sul profilo"}
+                    value={showVolunteeringHistory}
+                    onValueChange={setShowVolunteeringHistory}
                 />
             </SoftCard>
 

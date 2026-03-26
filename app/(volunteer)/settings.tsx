@@ -16,6 +16,7 @@ import { UserAvatar } from "../../components/UserAvatar";
 import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
+import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
 
 export default function VolunteerSettings() {
     const insets = useSafeAreaInsets();
@@ -99,8 +100,12 @@ export default function VolunteerSettings() {
     };
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: "Accesso alla galleria",
+            message: "AiutarSi ti chiede l'accesso alla galleria per aggiornare la tua foto profilo.",
+            settingsLabel: "la galleria",
+        });
+        if (!granted) {
             alert('Scusa, abbiamo bisogno dei permessi della galleria per farlo funzionare!');
             return;
         }
@@ -153,8 +158,12 @@ export default function VolunteerSettings() {
             }
 
             try {
-                let { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
+                const granted = await requestForegroundLocationPermission({
+                    title: "Accesso alla posizione",
+                    message: "AiutarSi usa la tua posizione per proporti attivita vicine e compilare il profilo in modo piu utile.",
+                    settingsLabel: "la posizione",
+                });
+                if (!granted) {
                     if (isMounted) setLocationInput("Posizione non consentita");
                     return;
                 }
@@ -396,7 +405,7 @@ export default function VolunteerSettings() {
                         icon={FileText}
                         label="Termini e Condizioni"
                         color={Colors.primary}
-                        onPress={() => router.push("/(corporate)/terms")}
+                        onPress={() => router.push("/terms" as any)}
                         last
                     />
                 </SoftCard>

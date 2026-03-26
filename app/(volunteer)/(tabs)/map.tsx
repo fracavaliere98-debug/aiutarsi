@@ -25,6 +25,7 @@ import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-nati
 import { supabase } from "../../../utils/supabase";
 import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
+import { requestForegroundLocationPermission } from "../../../utils/permissions";
 
 import { SKILLS } from "../../../constants/Skills";
 
@@ -427,8 +428,12 @@ export default function VolunteerMap() {
         let isMounted = true;
         (async () => {
             try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status === 'granted') {
+                const granted = await requestForegroundLocationPermission({
+                    title: 'Accesso alla posizione',
+                    message: 'AiutarSi usa la tua posizione per centrare la mappa e mostrarti attivita vicino a te.',
+                    settingsLabel: 'la posizione',
+                });
+                if (granted) {
                     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
                     if (isMounted) setLocation(loc);
                 }

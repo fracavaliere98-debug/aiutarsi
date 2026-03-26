@@ -33,7 +33,9 @@ export default function NPOPrivacyScreen() {
                 .single();
             if (data) {
                 setAllowCalls(data.allow_calls !== false);
+                setProfilePublic(data.profile_public !== false);
                 setShowEmail(!!data.show_email);
+                setVolunteerListVisible(data.volunteer_list_visible !== false);
             }
             setIsFetching(false);
         };
@@ -48,7 +50,9 @@ export default function NPOPrivacyScreen() {
                 .from('profiles')
                 .update({
                     allow_calls: allowCalls,
+                    profile_public: profilePublic,
                     show_email: showEmail,
+                    volunteer_list_visible: volunteerListVisible,
                 })
                 .eq('id', user.id);
             if (error) throw error;
@@ -88,12 +92,30 @@ export default function NPOPrivacyScreen() {
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
             <SoftCard className="p-5 mb-8">
                 <PrivacyRow
+                    icon={<Eye size={22} color={profilePublic ? Colors.primary : Colors.secondary} />}
+                    iconBg={profilePublic ? "bg-blue-50" : "bg-slate-100"}
+                    title="Profilo pubblico"
+                    subtitle={profilePublic ? "L'ente e visibile nelle aree pubbliche dell'app" : "Il profilo viene mostrato in modo piu limitato"}
+                    value={profilePublic}
+                    onValueChange={setProfilePublic}
+                />
+                <View className="h-px bg-gray-100 my-4" />
+                <PrivacyRow
                     icon={<Mail size={22} color={Colors.primary} />}
                     iconBg="bg-blue-50"
                     title="Mostra email di contatto"
                     subtitle="L'email è visibile sul profilo pubblico"
                     value={showEmail}
                     onValueChange={setShowEmail}
+                />
+                <View className="h-px bg-gray-100 my-4" />
+                <PrivacyRow
+                    icon={<Users size={22} color={volunteerListVisible ? Colors.primary : Colors.secondary} />}
+                    iconBg={volunteerListVisible ? "bg-amber-50" : "bg-slate-100"}
+                    title="Mostra volontari iscritti"
+                    subtitle={volunteerListVisible ? "La lista dei volontari puo comparire nelle viste abilitate" : "La lista dei volontari resta nascosta"}
+                    value={volunteerListVisible}
+                    onValueChange={setVolunteerListVisible}
                 />
             </SoftCard>
 

@@ -13,6 +13,7 @@ import { useStories } from '../../context/StoriesContext';
 import { useActivities } from '../../context/ActivityContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { requestMediaLibraryPermission } from '../../utils/permissions';
 
 export default function CreatePostScreen() {
     const router = useRouter();
@@ -63,8 +64,12 @@ export default function CreatePostScreen() {
     const linkedActivity = myActivities.find(a => a.id === linkedActivityId);
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestMediaLibraryPermission({
+            title: 'Accesso alla galleria',
+            message: 'AiutarSi ti chiede l’accesso alla galleria per allegare immagini a post e storie.',
+            settingsLabel: 'la galleria',
+        });
+        if (!granted) {
             Alert.alert('Permesso negato', 'Serve accesso alla galleria per caricare immagini.');
             return;
         }

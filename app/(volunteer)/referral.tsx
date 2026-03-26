@@ -112,7 +112,7 @@ export default function ReferralScreen() {
                                 <View className="w-7 h-7 rounded-full bg-primary items-center justify-center mt-0.5">
                                     <Text className="text-white text-xs font-black">2</Text>
                                 </View>
-                                <Text className="flex-1 text-secondary font-medium text-sm leading-5">L'amico si iscrive inserendo il tuo codice amico in fase di onboarding.</Text>
+                                <Text className="flex-1 text-secondary font-medium text-sm leading-5">L&apos;amico si iscrive inserendo il tuo codice amico in fase di onboarding.</Text>
                             </View>
                             <View className="flex-row gap-4">
                                 <View className="w-7 h-7 rounded-full bg-primary items-center justify-center mt-0.5">

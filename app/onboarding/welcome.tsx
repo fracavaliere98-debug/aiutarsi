@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Switch, Animated, ScrollView, Platform, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Animated, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { MapPin, Bell, Shield, Rocket, Heart } from 'lucide-react-native';
-import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UserAvatar } from '../../components/UserAvatar';
 import { GemmaAvatar } from '../../components/GemmaAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
+import { requestForegroundLocationPermission, requestNotificationPermission } from '../../utils/permissions';
 
 export default function WelcomeScreen() {
     const router = useRouter();
@@ -60,30 +60,14 @@ export default function WelcomeScreen() {
         }
     }, [fadeAnim, phase, progress, router, updateUserProfile, user?.role]);
 
-    const promptOpenSettings = (permissionLabel: string) => {
-        Alert.alert(
-            `${permissionLabel} disattivati`,
-            `Per attivare ${permissionLabel.toLowerCase()} devi consentirli nelle impostazioni del dispositivo.`,
-            [
-                { text: 'Annulla', style: 'cancel' },
-                { text: 'Apri impostazioni', onPress: () => void Linking.openSettings() },
-            ]
-        );
-    };
-
     const toggleLocation = async (value: boolean) => {
         if (value) {
-            const current = await Location.getForegroundPermissionsAsync();
-            const { status, canAskAgain } = current.status === 'granted'
-                ? current
-                : await Location.requestForegroundPermissionsAsync();
-
-            const granted = status === 'granted';
+            const granted = await requestForegroundLocationPermission({
+                title: 'Accesso alla posizione',
+                message: 'AiutarSi usa la tua posizione per mostrarti attivita vicine e migliorare i suggerimenti.',
+                settingsLabel: 'la posizione',
+            });
             setLocationEnabled(granted);
-
-            if (!granted && !canAskAgain) {
-                promptOpenSettings('Localizzazione');
-            }
         } else {
             setLocationEnabled(false);
         }
@@ -96,18 +80,12 @@ export default function WelcomeScreen() {
         }
 
         if (value) {
-            const Notifications = await import('expo-notifications');
-            const current = await Notifications.getPermissionsAsync();
-            const { status, canAskAgain } = current.status === 'granted'
-                ? current
-                : await Notifications.requestPermissionsAsync();
-
-            const granted = status === 'granted';
+            const granted = await requestNotificationPermission({
+                title: 'Attiva le notifiche',
+                message: 'AiutarSi ti avvisa su candidature, messaggi, aggiornamenti delle attivita e novita importanti.',
+                settingsLabel: 'le notifiche',
+            });
             setNotificationsEnabled(granted);
-
-            if (!granted && !canAskAgain) {
-                promptOpenSettings('Notifiche');
-            }
         } else {
             setNotificationsEnabled(false);
         }

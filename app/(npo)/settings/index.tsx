@@ -185,6 +185,7 @@ export default function NPOSettingsScreen() {
                     label="Termini e condizioni"
                     description="Informazioni legali e condizioni d'uso"
                     color={Colors.primary}
+                    onPress={() => router.push("/terms" as any)}
                     last
                 />
             </SoftCard>
