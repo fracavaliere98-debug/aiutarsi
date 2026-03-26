@@ -13,6 +13,7 @@ Prerequisiti:
 - Xcode installato e selezionato con `xcode-select`
 - almeno un simulatore iOS installato in Xcode
 - `maestro` disponibile nel `PATH`
+- Java disponibile nel `PATH` (`openjdk` va bene)
 - `pod install` eseguibile localmente
 
 ## Cosa succede a ogni push

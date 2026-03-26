@@ -7,6 +7,8 @@ APP_ID="${MAESTRO_APP_ID:-com.aiutarsi.app}"
 METRO_PORT="${RCT_METRO_PORT:-8081}"
 METRO_LOG="${ROOT_DIR}/.expo/metro-smoke.log"
 
+export PATH="/opt/homebrew/opt/openjdk/bin:/Users/francescocavaliere/.maestro/bin:$PATH"
+
 FLOWS=(
   "maestro/flows/login.yaml"
   "maestro/flows/community_activity_posts.yaml"
@@ -34,6 +36,7 @@ require_command npx
 require_command xcodebuild
 require_command xcrun
 require_command maestro
+require_command java
 require_command pod
 
 mkdir -p "${ROOT_DIR}/.expo"
