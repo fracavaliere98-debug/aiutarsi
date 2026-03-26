@@ -6,7 +6,7 @@
 #   password: TestMaestro123!
 #   role: VOLUNTEER
 
-appId: com.aiutarsi.app
+appId: ${APP_ID}
 
 ---
 

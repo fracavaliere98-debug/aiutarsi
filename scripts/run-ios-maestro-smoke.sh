@@ -101,7 +101,7 @@ xcrun simctl launch "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
 
 for flow in "${FLOWS[@]}"; do
   echo "Running Maestro flow: $flow"
-  maestro test --device "$SIMULATOR_UDID" "$flow"
+  maestro test --device "$SIMULATOR_UDID" -e APP_ID="$APP_ID" "$flow"
 done
 
 echo "Local iOS smoke tests passed."

@@ -2,7 +2,7 @@
 # Prerequisiti: app installata sul device/emulatore, account test creato,
 # almeno un'attività suggerita o visibile da community.
 
-appId: com.aiutarsi.app
+appId: ${APP_ID}
 
 ---
 

@@ -38,9 +38,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         return Array.from(blockSet);
     }, [user?.id]);
 
-    const buildPostsQuery = useCallback(async () => {
-        const blockedAuthorIds = await getBlockedAuthorIds();
-
+    const buildPostsQuery = useCallback((blockedAuthorIds: string[] = []) => {
         let query = supabase
             .from('community_posts')
             .select(`
@@ -72,16 +70,18 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
             .not('status', 'in', '("shadow_banned","removed")');
 
         if (blockedAuthorIds.length > 0) {
-            query = query.not('author_id', 'in', `(${blockedAuthorIds.join(',')})`);
+            const blockedList = blockedAuthorIds.map((id) => `"${id}"`).join(',');
+            query = query.not('author_id', 'in', `(${blockedList})`);
         }
 
         return query;
-    }, [getBlockedAuthorIds]);
+    }, []);
 
     const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
         setIsLoading(true);
         try {
-            let query = await buildPostsQuery();
+            const blockedAuthorIds = await getBlockedAuthorIds();
+            let query = buildPostsQuery(blockedAuthorIds);
             query = query.order('created_at', { ascending: false }).limit(30);
 
             if (lastCreatedAt) {
@@ -109,13 +109,14 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [buildPostsQuery]);
+    }, [buildPostsQuery, getBlockedAuthorIds]);
 
     const fetchPostsForActivity = useCallback(async (activityId: string) => {
         if (!activityId) return [];
 
         try {
-            let query = await buildPostsQuery();
+            const blockedAuthorIds = await getBlockedAuthorIds();
+            const query = buildPostsQuery(blockedAuthorIds);
             const { data, error } = await query
                 .eq('linked_activity_id', activityId)
                 .order('created_at', { ascending: false })
@@ -127,7 +128,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
             console.error('Community fetchPostsForActivity error:', e);
             return [];
         }
-    }, [buildPostsQuery]);
+    }, [buildPostsQuery, getBlockedAuthorIds]);
 
     const createPost = async (caption: string, imageUris: string[], linkedActivityId?: string) => {
         if (!user) return;

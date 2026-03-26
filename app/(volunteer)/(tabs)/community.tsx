@@ -56,6 +56,7 @@ function DeletionBanner() {
 // ── Main Community Screen ─────────────────────────────────────────────────────
 export default function CommunityScreen() {
     const { user } = useAuth();
+    const router = useRouter();
     const { posts, isLoading, fetchFeed } = useCommunity();
     const { activities, loadData: refreshActivities } = useActivities();
     const { fetchStories } = useStories();

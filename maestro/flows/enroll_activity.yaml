@@ -1,7 +1,7 @@
 # Maestro Smoke Test — Esplora + Candidatura
 # Prerequisito: login.yaml deve essere passato prima (flow separato)
 
-appId: com.aiutarsi.app
+appId: ${APP_ID}
 
 ---
 

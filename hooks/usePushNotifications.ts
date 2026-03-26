@@ -58,8 +58,14 @@ export function usePushNotifications() {
                     projectId: 'b14b866c-c340-4e7d-a7ad-a6ec9a9935b3', // From app.json > expo.extra.eas.projectId
                 });
                 token = response.data;
-            } catch (err) {
-                console.error('[Push] Failed to get token:', err);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (message.includes('aps-environment')) {
+                    console.warn('[Push] Skipping token registration: missing aps-environment entitlement');
+                    hasRegistered.current = true;
+                    return;
+                }
+                console.error('[Push] Failed to get token:', error);
                 return;
             }
 
@@ -99,7 +105,7 @@ export function usePushNotifications() {
                 if (error && !error.message.includes('FetchError') && !error.message.includes('Network request')) {
                     console.warn('[Push] last_seen_at error:', error.message);
                 }
-            } catch (err) {
+            } catch {
                 // Silent catch for "Network request failed" or timeout errors 
                 // Since this is just a background presence ping, we don't care if it drops.
             }
