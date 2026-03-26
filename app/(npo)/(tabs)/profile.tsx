@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Share, Text, TouchableOpacity, View } from "react-native";
 import {
     Settings,
+    Share2,
     Users,
     Globe,
     Star,
@@ -50,8 +51,22 @@ export default function NPOProfileScreen() {
     const shouldShowProfilePrompt =
         !user?.profile_completed || !user?.avatar_url || !(user?.publicEmail || user?.public_email) || !user?.phone;
 
+    const handleShare = async () => {
+        if (!user) return;
+        try {
+            await Share.share({
+                message: `🏢 ${user.npoName || user.name}\nScopri il profilo del nostro ente su AiutarSì!\n\n📱 Apri nell'app:\naiutarsiapp://npo-profile/${user.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/npo-profile/${user.id}`,
+            });
+        } catch (error) {
+            console.error("Error sharing NPO profile:", error);
+        }
+    };
+
     const HeaderActions = (
         <View className="flex-row gap-2">
+            <TouchableOpacity onPress={handleShare} className="bg-white/10 p-2.5 rounded-xl border border-white/20">
+                <Share2 size={18} color="white" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/(npo)/settings" as any)} className="bg-white/10 p-2.5 rounded-xl border border-white/20">
                 <Settings size={18} color="white" />
             </TouchableOpacity>

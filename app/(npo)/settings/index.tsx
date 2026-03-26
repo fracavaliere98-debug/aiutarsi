@@ -2,10 +2,11 @@ import React from "react";
 import { Alert, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Globe } from "lucide-react-native";
+import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2 } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
+import { UserAvatar } from "../../../components/UserAvatar";
 import { useApplications } from "../../../context/ApplicationContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
@@ -80,10 +81,40 @@ export default function NPOSettingsScreen() {
         >
             <AccountDeletionAlert />
 
+            <SoftCard className="mb-8 items-center p-6 mt-2">
+                <UserAvatar
+                    size={100}
+                    fontSize={32}
+                    name={user?.npoName || user?.name || "Ente"}
+                    avatarUrl={user?.avatar || user?.avatar_url || undefined}
+                    role="NPO"
+                    isVerified={!!(user?.isVerified || user?.is_verified)}
+                    verificationStatus={user?.verification_status}
+                />
+
+                <Text className="text-primary font-black text-2xl mt-4 text-center">
+                    {user?.npoName || user?.name || "Il tuo ente"}
+                </Text>
+                <Text className="text-secondary font-bold text-sm mt-1 text-center">
+                    ID: #{user?.shortId || user?.id?.substring(0, 8).toUpperCase() || "N/A"}
+                </Text>
+
+                <TouchableOpacity
+                    className="mt-6 px-8 py-3 rounded-2xl"
+                    activeOpacity={0.7}
+                    style={{ backgroundColor: Colors.primary + '10' }}
+                    onPress={() => router.push("/(npo)/edit-profile" as any)}
+                >
+                    <Text className="font-black text-sm" style={{ color: Colors.primary }}>
+                        Modifica profilo ente
+                    </Text>
+                </TouchableOpacity>
+            </SoftCard>
+
             <SectionHeader title="Profilo ente" />
             <SoftCard className="mb-8 px-5">
                 <MenuItem
-                    icon={Globe}
+                    icon={Building2}
                     label="Modifica profilo"
                     description="Logo, missione, contatti e sede operativa"
                     color={Colors.primary}
