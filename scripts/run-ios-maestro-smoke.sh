@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SIMULATOR_NAME="${IOS_SMOKE_SIMULATOR:-iPhone 17}"
-APP_ID="${MAESTRO_APP_ID:-com.aiutarsi.app}"
 METRO_PORT="${RCT_METRO_PORT:-8081}"
 METRO_LOG="${ROOT_DIR}/.expo/metro-smoke.log"
 
@@ -54,6 +53,23 @@ if [[ ! -d ios/Pods ]]; then
     cd ios
     pod install
   )
+fi
+
+detect_app_id() {
+  if [[ -n "${MAESTRO_APP_ID:-}" ]]; then
+    echo "$MAESTRO_APP_ID"
+    return
+  fi
+
+  grep -m1 "PRODUCT_BUNDLE_IDENTIFIER" ios/AiutarSi.xcodeproj/project.pbxproj \
+    | sed -E 's/.*PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);/\1/'
+}
+
+APP_ID="$(detect_app_id)"
+
+if [[ -z "$APP_ID" ]]; then
+  echo "Unable to detect PRODUCT_BUNDLE_IDENTIFIER for AiutarSi. Set MAESTRO_APP_ID explicitly." >&2
+  exit 1
 fi
 
 find_simulator_udid() {

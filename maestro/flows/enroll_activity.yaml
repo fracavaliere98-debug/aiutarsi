@@ -26,6 +26,11 @@ appId: ${APP_ID}
 - inputText: "TestMaestro123!"
 - tapOn:
     id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
 - waitForAnimationToEnd
 - assertVisible:
     id: "tab-home"

@@ -2,20 +2,21 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { MapPin, Calendar } from 'lucide-react-native';
+import { MapPin, Calendar, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
-import { CommunityHero } from './CommunityHero';
 import { CommunityCompactPostCard } from './CommunityCompactPostCard';
+import { GemmaAvatar } from '../GemmaAvatar';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
     activities: AppActivity[];
     suggestedActivities: AppActivity[];
+    gemmaSummary?: string;
     isLoading: boolean;
     isLoadingMore: boolean;
     refreshing: boolean;
@@ -34,6 +35,7 @@ export function VolunteerCommunityScreen({
     posts,
     activities,
     suggestedActivities,
+    gemmaSummary,
     isLoading,
     isLoadingMore,
     refreshing,
@@ -67,31 +69,68 @@ export function VolunteerCommunityScreen({
         [posts]
     );
 
-    const npoVoices = useMemo(
-        () => posts.filter((post) => post.author?.role === 'NPO').slice(0, 5),
-        [posts]
-    );
+    const gemmaTarget = suggestedActivities[0];
 
     const listHeader = (
         <View>
-            <CommunityHero
-                eyebrow="Persone vere"
-                title="Entra. Guarda. Partecipa."
-                subtitle="Storie, enti e momenti che fanno venire voglia di esserci."
-                accent="#0f172a"
-                accentSoft="rgba(255,255,255,0.12)"
-                accentText="#0f172a"
-                ctaLabel={suggestedActivities[0] ? 'Apri una storia che ti somiglia' : 'Esplora i post della community'}
-                onPress={() => {
-                    if (suggestedActivities[0]) {
-                        router.push(`/activity/${suggestedActivities[0].id}` as any);
-                        return;
-                    }
-                    if (weekendActivity) {
-                        router.push(`/activity/${weekendActivity.id}` as any);
-                    }
+            <View
+                style={{
+                    marginHorizontal: 16,
+                    marginTop: 4,
+                    marginBottom: 16,
+                    borderRadius: 20,
+                    backgroundColor: '#f5f3ff',
+                    borderWidth: 1,
+                    borderColor: '#ddd6fe',
+                    paddingHorizontal: 14,
+                    paddingVertical: 14,
                 }}
-            />
+            >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
+                        <GemmaAvatar size={34} bordered />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: Colors.primary, fontSize: 15, fontWeight: '900', lineHeight: 20 }}>
+                            {gemmaSummary || 'Da qui partirei oggi.'}
+                        </Text>
+                        <Text style={{ color: '#64748b', fontSize: 12, lineHeight: 18, marginTop: 4 }}>
+                            {gemmaTarget ? gemmaTarget.title : 'Esplora la community e trova una causa vicina.'}
+                        </Text>
+                    </View>
+                </View>
+
+                <TouchableOpacity
+                    activeOpacity={0.88}
+                    disabled={!gemmaTarget && !weekendActivity}
+                    testID="community-gemma-cta"
+                    onPress={() => {
+                        if (gemmaTarget) {
+                            router.push(`/activity/${gemmaTarget.id}` as any);
+                            return;
+                        }
+                        if (weekendActivity) {
+                            router.push(`/activity/${weekendActivity.id}` as any);
+                        }
+                    }}
+                    style={{
+                        marginTop: 10,
+                        alignSelf: 'flex-start',
+                        borderRadius: 999,
+                        backgroundColor: '#4c1d95',
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                    }}
+                >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '900' }}>
+                        {gemmaTarget ? 'Apri attività' : 'Continua'}
+                    </Text>
+                    <ChevronRight size={14} color="white" />
+                </TouchableOpacity>
+            </View>
 
             <StoriesRow
                 allowAddStory={true}
@@ -159,61 +198,6 @@ export function VolunteerCommunityScreen({
                     {volunteerVoices.map((post) => (
                         <CommunityCompactPostCard key={`volunteer_voice_${post.id}`} post={post} />
                     ))}
-                </View>
-            ) : null}
-
-            {npoVoices.length > 0 ? (
-                <View
-                    style={{
-                        marginHorizontal: 16,
-                        marginBottom: 16,
-                        borderRadius: 28,
-                        backgroundColor: '#f8f7ff',
-                        borderWidth: 1,
-                        borderColor: '#ddd6fe',
-                        paddingVertical: 16,
-                    }}
-                >
-                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                            Enti più attivi
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-                            Chi sta pubblicando di più.
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 }}>
-                        {npoVoices.map((post) => (
-                            <TouchableOpacity
-                                key={`npo_voice_${post.id}`}
-                                activeOpacity={0.85}
-                                onPress={() => router.push(`/npo-profile/${post.author_id}` as any)}
-                                style={{
-                                    width: '50%',
-                                    paddingHorizontal: 4,
-                                    paddingVertical: 4,
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        borderRadius: 18,
-                                        backgroundColor: 'white',
-                                        borderWidth: 1,
-                                        borderColor: '#e2e8f0',
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 12,
-                                    }}
-                                >
-                                    <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '900', color: Colors.primary }}>
-                                        {post.author?.npo_name || post.author?.full_name || 'Ente'}
-                                    </Text>
-                                    <Text style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
-                                        Attivo ora
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
                 </View>
             ) : null}
 

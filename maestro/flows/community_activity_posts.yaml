@@ -27,6 +27,11 @@ appId: ${APP_ID}
 
 - tapOn:
     id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
 - waitForAnimationToEnd
 - assertVisible:
     id: "tab-home"

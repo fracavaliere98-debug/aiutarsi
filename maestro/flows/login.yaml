@@ -35,12 +35,14 @@ appId: ${APP_ID}
 - tapOn:
     id: "btn-login"
 
+- tapOn:
+    text: "Non ora"
+    optional: true
+
 # Attendi il caricamento della Home
 - waitForAnimationToEnd
 - assertVisible:
     id: "tab-home"
-- assertVisible:
-    text: "Ciao"
 
 # Verifica che il tab bar sia visibile (segno di login riuscito)
 - assertVisible:

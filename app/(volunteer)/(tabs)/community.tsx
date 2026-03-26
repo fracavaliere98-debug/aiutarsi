@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AlertCircle, ChevronRight } from 'lucide-react-native';
+import { AlertCircle } from 'lucide-react-native';
 import { useCommunity } from '../../../context/CommunityContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useActivities } from '../../../context/ActivityContext';
@@ -13,7 +13,6 @@ import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActio
 import { VolunteerCommunityScreen } from '../../../components/community/VolunteerCommunityScreen';
 import { NPOCommunityScreen } from '../../../components/community/NPOCommunityScreen';
 import { CommunityStoryViewer } from '../../../components/community/CommunityStoryViewer';
-import { GemmaAvatar } from '../../../components/GemmaAvatar';
 import { gemmaService } from '../../../services/GemmaService';
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
@@ -56,7 +55,6 @@ function DeletionBanner() {
 // ── Main Community Screen ─────────────────────────────────────────────────────
 export default function CommunityScreen() {
     const { user } = useAuth();
-    const router = useRouter();
     const { posts, isLoading, fetchFeed } = useCommunity();
     const { activities, loadData: refreshActivities } = useActivities();
     const { fetchStories } = useStories();
@@ -139,74 +137,15 @@ export default function CommunityScreen() {
     }, [isLoadingMore, posts, fetchFeed]);
 
     const rightElement = isNPO ? <NPOHeaderActions showAddPost={true} /> : <VolunteerHeaderActions showAddPost={true} />;
-    const gemmaHeaderTarget = suggestedActivities[0];
-    const volunteerHeader = (
-        <View style={{ gap: 14 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
-                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-                        <GemmaAvatar size={46} bordered />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>
-                            {user?.name ? `Gemma per ${user.name.split(' ')[0]}` : 'Gemma'}
-                        </Text>
-                        <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', lineHeight: 28 }}>
-                            {gemmaSummary || 'Da qui partirei oggi.'}
-                        </Text>
-                    </View>
-                </View>
-                {rightElement}
-            </View>
-
-            <TouchableOpacity
-                activeOpacity={0.88}
-                disabled={!gemmaHeaderTarget}
-                testID="community-gemma-cta"
-                onPress={() => {
-                    if (gemmaHeaderTarget) {
-                        router.push(`/activity/${gemmaHeaderTarget.id}` as any);
-                    }
-                }}
-                style={{
-                    borderRadius: 22,
-                    backgroundColor: 'rgba(255,255,255,0.12)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.18)',
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                }}
-            >
-                <View style={{ flex: 1 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>
-                        Prossimo passo
-                    </Text>
-                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '800' }} numberOfLines={1}>
-                        {gemmaHeaderTarget ? gemmaHeaderTarget.title : 'Esplora la community e trova una causa vicina'}
-                    </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '900' }}>
-                        {gemmaHeaderTarget ? 'Apri attività' : 'Continua'}
-                    </Text>
-                    <ChevronRight size={16} color="white" />
-                </View>
-            </TouchableOpacity>
-        </View>
-    );
 
     return (
         <StandardLayout
-            label={isNPO ? 'Storie di impatto' : ''}
-            title={isNPO ? 'Community' : ''}
+            label="Storie di impatto"
+            title="Community"
             bg="bg-slate-50"
             noScroll={true}
             noPadding={true}
-            rightElement={isNPO ? rightElement : undefined}
-            headerContent={isNPO ? undefined : volunteerHeader}
+            rightElement={rightElement}
             hideBack={true}
         >
             {user?.deletionRequestedAt && <DeletionBanner />}
@@ -227,6 +166,7 @@ export default function CommunityScreen() {
                     posts={posts}
                     activities={activities}
                     suggestedActivities={suggestedActivities}
+                    gemmaSummary={gemmaSummary}
                     isLoading={isLoading}
                     isLoadingMore={isLoadingMore}
                     refreshing={refreshing}

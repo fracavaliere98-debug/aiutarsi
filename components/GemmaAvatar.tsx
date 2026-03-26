@@ -21,8 +21,18 @@ export function GemmaAvatar({ size = 32, bordered = false, style }: GemmaAvatarP
                 },
             ]}
         >
+            <View
+                style={[
+                    styles.glow,
+                    {
+                        width: size,
+                        height: size,
+                        borderRadius,
+                    },
+                ]}
+            />
             <Image
-                source={require("../assets/images/gemma-intro.png")}
+                source={require("../assets/images/gemma_avatar.png")}
                 style={[
                     {
                         width: size,
@@ -41,6 +51,15 @@ const styles = StyleSheet.create({
     wrap: {
         overflow: "hidden",
         borderColor: "rgba(255,255,255,0.35)",
-        backgroundColor: "rgba(124,58,237,0.08)",
+        backgroundColor: "#efe7ff",
+        shadowColor: "#7c3aed",
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 6,
+    },
+    glow: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(255,255,255,0.18)",
     },
 });
