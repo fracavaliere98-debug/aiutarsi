@@ -5,13 +5,17 @@ appId: com.aiutarsi.app
 
 ---
 
-- launchApp
+- launchApp:
+    clearState: true
 - waitForAnimationToEnd
 
 # Se siamo sulla Landing Page, naviga al login (opzionale, ignorato se non visibile)
 - tapOn:
     id: "btn-landing-login"
     optional: true
+
+- assertVisible:
+    id: "input-email"
 
 # ── Login rapido ──────────────────────────────────────────────────────────────
 - tapOn:
@@ -23,6 +27,8 @@ appId: com.aiutarsi.app
 - tapOn:
     id: "btn-login"
 - waitForAnimationToEnd
+- assertVisible:
+    id: "tab-home"
 
 # ── Naviga al tab Esplora ─────────────────────────────────────────────────────
 - tapOn:
@@ -32,6 +38,8 @@ appId: com.aiutarsi.app
 # Verifica che la lista attività sia caricata
 - assertVisible:
     id: "activity-list"
+- assertVisible:
+    id: "activity-card-0"
 
 # Tap sulla prima card attività
 - tapOn:
@@ -48,6 +56,8 @@ appId: com.aiutarsi.app
 - waitForAnimationToEnd
 
 # Verifica che la pagina riepilogo iscrizione si apra
+- assertVisible:
+    id: "btn-confirm-application"
 - assertVisible:
     text: "Riepilogo Iscrizione"
 

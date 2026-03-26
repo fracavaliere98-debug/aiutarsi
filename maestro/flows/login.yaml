@@ -10,13 +10,17 @@ appId: com.aiutarsi.app
 
 ---
 
-- launchApp
+- launchApp:
+    clearState: true
 - waitForAnimationToEnd
 
 # Se siamo sulla Landing Page, naviga al login (opzionale, ignorato se non visibile)
 - tapOn:
     id: "btn-landing-login"
     optional: true
+
+- assertVisible:
+    id: "input-email"
 
 # Inserisci le credenziali
 - tapOn:
@@ -33,6 +37,8 @@ appId: com.aiutarsi.app
 
 # Attendi il caricamento della Home
 - waitForAnimationToEnd
+- assertVisible:
+    id: "tab-home"
 - assertVisible:
     text: "Ciao"
 

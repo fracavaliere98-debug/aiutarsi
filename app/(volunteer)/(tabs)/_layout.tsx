@@ -87,6 +87,16 @@ export default function VolunteerTabsLayout() {
                     tabBarLabel: () => (
                         <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
                     ),
+                    tabBarButton: (props) => (
+                        <TouchableOpacity
+                            testID="tab-community"
+                            onPress={props.onPress as (e: GestureResponderEvent) => void}
+                            style={props.style as any}
+                            accessibilityRole="button"
+                        >
+                            {props.children}
+                        </TouchableOpacity>
+                    ),
                 }}
             />
             <Tabs.Screen

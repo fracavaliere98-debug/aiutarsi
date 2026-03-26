@@ -6,12 +6,16 @@ appId: com.aiutarsi.app
 
 ---
 
-- launchApp
+- launchApp:
+    clearState: true
 - waitForAnimationToEnd
 
 - tapOn:
     id: "btn-landing-login"
     optional: true
+
+- assertVisible:
+    id: "input-email"
 
 - tapOn:
     id: "input-email"
@@ -24,9 +28,11 @@ appId: com.aiutarsi.app
 - tapOn:
     id: "btn-login"
 - waitForAnimationToEnd
+- assertVisible:
+    id: "tab-home"
 
 - tapOn:
-    text: "Community"
+    id: "tab-community"
 - waitForAnimationToEnd
 
 - assertVisible:

@@ -8,6 +8,8 @@
     "android": "expo start --port 8081 --android",
     "ios": "expo start --port 8081 --ios",
     "web": "expo start --port 8081 --web",
+    "hooks:install": "bash scripts/install-git-hooks.sh",
+    "smoke:ios": "bash scripts/run-ios-maestro-smoke.sh",
     "generate:credentials": "node ./scripts/generate-credentials.js",
     "lint": "expo lint",
     "test:services": "npx -y tsx scripts/test_services.ts",
