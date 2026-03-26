@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useAuth } from "../../context/AuthContext";
@@ -162,7 +162,7 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
             </ScrollView>
 
             {/* Bottom Save Button (Floating) */}
-            <View className="absolute bottom-6 left-0 right-0">
+            <View className="absolute bottom-6 left-6 right-6">
                 <TouchableOpacity
                     onPress={handleSave}
                     disabled={saving}

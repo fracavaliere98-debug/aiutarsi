@@ -1,8 +1,8 @@
-import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, TouchableOpacity, RefreshControl, TextInput } from "react-native";
 
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
-import { Plus, List, Calendar as CalendarIcon } from "lucide-react-native";
+import { List, Calendar as CalendarIcon, Search } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { EmptyState } from "../../../components/EmptyState";
 import { useRouter } from "expo-router";
@@ -26,6 +26,7 @@ export default function NPOCalendarScreen() {
     const [listFilter, setListFilter] = useState<"aperte" | "completate">("aperte");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [refreshing, setRefreshing] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Filter activities created by this NPO and sort by date descending (newest/future first)
     const myProjects = useMemo(() => {
@@ -33,6 +34,26 @@ export default function NPOCalendarScreen() {
             .filter(a => a.npoId === user?.id)
             .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
     }, [activities, user]);
+
+    const filteredProjects = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return myProjects;
+
+        return myProjects.filter((activity) => {
+            const haystack = [
+                activity.title,
+                activity.description,
+                activity.category,
+                activity.location?.address,
+                activity.status,
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            return haystack.includes(query);
+        });
+    }, [myProjects, searchQuery]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -45,8 +66,8 @@ export default function NPOCalendarScreen() {
 
     // Filter projects for selected date in calendar mode
     const selectedDateProjects = useMemo(() => {
-        return myProjects.filter(p => new Date(p.dateTime).toDateString() === selectedDate.toDateString());
-    }, [myProjects, selectedDate]);
+        return filteredProjects.filter(p => new Date(p.dateTime).toDateString() === selectedDate.toDateString());
+    }, [filteredProjects, selectedDate]);
 
     if (error) {
         return (
@@ -70,6 +91,17 @@ export default function NPOCalendarScreen() {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
             }
         >
+            <View className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-3 mb-4 border border-slate-200">
+                <Search size={16} color={Colors.secondary} />
+                <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Cerca tra le tue attività"
+                    placeholderTextColor="#94a3b8"
+                    className="flex-1 ml-3 text-primary font-medium text-sm"
+                />
+            </View>
+
             {/* View Mode Toggle */}
             <View className="flex-row bg-slate-100 rounded-2xl p-1 mb-6">
                 <TouchableOpacity
@@ -95,7 +127,7 @@ export default function NPOCalendarScreen() {
             {viewMode === "calendar" ? (
                 <View>
                     <CalendarGrid
-                        activities={myProjects}
+                        activities={filteredProjects}
                         onSelectDate={setSelectedDate}
                         selectedDate={selectedDate}
                     />
@@ -157,17 +189,17 @@ export default function NPOCalendarScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {myProjects.filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA").length === 0 ? (
+                    {filteredProjects.filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA").length === 0 ? (
                         <EmptyState
                             emoji={listFilter === "aperte" ? "📋" : "✅"}
                             title={listFilter === "aperte" ? "Nessun Progetto Aperto" : "Nessun Progetto Completato"}
-                            description={listFilter === "aperte" ? "Crea la tua prima attività per iniziare a coinvolgere volontari" : "Non hai ancora completato nessuna attività."}
+                            description={searchQuery ? "Nessuna attività corrisponde alla ricerca." : (listFilter === "aperte" ? "Crea la tua prima attività per iniziare a coinvolgere volontari" : "Non hai ancora completato nessuna attività.")}
                             actionLabel={listFilter === "aperte" ? "Crea Attività" : undefined}
                             onAction={listFilter === "aperte" ? () => router.push("/(npo)/create-activity") : undefined}
                         />
                     ) : (
                         <View>
-                            {myProjects
+                            {filteredProjects
                                 .filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA")
                                 .map((project) => (
                                     <View key={project.id} className="mb-4">

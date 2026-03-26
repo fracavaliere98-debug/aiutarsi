@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingVi
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useAuth } from "../../context/AuthContext";
-import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { Save, User, Briefcase, MessageSquare, Camera } from "lucide-react-native";
 import { useToast } from "../../context/ToastContext";
@@ -154,7 +153,7 @@ export default function ReferentDetailsSettings({ onClose }: { onClose?: () => v
             </KeyboardAvoidingView>
 
             {/* Bottom Save Button (Floating) */}
-            <View className="absolute bottom-6 left-0 right-0">
+            <View className="absolute bottom-6 left-6 right-6">
                 <TouchableOpacity
                     onPress={handleSave}
                     disabled={saving}

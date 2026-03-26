@@ -4,7 +4,7 @@ import { FlashList } from "@shopify/flash-list";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { Search, Sparkles } from 'lucide-react-native';
+import { Search, Sparkles, Clock3, UsersRound, HeartHandshake } from 'lucide-react-native';
 import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
@@ -209,7 +209,9 @@ export default function VolunteersScreen() {
             <TouchableOpacity
                 onPress={() => setActiveTab("CANDIDATURE")}
                 style={{
-                    paddingHorizontal: 24,
+                    flex: 1,
+                    minWidth: 0,
+                    paddingHorizontal: 14,
                     paddingVertical: 10,
                     borderRadius: 999,
                     backgroundColor: activeTab === "CANDIDATURE" ? '#382487' : '#f0f2f5',
@@ -222,19 +224,24 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <Text style={{
-                    color: activeTab === "CANDIDATURE" ? 'white' : '#475569',
-                    fontSize: 14,
-                    fontWeight: '600'
-                }}>
-                    In attesa
-                </Text>
+                <View className="flex-row items-center justify-center gap-1.5">
+                    <Clock3 size={12} color={activeTab === "CANDIDATURE" ? 'white' : '#475569'} />
+                    <Text style={{
+                        color: activeTab === "CANDIDATURE" ? 'white' : '#475569',
+                        fontSize: 13,
+                        fontWeight: '600'
+                    }}>
+                        In attesa
+                    </Text>
+                </View>
             </TouchableOpacity>
 
             <TouchableOpacity
                 onPress={() => setActiveTab("STORICO")}
                 style={{
-                    paddingHorizontal: 24,
+                    flex: 1,
+                    minWidth: 0,
+                    paddingHorizontal: 14,
                     paddingVertical: 10,
                     borderRadius: 999,
                     backgroundColor: activeTab === "STORICO" ? '#382487' : '#f0f2f5',
@@ -247,19 +254,24 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <Text style={{
-                    color: activeTab === "STORICO" ? 'white' : '#475569',
-                    fontSize: 14,
-                    fontWeight: '600'
-                }}>
-                    Volontari
-                </Text>
+                <View className="flex-row items-center justify-center gap-1.5">
+                    <UsersRound size={12} color={activeTab === "STORICO" ? 'white' : '#475569'} />
+                    <Text style={{
+                        color: activeTab === "STORICO" ? 'white' : '#475569',
+                        fontSize: 13,
+                        fontWeight: '600'
+                    }}>
+                        Volontari
+                    </Text>
+                </View>
             </TouchableOpacity>
 
             <TouchableOpacity
                 onPress={() => setActiveTab("FOLLOWERS")}
                 style={{
-                    paddingHorizontal: 24,
+                    flex: 1,
+                    minWidth: 0,
+                    paddingHorizontal: 14,
                     paddingVertical: 10,
                     borderRadius: 999,
                     backgroundColor: activeTab === "FOLLOWERS" ? '#382487' : '#f0f2f5',
@@ -272,13 +284,16 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <Text style={{
-                    color: activeTab === "FOLLOWERS" ? 'white' : '#475569',
-                    fontSize: 14,
-                    fontWeight: '600'
-                }}>
-                    Follower
-                </Text>
+                <View className="flex-row items-center justify-center gap-1.5">
+                    <HeartHandshake size={12} color={activeTab === "FOLLOWERS" ? 'white' : '#475569'} />
+                    <Text style={{
+                        color: activeTab === "FOLLOWERS" ? 'white' : '#475569',
+                        fontSize: 13,
+                        fontWeight: '600'
+                    }}>
+                        Follower
+                    </Text>
+                </View>
             </TouchableOpacity>
         </View>
     );
@@ -338,8 +353,8 @@ export default function VolunteersScreen() {
             {/* CANDIDATURE Tab */}
             {activeTab === "CANDIDATURE" && (
                 <View className="flex-1">
-                    <View className="mb-3 px-1">
-                        <Text className="text-primary font-black text-lg">Nuove OldCandidature</Text>
+                <View className="mb-3 px-1">
+                        <Text className="text-primary font-black text-lg">Nuove candidature</Text>
                     </View>
 
                     {displayPending.length > 0 ? (

@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { ArrowRight, Camera, Globe, Info, Phone, Search } from 'lucide-react-native';
+import { ArrowRight, Camera, Globe, Info, Mail, Phone, Search } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AddressAutocomplete } from '../../components/AddressAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -33,6 +33,7 @@ export default function NPODetailsScreen() {
     const [website, setWebsite] = useState(user?.website || "");
     const [vatId, setVatId] = useState(user?.npo_vat_id || "");
     const [phone, setPhone] = useState(user?.phone || "");
+    const [publicEmail, setPublicEmail] = useState(user?.public_email || user?.publicEmail || "");
     const [address, setAddress] = useState(user?.address_full || "");
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(
         user?.location_lat && user?.location_lng 
@@ -60,8 +61,8 @@ export default function NPODetailsScreen() {
     };
 
     const handleContinue = async () => {
-        if (!mission || !address || !vatId || !phone) {
-            showToast("error", "Compilate i campi obbligatori (Mission, Indirizzo, P.IVA/CF, Telefono)");
+        if (!mission || !address || !vatId || !phone || !publicEmail) {
+            showToast("error", "Compilate i campi obbligatori: missione, indirizzo, P.IVA/CF, email pubblica e telefono.");
             return;
         }
 
@@ -72,6 +73,7 @@ export default function NPODetailsScreen() {
                 website: website,
                 npo_vat_id: vatId,
                 phone: phone,
+                publicEmail,
                 address_full: address,
                 location_lat: coords?.lat,
                 location_lng: coords?.lng,
@@ -164,6 +166,21 @@ export default function NPODetailsScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>EMAIL PUBBLICA *</Text>
+                            <View style={styles.inputContainer}>
+                                <Mail size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="contatti@tuoente.org"
+                                    value={publicEmail}
+                                    onChangeText={setPublicEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>TELEFONO *</Text>
                             <View style={styles.inputContainer}>
                                 <Phone size={20} color={Colors.primary} style={styles.inputIcon} />
@@ -198,7 +215,7 @@ export default function NPODetailsScreen() {
                     <TouchableOpacity 
                         onPress={handleContinue}
                         disabled={isLoading}
-                        style={[styles.button, (!mission || !address || !vatId || !phone) && styles.buttonDisabled]}
+                        style={[styles.button, (!mission || !address || !vatId || !phone || !publicEmail) && styles.buttonDisabled]}
                     >
                         {isLoading ? (
                             <ActivityIndicator color="white" />

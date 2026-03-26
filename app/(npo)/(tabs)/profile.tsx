@@ -47,6 +47,9 @@ export default function NPOProfileScreen() {
         }, 0).toFixed(0);
     }, [pastActivities]);
 
+    const shouldShowProfilePrompt =
+        !user?.profile_completed || !user?.avatar_url || !(user?.publicEmail || user?.public_email) || !user?.phone;
+
     const HeaderActions = (
         <View className="flex-row gap-2">
             <TouchableOpacity onPress={() => router.push("/(npo)/settings" as any)} className="bg-white/10 p-2.5 rounded-xl border border-white/20">
@@ -82,6 +85,26 @@ export default function NPOProfileScreen() {
                 <Text className="text-secondary font-medium text-sm text-center mb-4 mt-1">
                     {user?.locationString || user?.address_full || "Sede da completare"}
                 </Text>
+
+                {shouldShowProfilePrompt && (
+                    <TouchableOpacity
+                        onPress={() => router.push("/(npo)/edit-profile" as any)}
+                        activeOpacity={0.85}
+                        className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-4 py-4"
+                    >
+                        <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mr-3">
+                                <Settings size={18} color={Colors.primary} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-primary font-bold text-sm">Completa il profilo del tuo ente</Text>
+                                <Text className="text-secondary text-xs mt-0.5">
+                                    Aggiungi logo, email pubblica e telefono per rendere il profilo piu affidabile.
+                                </Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View className="flex-row gap-3 mb-8">
@@ -159,14 +182,14 @@ export default function NPOProfileScreen() {
                         <SoftCard className="p-5">
                             <Text className="text-primary font-bold text-base mb-3">Informazioni</Text>
                             <View className="gap-4">
-                                {user?.publicEmail && (
+                                {(user?.publicEmail || user?.public_email) && (
                                     <View className="flex-row items-center gap-3">
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
                                             <Mail size={16} color={Colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Email</Text>
-                                            <Text className="text-primary font-medium">{user.publicEmail}</Text>
+                                            <Text className="text-primary font-medium">{user.publicEmail || user.public_email}</Text>
                                         </View>
                                     </View>
                                 )}
