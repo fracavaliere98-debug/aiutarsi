@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import { useRouter, useSegments } from "expo-router";
-import { VolumeManager } from "react-native-volume-manager";
+import Constants from "expo-constants";
 
 const SHORTCUT_PATTERN = ["up", "down", "up"] as const;
 const SEQUENCE_TIMEOUT_MS = 2500;
@@ -9,6 +9,16 @@ const ACTIVATION_COOLDOWN_MS = 1500;
 const MIN_VOLUME_DELTA = 0.01;
 
 type VolumeDirection = (typeof SHORTCUT_PATTERN)[number];
+
+type VolumeSubscription = {
+  remove: () => void;
+};
+
+type VolumeManagerModule = {
+  showNativeVolumeUI: (options: { enabled: boolean }) => Promise<unknown>;
+  getVolume: () => Promise<{ volume: number }>;
+  addVolumeListener: (listener: ({ volume }: { volume: number }) => void) => VolumeSubscription;
+};
 
 export function useMarketingCaptureShortcut() {
   const router = useRouter();
@@ -22,6 +32,30 @@ export function useMarketingCaptureShortcut() {
     isMountedRef.current = true;
 
     if (!__DEV__ || Platform.OS === "web") {
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+
+    if (Constants.appOwnership === "expo" || !NativeModules.VolumeManager) {
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+
+    let volumeManager: VolumeManagerModule | null = null;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const module = require("react-native-volume-manager");
+      volumeManager = (module?.VolumeManager || module?.default || null) as VolumeManagerModule | null;
+    } catch {
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+
+    if (!volumeManager) {
       return () => {
         isMountedRef.current = false;
       };
@@ -62,9 +96,9 @@ export function useMarketingCaptureShortcut() {
       }
     };
 
-    void VolumeManager.showNativeVolumeUI({ enabled: false }).catch(() => undefined);
+    void volumeManager.showNativeVolumeUI({ enabled: false }).catch(() => undefined);
 
-    void VolumeManager.getVolume()
+    void volumeManager.getVolume()
       .then(({ volume }) => {
         if (isMountedRef.current) {
           lastVolumeRef.current = volume;
@@ -72,7 +106,7 @@ export function useMarketingCaptureShortcut() {
       })
       .catch(() => undefined);
 
-    const subscription = VolumeManager.addVolumeListener(({ volume }) => {
+    const subscription = volumeManager.addVolumeListener(({ volume }) => {
       const previous = lastVolumeRef.current;
       lastVolumeRef.current = volume;
 
@@ -92,7 +126,7 @@ export function useMarketingCaptureShortcut() {
     return () => {
       isMountedRef.current = false;
       subscription.remove();
-      void VolumeManager.showNativeVolumeUI({ enabled: true }).catch(() => undefined);
+      void volumeManager.showNativeVolumeUI({ enabled: true }).catch(() => undefined);
     };
   }, [router, segments]);
 }
