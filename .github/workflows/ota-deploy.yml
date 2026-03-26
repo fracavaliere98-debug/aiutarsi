@@ -16,7 +16,7 @@ jobs:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      native_changed: ${{ steps.filter.outputs.native }}
+      apk_changed: ${{ steps.filter.outputs.apk }}
 
     steps:
       - name: Checkout repository
@@ -41,19 +41,20 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Check for JS-Only Changes
+      - name: Check Whether APK Shell Must Change
         id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            native:
-              - '!app/**'
-              - '!components/**'
-              - '!hooks/**'
-              - '!types/**'
-              - '!utils/**'
-              - '!services/**'
-              - '!constants/**'
+            apk:
+              - 'app.json'
+              - 'eas.json'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'metro.config.js'
+              - 'babel.config.js'
+              - 'android/**'
+              - 'ios/**'
 
   build-apk:
     name: Prepare Android APK
@@ -102,11 +103,13 @@ jobs:
 
       - name: Restore cached APK
         id: apk-cache
-        if: needs.detect-changes.outputs.native_changed != 'true'
+        if: needs.detect-changes.outputs.apk_changed != 'true'
         uses: actions/cache@v4
         with:
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          key: apk-${{ runner.os }}-${{ hashFiles('app.json', 'package-lock.json', 'package.json', 'eas.json', 'metro.config.js', 'babel.config.js', 'android/**', 'ios/**') }}
+          key: apk-v2-${{ runner.os }}-${{ hashFiles('app.json', 'package-lock.json', 'package.json', 'eas.json', 'metro.config.js', 'babel.config.js', 'android/**', 'ios/**') }}
+          restore-keys: |
+            apk-v2-${{ runner.os }}-
 
       - name: Inject Environment Variables
         run: |
@@ -114,7 +117,7 @@ jobs:
           echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
 
       - name: Build Android Debug APK
-        if: needs.detect-changes.outputs.native_changed == 'true' || steps.apk-cache.outputs.cache-hit != 'true'
+        if: needs.detect-changes.outputs.apk_changed == 'true' || steps.apk-cache.outputs.cache-hit != 'true'
         run: |
           npx expo prebuild --platform android --clean
           cd android

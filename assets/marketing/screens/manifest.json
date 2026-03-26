@@ -1,0 +1,28 @@
+{
+  "screens": [
+    {
+      "id": "community-gemma",
+      "file": "community_gemma_header_v1.png",
+      "category": "community",
+      "scenePreset": "hero-device",
+      "aspect": "9:16",
+      "status": "runtime-export-required"
+    },
+    {
+      "id": "onboarding-intro",
+      "file": "onboarding_intro_gemma_v1.png",
+      "category": "onboarding",
+      "scenePreset": "hero-device",
+      "aspect": "9:16",
+      "status": "runtime-export-required"
+    },
+    {
+      "id": "notifications-center",
+      "file": "notifications_center_v1.png",
+      "category": "notifications",
+      "scenePreset": "stack-devices",
+      "aspect": "4:5",
+      "status": "runtime-export-required"
+    }
+  ]
+}
