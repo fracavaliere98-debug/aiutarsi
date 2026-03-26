@@ -3,6 +3,7 @@ import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Settings, MessageCircle, AlertTriangle, Share2 } from "lucide-react-native";
 import { StandardLayout } from "./StandardLayout";
 import { AppUser, OldApplication } from "../types";
+import { Layout } from "../utils/layout";
 
 import { ProfileHeader } from "./profile/ProfileHeader";
 import { ProfileStats } from "./profile/ProfileStats";
@@ -54,8 +55,6 @@ interface VolunteerProfileViewProps {
     hideBack?: boolean;
     children?: React.ReactNode;
 }
-
-import { Layout } from "../utils/layout";
 
 export function VolunteerProfileView({
     user,

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Switch } from "react-native";
 import { useRouter } from "expo-router";
-import { Key, Lock, Mail, Shield, CheckCircle2, Eye, EyeOff, Save } from "lucide-react-native";
+import { Lock, Mail, Shield, Eye, EyeOff, Save } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { useAuth } from "../../../context/AuthContext";
@@ -10,7 +10,7 @@ import { Colors } from "../../../constants/Colors";
 import { authService } from "../../../services/AuthService";
 
 export default function SecurityScreen() {
-    const { user, updateUserProfile } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);

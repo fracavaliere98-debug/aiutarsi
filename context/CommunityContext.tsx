@@ -3,11 +3,13 @@ import { supabase } from '../utils/supabase';
 import { CommunityPost, PostReaction, ReactionType } from '../types/community';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
+import { moderateCommunityContent } from '../utils/communityModeration';
 
 interface CommunityContextType {
     posts: CommunityPost[];
     isLoading: boolean;
     fetchFeed: (lastCreatedAt?: string) => Promise<void>;
+    fetchPostsForActivity: (activityId: string) => Promise<CommunityPost[]>;
     createPost: (caption: string, imageUris: string[], linkedActivityId?: string) => Promise<void>;
     updatePost: (postId: string, caption: string, newLocalUris: string[], retainedExistingUrls: string[], linkedActivityId?: string) => Promise<void>;
     deletePost: (postId: string) => Promise<void>;
@@ -22,58 +24,65 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const getBlockedAuthorIds = useCallback(async () => {
+        if (!user?.id) return [];
+
+        const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
+            supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
+            supabase.from('blocked_users').select('blocker_id').eq('blocked_id', user.id),
+        ]);
+
+        const blockSet = new Set<string>();
+        iBlocked?.forEach((r: any) => blockSet.add(r.blocked_id));
+        blockedMe?.forEach((r: any) => blockSet.add(r.blocker_id));
+        return Array.from(blockSet);
+    }, [user?.id]);
+
+    const buildPostsQuery = useCallback(async () => {
+        const blockedAuthorIds = await getBlockedAuthorIds();
+
+        let query = supabase
+            .from('community_posts')
+            .select(`
+                id,
+                caption,
+                image_url,
+                images_urls,
+                author_id,
+                linked_activity_id,
+                created_at,
+                status,
+                author:profiles!author_id (
+                    id,
+                    full_name,
+                    npo_name,
+                    avatar_url,
+                    role
+                ),
+                linked_activity:activities!linked_activity_id (
+                    id,
+                    title,
+                    date_start,
+                    status
+                ),
+                reactions:post_reactions (
+                    id, post_id, user_id, reaction, created_at
+                )
+            `)
+            .not('status', 'in', '("shadow_banned","removed")');
+
+        if (blockedAuthorIds.length > 0) {
+            query = query.not('author_id', 'in', `(${blockedAuthorIds.join(',')})`);
+        }
+
+        return query;
+    }, [getBlockedAuthorIds]);
+
     const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
         setIsLoading(true);
         try {
-            // Bidirectional block filter: exclude posts from users I blocked AND users who blocked me
-            let blockedAuthorIds: string[] = [];
-            if (user?.id) {
-                const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
-                    supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
-                    supabase.from('blocked_users').select('blocker_id').eq('blocked_id', user.id),
-                ]);
-                const blockSet = new Set<string>();
-                iBlocked?.forEach((r: any) => blockSet.add(r.blocked_id));
-                blockedMe?.forEach((r: any) => blockSet.add(r.blocker_id));
-                blockedAuthorIds = Array.from(blockSet);
-            }
-
-            let query = supabase
-                .from('community_posts')
-                .select(`
-                    id,
-                    caption,
-                    image_url,
-                    images_urls,
-                    author_id,
-                    linked_activity_id,
-                    created_at,
-                    status,
-                    author:profiles!author_id (
-                        id,
-                        full_name,
-                        npo_name,
-                        avatar_url,
-                        role
-                    ),
-                    linked_activity:activities!linked_activity_id (
-                        id,
-                        title,
-                        date_start,
-                        status
-                    ),
-                    reactions:post_reactions (
-                        id, post_id, user_id, reaction, created_at
-                    )
-                `)
-                .not('status', 'in', '("shadow_banned","removed")')
-                .order('created_at', { ascending: false })
-                .limit(30);
-
-            // Apply bidirectional block filter
-            if (blockedAuthorIds.length > 0) {
-                query = query.not('author_id', 'in', `(${blockedAuthorIds.join(',')})`);
-            }
+            let query = await buildPostsQuery();
+            query = query.order('created_at', { ascending: false }).limit(30);
 
             if (lastCreatedAt) {
                 query = query.lt('created_at', lastCreatedAt);
@@ -100,18 +109,25 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [user?.id]);
+    }, [buildPostsQuery]);
 
-    // Upload image to Supabase Storage and return public URL (Use StorageService for robustness)
-    const uploadImage = useCallback(async (imageUri: string): Promise<string | null> => {
-        if (!user) return null;
+    const fetchPostsForActivity = useCallback(async (activityId: string) => {
+        if (!activityId) return [];
+
         try {
-            return await storageService.uploadCommunityImage(user.id, imageUri);
-        } catch (e) {
-            console.error('Community image upload error:', e);
-            return null;
+            let query = await buildPostsQuery();
+            const { data, error } = await query
+                .eq('linked_activity_id', activityId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) throw error;
+            return (data as unknown as CommunityPost[]) || [];
+        } catch (e: any) {
+            console.error('Community fetchPostsForActivity error:', e);
+            return [];
         }
-    }, [user]);
+    }, [buildPostsQuery]);
 
     const createPost = async (caption: string, imageUris: string[], linkedActivityId?: string) => {
         if (!user) return;
@@ -119,6 +135,20 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         let imageUrls: string[] = [];
         if (imageUris.length > 0) {
             imageUrls = await storageService.uploadCommunityImages(user.id, imageUris);
+        }
+
+        if (imageUrls.length > 0) {
+            for (const imageUrl of imageUrls) {
+                const moderation = await moderateCommunityContent({ caption, imageUrl });
+                if (!moderation.safe) {
+                    throw new Error(moderation.reason || 'Contenuto non approvato dai controlli automatici.');
+                }
+            }
+        } else if (caption.trim()) {
+            const moderation = await moderateCommunityContent({ caption });
+            if (!moderation.safe) {
+                throw new Error(moderation.reason || 'Testo non approvato dai controlli automatici.');
+            }
         }
 
         const { error } = await supabase.from('community_posts').insert({
@@ -142,6 +172,20 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         }
 
         const finalImageUrls = [...retainedExistingUrls, ...newUploadedUrls];
+
+        if (finalImageUrls.length > 0) {
+            for (const imageUrl of finalImageUrls) {
+                const moderation = await moderateCommunityContent({ caption, imageUrl });
+                if (!moderation.safe) {
+                    throw new Error(moderation.reason || 'Contenuto non approvato dai controlli automatici.');
+                }
+            }
+        } else if (caption.trim()) {
+            const moderation = await moderateCommunityContent({ caption });
+            if (!moderation.safe) {
+                throw new Error(moderation.reason || 'Testo non approvato dai controlli automatici.');
+            }
+        }
 
         const { error } = await supabase.from('community_posts').update({
             caption: caption || null,
@@ -262,7 +306,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     }, [fetchFeed]);
 
     return (
-        <CommunityContext.Provider value={{ posts, isLoading, fetchFeed, createPost, updatePost, deletePost, reportPost, toggleReaction }}>
+        <CommunityContext.Provider value={{ posts, isLoading, fetchFeed, fetchPostsForActivity, createPost, updatePost, deletePost, reportPost, toggleReaction }}>
             {children}
         </CommunityContext.Provider>
     );

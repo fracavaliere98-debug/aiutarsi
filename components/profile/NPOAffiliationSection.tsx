@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { CheckCircle2 } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
 import { UserAvatar } from "../UserAvatar";
 import { OldUser } from "../../types";

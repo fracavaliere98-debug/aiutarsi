@@ -31,6 +31,7 @@ export default function CreatePostScreen() {
     const { createStory } = useStories();
     const { activities } = useActivities();
     const { showToast } = useToast();
+    const isVolunteer = user?.role === 'VOLUNTEER';
 
     const [caption, setCaption] = useState('');
     const [imageUris, setImageUris] = useState<string[]>([]);
@@ -60,8 +61,25 @@ export default function CreatePostScreen() {
         }
     }, [isEditMode, prefillCaption, prefillLinkedActivityId, caption, linkedActivityId]);
 
-    const myActivities = activities.filter(a => a.npoId === user?.id);
-    const linkedActivity = myActivities.find(a => a.id === linkedActivityId);
+    const availableActivities = activities.filter((activity) => {
+        if (!user?.id) return false;
+        if (user.role === 'NPO') {
+            return activity.npoId === user.id;
+        }
+        return activity.iscritti.includes(user.id);
+    });
+    const linkedActivity = availableActivities.find(a => a.id === linkedActivityId);
+    const activityPickerTitle = isVolunteer ? 'Collega un’attività vissuta' : 'Collega un’attività';
+    const activityPickerEmptyLabel = isVolunteer
+        ? 'Non hai ancora attività a cui collegare questo contenuto'
+        : 'Nessuna attività disponibile';
+    const composerTitle = isStoryMode
+        ? '✨ Nuova storia'
+        : (isEditMode ? 'Modifica post' : 'Nuovo post');
+    const publishLabel = isStoryMode ? 'Pubblica storia' : 'Pubblica';
+    const captionPlaceholder = isVolunteer
+        ? 'Racconta cosa hai visto, sentito o fatto...'
+        : 'Condividi un momento, un aggiornamento o un invito...';
 
     const pickImage = async () => {
         const granted = await requestMediaLibraryPermission({
@@ -130,7 +148,7 @@ export default function CreatePostScreen() {
                         <ArrowLeft size={18} color={Colors.primary} />
                     </TouchableOpacity>
                     <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>
-                        {isStoryMode ? '✨ Nuova Storia (24h)' : (isEditMode ? 'Modifica Post' : 'Nuovo Post Community')}
+                        {composerTitle}
                     </Text>
                     <TouchableOpacity
                         onPress={handleSubmit}
@@ -140,7 +158,7 @@ export default function CreatePostScreen() {
                     >
                         {isSubmitting
                             ? <ActivityIndicator size="small" color="white" />
-                            : <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>Pubblica</Text>
+                            : <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>{publishLabel}</Text>
                         }
                     </TouchableOpacity>
                 </View>
@@ -213,7 +231,7 @@ export default function CreatePostScreen() {
                         <TextInput
                             value={caption}
                             onChangeText={setCaption}
-                            placeholder="Racconta cosa è successo oggi... 🌟"
+                            placeholder={captionPlaceholder}
                             placeholderTextColor="#94a3b8"
                             multiline
                             textAlignVertical="top"
@@ -235,7 +253,7 @@ export default function CreatePostScreen() {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontWeight: '800', color: linkedActivityId ? Colors.primary : '#64748b', fontSize: 14 }}>
-                                    {linkedActivity ? linkedActivity.title : 'Collega un\'attività (opzionale)'}
+                                    {linkedActivity ? linkedActivity.title : `${activityPickerTitle} (opzionale)`}
                                 </Text>
                                 {linkedActivity && (
                                     <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>
@@ -257,7 +275,9 @@ export default function CreatePostScreen() {
                             <Zap size={18} color="#f59e0b" />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontWeight: '800', color: '#92400e', fontSize: 13 }}>Storia effimera</Text>
-                                <Text style={{ fontSize: 12, color: '#78350f', marginTop: 2, lineHeight: 18 }}>Visibile per 24 ore. Perfetta per aggiornamenti in tempo reale dall&apos;evento!</Text>
+                                <Text style={{ fontSize: 12, color: '#78350f', marginTop: 2, lineHeight: 18 }}>
+                                    Visibile per 24 ore. Ideale per condividere un momento al volo.
+                                </Text>
                             </View>
                         </View>
                     )}
@@ -270,16 +290,16 @@ export default function CreatePostScreen() {
                 <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '60%', paddingBottom: Platform.OS === 'ios' ? 34 : 24 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>Collega un&apos;attività</Text>
+                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>{activityPickerTitle}</Text>
                             <TouchableOpacity onPress={() => setShowActivityPicker(false)}>
                                 <X size={20} color="#64748b" />
                             </TouchableOpacity>
                         </View>
                         <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
-                            {myActivities.length === 0 ? (
-                                <Text style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>Nessuna attività disponibile</Text>
+                            {availableActivities.length === 0 ? (
+                                <Text style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>{activityPickerEmptyLabel}</Text>
                             ) : (
-                                myActivities.map(act => (
+                                availableActivities.map(act => (
                                     <TouchableOpacity
                                         key={act.id}
                                         onPress={() => { setLinkedActivityId(act.id); setShowActivityPicker(false); }}

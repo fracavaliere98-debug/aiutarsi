@@ -1,13 +1,9 @@
-import { Tabs, useRouter } from "expo-router";
+import { Tabs } from "expo-router";
 import { Home, Compass, Calendar as CalendarIcon, Globe, User as UserIcon } from 'lucide-react-native';
-import { useAuth } from "../../../context/AuthContext";
 import { TouchableOpacity, View, Text, GestureResponderEvent } from "react-native";
 import { Colors } from "../../../constants/Colors";
 
 export default function VolunteerTabsLayout() {
-    const { user } = useAuth();
-    const router = useRouter();
-
     return (
         <Tabs
             screenOptions={{

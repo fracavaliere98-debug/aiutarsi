@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { SoftCard } from './SoftCard';
 import { OldActivity } from '../types';

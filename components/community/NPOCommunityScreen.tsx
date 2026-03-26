@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CalendarDays } from 'lucide-react-native';
+import { CalendarDays } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
@@ -12,7 +12,8 @@ import { Story } from '../../types/stories';
 import { CommunityPostDraftResult, gemmaService } from '../../services/GemmaService';
 import { useAuth } from '../../context/AuthContext';
 import { useApplications } from '../../context/ApplicationContext';
-import { GemmaFloatingHint } from './GemmaFloatingHint';
+import { CommunityHero } from './CommunityHero';
+import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 
 interface NPOCommunityScreenProps {
     posts: CommunityPost[];
@@ -40,6 +41,17 @@ export function NPOCommunityScreen({
     const { applications } = useApplications();
     const [draftLoadingId, setDraftLoadingId] = useState<string | null>(null);
     const [todayDraft, setTodayDraft] = useState<CommunityPostDraftResult | null>(null);
+    const [showHero, setShowHero] = useState(true);
+
+    const volunteerVoices = useMemo(
+        () => posts.filter((post) => post.author?.role === 'VOLUNTEER').slice(0, 2),
+        [posts]
+    );
+
+    const npoVoices = useMemo(
+        () => posts.filter((post) => post.author?.role === 'NPO' && post.author_id !== user?.id).slice(0, 2),
+        [posts, user?.id]
+    );
 
     const myOpenActivities = useMemo(
         () =>
@@ -62,12 +74,13 @@ export function NPOCommunityScreen({
     }, [activities]);
 
     const metrics = useMemo(() => {
-        const totalImpactHours = activities
+        const totalDonatedHours = activities
             .filter((activity) => activity.status === 'COMPLETATA')
             .reduce((acc, activity) => {
                 const start = new Date(activity.dateTime).getTime();
                 const end = new Date(activity.endDateTime).getTime();
-                return acc + Math.max(0, (end - start) / (1000 * 60 * 60));
+                const durationHours = Math.max(0, (end - start) / (1000 * 60 * 60));
+                return acc + (durationHours * activity.iscritti.length);
             }, 0);
 
         return {
@@ -75,7 +88,7 @@ export function NPOCommunityScreen({
             followerCount: user ? getNPOFollowers(user.id).length : 0,
             openActivitiesCount: myOpenActivities.length,
             pendingApplicationsCount: applications.filter((application) => application.npoId === user?.id && application.status === 'PENDING').length,
-            totalImpactHours: Math.floor(totalImpactHours),
+            totalImpactHours: Math.floor(totalDonatedHours),
         };
     }, [activities, applications, getNPOFollowers, myOpenActivities.length, user]);
 
@@ -166,86 +179,104 @@ export function NPOCommunityScreen({
         }
     };
 
-    const quickActions = [
-        {
-            key: 'post',
-            label: 'Nuovo post',
-            icon: Plus,
-            onPress: () => router.push('/community/create-post' as any),
-        },
-        {
-            key: 'story',
-            label: 'Nuova storia',
-            icon: Camera,
-            onPress: () => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any),
-        },
-    ];
-
     const listHeader = (
         <View>
-            <StoriesRow isNPO={true} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={onStoryPress} />
+            {showHero ? (
+                <CommunityHero
+                    eyebrow="Condividi"
+                    title="Fai sentire chi siete."
+                    subtitle={
+                        todayDraft?.caption
+                            ? todayDraft.caption
+                            : recentCompletedActivity
+                                ? 'Hai già qualcosa da raccontare.'
+                                : 'Post veri, volontari veri, NPO affini.'
+                    }
+                    accent="#311b92"
+                    accentSoft="rgba(255,255,255,0.12)"
+                    accentText="#311b92"
+                    ctaLabel={draftLoadingId === 'today_prompt' ? '...' : 'Apri bozza'}
+                    onPress={() =>
+                        handleDraftFromGemma({
+                            id: 'today_prompt',
+                            purpose: recentCompletedActivity ? 'recent_recap' : 'community_update',
+                            label: recentCompletedActivity ? 'Bozza recap' : 'Bozza community',
+                            activity: recentCompletedActivity,
+                            useCachedTodayDraft: true,
+                        })
+                    }
+                    onClose={() => setShowHero(false)}
+                />
+            ) : null}
 
-            <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
-                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>
-                    Pubblica
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {quickActions.map((action) => {
-                        const Icon = action.icon;
-                        return (
-                            <TouchableOpacity
-                                key={action.key}
-                                activeOpacity={0.88}
-                                onPress={action.onPress}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: '#fcfcff',
-                                    borderRadius: 24,
-                                    paddingVertical: 15,
-                                    paddingHorizontal: 12,
-                                    borderWidth: 1,
-                                    borderColor: '#dbe4ff',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                }}
-                            >
-                                <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Icon size={18} color={Colors.primary} />
-                                </View>
-                                <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>{action.label}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+            <StoriesRow allowAddStory={true} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={onStoryPress} />
+
+            {volunteerVoices.length > 0 ? (
+                <View
+                    style={{
+                        marginHorizontal: 16,
+                        marginBottom: 16,
+                        borderRadius: 28,
+                        backgroundColor: '#ffffff',
+                        borderWidth: 1,
+                        borderColor: '#e5e7eb',
+                        paddingVertical: 16,
+                    }}
+                >
+                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Volontari da ascoltare
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                            Voci dal campo.
+                        </Text>
+                    </View>
+                    {volunteerVoices.map((post) => (
+                        <CommunityCompactPostCard key={`npo_volunteer_voice_${post.id}`} post={post} />
+                    ))}
                 </View>
-            </View>
+            ) : null}
 
-            <GemmaFloatingHint
-                eyebrow="Consiglio di Gemma"
-                message={
-                    todayDraft?.caption || (
-                        recentCompletedActivity
-                            ? 'Hai gia qualcosa di bello da raccontare: un recap con foto o un grazie ai volontari puo far sentire il vostro impatto.'
-                            : 'Oggi ti conviene pubblicare un aggiornamento breve: basta poco per far sentire il tuo ente presente e vicino alla community.'
-                    )
-                }
-                ctaLabel={draftLoadingId === 'today_prompt' ? 'Gemma sta preparando...' : 'Apri la bozza di Gemma'}
-                onPress={() =>
-                    handleDraftFromGemma({
-                        id: 'today_prompt',
-                        purpose: recentCompletedActivity ? 'recent_recap' : 'community_update',
-                        label: recentCompletedActivity ? 'Bozza per condividere foto o ringraziamenti' : 'Bozza rapida per aggiornare la community',
-                        activity: recentCompletedActivity,
-                        useCachedTodayDraft: true,
-                    })
-                }
-            />
+            {npoVoices.length > 0 ? (
+                <View
+                    style={{
+                        marginHorizontal: 16,
+                        marginBottom: 16,
+                        borderRadius: 28,
+                        backgroundColor: '#f8f7ff',
+                        borderWidth: 1,
+                        borderColor: '#ddd6fe',
+                        paddingVertical: 16,
+                    }}
+                >
+                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Altre NPO da osservare
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                            Realtà simili alla tua.
+                        </Text>
+                    </View>
+                    {npoVoices.map((post) => (
+                        <CommunityCompactPostCard key={`npo_peer_voice_${post.id}`} post={post} />
+                    ))}
+                </View>
+            ) : null}
 
-            <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                    Feed community
+            <View
+                style={{
+                    marginHorizontal: 16,
+                    marginBottom: 10,
+                    borderTopWidth: 1,
+                    borderTopColor: '#e2e8f0',
+                    paddingTop: 18,
+                }}
+            >
+                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
+                    Tutto il feed
                 </Text>
-                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                    Post, risultati e spunti utili da altri enti della community.
+                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
+                    Tutti i post.
                 </Text>
             </View>
         </View>
@@ -359,9 +390,8 @@ export function NPOCommunityScreen({
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push('/community/create-post' as any)}
-                        style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                        style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <Plus size={16} color="white" />
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
                     </TouchableOpacity>
                 </View>

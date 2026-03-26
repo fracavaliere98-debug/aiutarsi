@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, Image } from 'react-native';
 import { UserAvatar } from './UserAvatar';
 import { Check, CheckCheck } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { MessageRichPreview } from './MessageRichPreview';
 
 interface ChatBubbleProps {

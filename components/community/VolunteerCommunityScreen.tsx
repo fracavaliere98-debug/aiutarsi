@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -9,13 +9,13 @@ import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
-import { gemmaService } from '../../services/GemmaService';
-import { GemmaFloatingHint } from './GemmaFloatingHint';
-import { useAuth } from '../../context/AuthContext';
+import { CommunityHero } from './CommunityHero';
+import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
     activities: AppActivity[];
+    suggestedActivities: AppActivity[];
     isLoading: boolean;
     isLoadingMore: boolean;
     refreshing: boolean;
@@ -33,6 +33,7 @@ function getCityLabel(address?: string | null) {
 export function VolunteerCommunityScreen({
     posts,
     activities,
+    suggestedActivities,
     isLoading,
     isLoadingMore,
     refreshing,
@@ -41,18 +42,6 @@ export function VolunteerCommunityScreen({
     onStoryPress,
 }: VolunteerCommunityScreenProps) {
     const router = useRouter();
-    const { user } = useAuth();
-    const [gemmaSummary, setGemmaSummary] = useState<string>('');
-
-    const suggestedActivities = useMemo(
-        () =>
-            activities
-                .filter((activity) => !user?.id || !activity.iscritti.includes(user.id))
-                .filter((activity) => activity.status === 'APERTA')
-                .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
-                .slice(0, 5),
-        [activities, user?.id]
-    );
 
     const weekendActivity = useMemo(() => {
         const now = new Date();
@@ -73,50 +62,41 @@ export function VolunteerCommunityScreen({
         );
     }, [activities]);
 
-    useEffect(() => {
-        let cancelled = false;
-        const topMatches = suggestedActivities
-            .filter((activity) => (activity.matchPercentage || 0) > 0)
-            .slice(0, 3)
-            .map((activity) => ({
-                activity,
-                score: activity.matchPercentage || 0,
-                reasons: [],
-            }));
+    const volunteerVoices = useMemo(
+        () => posts.filter((post) => post.author?.role === 'VOLUNTEER').slice(0, 2),
+        [posts]
+    );
 
-        if (topMatches.length === 0) {
-            setGemmaSummary('');
-            return;
-        }
-
-        gemmaService.getSmartMatchReasons(topMatches as any).then((result) => {
-            if (!cancelled) {
-                setGemmaSummary(result.summary || '');
-            }
-        }).catch(() => {
-            if (!cancelled) {
-                setGemmaSummary('');
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [suggestedActivities]);
+    const npoVoices = useMemo(
+        () => posts.filter((post) => post.author?.role === 'NPO').slice(0, 5),
+        [posts]
+    );
 
     const listHeader = (
         <View>
-            <StoriesRow onStoryPress={onStoryPress} />
-
-            <GemmaFloatingHint
-                eyebrow={user?.name ? `Consiglio di Gemma per ${user.name.split(' ')[0]}` : 'Consiglio di Gemma'}
-                message={gemmaSummary || 'Oggi partirei da qui: enti attivi, storie che fanno venir voglia di esserci e opportunita aperte vicino a te.'}
-                ctaLabel="Apri i suggerimenti di Gemma"
+            <CommunityHero
+                eyebrow="Persone vere"
+                title="Entra. Guarda. Partecipa."
+                subtitle="Storie, enti e momenti che fanno venire voglia di esserci."
+                accent="#0f172a"
+                accentSoft="rgba(255,255,255,0.12)"
+                accentText="#0f172a"
+                ctaLabel={suggestedActivities[0] ? 'Apri una storia che ti somiglia' : 'Esplora i post della community'}
                 onPress={() => {
                     if (suggestedActivities[0]) {
                         router.push(`/activity/${suggestedActivities[0].id}` as any);
+                        return;
+                    }
+                    if (weekendActivity) {
+                        router.push(`/activity/${weekendActivity.id}` as any);
                     }
                 }}
+            />
+
+            <StoriesRow
+                allowAddStory={true}
+                onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)}
+                onStoryPress={onStoryPress}
             />
 
             {weekendActivity ? (
@@ -156,12 +136,101 @@ export function VolunteerCommunityScreen({
                 </TouchableOpacity>
             ) : null}
 
-            <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                    Feed community
+            {volunteerVoices.length > 0 ? (
+                <View
+                    style={{
+                        marginHorizontal: 16,
+                        marginBottom: 16,
+                        borderRadius: 28,
+                        backgroundColor: '#ffffff',
+                        borderWidth: 1,
+                        borderColor: '#e5e7eb',
+                        paddingVertical: 16,
+                    }}
+                >
+                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Voci dei volontari
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                            Cose viste da vicino.
+                        </Text>
+                    </View>
+                    {volunteerVoices.map((post) => (
+                        <CommunityCompactPostCard key={`volunteer_voice_${post.id}`} post={post} />
+                    ))}
+                </View>
+            ) : null}
+
+            {npoVoices.length > 0 ? (
+                <View
+                    style={{
+                        marginHorizontal: 16,
+                        marginBottom: 16,
+                        borderRadius: 28,
+                        backgroundColor: '#f8f7ff',
+                        borderWidth: 1,
+                        borderColor: '#ddd6fe',
+                        paddingVertical: 16,
+                    }}
+                >
+                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Enti più attivi
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                            Chi sta pubblicando di più.
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 }}>
+                        {npoVoices.map((post) => (
+                            <TouchableOpacity
+                                key={`npo_voice_${post.id}`}
+                                activeOpacity={0.85}
+                                onPress={() => router.push(`/npo-profile/${post.author_id}` as any)}
+                                style={{
+                                    width: '50%',
+                                    paddingHorizontal: 4,
+                                    paddingVertical: 4,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        borderRadius: 18,
+                                        backgroundColor: 'white',
+                                        borderWidth: 1,
+                                        borderColor: '#e2e8f0',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 12,
+                                    }}
+                                >
+                                    <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '900', color: Colors.primary }}>
+                                        {post.author?.npo_name || post.author?.full_name || 'Ente'}
+                                    </Text>
+                                    <Text style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
+                                        Attivo ora
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+            ) : null}
+
+            <View
+                style={{
+                    marginHorizontal: 16,
+                    marginBottom: 10,
+                    borderTopWidth: 1,
+                    borderTopColor: '#e2e8f0',
+                    paddingTop: 18,
+                }}
+            >
+                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
+                    Tutto il feed
                 </Text>
-                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
-                    Aggiornamenti, risultati e nuove iniziative dagli enti della community.
+                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
+                    Tutti i post.
                 </Text>
             </View>
         </View>

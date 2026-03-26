@@ -18,6 +18,7 @@ interface StandardLayoutProps {
     noScroll?: boolean;
     noPadding?: boolean;
     headerSlot?: ReactNode;
+    headerContent?: ReactNode;
     onBack?: () => void;
     refreshControl?: ReactNode;
     hideBack?: boolean;
@@ -34,6 +35,7 @@ export function StandardLayout({
     noScroll = false,
     noPadding = false,
     headerSlot,
+    headerContent,
     onBack,
     refreshControl,
     hideBack = false
@@ -66,51 +68,55 @@ export function StandardLayout({
         <ScreenWrapper bg={bg} className="px-0" withPadding={false} edges={["top"]}>
             <View
                 className={`${getHeaderColor()} pt-6 pb-4 px-6 rounded-b-[32px] shadow-lg mb-4 justify-center`}
-                style={{ height: Layout.headerHeight }}
+                style={{ minHeight: Layout.headerHeight }}
             >
-                <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center flex-1 gap-4">
-                        {showBackButton && (
-                            <TouchableOpacity onPress={handleBack} className="bg-white/10 p-2 rounded-full">
-                                <ArrowLeft size={Layout.iconSize.md} color="white" />
-                            </TouchableOpacity>
-                        )}
-                        <View className="flex-1">
-                            <Text 
-                                className="text-white/70 font-bold uppercase tracking-widest mb-1" 
-                                style={{ fontSize: Layout.fontSize.xs }}
-                                numberOfLines={1}
-                            >
-                                {label}
-                            </Text>
-                            <Text 
-                                className="text-white font-black" 
-                                style={{ fontSize: Layout.fontSize['2xl'] }}
-                                numberOfLines={1}
-                                adjustsFontSizeToFit={true}
-                                minimumFontScale={0.7}
-                            >
-                                {title}
-                            </Text>
-                            {subtitle && (
+                {headerContent ? (
+                    headerContent
+                ) : (
+                    <View className="flex-row justify-between items-center">
+                        <View className="flex-row items-center flex-1 gap-4">
+                            {showBackButton && (
+                                <TouchableOpacity onPress={handleBack} className="bg-white/10 p-2 rounded-full">
+                                    <ArrowLeft size={Layout.iconSize.md} color="white" />
+                                </TouchableOpacity>
+                            )}
+                            <View className="flex-1">
                                 <Text 
-                                    className="text-white/60 font-medium mt-1"
+                                    className="text-white/70 font-bold uppercase tracking-widest mb-1" 
                                     style={{ fontSize: Layout.fontSize.xs }}
                                     numberOfLines={1}
-                                    adjustsFontSizeToFit={true}
-                                    minimumFontScale={0.8}
                                 >
-                                    {subtitle}
+                                    {label}
                                 </Text>
-                            )}
+                                <Text 
+                                    className="text-white font-black" 
+                                    style={{ fontSize: Layout.fontSize['2xl'] }}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit={true}
+                                    minimumFontScale={0.7}
+                                >
+                                    {title}
+                                </Text>
+                                {subtitle && (
+                                    <Text 
+                                        className="text-white/60 font-medium mt-1"
+                                        style={{ fontSize: Layout.fontSize.xs }}
+                                        numberOfLines={1}
+                                        adjustsFontSizeToFit={true}
+                                        minimumFontScale={0.8}
+                                    >
+                                        {subtitle}
+                                    </Text>
+                                )}
+                            </View>
                         </View>
+                        {rightElement && (
+                            <View className="flex-row items-center gap-2 ml-2">
+                                {rightElement}
+                            </View>
+                        )}
                     </View>
-                    {rightElement && (
-                        <View className="flex-row items-center gap-2 ml-2">
-                            {rightElement}
-                        </View>
-                    )}
-                </View>
+                )}
                 {headerSlot && <View className="mt-1">{headerSlot}</View>}
             </View>
 

@@ -1,19 +1,15 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { Sparkles, Map as MapIcon, Bell, ArrowRight, Clock, Target, Building2, MessageCircle } from "lucide-react-native";
+import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useActivities } from "../../../context/ActivityContext";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
-import { UserAvatar } from "../../../components/UserAvatar";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
-import { BadgePill } from "../../../components/BadgePill";
-import { useNotifications } from "../../../context/NotificationContext";
 import { useToast } from "../../../context/ToastContext";
-import { useChat } from "../../../context/ChatContext";
 import { useState, useMemo } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
@@ -22,8 +18,6 @@ export default function VolunteerDashboard() {
     const router = useRouter();
     const { user } = useAuth();
     const { activities, userReviews, volunteerStats, error, loadData } = useActivities();
-    const { unreadCount: notificationsUnreadCount } = useNotifications();
-    const { unreadCount: chatUnreadCount } = useChat();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 

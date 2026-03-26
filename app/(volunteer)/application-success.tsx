@@ -1,9 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Check, ArrowRight } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 
 export default function ApplicationSuccess() {

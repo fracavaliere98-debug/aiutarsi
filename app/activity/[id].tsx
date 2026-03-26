@@ -6,10 +6,12 @@ import {
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
+import { useCommunity } from "../../context/CommunityContext";
 import { useGamification } from "../../context/GamificationContext";
 import { activityService } from "../../services/ActivityService";
 import { AppActivity, AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
+import { CommunityPost } from "../../types/community";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
     RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare
@@ -20,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { supabase } from "../../utils/supabase";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CommunityCompactPostCard } from "../../components/community/CommunityCompactPostCard";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
@@ -63,6 +66,7 @@ export default function ActivityDetail() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user, users, fetchUserById } = useAuth();
+    const { fetchPostsForActivity } = useCommunity();
     const {
         activities, reviews, unenrollFromActivity, error, loadData,
         volunteerReviews
@@ -75,6 +79,7 @@ export default function ActivityDetail() {
     const [fetchedActivity, setFetchedActivity] = useState<AppActivity | null>(null);
     const [fetchLoading, setFetchLoading] = useState(false);
     const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
+    const [relatedPosts, setRelatedPosts] = useState<CommunityPost[]>([]);
 
     useEffect(() => {
         if (!activityFromContext && activityId) {
@@ -86,6 +91,25 @@ export default function ActivityDetail() {
     }, [activityId, activityFromContext]);
 
     const activity = activityFromContext ?? fetchedActivity;
+
+    useEffect(() => {
+        let cancelled = false;
+
+        if (!activity?.id) {
+            setRelatedPosts([]);
+            return;
+        }
+
+        fetchPostsForActivity(activity.id).then((posts) => {
+            if (!cancelled) {
+                setRelatedPosts(posts);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activity?.id, fetchPostsForActivity]);
 
     useEffect(() => {
         const currentActivityId = activity?.id;
@@ -583,6 +607,41 @@ export default function ActivityDetail() {
                             );
                         })()}
                     </Animated.View>
+
+                    {relatedPosts.length > 0 && (
+                        <Animated.View entering={FadeInDown.delay(560).springify()} style={{ marginBottom: 28 }}>
+                            <View testID="activity-community-posts" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                                <View style={{ flex: 1, marginRight: 12 }}>
+                                    <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>
+                                        Dalla community su questa attività
+                                    </Text>
+                                    <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                                        Post collegati da volontari ed enti.
+                                    </Text>
+                                </View>
+                                <View style={{ backgroundColor: '#f1f5f9', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#475569' }}>
+                                        {relatedPosts.length}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ paddingRight: 20 }}
+                            >
+                                {relatedPosts.map((post) => (
+                                    <CommunityCompactPostCard
+                                        key={`related_post_${post.id}`}
+                                        post={post}
+                                        layout="carousel"
+                                        showLinkedActivityTag={false}
+                                    />
+                                ))}
+                            </ScrollView>
+                        </Animated.View>
+                    )}
 
                 </View>
             </ScrollView>

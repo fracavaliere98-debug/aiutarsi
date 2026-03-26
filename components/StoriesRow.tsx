@@ -6,12 +6,12 @@ import { useStories } from '../context/StoriesContext';
 import { Story } from '../types/stories';
 
 interface StoriesRowProps {
-    isNPO?: boolean;
+    allowAddStory?: boolean;
     onAddStory?: () => void;
     onStoryPress?: (allStories: Story[], initialIndex: number) => void;
 }
 
-export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps) {
+export function StoriesRow({ allowAddStory, onAddStory, onStoryPress }: StoriesRowProps) {
     const { stories } = useStories();
 
     // Group stories by author
@@ -35,7 +35,7 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
         return { authorGroups: sortedGroups, flatOrderedStories };
     }, [stories]);
 
-    const hasContent = isNPO || authorGroups.length > 0;
+    const hasContent = allowAddStory || authorGroups.length > 0;
     if (!hasContent) return null;
 
     return (
@@ -53,7 +53,7 @@ export function StoriesRow({ isNPO, onAddStory, onStoryPress }: StoriesRowProps)
                 contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }}
             >
                 {/* Add Story bubble – NPO only */}
-                {isNPO && (
+                {allowAddStory && (
                     <TouchableOpacity
                         onPress={onAddStory}
                         activeOpacity={0.8}

@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabase';
 import { Story } from '../types/stories';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
+import { moderateCommunityContent } from '../utils/communityModeration';
 
 interface StoriesContextType {
     stories: Story[];
@@ -64,6 +65,15 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
         if (!user) return;
         const imageUrl = await uploadImage(imageUri);
         if (!imageUrl) throw new Error('Upload fallito');
+
+        const moderation = await moderateCommunityContent({
+            caption: caption || '',
+            imageUrl,
+        });
+
+        if (!moderation.safe) {
+            throw new Error(moderation.reason || 'Story non approvata dai controlli automatici.');
+        }
 
         const { error } = await supabase.from('stories').insert({
             author_id: user.id,

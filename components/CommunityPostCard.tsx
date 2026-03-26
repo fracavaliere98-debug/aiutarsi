@@ -75,6 +75,9 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
     }
 
     const authorName = post.author?.npo_name || post.author?.full_name || 'NPO';
+    const authorProfileRoute = post.author?.role === 'VOLUNTEER'
+        ? `/user-profile/${post.author_id}`
+        : `/npo-profile/${post.author_id}`;
     const timeAgo = (() => {
         if (!post.created_at) return '...';
         const diff = Date.now() - new Date(post.created_at).getTime();
@@ -106,7 +109,7 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, paddingBottom: 10 }}>
                 <TouchableOpacity
-                    onPress={() => router.push(`/npo-profile/${post.author_id}` as any)}
+                    onPress={() => router.push(authorProfileRoute as any)}
                     style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ede9fe', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}
                 >
                     {post.author?.avatar_url

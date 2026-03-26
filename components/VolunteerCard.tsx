@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserAvatar } from './UserAvatar';
-import { SoftCard } from './SoftCard';
 import { AppUser } from '../types';
 
 interface VolunteerCardProps {

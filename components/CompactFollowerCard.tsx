@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { UserAvatar } from "./UserAvatar";
 import { OldUser } from "../types";
 import { Colors } from "../constants/Colors";
-import { Mail, Award } from "lucide-react-native";
+import { Mail } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
 import { useState, useEffect } from "react";
 import { getUserGamificationState } from "../context/GamificationContext";

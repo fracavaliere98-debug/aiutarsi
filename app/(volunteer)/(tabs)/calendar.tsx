@@ -1,13 +1,11 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
 import { Colors } from "../../../constants/Colors";
 import { useAuth } from "../../../context/AuthContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Calendar as CalendarIcon, List, Bell, Clock, MapPin, Building2 } from "lucide-react-native";
-import { UserAvatar } from "../../../components/UserAvatar";
+import { Calendar as CalendarIcon, List } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
-import { BadgePill } from "../../../components/BadgePill";
 import { useActivities } from "../../../context/ActivityContext";
 import { AppActivity } from "../../../types";
 import { useState, useMemo, useEffect } from "react";

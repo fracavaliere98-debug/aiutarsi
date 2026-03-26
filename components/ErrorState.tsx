@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { LucideIcon, AlertCircle, RefreshCw } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 
 interface ErrorStateProps {
     icon?: LucideIcon;

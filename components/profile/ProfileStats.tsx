@@ -38,7 +38,7 @@ export function ProfileStats({
     isOwnProfile
 }: ProfileStatsProps) {
     const router = useRouter();
-    const { reviews, volunteerReviews } = useActivities();
+    const { volunteerReviews } = useActivities();
 
     // Average Rating Calculation
     const averageRating = useMemo(() => {

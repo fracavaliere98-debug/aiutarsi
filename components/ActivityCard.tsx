@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
+import { View, Text, StyleProp, ViewStyle } from "react-native";
 import { Clock, Building2, MapPin, RefreshCw } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
 import { SoftCard } from "./SoftCard";
@@ -21,12 +21,8 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
     const { users, user } = useAuth();
 
     // Helper to safely extract properties from either OldActivity or ExtendedActivity
-    const title = activity.title;
-    const category = activity.category || 'Generale';
     const status = activity.status;
-    const isUrgent = 'isUrgent' in activity ? activity.isUrgent : activity.is_urgent;
     const npoId = 'npoId' in activity ? activity.npoId : activity.npo_id;
-    const recurrence = activity.recurrence;
 
     const rawStartDate = 'dateTime' in activity ? activity.dateTime : activity.date_start;
     const rawEndDate = 'endDateTime' in activity ? activity.endDateTime : activity.date_end;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { CheckCircle2, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { UserAvatar } from '../UserAvatar';
 import { Link } from 'expo-router';

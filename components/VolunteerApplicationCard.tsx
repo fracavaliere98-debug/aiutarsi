@@ -1,10 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { UserAvatar } from "./UserAvatar";
-import { Check, X, Clock, Calendar, Award, CheckCircle2 } from "lucide-react-native";
-import { Card } from "./Card"; // Or use SoftCard if available, but plans said "Soft UI style (White card, shadow)" which Card is close to, or we can inline styles. Let's use Card + className.
+import { CheckCircle2 } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
-import { useState, useEffect } from "react";
-import { getUserGamificationState } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 
@@ -23,16 +20,9 @@ export const VolunteerApplicationCard = ({
     onReject,
     showActions = false
 }: VolunteerApplicationCardProps) => {
-    const [level, setLevel] = useState<number | null>(null);
     const router = useRouter();
     const { getUserById } = useAuth();
     const fullUser = getUserById(application.volunteerId);
-
-    useEffect(() => {
-        getUserGamificationState(application.volunteerId).then(state => {
-            setLevel(state.level);
-        });
-    }, [application.volunteerId]);
 
     const handlePress = () => {
         router.push(`/(npo)/volunteer-profile/${application.volunteerId}` as any);

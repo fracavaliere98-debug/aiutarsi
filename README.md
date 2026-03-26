@@ -134,3 +134,7 @@ maestro test maestro/flows/
 - Supabase (Postgres + Auth + Realtime + Storage)
 - Google Gemini / Gemma AI
 - EAS Build + EAS Update
+
+## Documentazione
+
+- Architettura tecnica: [docs/architecture.md](./docs/architecture.md)

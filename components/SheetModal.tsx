@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, ModalProps, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { Modal, ModalProps, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SheetModalProps extends ModalProps {

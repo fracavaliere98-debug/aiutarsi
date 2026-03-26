@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { ReactNode } from "react";
+import { Layout } from "../utils/layout";
 
 interface PageHeaderProps {
     label: string;
@@ -8,8 +9,6 @@ interface PageHeaderProps {
     subtitle?: string;
     containerStyle?: any;
 }
-
-import { Layout } from "../utils/layout";
 
 export function PageHeader({ label, title, rightElement, subtitle, containerStyle }: PageHeaderProps) {
     return (

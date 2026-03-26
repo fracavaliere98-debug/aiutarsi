@@ -1,5 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import { styled } from "nativewind";
+import { View, TouchableOpacity } from "react-native";
 
 // Use styled to wrap View/TouchableOpacity if needed, but here we pass className prop directly
 // which NativeWind handles if configured correctly. 

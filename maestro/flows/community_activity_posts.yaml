@@ -1,0 +1,43 @@
+# Maestro Smoke Test — Community volunteer + dettaglio attività
+# Prerequisiti: app installata sul device/emulatore, account test creato,
+# almeno un'attività suggerita o visibile da community.
+
+appId: com.aiutarsi.app
+
+---
+
+- launchApp
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-landing-login"
+    optional: true
+
+- tapOn:
+    id: "input-email"
+- inputText: "test.maestro@aiutarsi.it"
+
+- tapOn:
+    id: "input-password"
+- inputText: "TestMaestro123!"
+
+- tapOn:
+    id: "btn-login"
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Community"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Gemma"
+
+- tapOn:
+    id: "community-gemma-cta"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Cosa ne pensa la Community"
+
+- assertVisible:
+    id: "activity-community-posts"

@@ -1,8 +1,6 @@
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
 import { Clock, Building2, MapPin } from "lucide-react-native";
 import { Colors } from "../constants/Colors";
-import { SoftCard } from "./SoftCard";
-import { OldActivity } from "../types"; // Or wherever it's defined
 
 interface EnrolledActivityCardProps {
     activity: any; // We'll use any if type is hard to import perfectly, but better OldActivity

@@ -72,7 +72,7 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
             showToast("success", "Profilo aggiornato con successo!");
             if (onClose) onClose();
             else router.back();
-        } catch (err) {
+        } catch {
             showToast("error", "Errore durante il salvataggio.");
         } finally {
             setIsLoading(false);

@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useActivities } from "../../../context/ActivityContext";
 import { Colors } from "../../../constants/Colors";
-import { Calendar, Users, Send, Clock, Camera, Trash2, RefreshCw } from "lucide-react-native";
+import { Calendar, Users, Send, Clock, Trash2, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 

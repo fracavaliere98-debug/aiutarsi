@@ -23,51 +23,46 @@ export function GemmaFloatingHint({
                 activeOpacity={onPress ? 0.92 : 1}
                 onPress={onPress}
                 disabled={!onPress}
-                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    backgroundColor: '#f8f7ff',
+                    borderRadius: 22,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderWidth: 1,
+                    borderColor: '#ddd6fe',
+                }}
             >
-                <View style={{ width: 40, paddingTop: 2 }}>
+                <View style={{ width: 34 }}>
                     <GemmaAvatar size={34} bordered />
                 </View>
-                <View
-                    style={{
-                        flex: 1,
-                        backgroundColor: '#fcfcff',
-                        borderRadius: 24,
-                        borderTopLeftRadius: 8,
-                        paddingHorizontal: 14,
-                        paddingVertical: 11,
-                        borderWidth: 1,
-                        borderColor: '#dbe4ff',
-                        shadowColor: '#312e81',
-                        shadowOpacity: 0.04,
-                        shadowRadius: 12,
-                        elevation: 2,
-                    }}
-                >
+                <View style={{ flex: 1 }}>
                     <Text
                         style={{
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: '900',
                             color: '#6366f1',
                             textTransform: 'uppercase',
-                            letterSpacing: 0.5,
-                            marginBottom: 4,
+                            letterSpacing: 0.6,
+                            marginBottom: 2,
                         }}
                     >
                         {eyebrow}
                     </Text>
-                    <Text style={{ fontSize: 13, lineHeight: 19, color: '#475569', fontWeight: '700' }}>
+                    <Text numberOfLines={2} style={{ fontSize: 12, lineHeight: 17, color: '#475569', fontWeight: '700' }}>
                         {message}
                     </Text>
-                    {ctaLabel ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                            <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>
-                                {ctaLabel}
-                            </Text>
-                            <ChevronRight size={14} color={Colors.primary} style={{ marginLeft: 4 }} />
-                        </View>
-                    ) : null}
                 </View>
+                {ctaLabel ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '900', color: Colors.primary }}>
+                            {ctaLabel}
+                        </Text>
+                        <ChevronRight size={14} color={Colors.primary} style={{ marginLeft: 2 }} />
+                    </View>
+                ) : null}
             </TouchableOpacity>
         </View>
     );
