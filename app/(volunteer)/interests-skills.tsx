@@ -54,14 +54,20 @@ export default function VolunteerInterestsSkillsSettings() {
 
         setSaving(true);
         try {
+            console.log("[DEBUG] VolunteerInterestsSkills: saving", {
+                userId: user?.id,
+                interests: selectedInterests,
+                skills: selectedSkills,
+            });
             await updateUserProfile({
                 interests: selectedInterests,
                 skills: selectedSkills,
             });
+            console.log("[DEBUG] VolunteerInterestsSkills: save completed");
             showToast("success", "Preferenze aggiornate!");
             router.back();
         } catch (error: any) {
-            console.error("Failed to save settings", error);
+            console.error("[DEBUG] VolunteerInterestsSkills: save failed", error);
             showToast("error", error?.message || "Errore durante il salvataggio.");
         } finally {
             setSaving(false);

@@ -31,8 +31,13 @@ export default function BlockedUsersScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
 
+    useEffect(() => {
+        console.log("[DEBUG] BlockedUsers: screen mounted", { userId: user?.id });
+    }, [user?.id]);
+
     const fetchBlockedUsers = useCallback(async () => {
         if (!user?.id) {
+            console.log("[DEBUG] BlockedUsers: user not ready, skipping fetch");
             setBlockedUsers([]);
             setIsLoading(false);
             return;
@@ -40,27 +45,35 @@ export default function BlockedUsersScreen() {
         
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('blocked_users')
-                .select(`
-                    id,
-                    blocked_id,
-                    profile:profiles!blocked_users_blocked_id_fkey (
+            console.log("[DEBUG] BlockedUsers: fetching for", user.id);
+            const { data, error } = await Promise.race([
+                supabase
+                    .from('blocked_users')
+                    .select(`
                         id,
-                        full_name,
-                        npo_name,
-                        avatar_url,
-                        role
-                    )
-                `)
-                .eq('blocker_id', user.id);
+                        blocked_id,
+                        profile:profiles!blocked_users_blocked_id_fkey (
+                            id,
+                            full_name,
+                            npo_name,
+                            avatar_url,
+                            role
+                        )
+                    `)
+                    .eq('blocker_id', user.id),
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error("blocked_users query timeout after 8000ms")), 8000)
+                ),
+            ]);
 
             if (error) throw error;
+            console.log("[DEBUG] BlockedUsers: fetched", Array.isArray((data as any)) ? (data as any).length : 0);
             setBlockedUsers((data as any) || []);
         } catch (error: any) {
-            console.error("Error fetching blocked users:", error.message);
+            console.error("Error fetching blocked users:", error);
             showToast('error', 'Errore nel caricamento degli utenti bloccati');
         } finally {
+            console.log("[DEBUG] BlockedUsers: fetch completed");
             setIsLoading(false);
         }
     }, [showToast, user?.id]);

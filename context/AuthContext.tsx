@@ -324,6 +324,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             // 3. Sync to Backend (Awaited)
             const persistedUser = await authService.updateProfile(user.id, data);
+            console.log("[DEBUG] AuthContext: updateProfile resolved", persistedUser?.id, {
+                interests: persistedUser?.interests?.length,
+                skills: persistedUser?.skills?.length,
+            });
 
             if (persistedUser) {
                 setUser(persistedUser);

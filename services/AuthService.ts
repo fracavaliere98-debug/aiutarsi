@@ -4,6 +4,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 
 export class AuthService {
+    private async _withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 8000): Promise<T> {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        try {
+            return await Promise.race([
+                promise,
+                new Promise<T>((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+                }),
+            ]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
 
     private _validateEmail(email: string): boolean {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -526,7 +540,8 @@ export class AuthService {
     }
 
     async updateProfile(userId: string, updates: Partial<AppUser>): Promise<AppUser> {
-        console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId);
+        const startedAt = Date.now();
+        console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId, updates);
 
         // 1. Handle Avatar Upload first
         // Add resilience: check both 'avatar' and 'avatar_url'
@@ -559,10 +574,7 @@ export class AuthService {
             'verification_status'
         ];
 
-        const payload: any = {
-            id: userId,
-            updated_at: new Date().toISOString(),
-        };
+        const payload: any = {};
 
         // Add resilience: Map legacy camelCase keys to snake_case DB columns
         const legacyMapping: Record<string, string> = {
@@ -586,36 +598,56 @@ export class AuthService {
             }
         });
 
+        const shouldUpdateProfileRow = Object.keys(payload).length > 0;
+        if (shouldUpdateProfileRow) {
+            payload.updated_at = new Date().toISOString();
+        }
+
         const skillsToSync = (updates as any).skills || (updates as any).user_skills?.map((s: any) => s.skill);
         const interestsToSync = (updates as any).interests || (updates as any).user_interests?.map((i: any) => i.interest);
 
         try {
-            // 3. Perform Update to Public Profiles
-            const { error: updateError } = await supabase
-                .from('profiles')
-                .update(payload)
-                .eq('id', userId);
+            console.log("[DEBUG] AuthService: updateProfile payload prepared", payload);
 
-            if (updateError) {
-                throw new Error(updateError.message);
+            // 3. Perform Update to Public Profiles
+            if (shouldUpdateProfileRow) {
+                const { error: updateError } = await this._withTimeout(
+                    supabase
+                        .from('profiles')
+                        .update(payload)
+                        .eq('id', userId),
+                    'profiles.update'
+                );
+
+                if (updateError) {
+                    throw new Error(updateError.message);
+                }
+                console.log("[DEBUG] AuthService: profiles.update completed in", Date.now() - startedAt, "ms");
+            } else {
+                console.log("[DEBUG] AuthService: profiles.update skipped - no profile columns changed");
             }
 
             // 4. Sync Relationals (Skills/Interests)
             if (skillsToSync !== undefined) {
+                console.log("[DEBUG] AuthService: syncing user_skills", skillsToSync);
                 await this._syncRelationalList(userId, 'user_skills', 'skill', skillsToSync);
             }
             if (interestsToSync !== undefined) {
+                console.log("[DEBUG] AuthService: syncing user_interests", interestsToSync);
                 await this._syncRelationalList(userId, 'user_interests', 'interest', interestsToSync);
             }
 
             // 5. Return fresh user object
-            const updatedUser = await this.getCurrentUser();
+            console.log("[DEBUG] AuthService: reloading current user after update");
+            const updatedUser = await this._withTimeout(this.getCurrentUser(), 'getCurrentUser.afterUpdate');
 
             // 6. Persistence Fix: Force local storage sync
             if (updatedUser) {
                 await this.saveUserLocally(updatedUser);
                 console.log("[DEBUG] AuthService: updateProfile - Local storage synced");
             }
+
+            console.log("[DEBUG] AuthService: updateProfile finished in", Date.now() - startedAt, "ms");
 
             return updatedUser!;
 
@@ -716,14 +748,18 @@ export class AuthService {
     // Helper: Sync relational lists (skills, interests) with diff logic
     private async _syncRelationalList(userId: string, table: string, column: string, rawList: string[]): Promise<void> {
         try {
+            console.log(`[DEBUG] AuthService: _syncRelationalList start ${table}`, rawList);
             // 0. Deduplicate Input (Critical for Unique Constraints)
             const newList = Array.from(new Set(rawList)).filter(item => item && item.trim().length > 0);
 
             // 1. Fetch current
-            const { data: currentData, error: fetchError } = await supabase
-                .from(table)
-                .select(column)
-                .eq('user_id', userId);
+            const { data: currentData, error: fetchError } = await this._withTimeout(
+                supabase
+                    .from(table)
+                    .select(column)
+                    .eq('user_id', userId),
+                `${table}.select`
+            );
 
             if (fetchError) {
                 console.error(`[AuthService] Fetch failed for ${table}:`, fetchError);
@@ -740,11 +776,14 @@ export class AuthService {
 
             // 3. Remove
             if (toRemove.length > 0) {
-                const { error: deleteError } = await supabase
-                    .from(table)
-                    .delete()
-                    .eq('user_id', userId)
-                    .in(column, toRemove);
+                const { error: deleteError } = await this._withTimeout(
+                    supabase
+                        .from(table)
+                        .delete()
+                        .eq('user_id', userId)
+                        .in(column, toRemove),
+                    `${table}.delete`
+                );
 
                 if (deleteError) {
                     console.error(`[AuthService] Delete failed for ${table}:`, deleteError);
@@ -759,9 +798,12 @@ export class AuthService {
                 // we shouldn't hit duplicates UNLESS race condition.
                 // But to be super safe, we could use upsert (ignoreDuplicates).
                 // However, standard insert is fine if logic is sound. We will log error if it happens.
-                const { error: insertError } = await supabase
-                    .from(table)
-                    .insert(insertions);
+                const { error: insertError } = await this._withTimeout(
+                    supabase
+                        .from(table)
+                        .insert(insertions),
+                    `${table}.insert`
+                );
 
                 if (insertError) {
                     console.error(`[AuthService] Insert failed for ${table}:`, insertError);
@@ -771,6 +813,7 @@ export class AuthService {
                     throw insertError;
                 }
             }
+            console.log(`[DEBUG] AuthService: _syncRelationalList done ${table}`);
         } catch (e) {
             console.error(`Error syncing ${table}:`, e);
             // We swallow the error here to allow the main profile update to succeed? 
@@ -823,12 +866,17 @@ export class AuthService {
      */
     async getReferralCount(userId: string): Promise<number> {
         try {
-            const { count, error } = await supabase
-                .from('profiles')
-                .select('id', { count: 'exact', head: true })
-                .eq('referred_by', userId);
+            console.log("[DEBUG] AuthService: getReferralCount start", userId);
+            const { count, error } = await this._withTimeout(
+                supabase
+                    .from('profiles')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('referred_by', userId),
+                'profiles.referralCount'
+            );
 
             if (error) throw error;
+            console.log("[DEBUG] AuthService: getReferralCount done", count || 0);
             return count || 0;
         } catch (error) {
             console.error("Error fetching referral count:", error);

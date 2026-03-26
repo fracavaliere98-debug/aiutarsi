@@ -15,6 +15,7 @@ export default function ReferralScreen() {
 
     const fetchCount = useCallback(async () => {
             if (!user?.id) {
+                console.log("[DEBUG] Referral: user not ready, skipping count");
                 setCount(0);
                 setIsLoading(false);
                 return;
@@ -22,15 +23,18 @@ export default function ReferralScreen() {
 
             setIsLoading(true);
             try {
+                console.log("[DEBUG] Referral: fetching count for", user.id);
                 const c = await Promise.race<number>([
                     getReferralCount(),
                     new Promise<number>((resolve) => setTimeout(() => resolve(0), 5000)),
                 ]);
+                console.log("[DEBUG] Referral: fetched count", c);
                 setCount(c);
             } catch (error) {
                 console.error("Error fetching referral count:", error);
                 setCount(0);
             } finally {
+                console.log("[DEBUG] Referral: fetch completed");
                 setIsLoading(false);
             }
         }, [getReferralCount, user?.id]);

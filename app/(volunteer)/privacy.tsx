@@ -44,15 +44,24 @@ export default function VolunteerPrivacyScreen() {
         if (!user) return;
         setIsLoading(true);
         try {
+            console.log("[DEBUG] VolunteerPrivacy: saving", {
+                userId: user.id,
+                allowCalls,
+                profilePublic,
+                showEmail,
+                showVolunteeringHistory,
+            });
             await updateUserProfile({
                 allow_calls: allowCalls,
                 profile_public: profilePublic,
                 show_email: showEmail,
                 show_volunteering_history: showVolunteeringHistory,
             });
+            console.log("[DEBUG] VolunteerPrivacy: save completed");
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
         } catch (e: any) {
+            console.error("[DEBUG] VolunteerPrivacy: save failed", e);
             showToast("error", e.message || "Errore durante il salvataggio.");
         } finally {
             setIsLoading(false);
@@ -84,7 +93,7 @@ export default function VolunteerPrivacyScreen() {
 
             {/* Profile */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
-            <SoftCard className="p-5 mb-8">
+            <SoftCard className="p-5 mb-5">
                 <PrivacyRow
                     icon={<Eye size={22} color={profilePublic ? Colors.primary : Colors.secondary} />}
                     iconBg={profilePublic ? "bg-blue-50" : "bg-slate-100"}
@@ -113,10 +122,10 @@ export default function VolunteerPrivacyScreen() {
                 />
             </SoftCard>
 
-            <View style={{ height: 96 }} />
+            <View style={{ height: 28 }} />
 
             {/* Save */}
-            <View className="absolute bottom-6 left-6 right-6">
+            <View className="absolute bottom-4 left-6 right-6">
                 <TouchableOpacity
                     onPress={handleSave}
                     disabled={isLoading}

@@ -686,16 +686,18 @@ export default function ActivityDetail() {
                 backgroundColor: 'white', paddingTop: 14, paddingBottom: 28, paddingHorizontal: 20,
                 borderTopWidth: 1, borderTopColor: '#f1f5f9',
                 shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, elevation: 8,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
+                flexDirection: 'row', alignItems: 'center', justifyContent: activity.status === 'COMPLETATA' ? 'flex-end' : 'space-between'
             }}>
-                <View>
-                    <Text style={{ fontSize: 20, fontWeight: '900', color: Colors.primary }}>
-                        {activity.status === 'COMPLETATA' ? '0 posti' : `${slotsLeft} posti`}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 1 }}>
-                        SU {activity.slots} VOLONTARI TOTALI
-                    </Text>
-                </View>
+                {activity.status !== 'COMPLETATA' && (
+                    <View>
+                        <Text style={{ fontSize: 20, fontWeight: '900', color: Colors.primary }}>
+                            {`${slotsLeft} posti`}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 1 }}>
+                            SU {activity.slots} VOLONTARI TOTALI
+                        </Text>
+                    </View>
+                )}
 
                 {/* CTA Button */}
                 {isOwner ? (
