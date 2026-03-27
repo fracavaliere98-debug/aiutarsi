@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useSegments } from 'expo-router';
 import { supabase } from '../utils/supabase';
 import { Story } from '../types/stories';
 import { useAuth } from './AuthContext';
@@ -17,10 +18,24 @@ const StoriesContext = createContext<StoriesContextType | undefined>(undefined);
 
 export function StoriesProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
+    const segments = useSegments();
     const [stories, setStories] = useState<Story[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const segmentKey = segments.join('/');
+    const isQuietRoute = [
+        '(volunteer)/settings',
+        '(volunteer)/privacy',
+        '(volunteer)/interests-skills',
+        'blocked-users',
+        '(volunteer)/referral',
+        'help-center',
+        '(npo)/settings',
+        '(npo)/settings/privacy',
+        '(npo)/edit-profile',
+    ].some((route) => segmentKey.includes(route));
 
     const fetchStories = useCallback(async () => {
+        if (isQuietRoute) return;
         setIsLoading(true);
         try {
             const { data, error } = await supabase
@@ -48,7 +63,7 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [isQuietRoute]);
 
     // Upload image to Supabase Storage (Use StorageService for robustness)
     const uploadImage = useCallback(async (imageUri: string): Promise<string | null> => {
@@ -93,11 +108,13 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        if (isQuietRoute) return;
         if (user) fetchStories();
-    }, [user, fetchStories]);
+    }, [user, fetchStories, isQuietRoute]);
 
     // Realtime: refresh on any story insert
     useEffect(() => {
+        if (isQuietRoute) return;
         const channel = supabase
             .channel('stories_feed')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => {
@@ -105,7 +122,7 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
             })
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, [fetchStories]);
+    }, [fetchStories, isQuietRoute]);
 
     return (
         <StoriesContext.Provider value={{ stories, isLoading, fetchStories, createStory, deleteStory }}>

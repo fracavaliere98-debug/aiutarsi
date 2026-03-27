@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { useSegments } from 'expo-router';
 import { supabase } from '../utils/supabase';
 import { useAuth } from './AuthContext';
 import ChatService from '../services/ChatService';
@@ -15,15 +16,29 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
+    const segments = useSegments();
     const [conversations, setConversations] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const conversationIdsRef = useRef<string[]>([]);
+    const segmentKey = segments.join('/');
+    const isQuietRoute = [
+        '(volunteer)/settings',
+        '(volunteer)/privacy',
+        '(volunteer)/interests-skills',
+        'blocked-users',
+        '(volunteer)/referral',
+        'help-center',
+        '(npo)/settings',
+        '(npo)/settings/privacy',
+        '(npo)/edit-profile',
+    ].some((route) => segmentKey.includes(route));
 
     useEffect(() => {
         conversationIdsRef.current = conversations.map((c: any) => c.conversation_id);
     }, [conversations]);
 
     const refreshConversations = useCallback(async () => {
+        if (isQuietRoute) return;
         if (!user) return;
         try {
             const data = await ChatService.getConversations(user.id);
@@ -40,7 +55,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error("Error refreshing conversations:", error);
         }
-    }, [user]);
+    }, [user, isQuietRoute]);
 
     // Optimistically update the preview for a conversation without a DB round-trip
     const updateConversationPreview = useCallback((conversationId: string, content: string, senderId: string) => {
@@ -69,6 +84,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }, [refreshConversations, user]);
 
     useEffect(() => {
+        if (isQuietRoute) return;
         if (!user) {
             setConversations([]);
             setUnreadCount(0);
@@ -125,7 +141,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             supabase.removeChannel(participantsChannel);
             supabase.removeChannel(convsDeleteChannel);
         };
-    }, [refreshConversations, user]);
+    }, [refreshConversations, user, isQuietRoute]);
 
     return (
         <ChatContext.Provider value={{ conversations, unreadCount, refreshConversations, markAsRead, updateConversationPreview }}>

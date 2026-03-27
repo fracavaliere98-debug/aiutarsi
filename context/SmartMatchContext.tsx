@@ -7,6 +7,7 @@ import React, {
     useRef,
     useMemo,
 } from 'react';
+import { useSegments } from 'expo-router';
 import { activityService } from '../services/ActivityService';
 import { gemmaService } from '../services/GemmaService';
 import { smartMatchPreferencesService } from '../services/SmartMatchPreferencesService';
@@ -145,13 +146,30 @@ function rerankWithPreferences(matches: OldSmartMatchResult[], user: any, prefs:
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function SmartMatchProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
+    const segments = useSegments();
     const [matches, setMatches] = useState<OldSmartMatchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const isFetchingRef = useRef(false);
+    const segmentKey = segments.join('/');
+    const isQuietRoute = [
+        '(volunteer)/settings',
+        '(volunteer)/privacy',
+        '(volunteer)/interests-skills',
+        'blocked-users',
+        '(volunteer)/referral',
+        'help-center',
+        '(npo)/settings',
+        '(npo)/settings/privacy',
+        '(npo)/edit-profile',
+    ].some((route) => segmentKey.includes(route));
 
     const fetchMatches = useCallback(async () => {
+        if (isQuietRoute) {
+            return;
+        }
+
         // Guard: only volunteers with a completed profile
         if (!user || user.role !== 'VOLUNTEER' || !user.profile_completed) {
             console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profile_completed:', user?.profile_completed);
@@ -228,7 +246,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             setIsLoading(false);
             isFetchingRef.current = false;
         }
-    }, [user]);
+    }, [isQuietRoute, user]);
 
     // Invalidate cache and refetch on refresh
     const refresh = useCallback(async () => {
@@ -271,20 +289,22 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
 
     // Auto-fetch when a volunteer user loads the context
     useEffect(() => {
+        if (isQuietRoute) return;
         if (user?.role === 'VOLUNTEER' && user?.profile_completed) {
             fetchMatches();
         }
-    }, [fetchMatches, user?.id, user?.role, user?.profile_completed]);
+    }, [fetchMatches, isQuietRoute, user?.id, user?.role, user?.profile_completed]);
 
     // Re-fetch when the volunteer updates their bio/skills/interests
     const profileKey = [user?.bio, user?.skills?.join(','), user?.interests?.join(',')].join('|');
     const prevProfileKey = useRef(profileKey);
     useEffect(() => {
+        if (isQuietRoute) return;
         if (prevProfileKey.current !== profileKey && user?.role === 'VOLUNTEER') {
             prevProfileKey.current = profileKey;
             fetchMatches();
         }
-    }, [fetchMatches, profileKey, user?.role]);
+    }, [fetchMatches, isQuietRoute, profileKey, user?.role]);
 
     const value = useMemo(
         () => ({

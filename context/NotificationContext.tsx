@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import { Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
@@ -35,10 +35,23 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
+    const segments = useSegments();
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = useState<AppNotification[]>([]);
     const { showToast } = useToast();
     const handledResponseIds = useRef<Set<string>>(new Set());
+    const segmentKey = segments.join('/');
+    const isQuietRoute = [
+        '(volunteer)/settings',
+        '(volunteer)/privacy',
+        '(volunteer)/interests-skills',
+        'blocked-users',
+        '(volunteer)/referral',
+        'help-center',
+        '(npo)/settings',
+        '(npo)/settings/privacy',
+        '(npo)/edit-profile',
+    ].some((route) => segmentKey.includes(route));
 
     const resolveNotificationRoute = useCallback((notif: Pick<AppNotification, "type" | "activityId" | "applicationId" | "npoId" | "conversationId">) => {
         switch (notif.type) {
@@ -73,6 +86,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // Load notifications from Supabase
     useEffect(() => {
+        if (isQuietRoute) return;
         if (!user) {
             setAllNotifications([]);
             return;
@@ -108,10 +122,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchNotifications();
-    }, [user]);
+    }, [user, isQuietRoute]);
 
     // Supabase Realtime Listener
     useEffect(() => {
+        if (isQuietRoute) return;
         if (!user) return;
 
         const channel = supabase
@@ -170,7 +185,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user, openNotification, showToast]);
+    }, [user, openNotification, showToast, isQuietRoute]);
 
     const addNotification = useCallback(async (notification: Omit<AppNotification, "id" | "timestamp" | "read">) => {
         if (!user) return;

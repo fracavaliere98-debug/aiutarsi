@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppUser } from "../types";
 
 export interface Badge {
     id: string;
@@ -72,6 +73,45 @@ export const getXPForCurrentLevel = (level: number): number => {
     return getXPForNextLevel(level - 1);
 };
 
+const getLevelName = (level: number): string => {
+    switch (level) {
+        case 1: return "Novizio";
+        case 2: return "Apprendista";
+        case 3: return "Sociale";
+        case 4: return "Attivo";
+        case 5: return "Esperto";
+        case 6: return "Mentore";
+        case 7: return "Pilastro";
+        case 8: return "Ambasciatore";
+        case 9: return "Leader";
+        default: return level >= 10 ? "Leggenda" : "Novizio";
+    }
+};
+
+const buildFallbackState = (userId: string, fallbackUser?: AppUser | null): GamificationState => {
+    const totalXP = fallbackUser?.xp ?? fallbackUser?.impactPoints ?? fallbackUser?.impact_points ?? 0;
+    const level = Math.max(1, Math.floor(totalXP < 110 ? 1 :
+        totalXP < 450 ? 2 :
+        totalXP < 1000 ? 3 :
+        totalXP < 2000 ? 4 :
+        totalXP < 3500 ? 5 :
+        totalXP < 5500 ? 6 :
+        totalXP < 8000 ? 7 :
+        totalXP < 11000 ? 8 :
+        totalXP < 15000 ? 9 :
+        10 + Math.floor((totalXP - 15000) / 5000)
+    ));
+
+    return {
+        ...INITIAL_STATE,
+        totalXP,
+        level,
+        levelName: getLevelName(level),
+        badges: (fallbackUser?.badges as Badge[]) || [],
+        initializedUsers: [userId],
+    };
+};
+
 interface GamificationContextType {
     state: GamificationState;
     levelProgress: number;
@@ -93,7 +133,7 @@ interface GamificationContextType {
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 
-export const getUserGamificationState = async (userId: string): Promise<GamificationState> => {
+export const getUserGamificationState = async (userId: string, fallbackUser?: AppUser | null): Promise<GamificationState> => {
     try {
         const { data, error } = await supabase
             .from('gamification_state')
@@ -108,7 +148,7 @@ export const getUserGamificationState = async (userId: string): Promise<Gamifica
             return {
                 totalXP: data.xp,
                 level: data.level,
-                levelName: data.levels?.name || "Sconosciuto",
+                levelName: data.levels?.name || getLevelName(data.level),
                 badges: data.badges as Badge[],
                 completedActivitiesCount: data.completed_activities_count,
                 processedActivityIds: data.processed_activity_ids || [],
@@ -127,7 +167,7 @@ export const getUserGamificationState = async (userId: string): Promise<Gamifica
     } catch (e) {
         console.warn("Failed to load user gamification from DB", e);
     }
-    return INITIAL_STATE;
+    return buildFallbackState(userId, fallbackUser);
 };
 
 export const GamificationProvider = ({ children }: { children: ReactNode }) => {
@@ -140,7 +180,7 @@ export const GamificationProvider = ({ children }: { children: ReactNode }) => {
         enabled: !!user?.id,
         staleTime: 30_000,
         refetchInterval: 60_000, // Background poll every minute to catch backend trigger updates
-        queryFn: () => getUserGamificationState(user!.id)
+        queryFn: () => getUserGamificationState(user!.id, user)
     });
 
     const state = data || INITIAL_STATE;

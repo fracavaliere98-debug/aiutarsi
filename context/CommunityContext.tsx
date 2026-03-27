@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useSegments } from 'expo-router';
 import { supabase } from '../utils/supabase';
 import { CommunityPost, PostReaction, ReactionType } from '../types/community';
 import { useAuth } from './AuthContext';
@@ -21,11 +22,24 @@ const CommunityContext = createContext<CommunityContextType | undefined>(undefin
 
 export function CommunityProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
+    const segments = useSegments();
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const segmentKey = segments.join('/');
+    const isQuietRoute = [
+        '(volunteer)/settings',
+        '(volunteer)/privacy',
+        '(volunteer)/interests-skills',
+        'blocked-users',
+        '(volunteer)/referral',
+        'help-center',
+        '(npo)/settings',
+        '(npo)/settings/privacy',
+        '(npo)/edit-profile',
+    ].some((route) => segmentKey.includes(route));
 
     const getBlockedAuthorIds = useCallback(async () => {
-        if (!user?.id) return [];
+        if (isQuietRoute || !user?.id) return [];
 
         const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
             supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
@@ -36,7 +50,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         iBlocked?.forEach((r: any) => blockSet.add(r.blocked_id));
         blockedMe?.forEach((r: any) => blockSet.add(r.blocker_id));
         return Array.from(blockSet);
-    }, [user?.id]);
+    }, [user?.id, isQuietRoute]);
 
     const buildPostsQuery = useCallback((blockedAuthorIds: string[] = []) => {
         let query = supabase
@@ -78,6 +92,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
+        if (isQuietRoute) return;
         setIsLoading(true);
         try {
             const blockedAuthorIds = await getBlockedAuthorIds();
@@ -109,7 +124,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [buildPostsQuery, getBlockedAuthorIds]);
+    }, [buildPostsQuery, getBlockedAuthorIds, isQuietRoute]);
 
     const fetchPostsForActivity = useCallback(async (activityId: string) => {
         if (!activityId) return [];
@@ -287,11 +302,13 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
 
     // Initial load
     useEffect(() => {
+        if (isQuietRoute) return;
         if (user) fetchFeed();
-    }, [user, fetchFeed]);
+    }, [user, fetchFeed, isQuietRoute]);
 
     // Realtime subscription for new posts
     useEffect(() => {
+        if (isQuietRoute) return;
         const channel = supabase
             .channel('community_feed')
             .on('postgres_changes', {
@@ -304,7 +321,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [fetchFeed]);
+    }, [fetchFeed, isQuietRoute]);
 
     return (
         <CommunityContext.Provider value={{ posts, isLoading, fetchFeed, fetchPostsForActivity, createPost, updatePost, deletePost, reportPost, toggleReaction }}>
