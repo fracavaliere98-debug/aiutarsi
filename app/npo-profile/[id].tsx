@@ -221,12 +221,15 @@ export default function NPOProfileScreen() {
 
                 {/* Main Action: Follow */}
                 <TouchableOpacity
-                    className="flex-1 flex-row items-center justify-center p-4 rounded-2xl w-full max-w-[280px]"
+                    className="flex-row items-center justify-center rounded-2xl w-full max-w-[220px]"
                     style={{
                         backgroundColor: isFollowingNPO(npoId) ? 'transparent' : Colors.primary,
                         borderWidth: isFollowingNPO(npoId) ? 1 : 0,
                         borderColor: isFollowingNPO(npoId) ? Colors.primary : 'transparent',
-                        opacity: isProcessing ? 0.7 : 1
+                        opacity: isProcessing ? 0.7 : 1,
+                        minHeight: 46,
+                        paddingHorizontal: 18,
+                        paddingVertical: 0,
                     }}
                     disabled={isProcessing || user?.role !== "VOLUNTEER"}
                     onPress={async () => {
@@ -240,19 +243,19 @@ export default function NPOProfileScreen() {
                     {isProcessing ? (
                         <ActivityIndicator size="small" color={isFollowingNPO(npoId) ? Colors.primary : "#fff"} />
                     ) : (
-                        <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                             <Heart
-                                size={20}
+                                size={18}
                                 color={isFollowingNPO(npoId) ? Colors.primary : "#fff"}
                                 fill={isFollowingNPO(npoId) ? Colors.primary : "transparent"}
                             />
                             <Text
                                 className="ml-2 font-bold"
-                                style={{ color: isFollowingNPO(npoId) ? Colors.primary : "#fff" }}
+                                style={{ color: isFollowingNPO(npoId) ? Colors.primary : "#fff", fontSize: 14 }}
                             >
                                 {isFollowingNPO(npoId) ? "Seguito" : "Segui Ente"}
                             </Text>
-                        </>
+                        </View>
                     )}
                 </TouchableOpacity>
             </View>
@@ -543,10 +546,20 @@ export default function NPOProfileScreen() {
                             {user?.role === "VOLUNTEER" && (
                                 <TouchableOpacity
                                     onPress={handleMessageNPO}
-                                    className="mt-6 bg-primary py-2 px-8 rounded-full flex-row items-center justify-center gap-2"
+                                    className="mt-6 bg-primary rounded-full"
+                                    style={{
+                                        minHeight: 44,
+                                        paddingHorizontal: 24,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
                                 >
-                                    <MessageCircle size={18} color="white" />
-                                    <Text className="text-white font-bold text-sm">Contatta Referente</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        <MessageCircle size={18} color="white" />
+                                        <Text className="text-white font-bold text-sm" style={{ lineHeight: 18 }}>
+                                            Contatta Referente
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
                             )}
                         </SoftCard>

@@ -25,6 +25,7 @@ import { supabase } from "../../../utils/supabase";
 import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
 import { requestForegroundLocationPermission } from "../../../utils/permissions";
+import { INTERESTS } from "../../../constants/Interests";
 
 import { SKILLS } from "../../../constants/Skills";
 
@@ -45,21 +46,11 @@ async function fetchNominatim(text: string): Promise<{ id: number; label: string
     } catch { return []; }
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const INTERESTS = [
-    { id: "Sociale", label: "Sociale", icon: Users },
-    { id: "Ambiente", label: "Ambiente", icon: TreePine },
-    { id: "Educazione", label: "Educazione", icon: BookOpen },
-    { id: "Animali", label: "Animali", icon: Dog },
-    { id: "Arte & Cultura", label: "Arte", icon: Palette },
-    { id: "Salute", label: "Salute", icon: Heart },
-];
-
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
 
 // Helper to get icon for category
 const getCategoryIcon = (category: string) => {
-    const interest = INTERESTS.find(i => i.id === category) || { icon: MapPin };
+    const interest = INTERESTS.find(i => i.label === category || i.id === category.toLowerCase()) || { icon: MapPin };
     return interest.icon;
 };
 
@@ -326,14 +317,14 @@ export function FilterModal({
                             <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b', marginBottom: 12 }}>Categoria / Interessi</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {INTERESTS.map((item) => {
-                                    const isSelected = pendingFilters.interests.includes(item.id);
+                                    const isSelected = pendingFilters.interests.includes(item.label);
                                     const Icon = item.icon;
                                     return (
                                         <TouchableOpacity
                                             key={item.id}
                                             onPress={() => setPendingFilters(f => ({
                                                 ...f,
-                                                interests: isSelected ? f.interests.filter(i => i !== item.id) : [...f.interests, item.id]
+                                                interests: isSelected ? f.interests.filter(i => i !== item.label) : [...f.interests, item.label]
                                             }))}
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,

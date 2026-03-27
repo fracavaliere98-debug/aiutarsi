@@ -9,6 +9,7 @@ import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 
 import * as ImagePicker from 'expo-image-picker';
 import { SKILLS } from "../../../constants/Skills";
+import { ACTIVITY_CATEGORIES } from "../../../constants/Interests";
 import { requestMediaLibraryPermission } from "../../../utils/permissions";
 
 export default function EditActivityScreen() {
@@ -222,7 +223,7 @@ export default function EditActivityScreen() {
                         <View>
                             <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
                             <View className="flex-row flex-wrap gap-2">
-                                {["Sociale", "Ambiente", "Istruzione", "Salute", "Animali"].map(cat => (
+                                {ACTIVITY_CATEGORIES.map(cat => (
                                     <TouchableOpacity
                                         key={cat}
                                         onPress={() => setFormData({ ...formData, category: cat })}

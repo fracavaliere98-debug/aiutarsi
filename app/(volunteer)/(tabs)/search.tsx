@@ -4,11 +4,10 @@ import {
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { Colors } from "../../../constants/Colors";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
     Search, MapPin, Calendar, X, Map as MapIcon,
-    BookOpen, Dog, Palette, Heart,
-    ChevronDown, CheckCircle2, Users, TreePine, Share2, Sparkles, Zap
+    Heart, ChevronDown, CheckCircle2, Share2, Sparkles, Zap, Bookmark, EyeOff
 } from "lucide-react-native";
 import { AppActivity } from "../../../types";
 import { useRouter } from "expo-router";
@@ -21,18 +20,10 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
+import { useSmartMatch } from "../../../context/SmartMatchContext";
+import { INTERESTS } from "../../../constants/Interests";
 
 import { SKILLS } from "../../../constants/Skills";
-
-// ─── Shared constants (keep in sync with map.tsx) ────────────────────────────
-const INTERESTS = [
-    { id: "Sociale", label: "Sociale", icon: Users },
-    { id: "Ambiente", label: "Ambiente", icon: TreePine },
-    { id: "Educazione", label: "Educazione", icon: BookOpen },
-    { id: "Animali", label: "Animali", icon: Dog },
-    { id: "Arte & Cultura", label: "Arte", icon: Palette },
-    { id: "Salute", label: "Salute", icon: Heart },
-];
 
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
 
@@ -187,13 +178,13 @@ function FilterModal({
                             <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b', marginBottom: 12 }}>Categoria / Interessi</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {INTERESTS.map(item => {
-                                    const isSelected = pendingFilters.interests.includes(item.id);
+                                    const isSelected = pendingFilters.interests.includes(item.label);
                                     const Icon = item.icon;
                                     return (
                                         <TouchableOpacity key={item.id}
                                             onPress={() => setPendingFilters(f => ({
                                                 ...f,
-                                                interests: isSelected ? f.interests.filter(i => i !== item.id) : [...f.interests, item.id]
+                                                interests: isSelected ? f.interests.filter(i => i !== item.label) : [...f.interests, item.label]
                                             }))}
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -252,6 +243,7 @@ function FilterModal({
 export default function SearchScreen() {
     const router = useRouter();
     const { showToast } = useToast();
+    const { matches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatch();
 
     // Search state
     const [searchText, setSearchText] = useState("");
@@ -359,8 +351,33 @@ export default function SearchScreen() {
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => { setFilters(pendingFilters); setIsFilterModalVisible(false); };
 
-    // Ordine crescente in base a start date (dalla più vicina/imminente alla più lontana)
-    const sortedActivities = [...paginatedActivities].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    const smartMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
+    // Base order remains chronological; top AI matches are lifted above it.
+    const sortedActivities = useMemo(
+        () => [...paginatedActivities].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
+        [paginatedActivities]
+    );
+    const topMatchActivities = useMemo(() => {
+        return sortedActivities
+            .filter((activity) => {
+                const match = smartMatchMap.get(activity.id);
+                return match?.confidence === 'top' || (typeof match?.score === 'number' && match.score >= 85);
+            })
+            .sort((a, b) => {
+                const scoreDiff = (smartMatchMap.get(b.id)?.score ?? 0) - (smartMatchMap.get(a.id)?.score ?? 0);
+                if (scoreDiff !== 0) return scoreDiff;
+                return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
+            })
+            .slice(0, 4);
+    }, [smartMatchMap, sortedActivities]);
+    const topMatchIds = useMemo(() => new Set(topMatchActivities.map((activity) => activity.id)), [topMatchActivities]);
+    const listActivities = useMemo(() => {
+        if (!topMatchActivities.length) return sortedActivities;
+        return [
+            ...topMatchActivities,
+            ...sortedActivities.filter((activity) => !topMatchIds.has(activity.id)),
+        ];
+    }, [sortedActivities, topMatchActivities, topMatchIds]);
 
     const getCategoryColors = (cat?: string) => {
         switch ((cat || '').toUpperCase()) {
@@ -379,17 +396,74 @@ export default function SearchScreen() {
         const isFocusedMode = expandedId !== null;
         const isDimmed = isFocusedMode && !isExpanded;
         const catColors = getCategoryColors(item.category);
+        const aiMatch = smartMatchMap.get(item.id);
+        const displayScore = typeof aiMatch?.score === 'number' ? aiMatch.score : (item.matchPercentage ?? 0);
+        const displayBadge = aiMatch?.confidenceLabel || 'Gemma';
+        const aiChips = aiMatch?.chips?.slice(0, 3) || [];
+        const isTopGemma = aiMatch?.confidence === 'top';
+        const isInTopSection = topMatchIds.has(item.id);
+        const previousItem = index > 0 ? listActivities[index - 1] : null;
+        const showTopSectionHeader = isInTopSection && index === 0;
+        const showAllActivitiesHeader = !isInTopSection && !!topMatchActivities.length && !!previousItem && topMatchIds.has(previousItem.id);
 
 
         return (
-            <TouchableOpacity
-                onPress={() => setExpandedId(isExpanded ? null : item.id)}
-                activeOpacity={0.9}
-                testID={`activity-card-${index}`}
-                className="mb-5"
-                style={{ opacity: isDimmed ? 0.35 : 1, transform: [{ scale: isExpanded ? 1.02 : 1 }] }}
-            >
-                <View className={`w-full bg-white rounded-3xl relative overflow-hidden p-0 border border-slate-100 ${isExpanded ? 'shadow-2xl' : 'shadow-md'}`}>
+            <View>
+                {showTopSectionHeader && (
+                    <View style={{
+                        backgroundColor: '#fff4f7',
+                        borderRadius: 18,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        marginBottom: 12,
+                        borderWidth: 1,
+                        borderColor: '#ffd6e4',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                    }}>
+                        <Sparkles size={15} color={Colors.accent} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: '#be185d', fontSize: 12, fontWeight: '900', textTransform: 'uppercase' }}>
+                                Top match per te
+                            </Text>
+                            <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '600' }}>
+                                Le attività con il fit migliore secondo Gemma
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {showAllActivitiesHeader && (
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                        marginTop: 4,
+                        marginBottom: 14,
+                    }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                        <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Tutte le attivita
+                        </Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                    </View>
+                )}
+
+                <TouchableOpacity
+                    onPress={() => {
+                        const nextExpanded = isExpanded ? null : item.id;
+                        setExpandedId(nextExpanded);
+                        if (nextExpanded && aiMatch && !aiMatch.seen) {
+                            void markMatchSeen(aiMatch);
+                        }
+                    }}
+                    activeOpacity={0.9}
+                    testID={`activity-card-${index}`}
+                    className="mb-5"
+                    style={{ opacity: isDimmed ? 0.35 : 1, transform: [{ scale: isExpanded ? 1.02 : 1 }] }}
+                >
+                    <View className={`w-full bg-white rounded-3xl relative overflow-hidden p-0 border border-slate-100 ${isExpanded ? 'shadow-2xl' : 'shadow-md'}`}>
                     {/* Image section */}
                     <View className={`${isExpanded ? 'h-[180px]' : 'h-[150px]'} bg-slate-200 w-full relative`}>
                         <Image
@@ -409,7 +483,8 @@ export default function SearchScreen() {
                                 paddingVertical: 5,
                                 borderRadius: 999,
                                 gap: 5,
-                            }} className="bg-primary shadow-md border border-white/20">
+                                backgroundColor: isTopGemma ? Colors.accent : Colors.primary,
+                            }} className="shadow-md border border-white/20">
                                 <Sparkles size={12} color="#ffffff" fill="#ffffff" />
                                 <Text
                                     style={{
@@ -419,7 +494,7 @@ export default function SearchScreen() {
                                         textTransform: 'uppercase'
                                     }}
                                 >
-                                    {item.matchPercentage}% MATCH
+                                    {aiMatch ? displayBadge : `${displayScore}% MATCH`}
                                 </Text>
                             </View>
                             {item.isUrgent && (
@@ -430,16 +505,31 @@ export default function SearchScreen() {
                         </View>
 
                         {/* Heart Icon */}
-                        <TouchableOpacity className="absolute top-4 right-4 bg-black/20 p-2.5 rounded-full z-20 backdrop-blur-md">
-                            <Heart size={16} color="white" strokeWidth={2.5} />
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation?.();
+                                if (aiMatch) void likeMatch(aiMatch);
+                            }}
+                            className="absolute top-4 right-4 bg-black/20 p-2.5 rounded-full z-20 backdrop-blur-md"
+                        >
+                            <Heart size={16} color="white" strokeWidth={2.5} fill={aiMatch?.liked ? 'white' : 'transparent'} />
                         </TouchableOpacity>
                     </View>
 
                     {/* Content section */}
                     <View className="p-4">
-                        <View className="flex-row items-center justify-between mb-2">
-                            <View className={`${catColors.bg} px-2 py-0.5 rounded-md`}>
-                                <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                        <View className="flex-row items-center justify-between mb-3">
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                                <View className={`${catColors.bg} px-2.5 py-1 rounded-md`}>
+                                    <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                                </View>
+                                {displayScore > 0 && (
+                                    <View style={{ backgroundColor: isTopGemma ? '#fff1f7' : '#eef2ff', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999 }}>
+                                        <Text style={{ color: isTopGemma ? Colors.accent : Colors.primary, fontSize: 10, fontWeight: '900' }}>
+                                            {displayScore}% fit
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
                         </View>
 
@@ -451,6 +541,38 @@ export default function SearchScreen() {
                             <Text className="text-indigo-800 font-bold text-xs">{item.npoName}</Text>
                             {isExpanded && <CheckCircle2 size={13} color="#4f46e5" strokeWidth={2.5} />}
                         </View>
+
+                        {!!aiMatch?.reason && (
+                            <View style={{
+                                backgroundColor: isTopGemma ? '#fff4f7' : '#f8f9ff',
+                                borderRadius: 16,
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                                marginBottom: 10,
+                                borderWidth: 1,
+                                borderColor: isTopGemma ? '#ffd6e4' : '#e8eaf0',
+                            }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                                    <Sparkles size={12} color={isTopGemma ? Colors.accent : Colors.primary} />
+                                    <Text style={{ color: isTopGemma ? Colors.accent : Colors.primary, fontSize: 11, fontWeight: '900' }}>
+                                        {displayBadge}{displayScore > 0 ? ` · ${displayScore}%` : ''}
+                                    </Text>
+                                </View>
+                                <Text style={{ color: '#475569', fontSize: 12, lineHeight: 18, fontWeight: '600' }} numberOfLines={isExpanded ? 3 : 2}>
+                                    {aiMatch.reason}
+                                </Text>
+                            </View>
+                        )}
+
+                        {!!aiChips.length && (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                                {aiChips.map((chip) => (
+                                    <View key={`${item.id}-${chip}`} style={{ backgroundColor: '#eef2ff', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 }}>
+                                        <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '800' }}>{chip}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
 
                         <View className="gap-1.5 mb-1">
                             <View className="flex-row items-center gap-2">
@@ -477,6 +599,20 @@ export default function SearchScreen() {
                                         className="bg-primary flex-1 py-3.5 rounded-2xl items-center shadow-md">
                                         <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
                                     </TouchableOpacity>
+                                    {aiMatch && (
+                                        <TouchableOpacity
+                                            onPress={() => void saveMatch(aiMatch)}
+                                            className="bg-indigo-50 p-3.5 rounded-2xl items-center justify-center">
+                                            <Bookmark size={18} color={Colors.primary} fill={aiMatch.saved ? Colors.primary : 'transparent'} />
+                                        </TouchableOpacity>
+                                    )}
+                                    {aiMatch && (
+                                        <TouchableOpacity
+                                            onPress={() => void hideMatch(aiMatch)}
+                                            className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
+                                            <EyeOff size={18} color="#475569" />
+                                        </TouchableOpacity>
+                                    )}
                                     <TouchableOpacity 
                                         onPress={async () => {
                                             try {
@@ -494,8 +630,9 @@ export default function SearchScreen() {
                             </View>
                         )}
                     </View>
-                </View>
-            </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </View>
         );
     };
 
@@ -506,6 +643,7 @@ export default function SearchScreen() {
             rightElement={<VolunteerHeaderActions />} 
             bg="bg-background-light"
             hideBack={true}
+            noScroll
         >
             {/* ── Search + Filter Box (rounded card, matches Map UI) ── */}
             <View style={{
@@ -794,13 +932,15 @@ export default function SearchScreen() {
                 </View>
             )}
 
-
             {/* Activities List */}
             <FlashList
                 testID="activity-list"
-                data={sortedActivities}
+                data={listActivities}
                 keyExtractor={(item) => item.id}
                 renderItem={renderActivityItem}
+                style={{ flex: 1 }}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
                 onEndReached={() => { if (!isLoadingMore && hasMore) fetchNextPage(); }}
                 onEndReachedThreshold={0.5}
                 // @ts-ignore estimatedItemSize is a valid FlashList prop
@@ -808,7 +948,13 @@ export default function SearchScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} colors={[Colors.accent]} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={Colors.accent}
+                        colors={[Colors.accent]}
+                        progressViewOffset={12}
+                    />
                 }
                 ListFooterComponent={() => (
                     <View className="py-8 items-center">

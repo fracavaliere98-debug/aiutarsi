@@ -6,19 +6,11 @@ import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { Save, CheckCircle2 } from "lucide-react-native";
 import { SKILLS } from "../../constants/Skills";
+import { INTERESTS } from "../../constants/Interests";
 import { useToast } from "../../context/ToastContext";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 const { width } = Dimensions.get('window');
-
-const CATEGORIES = [
-    { id: 'ambiente', label: 'Ambiente', emoji: '🌿' },
-    { id: 'sociale', label: 'Sociale', emoji: '🤝' },
-    { id: 'educazione', label: 'Educazione', emoji: '📚' },
-    { id: 'animali', label: 'Animali', emoji: '🐶' },
-    { id: 'arte', label: 'Arte & Cultura', emoji: '🎨' },
-    { id: 'salute', label: 'Salute', emoji: '💚' },
-];
 
 export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () => void }) {
     const router = useRouter();
@@ -83,7 +75,7 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
                     </View>
 
                     <View className="flex-row flex-wrap justify-between gap-y-3">
-                        {CATEGORIES.map((item, index) => {
+                        {INTERESTS.map((item, index) => {
                             const isSelected = selectedInterests.includes(item.label);
                             return (
                                 <Animated.View 

@@ -15,47 +15,11 @@ import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
+import { INTERESTS } from '../../constants/Interests';
 
 const { width } = Dimensions.get('window');
 
-const CATEGORIES = [
-    {
-        id: 'ambiente',
-        label: 'Ambiente',
-        emoji: '🌿',
-        uri: 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'sociale',
-        label: 'Sociale',
-        emoji: '🤝',
-        uri: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'educazione',
-        label: 'Educazione',
-        emoji: '📚',
-        uri: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'animali',
-        label: 'Animali',
-        emoji: '🐶',
-        uri: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'arte',
-        label: 'Arte & Cultura',
-        emoji: '🎨',
-        uri: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'salute',
-        label: 'Salute',
-        emoji: '💚',
-        uri: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop',
-    },
-];
+const CATEGORIES = INTERESTS;
 
 export default function NPOCategoryScreen() {
     const router = useRouter();
