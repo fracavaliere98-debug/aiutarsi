@@ -11,6 +11,10 @@ export class AuthService {
         this._cachedAccessToken = token || null;
     }
 
+    getCachedAccessToken(): string | null {
+        return this._cachedAccessToken;
+    }
+
     private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs = 8000): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
 

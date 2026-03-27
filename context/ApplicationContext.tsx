@@ -55,6 +55,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const applyToNPOMutation = useMutation({
         mutationFn: async ({ npoId, npoName, message }: { npoId: string, npoName: string, message: string }) => {
             if (!user || user.role !== "VOLUNTEER") throw new Error("Unauthorized");
+            console.log("[DEBUG] ApplicationContext: applyToNPO mutation start", { npoId, volunteerId: user.id });
             const newApplication: OldApplication = {
                 id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 npoId,
@@ -68,13 +69,16 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
                 appliedDate: new Date().toISOString(),
             };
             await npoService.submitApplication(newApplication);
+            console.log("[DEBUG] ApplicationContext: applyToNPO submitApplication completed", { npoId, volunteerId: user.id });
 
-            addNotification({
+            void addNotification({
                 userId: npoId,
                 type: "APPLICATION_RECEIVED",
                 title: "Nuova Candidatura! 📋",
                 message: `${user.name} si è candidato come volontario`,
                 applicationId: newApplication.id,
+            }).catch((error) => {
+                console.warn("[DEBUG] ApplicationContext: addNotification after applyToNPO failed", error);
             });
             return true;
         },
@@ -124,7 +128,10 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const applyToNPO = useCallback(async (npoId: string, npoName: string, message: string) => {
         try {
             return await applyToNPOMutation.mutateAsync({ npoId, npoName, message });
-        } catch { return false; }
+        } catch (error) {
+            console.error("[DEBUG] ApplicationContext: applyToNPO failed", error);
+            return false;
+        }
     }, [applyToNPOMutation]);
 
     const approveApplication = useCallback(async (applicationId: string) => {

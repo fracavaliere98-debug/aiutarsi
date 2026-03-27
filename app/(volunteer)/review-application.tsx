@@ -37,16 +37,23 @@ export default function ReviewApplication() {
     const handleConfirm = async () => {
         setIsSubmitting(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network
-
             let success = false;
+            console.log("[DEBUG] ReviewApplication: handleConfirm start", {
+                type,
+                isActivity,
+                activityId,
+                npoId,
+                userId: user?.id,
+            });
 
             if (isActivity && activity) {
                 // IMMEDIATE Enrollment for OldActivity
                 success = await enrollInActivity(activity.id, notes, phoneNumber);
             } else if (npoUser) {
                 // Apply to NPO
+                console.log("[DEBUG] ReviewApplication: applyToNPO start", { npoId: npoUser.id });
                 success = await applyToNPO(npoUser.id, npoUser.npoName || "NPO", notes);
+                console.log("[DEBUG] ReviewApplication: applyToNPO resolved", { success, npoId: npoUser.id });
             }
 
             if (success) {
@@ -59,10 +66,11 @@ export default function ReviewApplication() {
                     }
                 } as any);
             } else {
+                console.warn("[DEBUG] ReviewApplication: submission returned false", { type, isActivity, activityId, npoId });
                 alert("Errore durante l'invio. Potresti aver già inviato una candidatura.");
             }
         } catch (error) {
-            console.error(error);
+            console.error("[DEBUG] ReviewApplication: handleConfirm failed", error);
             alert("Si è verificato un errore tecnico.");
         } finally {
             setIsSubmitting(false);

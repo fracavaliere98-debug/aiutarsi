@@ -8,27 +8,37 @@ import { UserAvatar } from "../UserAvatar";
 
 interface ApplicationSectionProps {
     applications: OldApplication[];
+    title?: string;
+    emptyStateText?: string;
+    dateLabel?: "applied" | "reviewed";
+    statusMode?: "pending" | "approved";
 }
 
-export function ApplicationSection({ applications }: ApplicationSectionProps) {
+export function ApplicationSection({
+    applications,
+    title = "Le mie candidature",
+    emptyStateText = "Nessuna candidatura inviata agli enti.",
+    dateLabel = "applied",
+    statusMode = "pending",
+}: ApplicationSectionProps) {
     const router = useRouter();
 
     return (
         <View className="px-6 mb-8">
             <Text className="text-xl font-black text-primary mb-3">
-                Le mie candidature
+                {title}
             </Text>
             {applications && applications.length > 0 ? (
                 <View className="flex-row flex-wrap justify-between gap-y-3">
                 {applications.map(app => {
-                    const statusLabel = app.status === "APPROVED" ? "Accettata" :
-                        app.status === "REJECTED" ? "Rifiutata" : "In Attesa";
+                    const statusLabel = statusMode === "approved" ? "Accettata" : "In Attesa";
                     const statusClasses =
-                        app.status === "APPROVED"
+                        statusMode === "approved"
                             ? "text-emerald-700"
-                            : app.status === "REJECTED"
-                                ? "text-red-700"
-                                : "text-orange-700";
+                            : "text-orange-700";
+                    const displayDate = dateLabel === "reviewed"
+                        ? (app.reviewedDate || app.appliedDate)
+                        : app.appliedDate;
 
                     return (
                         <TouchableOpacity
@@ -56,7 +66,7 @@ export function ApplicationSection({ applications }: ApplicationSectionProps) {
                                         <View className="flex-row items-center gap-1 mt-1">
                                             <Clock size={11} color="#9ca3af" />
                                             <Text className="text-gray-400 text-[11px]">
-                                                {new Date(app.appliedDate).toLocaleDateString()}
+                                                {new Date(displayDate).toLocaleDateString()}
                                             </Text>
                                         </View>
                                     </View>
@@ -70,7 +80,7 @@ export function ApplicationSection({ applications }: ApplicationSectionProps) {
                 <View className="bg-gray-50 rounded-2xl p-6 items-center border border-gray-100 border-dashed">
                     <Text className="text-4xl mb-2 opacity-50">📬</Text>
                     <Text className="text-gray-400 font-medium text-center text-sm">
-                        Nessuna candidatura inviata agli enti.
+                        {emptyStateText}
                     </Text>
                 </View>
             )}

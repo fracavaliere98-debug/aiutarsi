@@ -1,9 +1,27 @@
 import { AppActivity, AppActivityApplication, OldReview, OldVolunteerReview } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
+import { authService } from './AuthService';
+import { profileRest } from '../utils/profileRest';
 import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
 export class ActivityService {
+    private async _getAccessToken(): Promise<string> {
+        const cached = authService.getCachedAccessToken();
+        if (cached) return cached;
+
+        const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('auth.getSession timeout after 1500ms')), 1500))
+        ]) as any;
+
+        const token = data?.session?.access_token;
+        if (!token) {
+            throw new Error('Sessione assente o token utente non disponibile');
+        }
+        authService.setCachedAccessToken(token);
+        return token;
+    }
 
     // Helper: Map DB Activity to AppActivity
     private _mapDbActivityToApp(dbActivity: any): AppActivity {
@@ -493,24 +511,16 @@ export class ActivityService {
     }
 
     async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<AppActivity> {
-        // Using upsert handles re-enrollment after cancellation/rejection
-        const { error } = await supabase
-            .from('activity_participants')
-            .upsert({
+        const accessToken = await this._getAccessToken();
+        await profileRest.joinActivity({
                 activity_id: activityId,
                 user_id: userId,
                 status: 'REGISTERED',
                 message: message,
                 phone: phone
-            }, { onConflict: 'activity_id,user_id' });
-
-        if (error) {
-            // Handle duplicate key error gracefully
-            if (error.code === '23505') { // Unique violation
-            } else {
-                throw error;
-            }
-        }
+            },
+            accessToken
+        );
 
         // Sync with group chat if it exists
         try {
@@ -531,32 +541,52 @@ export class ActivityService {
         }
 
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
-        const updated = await this.getActivityById(activityId);
-        return updated!;
+        return {
+            id: activityId,
+            npoId: '',
+            npoName: '',
+            title: '',
+            dateTime: '',
+            endDateTime: '',
+            location: { coords: { lat: 0, lng: 0 }, address: '' },
+            slots: 0,
+            category: '',
+            skills: [],
+            description: '',
+            status: 'APERTA',
+            iscritti: [userId],
+            matchPercentage: 0,
+            isUrgent: false,
+        };
     }
 
     async leaveActivity(activityId: string, userId: string): Promise<AppActivity> {
-        const { error } = await supabase
-            .from('activity_participants')
-            .delete()
-            .eq('activity_id', activityId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.leaveActivity(activityId, userId, accessToken);
 
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
-        const updated = await this.getActivityById(activityId);
-        return updated!;
+        return {
+            id: activityId,
+            npoId: '',
+            npoName: '',
+            title: '',
+            dateTime: '',
+            endDateTime: '',
+            location: { coords: { lat: 0, lng: 0 }, address: '' },
+            slots: 0,
+            category: '',
+            skills: [],
+            description: '',
+            status: 'APERTA',
+            iscritti: [],
+            matchPercentage: 0,
+            isUrgent: false,
+        };
     }
 
     async withdrawApplication(activityId: string, userId: string): Promise<void> {
-        const { error } = await supabase
-            .from('activity_participants')
-            .delete()
-            .eq('activity_id', activityId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.leaveActivity(activityId, userId, accessToken);
 
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
@@ -618,44 +648,36 @@ export class ActivityService {
 
     // --- Applications (AppActivity Specific) ---
     async getActivityApplications(): Promise<AppActivityApplication[]> {
-        const { data, error } = await supabase
-            .from('activity_participants')
-            .select(`
-                *,
-                volunteer:user_id (full_name, avatar_url, phone)
-            `)
-            .in('status', ['PENDING', 'APPROVED', 'REJECTED', 'REGISTERED'])
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+            const accessToken = await this._getAccessToken();
+            const data = await profileRest.listActivityApplications(accessToken);
+            return data.map((row: any) => ({
+                id: `${row.activity_id}_${row.user_id}`,
+                activityId: row.activity_id,
+                volunteerId: row.user_id,
+                volunteerName: row.volunteer?.full_name || "Volontario",
+                volunteerAvatar: row.volunteer?.avatar_url || "",
+                status: row.status as any,
+                appliedDate: row.created_at,
+                message: row.message,
+                phone: row.phone || row.volunteer?.phone
+            }));
+        } catch (error) {
             console.error("Error fetching activity applications", error);
             return [];
         }
-
-        return data.map((row: any) => ({
-            id: `${row.activity_id}_${row.user_id}`, // Composite key simulation
-            activityId: row.activity_id,
-            volunteerId: row.user_id,
-            volunteerName: row.volunteer?.full_name || "Volontario",
-            volunteerAvatar: row.volunteer?.avatar_url || "",
-            status: row.status as any,
-            appliedDate: row.created_at,
-            message: row.message,
-            phone: row.phone || row.volunteer?.phone
-        }));
     }
 
     async submitActivityApplication(appData: Omit<AppActivityApplication, 'id'>): Promise<AppActivityApplication> {
-        const { error } = await supabase
-            .from('activity_participants')
-            .insert({
+        const accessToken = await this._getAccessToken();
+        await profileRest.submitActivityApplication({
                 activity_id: appData.activityId,
                 user_id: appData.volunteerId,
                 status: appData.status || 'PENDING',
                 message: appData.message
-            });
-
-        if (error) throw error;
+            },
+            accessToken
+        );
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
 
         return {
@@ -665,13 +687,8 @@ export class ActivityService {
     }
 
     async updateActivityApplicationStatus(activityId: string, volunteerId: string, status: 'APPROVED' | 'REJECTED'): Promise<void> {
-        const { error } = await supabase
-            .from('activity_participants')
-            .update({ status })
-            .eq('activity_id', activityId)
-            .eq('user_id', volunteerId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.updateActivityApplicationStatus(activityId, volunteerId, { status }, accessToken);
 
         // If approved, sync with group chat
         if (status === 'APPROVED') {

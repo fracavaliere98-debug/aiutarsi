@@ -52,6 +52,7 @@ interface VolunteerProfileViewProps {
     followedNPOs?: AppUser[];
     affiliatedNPOs: AppUser[];
     npoApplications: OldApplication[];
+    approvedNPOApplications?: OldApplication[];
     hideBack?: boolean;
     children?: React.ReactNode;
 }
@@ -72,6 +73,7 @@ export function VolunteerProfileView({
     followedNPOs,
     affiliatedNPOs = [],
     npoApplications = [],
+    approvedNPOApplications = [],
     hideBack = false,
     children
 }: VolunteerProfileViewProps) {
@@ -170,6 +172,7 @@ export function VolunteerProfileView({
                     isOwnProfile={isOwnProfile}
                     affiliatedNPOs={affiliatedNPOs as any}
                     followedNPOs={followedNPOs as any}
+                    approvedApplications={approvedNPOApplications}
                 />
 
                 {children}

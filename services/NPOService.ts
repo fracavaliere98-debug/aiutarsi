@@ -1,8 +1,26 @@
 import { AppUser, OldApplication } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
+import { authService } from './AuthService';
+import { profileRest } from '../utils/profileRest';
 import { supabase } from '../utils/supabase';
 
 export class NPOService {
+    private async _getAccessToken(): Promise<string> {
+        const cached = authService.getCachedAccessToken();
+        if (cached) return cached;
+
+        const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('auth.getSession timeout after 1500ms')), 1500))
+        ]) as any;
+
+        const token = data?.session?.access_token;
+        if (!token) {
+            throw new Error('Sessione assente o token utente non disponibile');
+        }
+        authService.setCachedAccessToken(token);
+        return token;
+    }
 
     // Helper to map Profile rows to the current app user shape.
     private _mapProfileToUser(profile: any): AppUser {
@@ -47,6 +65,7 @@ export class NPOService {
             skills: dbApp.volunteer?.user_skills?.map((s: any) => s.skill) || [],
             status: dbApp.status,
             appliedDate: dbApp.created_at,
+            reviewedDate: dbApp.reviewed_at || undefined,
         };
     }
 
@@ -124,78 +143,57 @@ export class NPOService {
     // --- Applications ---
 
     async submitApplication(applicationData: Omit<OldApplication, 'id'>): Promise<OldApplication> {
-        const { data, error } = await supabase
-            .from('applications')
-            .insert({
+        const accessToken = await this._getAccessToken();
+        await profileRest.submitApplication({
                 npo_id: applicationData.npoId,
                 volunteer_id: applicationData.volunteerId,
                 message: applicationData.message,
                 status: 'PENDING'
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
+            },
+            accessToken
+        );
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
 
         return {
             ...applicationData,
-            id: data.id,
-            appliedDate: data.created_at,
+            appliedDate: applicationData.appliedDate || new Date().toISOString(),
             status: 'PENDING',
-            skills: []
+            skills: applicationData.skills || []
         };
     }
 
     async getApplicationsForNPO(npoId: string): Promise<OldApplication[]> {
-        const { data, error } = await supabase
-            .from('applications')
-            .select(`
-                *,
-                volunteer:volunteer_id (
-                    full_name, 
-                    avatar_url,
-                    user_skills (skill)
-                ),
-                npo:npo_id (npo_name, avatar_url)
-            `)
-            .eq('npo_id', npoId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+            const accessToken = await this._getAccessToken();
+            const data = await profileRest.listApplicationsForNPO(npoId, accessToken);
+            return data.map((app) => this._mapDbAppToLocalApp(app));
+        } catch (error) {
             console.error("Error fetching applications:", error);
             return [];
         }
-
-        return data.map(this._mapDbAppToLocalApp);
     }
 
     async getApplicationsForVolunteer(volunteerId: string): Promise<OldApplication[]> {
-        const { data, error } = await supabase
-            .from('applications')
-            .select(`
-                *,
-                volunteer:volunteer_id (full_name, avatar_url),
-                npo:npo_id (npo_name, avatar_url)
-            `)
-            .eq('volunteer_id', volunteerId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+            const accessToken = await this._getAccessToken();
+            const data = await profileRest.listApplicationsForVolunteer(volunteerId, accessToken);
+            return data.map((app) => this._mapDbAppToLocalApp(app));
+        } catch (error) {
             console.error("Error fetching applications:", error);
             return [];
         }
-
-        return data.map(this._mapDbAppToLocalApp);
     }
 
     async updateApplicationStatus(appId: string, status: 'APPROVED' | 'REJECTED'): Promise<void> {
-        const { error } = await supabase
-            .from('applications')
-            .update({ status })
-            .eq('id', appId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.updateApplicationStatus(
+            appId,
+            {
+                status,
+                reviewed_at: new Date().toISOString(),
+            },
+            accessToken
+        );
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
     }
 }

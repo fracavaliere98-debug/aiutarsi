@@ -180,16 +180,21 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
 
     const enrollMutation = useMutation({
         mutationFn: async ({ activityId, message, phone }: any) => {
-            const updated = await activityService.joinActivity(activityId, user!.id, message, phone);
+            console.log("[DEBUG] ActivityContext: enrollInActivity mutation start", { activityId, userId: user!.id });
+            await activityService.joinActivity(activityId, user!.id, message, phone);
+            console.log("[DEBUG] ActivityContext: enrollInActivity joinActivity completed", { activityId, userId: user!.id });
             // Optimistic update
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
-            addNotification({
-                userId: updated.npoId || "",
+            const currentActivity = rawActivities.find(a => a.id === activityId);
+            void addNotification({
+                userId: currentActivity?.npoId || "",
                 type: "VOLUNTEER_ENROLLED",
                 title: "Nuovo Volontario Iscritto! 🎉",
-                message: message ? `${user!.name} si è iscritto: "${message}"` : `${user!.name} si è iscritto all'attività "${updated.title}"`,
+                message: message ? `${user!.name} si è iscritto: "${message}"` : `${user!.name} si è iscritto all'attività "${currentActivity?.title || 'Attività'}"`,
                 activityId
+            }).catch((error) => {
+                console.warn("[DEBUG] ActivityContext: addNotification after enroll failed", error);
             });
             return true;
         },
@@ -272,7 +277,15 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
 
     // Callback Wrappers
     const createActivity = useCallback(async (activityData: any) => { if (user?.role !== 'NPO') return null; try { return await createMutation.mutateAsync(activityData); } catch { return null; } }, [user, createMutation]);
-    const enrollInActivity = useCallback(async (activityId: string, message?: string, phone?: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await enrollMutation.mutateAsync({ activityId, message, phone }); } catch { return false; } }, [user, enrollMutation]);
+    const enrollInActivity = useCallback(async (activityId: string, message?: string, phone?: string) => {
+        if (user?.role !== 'VOLUNTEER') return false;
+        try {
+            return await enrollMutation.mutateAsync({ activityId, message, phone });
+        } catch (error) {
+            console.error("[DEBUG] ActivityContext: enrollInActivity failed", error);
+            return false;
+        }
+    }, [user, enrollMutation]);
     const unenrollFromActivity = useCallback(async (activityId: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await unenrollMutation.mutateAsync(activityId); } catch { return false; } }, [user, unenrollMutation]);
     const applyToActivity = useCallback(async (activityId: string, message?: string, phone?: string) => { if (!user) return false; try { return await applyMutation.mutateAsync({ activityId, message, phone }); } catch { return false; } }, [user, applyMutation]);
     const submitReview = useCallback(async (reviewData: any) => { if (user?.role !== 'VOLUNTEER') return false; try { return await reviewMutation.mutateAsync(reviewData); } catch { return false; } }, [user, reviewMutation]);

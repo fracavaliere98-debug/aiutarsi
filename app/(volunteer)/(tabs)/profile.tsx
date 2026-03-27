@@ -23,11 +23,19 @@ export default function VolunteerProfile() {
     const { getVolunteerApplications } = useApplications();
     const myApplications = getVolunteerApplications(user?.id || "");
 
-    const affiliatedNPOIds = React.useMemo(
-        () => myApplications
-            .filter(app => app.status === "APPROVED")
-            .map(app => app.npoId),
+    const pendingApplications = React.useMemo(
+        () => myApplications.filter((app) => app.status === "PENDING"),
         [myApplications]
+    );
+
+    const approvedApplications = React.useMemo(
+        () => myApplications.filter((app) => app.status === "APPROVED"),
+        [myApplications]
+    );
+
+    const affiliatedNPOIds = React.useMemo(
+        () => approvedApplications.map(app => app.npoId),
+        [approvedApplications]
     );
 
     const followedNPOIds = React.useMemo(
@@ -114,7 +122,8 @@ export default function VolunteerProfile() {
             onSharePress={handleShare}
             followedNPOs={followedNPOs}
             affiliatedNPOs={affiliatedNPOs}
-            npoApplications={myApplications}
+            npoApplications={pendingApplications}
+            approvedNPOApplications={approvedApplications}
             hideBack={true}
         />
     );

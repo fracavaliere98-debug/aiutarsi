@@ -158,6 +158,102 @@ async function request<T>(
 }
 
 export const profileRest = {
+  joinActivity: async (
+    payload: { activity_id: string; user_id: string; status: "REGISTERED" | "PENDING"; message?: string; phone?: string },
+    accessToken?: string
+  ) => {
+    return request(
+      "POST",
+      `/rest/v1/activity_participants`,
+      payload,
+      accessToken,
+      { Prefer: "resolution=merge-duplicates,return=minimal" }
+    );
+  },
+  leaveActivity: async (activityId: string, userId: string, accessToken?: string) => {
+    return request(
+      "DELETE",
+      `/rest/v1/activity_participants?activity_id=eq.${activityId}&user_id=eq.${userId}`,
+      undefined,
+      accessToken,
+      { Prefer: "return=minimal" }
+    );
+  },
+  listActivityApplications: async (accessToken?: string) => {
+    return request<any[]>(
+      "GET",
+      `/rest/v1/activity_participants?select=activity_id,user_id,status,created_at,message,phone,volunteer:user_id(full_name,avatar_url,phone)&status=in.(PENDING,APPROVED,REJECTED,REGISTERED)&order=created_at.desc`,
+      undefined,
+      accessToken
+    );
+  },
+  submitActivityApplication: async (
+    payload: { activity_id: string; user_id: string; status: "PENDING"; message?: string },
+    accessToken?: string
+  ) => {
+    return request(
+      "POST",
+      `/rest/v1/activity_participants`,
+      payload,
+      accessToken,
+      { Prefer: "resolution=merge-duplicates,return=minimal" }
+    );
+  },
+  updateActivityApplicationStatus: async (
+    activityId: string,
+    userId: string,
+    payload: { status: "APPROVED" | "REJECTED" },
+    accessToken?: string
+  ) => {
+    return request(
+      "PATCH",
+      `/rest/v1/activity_participants?activity_id=eq.${activityId}&user_id=eq.${userId}`,
+      payload,
+      accessToken,
+      { Prefer: "return=minimal" }
+    );
+  },
+  submitApplication: async (
+    payload: { npo_id: string; volunteer_id: string; message?: string | null; status?: string },
+    accessToken?: string
+  ) => {
+    return request(
+      "POST",
+      `/rest/v1/applications`,
+      payload,
+      accessToken,
+      { Prefer: "return=minimal" }
+    );
+  },
+  listApplicationsForNPO: async (npoId: string, accessToken?: string) => {
+    return request<any[]>(
+      "GET",
+      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url,user_skills(skill)),npo:npo_id(npo_name,avatar_url)&npo_id=eq.${npoId}&order=created_at.desc`,
+      undefined,
+      accessToken
+    );
+  },
+  listApplicationsForVolunteer: async (volunteerId: string, accessToken?: string) => {
+    return request<any[]>(
+      "GET",
+      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url),npo:npo_id(npo_name,avatar_url)&volunteer_id=eq.${volunteerId}&order=created_at.desc`,
+      undefined,
+      accessToken
+    );
+  },
+  updateApplicationStatus: async (
+    applicationId: string,
+    payload: { status: "APPROVED" | "REJECTED"; reviewed_at?: string },
+    accessToken?: string
+  ) => {
+    return request(
+      "PATCH",
+      `/rest/v1/applications?id=eq.${applicationId}`,
+      payload,
+      accessToken,
+      { Prefer: "return=minimal" }
+    );
+  },
   listBlockedUsers: async (userId: string, accessToken?: string) => {
     return request<Array<{ id: string; blocked_id: string }>>(
       "GET",
