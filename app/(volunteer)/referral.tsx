@@ -24,10 +24,7 @@ export default function ReferralScreen() {
             setIsLoading(true);
             try {
                 console.log("[DEBUG] Referral: fetching count for", user.id);
-                const c = await Promise.race<number>([
-                    getReferralCount(),
-                    new Promise<number>((resolve) => setTimeout(() => resolve(0), 5000)),
-                ]);
+                const c = await getReferralCount();
                 console.log("[DEBUG] Referral: fetched count", c);
                 setCount(c);
             } catch (error) {

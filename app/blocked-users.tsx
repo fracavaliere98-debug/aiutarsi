@@ -10,17 +10,18 @@ import { SoftCard } from "../components/SoftCard";
 import { UserAvatar } from "../components/UserAvatar";
 import { Colors } from "../constants/Colors";
 import { useToast } from "../context/ToastContext";
+import { authService } from "../services/AuthService";
 
 interface BlockedUser {
     id: string; // block id
     blocked_id: string;
     profile: {
         id: string;
-        full_name: string;
-        npo_name: string;
-        avatar_url: string;
-        role: string;
-    };
+        full_name?: string | null;
+        npo_name?: string | null;
+        avatar_url?: string | null;
+        role?: string | null;
+    } | null;
 }
 
 export default function BlockedUsersScreen() {
@@ -46,29 +47,10 @@ export default function BlockedUsersScreen() {
         setIsLoading(true);
         try {
             console.log("[DEBUG] BlockedUsers: fetching for", user.id);
-            const { data, error } = await Promise.race([
-                supabase
-                    .from('blocked_users')
-                    .select(`
-                        id,
-                        blocked_id,
-                        profile:profiles!blocked_users_blocked_id_fkey (
-                            id,
-                            full_name,
-                            npo_name,
-                            avatar_url,
-                            role
-                        )
-                    `)
-                    .eq('blocker_id', user.id),
-                new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("blocked_users query timeout after 8000ms")), 8000)
-                ),
-            ]);
+            const profiles = await authService.getBlockedUsers(user.id);
 
-            if (error) throw error;
-            console.log("[DEBUG] BlockedUsers: fetched", Array.isArray((data as any)) ? (data as any).length : 0);
-            setBlockedUsers((data as any) || []);
+            console.log("[DEBUG] BlockedUsers: fetched", profiles.length);
+            setBlockedUsers(profiles);
         } catch (error: any) {
             console.error("Error fetching blocked users:", error);
             showToast('error', 'Errore nel caricamento degli utenti bloccati');

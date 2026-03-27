@@ -1,10 +1,11 @@
 import { AppUser } from '../types';
 import { supabase } from '../utils/supabase';
+import { profileRest } from '../utils/profileRest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 
 export class AuthService {
-    private async _withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 8000): Promise<T> {
+    private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs = 8000): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
         try {
@@ -17,6 +18,95 @@ export class AuthService {
         } finally {
             if (timeoutId) clearTimeout(timeoutId);
         }
+    }
+
+    private async _awaitQuery<T>(promise: PromiseLike<T>, label: string): Promise<T> {
+        try {
+            return await promise;
+        } catch (error: any) {
+            throw new Error(`${label} failed: ${this._formatErrorDetails(error)}`);
+        }
+    }
+
+    private _formatErrorDetails(error: any): string {
+        if (!error) return 'unknown error';
+
+        const parts = [
+            error.message || String(error),
+            error.code ? `code=${error.code}` : null,
+            error.details ? `details=${error.details}` : null,
+            error.hint ? `hint=${error.hint}` : null,
+            error.status ? `status=${error.status}` : null,
+        ].filter(Boolean);
+
+        return parts.join(' | ');
+    }
+
+    private async _getAccessTokenForRest(): Promise<string> {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+            throw new Error('Sessione assente o token utente non disponibile');
+        }
+        return accessToken;
+    }
+
+    private async _buildUpdatedUserFallback(
+        userId: string,
+        finalUpdates: Partial<AppUser>,
+        profileRow?: any,
+        skills?: string[],
+        interests?: string[]
+    ): Promise<AppUser> {
+        const cachedUser = await this.loadUserLocally();
+        const baseUser = (cachedUser && cachedUser.id === userId ? cachedUser : null)
+            || this._mapSupabaseUserToAppUser((await supabase.auth.getSession()).data.session?.user)
+            || ({ id: userId } as AppUser);
+
+        const merged: AppUser = {
+            ...baseUser,
+            ...(profileRow ? this._mapProfileToUser(profileRow) : {}),
+            ...finalUpdates,
+            id: userId,
+        };
+
+        if ((finalUpdates as any).full_name !== undefined || (finalUpdates as any).name !== undefined) {
+            merged.full_name = ((finalUpdates as any).full_name ?? (finalUpdates as any).name) as string;
+            merged.name = merged.full_name;
+        }
+
+        if ((finalUpdates as any).avatar_url !== undefined || (finalUpdates as any).avatar !== undefined) {
+            merged.avatar_url = ((finalUpdates as any).avatar_url ?? (finalUpdates as any).avatar) as string;
+            merged.avatar = merged.avatar_url;
+        }
+
+        if ((finalUpdates as any).public_email !== undefined || (finalUpdates as any).publicEmail !== undefined) {
+            merged.public_email = ((finalUpdates as any).public_email ?? (finalUpdates as any).publicEmail) as string;
+            merged.publicEmail = merged.public_email;
+        }
+
+        if ((finalUpdates as any).location_string !== undefined || (finalUpdates as any).locationString !== undefined) {
+            merged.location_string = ((finalUpdates as any).location_string ?? (finalUpdates as any).locationString) as string;
+            merged.locationString = merged.location_string;
+        }
+
+        if (skills !== undefined) {
+            merged.skills = skills;
+            merged.user_skills = skills.map((skill) => ({ skill }));
+        }
+
+        if (interests !== undefined) {
+            merged.interests = interests;
+            merged.user_interests = interests.map((interest) => ({ interest }));
+        }
+
+        merged.updated_at = new Date().toISOString();
+        return merged;
+    }
+
+    private _isTimeoutError(error: any, label?: string): boolean {
+        const message = this._formatErrorDetails(error).toLowerCase();
+        return message.includes('timeout');
     }
 
     private _validateEmail(email: string): boolean {
@@ -315,7 +405,7 @@ export class AuthService {
         // BUT, if for some reason we don't, we must sign in to ensure subsequent calls (updateProfile) work.
         if (!data.session) {
             console.log("Registration successful but no session returned. Attempting auto-login...");
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            const { error: signInError } = await supabase.auth.signInWithPassword({
                 email: cleanEmail,
                 password: password!,
             });
@@ -476,6 +566,52 @@ export class AuthService {
         }
     }
 
+    async getBlockedUsers(userId: string): Promise<Array<{
+        id: string;
+        blocked_id: string;
+        profile: {
+            id: string;
+            full_name?: string | null;
+            npo_name?: string | null;
+            avatar_url?: string | null;
+            role?: string | null;
+        } | null;
+    }>> {
+        try {
+            console.log("[DEBUG] AuthService: getBlockedUsers start", userId);
+            const accessToken = await this._getAccessTokenForRest();
+            const rows = await this._withTimeout(
+                profileRest.listBlockedUsers(userId, accessToken),
+                'blocked_users.list.rest',
+                8000
+            );
+
+            if (!rows.length) {
+                console.log("[DEBUG] AuthService: getBlockedUsers done 0");
+                return [];
+            }
+
+            const profiles = await this._withTimeout(
+                profileRest.getBasicProfiles(rows.map((row) => row.blocked_id), accessToken),
+                'profiles.blocked.getBasic.rest',
+                8000
+            );
+
+            const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+            const result = rows.map((row) => ({
+                id: row.id,
+                blocked_id: row.blocked_id,
+                profile: profileMap.get(row.blocked_id) || null,
+            }));
+
+            console.log("[DEBUG] AuthService: getBlockedUsers done", result.length);
+            return result;
+        } catch (error) {
+            console.error("Error fetching blocked users:", error);
+            return [];
+        }
+    }
+
     async getTotalVolunteersCount(): Promise<number> {
         try {
             const { count, error } = await supabase
@@ -520,6 +656,13 @@ export class AuthService {
 
                 // Keep auth email in sync, but trust public.profiles as the source of truth for role.
                 user.email = session.user.email || user.email;
+
+                if (!user.referral_code) {
+                    const ensuredCode = await this.ensureReferralCodeExists(session.user.id);
+                    if (ensuredCode) {
+                        user.referral_code = ensuredCode;
+                    }
+                }
             }
         } catch (e) {
             console.warn("[DEBUG] Profile DB fetch failed:", e);
@@ -539,8 +682,28 @@ export class AuthService {
         return user;
     }
 
+    async ensureReferralCodeExists(userId: string): Promise<string | null> {
+        const fallbackCode = userId.substring(0, 8).toUpperCase();
+
+        try {
+            const accessToken = await this._getAccessTokenForRest();
+            await this._withTimeout(
+                profileRest.updateVolunteerProfile(userId, { referral_code: fallbackCode }, accessToken),
+                'profiles.referral_code.ensure',
+                5000
+            );
+            console.log("[DEBUG] AuthService: ensured referral_code", fallbackCode);
+            return fallbackCode;
+        } catch (error) {
+            console.warn("[DEBUG] AuthService: failed ensuring referral_code", this._formatErrorDetails(error));
+            return null;
+        }
+    }
+
     async updateProfile(userId: string, updates: Partial<AppUser>): Promise<AppUser> {
         const startedAt = Date.now();
+        let failedStage = 'initialization';
+        let restProfileRow: any = null;
         console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId, updates);
 
         // 1. Handle Avatar Upload first
@@ -608,19 +771,34 @@ export class AuthService {
 
         try {
             console.log("[DEBUG] AuthService: updateProfile payload prepared", payload);
+            const accessToken = await this._getAccessTokenForRest();
 
             // 3. Perform Update to Public Profiles
             if (shouldUpdateProfileRow) {
-                const { error: updateError } = await this._withTimeout(
-                    supabase
-                        .from('profiles')
-                        .update(payload)
-                        .eq('id', userId),
-                    'profiles.update'
-                );
-
-                if (updateError) {
-                    throw new Error(updateError.message);
+                failedStage = 'profiles.update';
+                try {
+                    const result = await this._withTimeout(
+                        profileRest.updateVolunteerProfile(userId, payload, accessToken),
+                        'profiles.update.rest',
+                        10000
+                    );
+                    restProfileRow = Array.isArray(result) ? result[0] : result;
+                    console.log("[DEBUG] AuthService: profiles.update REST completed");
+                } catch (restError: any) {
+                    if (this._isTimeoutError(restError, 'profiles.update.rest')) {
+                        console.warn("[DEBUG] AuthService: profiles.update REST timed out, proceeding optimistically", {
+                            userId,
+                            payloadKeys: Object.keys(payload),
+                            error: this._formatErrorDetails(restError),
+                        });
+                    } else {
+                    console.error("[DEBUG] AuthService: profiles.update REST failed", {
+                        userId,
+                        payloadKeys: Object.keys(payload),
+                        error: this._formatErrorDetails(restError),
+                    });
+                    throw new Error(`profiles.update rejected: ${this._formatErrorDetails(restError)}`);
+                    }
                 }
                 console.log("[DEBUG] AuthService: profiles.update completed in", Date.now() - startedAt, "ms");
             } else {
@@ -630,30 +808,95 @@ export class AuthService {
             // 4. Sync Relationals (Skills/Interests)
             if (skillsToSync !== undefined) {
                 console.log("[DEBUG] AuthService: syncing user_skills", skillsToSync);
-                await this._syncRelationalList(userId, 'user_skills', 'skill', skillsToSync);
+                failedStage = 'user_skills.sync';
+                try {
+                    await this._withTimeout(
+                        profileRest.replaceVolunteerSkills(userId, skillsToSync, accessToken),
+                        'user_skills.replace.rest',
+                        10000
+                    );
+                } catch (skillsError: any) {
+                    if (this._isTimeoutError(skillsError, 'user_skills.replace.rest')) {
+                        console.warn("[DEBUG] AuthService: user_skills REST timed out, proceeding optimistically", {
+                            userId,
+                            error: this._formatErrorDetails(skillsError),
+                        });
+                    } else {
+                        throw skillsError;
+                    }
+                }
             }
             if (interestsToSync !== undefined) {
                 console.log("[DEBUG] AuthService: syncing user_interests", interestsToSync);
-                await this._syncRelationalList(userId, 'user_interests', 'interest', interestsToSync);
+                failedStage = 'user_interests.sync';
+                try {
+                    await this._withTimeout(
+                        profileRest.replaceVolunteerInterests(userId, interestsToSync, accessToken),
+                        'user_interests.replace.rest',
+                        10000
+                    );
+                } catch (interestsError: any) {
+                    if (this._isTimeoutError(interestsError, 'user_interests.replace.rest')) {
+                        console.warn("[DEBUG] AuthService: user_interests REST timed out, proceeding optimistically", {
+                            userId,
+                            error: this._formatErrorDetails(interestsError),
+                        });
+                    } else {
+                        throw interestsError;
+                    }
+                }
             }
 
-            // 5. Return fresh user object
-            console.log("[DEBUG] AuthService: reloading current user after update");
-            const updatedUser = await this._withTimeout(this.getCurrentUser(), 'getCurrentUser.afterUpdate');
+            const optimisticUser = await this._buildUpdatedUserFallback(
+                userId,
+                finalUpdates as Partial<AppUser>,
+                restProfileRow,
+                skillsToSync,
+                interestsToSync
+            );
 
-            // 6. Persistence Fix: Force local storage sync
-            if (updatedUser) {
-                await this.saveUserLocally(updatedUser);
-                console.log("[DEBUG] AuthService: updateProfile - Local storage synced");
-            }
+            failedStage = 'saveUserLocally.afterUpdate';
+            await this.saveUserLocally(optimisticUser);
+            console.log("[DEBUG] AuthService: optimistic profile saved locally");
+
+            failedStage = 'auth.metadata.sync';
+            void this._withTimeout(
+                this._syncAuthMetadata(finalUpdates as Partial<AppUser>, skillsToSync, interestsToSync),
+                'auth.metadata.sync',
+                2000
+            ).then(() => {
+                console.log("[DEBUG] AuthService: auth metadata sync completed");
+            }).catch((metadataError) => {
+                console.warn("[DEBUG] AuthService: auth metadata sync skipped/fail", this._formatErrorDetails(metadataError));
+            });
+
+            // Background reconciliation only. It must never block the user save flow.
+            failedStage = 'getCurrentUser.afterUpdate';
+            void this._withTimeout(
+                this._awaitQuery(this.getCurrentUser(), 'getCurrentUser.afterUpdate'),
+                'getCurrentUser.afterUpdate',
+                5000
+            ).then((freshUser) => {
+                if (freshUser) {
+                    void this.saveUserLocally(freshUser);
+                    console.log("[DEBUG] AuthService: background rehydrate completed");
+                }
+            }).catch((rehydrateError) => {
+                console.warn("[DEBUG] AuthService: background rehydrate skipped/fail", this._formatErrorDetails(rehydrateError));
+            });
 
             console.log("[DEBUG] AuthService: updateProfile finished in", Date.now() - startedAt, "ms");
 
-            return updatedUser!;
+            return optimisticUser;
 
         } catch (e: any) {
-            console.error("Update Profile Failed:", e);
-            throw new Error("Errore salvataggio profilo: " + e.message);
+            console.error("Update Profile Failed:", {
+                userId,
+                failedStage,
+                message: e?.message,
+                details: this._formatErrorDetails(e),
+            });
+            throw new Error(`Errore salvataggio profilo [${failedStage}]: ${this._formatErrorDetails(e)}`);
         }
     }
 
@@ -753,7 +996,7 @@ export class AuthService {
             const newList = Array.from(new Set(rawList)).filter(item => item && item.trim().length > 0);
 
             // 1. Fetch current
-            const { data: currentData, error: fetchError } = await this._withTimeout(
+            const { data: currentData, error: fetchError } = await this._awaitQuery(
                 supabase
                     .from(table)
                     .select(column)
@@ -763,7 +1006,7 @@ export class AuthService {
 
             if (fetchError) {
                 console.error(`[AuthService] Fetch failed for ${table}:`, fetchError);
-                throw fetchError;
+                throw new Error(`${table}.select rejected: ${this._formatErrorDetails(fetchError)}`);
             }
 
             const currentList = currentData?.map((row: any) => row[column]) || [];
@@ -776,7 +1019,7 @@ export class AuthService {
 
             // 3. Remove
             if (toRemove.length > 0) {
-                const { error: deleteError } = await this._withTimeout(
+                const { error: deleteError } = await this._awaitQuery(
                     supabase
                         .from(table)
                         .delete()
@@ -787,7 +1030,7 @@ export class AuthService {
 
                 if (deleteError) {
                     console.error(`[AuthService] Delete failed for ${table}:`, deleteError);
-                    throw deleteError;
+                    throw new Error(`${table}.delete rejected: ${this._formatErrorDetails(deleteError)}`);
                 }
             }
 
@@ -798,7 +1041,7 @@ export class AuthService {
                 // we shouldn't hit duplicates UNLESS race condition.
                 // But to be super safe, we could use upsert (ignoreDuplicates).
                 // However, standard insert is fine if logic is sound. We will log error if it happens.
-                const { error: insertError } = await this._withTimeout(
+                const { error: insertError } = await this._awaitQuery(
                     supabase
                         .from(table)
                         .insert(insertions),
@@ -810,18 +1053,80 @@ export class AuthService {
                     // If unique violation (23505), it means we raced or logic failed. 
                     // We shouldn't throw to avoid killing the whole profile update, but we should know.
                     // For now, let's throw to be loud.
-                    throw insertError;
+                    throw new Error(`${table}.insert rejected: ${this._formatErrorDetails(insertError)}`);
                 }
             }
             console.log(`[DEBUG] AuthService: _syncRelationalList done ${table}`);
         } catch (e) {
-            console.error(`Error syncing ${table}:`, e);
+            console.error(`Error syncing ${table}:`, {
+                userId,
+                table,
+                column,
+                details: this._formatErrorDetails(e),
+            });
             // We swallow the error here to allow the main profile update to succeed? 
             // Phase 33 requirement says "Fix persistence". If this fails, persistence fails.
             // So we should probably NOT swallow it if we want to debug.
             // But if we throw, the user sees an error toast.
             throw e;
         }
+    }
+
+    private async _syncAuthMetadata(updates: Partial<AppUser>, skills?: string[], interests?: string[]): Promise<void> {
+        const metadata: Record<string, unknown> = {};
+        const metadataFields = [
+            'full_name', 'avatar_url', 'bio', 'npo_name', 'company_name',
+            'phone', 'website', 'location_string', 'location_lat', 'location_lng',
+            'public_email', 'profile_completed', 'impact_points', 'is_verified',
+            'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
+            'allow_calls', 'expo_push_token', 'deletion_requested_at',
+            'npo_vat_id', 'npo_website', 'referent_name', 'referent_role', 'referent_avatar_url',
+            'auto_welcome_message', 'address_full', 'sought_skills', 'verification_doc_url',
+            'verification_status', 'referral_code', 'referred_by',
+        ] as const;
+
+        for (const field of metadataFields) {
+            if ((updates as any)[field] !== undefined) {
+                metadata[field] = (updates as any)[field];
+            }
+        }
+
+        if ((updates as any).name !== undefined && metadata.full_name === undefined) {
+            metadata.full_name = (updates as any).name;
+        }
+        if ((updates as any).avatar !== undefined && metadata.avatar_url === undefined) {
+            metadata.avatar_url = (updates as any).avatar;
+        }
+        if ((updates as any).locationString !== undefined && metadata.location_string === undefined) {
+            metadata.location_string = (updates as any).locationString;
+        }
+
+        if (metadata.full_name !== undefined) metadata.name = metadata.full_name;
+        if (metadata.avatar_url !== undefined) metadata.avatar = metadata.avatar_url;
+        if (metadata.location_string !== undefined) metadata.locationString = metadata.location_string;
+        if (metadata.public_email !== undefined) metadata.publicEmail = metadata.public_email;
+        if (metadata.npo_name !== undefined) metadata.npoName = metadata.npo_name;
+        if (metadata.company_name !== undefined) metadata.companyName = metadata.company_name;
+        if (metadata.impact_points !== undefined) metadata.impactPoints = metadata.impact_points;
+        if (metadata.deletion_requested_at !== undefined) metadata.deletionRequestedAt = metadata.deletion_requested_at;
+        if (metadata.profile_completed !== undefined) metadata.profileCompleted = metadata.profile_completed;
+
+        if (metadata.location_lat !== undefined || metadata.location_lng !== undefined) {
+            metadata.locationCoords = {
+                lat: Number(metadata.location_lat ?? 0),
+                lng: Number(metadata.location_lng ?? 0),
+            };
+        }
+
+        if (skills !== undefined) metadata.skills = skills;
+        if (interests !== undefined) metadata.interests = interests;
+
+        if (Object.keys(metadata).length === 0) {
+            return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ data: metadata });
+        if (error) throw error;
     }
 
     /**
@@ -867,15 +1172,12 @@ export class AuthService {
     async getReferralCount(userId: string): Promise<number> {
         try {
             console.log("[DEBUG] AuthService: getReferralCount start", userId);
-            const { count, error } = await this._withTimeout(
-                supabase
-                    .from('profiles')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('referred_by', userId),
-                'profiles.referralCount'
+            const accessToken = await this._getAccessTokenForRest();
+            const count = await this._withTimeout(
+                profileRest.countReferrals(userId, accessToken),
+                'profiles.referralCount.rest',
+                8000
             );
-
-            if (error) throw error;
             console.log("[DEBUG] AuthService: getReferralCount done", count || 0);
             return count || 0;
         } catch (error) {
@@ -889,15 +1191,13 @@ export class AuthService {
      */
     async resolveReferralCode(code: string): Promise<string | null> {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('referral_code', code)
-                .single();
-
-            if (error) return null;
-            return data.id;
-        } catch (error) {
+            const accessToken = await this._getAccessTokenForRest();
+            return await this._withTimeout(
+                profileRest.resolveReferralCode(code, accessToken),
+                'profiles.resolveReferralCode.rest',
+                8000
+            );
+        } catch {
             return null;
         }
     }
