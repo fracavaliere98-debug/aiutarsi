@@ -433,7 +433,7 @@ export default function ActivityDetail() {
                                         </View>
                                     )}
                                 </View>
-                                <Text style={{ marginLeft: currentIscritti.length > 8 ? 18 : 14, fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                                <Text style={{ marginLeft: currentIscritti.length > 8 ? 18 : 14, fontSize: 12, color: '#64748b', fontWeight: '600' }}>
                                     {currentIscritti.length} iscritto{currentIscritti.length !== 1 ? 'i' : ''}
                                 </Text>
                             </>
