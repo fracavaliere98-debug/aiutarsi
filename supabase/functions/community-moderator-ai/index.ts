@@ -15,12 +15,51 @@ const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    let binary = "";
+
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        const chunk = bytes.subarray(offset, offset + chunkSize);
+        binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
+}
+
 Deno.serve(async (req) => {
     try {
-        const { record }: { record: CommunityPost } = await req.json();
+        let payload: { record?: CommunityPost } | null = null;
+        try {
+            payload = await req.json();
+        } catch (parseError) {
+            console.error('[Moderator Error] Invalid request JSON', parseError);
+            return new Response(JSON.stringify({
+                success: true,
+                analysis: {
+                    safe: true,
+                    reason: 'Invalid request payload; moderation bypassed.',
+                    category: 'none',
+                },
+            }), {
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const { record } = payload || {};
 
         if (!record) {
-            return new Response(JSON.stringify({ error: 'No record provided' }), { status: 400 });
+            return new Response(JSON.stringify({
+                success: true,
+                analysis: {
+                    safe: true,
+                    reason: 'No record provided; moderation bypassed.',
+                    category: 'none',
+                },
+            }), {
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
 
         console.log(`[Moderator] Analyzing post ${record.id} by user ${record.author_id}`);
@@ -42,13 +81,16 @@ Deno.serve(async (req) => {
         if (record.image_url) {
             // Fetch image and analyze with Vision
             const imageResp = await fetch(record.image_url);
+            if (!imageResp.ok) {
+                throw new Error(`Unable to fetch image for moderation: ${imageResp.status}`);
+            }
             const imageData = await imageResp.arrayBuffer();
 
             result = await model.generateContent([
                 prompt,
                 {
                     inlineData: {
-                        data: btoa(String.fromCharCode(...new Uint8Array(imageData))),
+                        data: arrayBufferToBase64(imageData),
                         mimeType: "image/jpeg",
                     },
                 },
@@ -59,7 +101,17 @@ Deno.serve(async (req) => {
         }
 
         const responseText = result.response.text();
-        const analysis = JSON.parse(responseText.replace(/```json|```/g, "").trim());
+        let analysis;
+        try {
+            analysis = JSON.parse(responseText.replace(/```json|```/g, "").trim());
+        } catch (parseError) {
+            console.error('[Moderator Error] Invalid model JSON', parseError, responseText);
+            analysis = {
+                safe: true,
+                reason: 'Model output non-JSON; moderation bypassed.',
+                category: 'none',
+            };
+        }
 
         if (!analysis.safe) {
             console.warn(`[Moderator] Post ${record.id} rejected: ${analysis.reason}`);

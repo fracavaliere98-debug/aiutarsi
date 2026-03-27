@@ -15,6 +15,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
 
+const IMAGE_PICKER_MEDIA_TYPES =
+    (ImagePicker as any).MediaType?.images
+        ? [(ImagePicker as any).MediaType.images]
+        : ImagePicker.MediaTypeOptions.Images;
+
 export default function CreatePostScreen() {
     const router = useRouter();
     const { mode, postId, prefillCaption, prefillLinkedActivityId, draftLabel } = useLocalSearchParams<{
@@ -92,7 +97,7 @@ export default function CreatePostScreen() {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: IMAGE_PICKER_MEDIA_TYPES,
             quality: 0.85,
             allowsMultipleSelection: !isStoryMode,
             allowsEditing: isStoryMode, // Only allow cropping for stories

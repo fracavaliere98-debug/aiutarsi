@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { supabase } from "./supabase";
 
 type ModerationInput = {
@@ -11,25 +12,88 @@ type ModerationResult = {
     category?: string;
 };
 
-export async function moderateCommunityContent({ caption, imageUrl }: ModerationInput): Promise<ModerationResult> {
-    const { data, error } = await supabase.functions.invoke("community-moderator-ai", {
-        body: {
-            record: {
-                id: `draft_${Date.now()}`,
-                caption: caption || "",
-                image_url: imageUrl || undefined,
-                author_id: "draft",
-            },
-        },
-    });
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
 
-    if (error) {
-        throw error;
+async function invokeModeratorNative(body: Record<string, unknown>, timeoutMs = 8000): Promise<any> {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error("Supabase env mancanti.");
     }
 
-    return {
-        safe: !!data?.analysis?.safe,
-        reason: data?.analysis?.reason,
-        category: data?.analysis?.category,
+    const url = `${SUPABASE_URL}/functions/v1/community-moderator-ai`;
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const timer = setTimeout(() => {
+            xhr.abort();
+            reject(new Error(`community-moderator-ai timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
+        xhr.setRequestHeader("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
+
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState !== 4) return;
+            clearTimeout(timer);
+
+            if (xhr.status < 200 || xhr.status >= 300) {
+                reject(new Error(xhr.responseText || `community-moderator-ai failed with ${xhr.status}`));
+                return;
+            }
+
+            try {
+                resolve(JSON.parse(xhr.responseText || "{}"));
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        xhr.onerror = () => {
+            clearTimeout(timer);
+            reject(new Error("community-moderator-ai network error"));
+        };
+
+        try {
+            xhr.send(JSON.stringify(body));
+        } catch (error) {
+            clearTimeout(timer);
+            reject(error);
+        }
+    });
+}
+
+export async function moderateCommunityContent({ caption, imageUrl }: ModerationInput): Promise<ModerationResult> {
+    const body = {
+        record: {
+            id: `draft_${Date.now()}`,
+            caption: caption || "",
+            image_url: imageUrl || undefined,
+            author_id: "draft",
+        },
     };
+
+    try {
+        const result = Platform.OS === "web"
+            ? await supabase.functions.invoke("community-moderator-ai", { body })
+            : { data: await invokeModeratorNative(body), error: null };
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        return {
+            safe: result.data?.analysis?.safe !== false,
+            reason: result.data?.analysis?.reason,
+            category: result.data?.analysis?.category,
+        };
+    } catch (error) {
+        console.warn("[CommunityModeration] unavailable, allowing content", error);
+        return {
+            safe: true,
+            reason: "Moderazione temporaneamente non disponibile.",
+            category: "none",
+        };
+    }
 }
