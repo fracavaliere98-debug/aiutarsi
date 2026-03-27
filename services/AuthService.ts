@@ -5,6 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 
 export class AuthService {
+    private _cachedAccessToken: string | null = null;
+
+    setCachedAccessToken(token: string | null | undefined): void {
+        this._cachedAccessToken = token || null;
+    }
+
     private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs = 8000): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -43,11 +49,20 @@ export class AuthService {
     }
 
     private async _getAccessTokenForRest(): Promise<string> {
-        const { data: sessionData } = await supabase.auth.getSession();
+        if (this._cachedAccessToken) {
+            return this._cachedAccessToken;
+        }
+
+        const { data: sessionData } = await this._withTimeout(
+            supabase.auth.getSession(),
+            'auth.getSession',
+            1500
+        );
         const accessToken = sessionData.session?.access_token;
         if (!accessToken) {
             throw new Error('Sessione assente o token utente non disponibile');
         }
+        this._cachedAccessToken = accessToken;
         return accessToken;
     }
 

@@ -115,6 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 // If Supabase finds a session, we load the full app user (with DB profile)
                 if (result?.data?.session?.user && isMounted) {
+                    authService.setCachedAccessToken(result.data.session.access_token);
                     const currentUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] Init:", currentUser);
                     setUser(currentUser);
@@ -156,12 +157,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                 if (session?.user) {
+                    authService.setCachedAccessToken(session.access_token);
                     const appUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
                     // No automatic full refresh anymore
                 }
             } else if (event === 'SIGNED_OUT') {
+                authService.setCachedAccessToken(null);
                 setUser(null);
                 setUsersDB([]);
             }
@@ -299,30 +302,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // PREVENTIVE BLOCK: Ignore updates if logout is in progress
         if (!user || isLoggingOutRef.current) return false;
 
-        const previousUser = user;
-
         try {
             console.log("[DEBUG] AuthContext: Update started for", data);
 
-            // 1. Calculate new state
-            const cleanData = Object.fromEntries(
-                Object.entries(data).filter(([, v]) => v !== undefined)
-            );
-
-            // Ensure both snake_case and camelCase for profile completion and avatar are synced
-            const updatedUser = { ...user, ...cleanData };
-            
-            // Sync Avatar keys
-            if (cleanData.avatar_url !== undefined) {
-                (updatedUser as any).avatar = cleanData.avatar_url;
-            } else if ((cleanData as any).avatar !== undefined) {
-                updatedUser.avatar_url = (cleanData as any).avatar;
-            }
-
-            // 2. Update Local State Immediately (Optimistic)
-            setUser(updatedUser);
-
-            // 3. Sync to Backend (Awaited)
+            // Sync to backend first to avoid optimistic local changes
+            // from cascading into other providers while the save is still in flight.
             const persistedUser = await authService.updateProfile(user.id, data);
             console.log("[DEBUG] AuthContext: updateProfile resolved", persistedUser?.id, {
                 interests: persistedUser?.interests?.length,
@@ -333,7 +317,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(persistedUser);
             }
 
-            console.log("[DEBUG USER] Profile Updated:", persistedUser || updatedUser);
+            console.log("[DEBUG USER] Profile Updated:", persistedUser || user);
+            console.log("[DEBUG] AuthContext: updateUserProfile about to return true");
 
             void refreshUsers().catch((refreshError) => {
                 console.warn("Background users refresh failed after profile update:", refreshError);
@@ -341,7 +326,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             return true;
         } catch (error: any) {
-            setUser(previousUser);
             console.error("Update profile local error:", error);
             throw error;
         }
