@@ -1,4 +1,4 @@
--- 20260317_gamification_new_badges.sql
+-- 20260325090000_gamification_new_badges.sql
 -- Aggiornamento trigger gamification per supportare i 4 nuovi Badge: Tuttofare, Fedelissimo, Gufo Notturno, Anniversario
 
 -- 1. Aggiornamento funzione base per assegnare sempre l'Anniversario (anni) a chi è iscritto da oltre un anno
@@ -56,8 +56,6 @@ BEGIN
     UPDATE profiles SET impact_points = v_new_xp WHERE id = p_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
 -- 2. Aggiornamento trigger per attività completata (aggiunta Tuttofare, Fedelissimo, Gufo Notturno)
 CREATE OR REPLACE FUNCTION trigger_application_gamification()
 RETURNS TRIGGER AS $$
