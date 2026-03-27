@@ -3,12 +3,11 @@ import {
     ScrollView, TextInput, Image, ActivityIndicator, KeyboardAvoidingView
 } from "react-native";
 import { WebView } from "react-native-webview";
-import { UserAvatar } from "../../../components/UserAvatar";
 import { PageHeader } from "../../../components/PageHeader";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import {
-    ArrowRight, Search, X, MapPin, Target, Calendar,
+    ArrowRight, Search, X, MapPin, Target, Calendar, Plus, Minus,
     Clock, Users, Globe, BookOpen, Dog, Palette, Heart, Code,
     MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
     ChevronDown, CheckCircle2, Zap, TreePine, Bell, LayoutList
@@ -422,6 +421,7 @@ export default function VolunteerMap() {
 
     // Selected activity
     const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+    const [mapZoom, setMapZoom] = useState(13);
 
     // ── Location Init ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -461,6 +461,7 @@ export default function VolunteerMap() {
                 }, 600);
             }, 400);
         }
+        setMapZoom(15);
         if (params.focusActivityId) {
             setTimeout(() => setSelectedActivity(params.focusActivityId!), 1200);
         }
@@ -536,18 +537,23 @@ export default function VolunteerMap() {
 
     // ── Map helpers ─────────────────────────────────────────────────────────
     const centerOnUser = () => {
-        if (location && mapRef.current && Platform.OS !== 'web') {
+        if (!location) return;
+        if (mapRef.current && Platform.OS !== 'web') {
             mapRef.current.animateToRegion({
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
                 latitudeDelta: 0.08,
                 longitudeDelta: 0.08,
             });
-            // Reset to user's location as search center
-            setSearchCenter(null);
-            setSearchQuery("");
         }
+        setSelectedActivity(null);
+        setSearchCenter(null);
+        setSearchQuery("");
+        setMapZoom(13);
     };
+
+    const zoomIn = () => setMapZoom((z) => Math.min(18, z + 1));
+    const zoomOut = () => setMapZoom((z) => Math.max(8, z - 1));
 
     // ── Live search suggestions ──────────────────────────────────────────────
     useEffect(() => {
@@ -625,7 +631,7 @@ export default function VolunteerMap() {
     // ── Map rendering ───────────────────────────────────────────────────────
     const renderMap = () => {
         if (Platform.OS === 'web') {
-            const delta = 0.03;
+            const delta = Math.max(0.005, 0.2 / Math.pow(2, mapZoom - 10));
             return (
                 <View style={{ flex: 1, backgroundColor: '#e5e7eb' }}>
                     <iframe
@@ -691,7 +697,7 @@ export default function VolunteerMap() {
                 var map = L.map('map', {
                     zoomControl: false,
                     attributionControl: true
-                }).setView([${centerLat}, ${centerLng}], 13);
+                }).setView([${centerLat}, ${centerLng}], ${mapZoom});
                 
                 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
@@ -998,6 +1004,7 @@ export default function VolunteerMap() {
                                                         longitudeDelta: 0.02,
                                                     }, 1000);
                                                 }
+                                                setMapZoom(15);
                                             }}
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -1043,6 +1050,7 @@ export default function VolunteerMap() {
                                                         longitudeDelta: 0.04,
                                                     }, 1000);
                                                 }
+                                                setMapZoom(14);
                                             }}
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -1100,12 +1108,22 @@ export default function VolunteerMap() {
                     gap: 10, zIndex: 50,
                 }}>
                     <TouchableOpacity
-                        onPress={() => router.push("/(volunteer)/profile" as any)}
+                        onPress={zoomIn}
                         style={{
-                            backgroundColor: 'white', borderRadius: 14, padding: 8,
+                            backgroundColor: 'white', borderRadius: 14, width: 42, height: 42,
+                            alignItems: 'center', justifyContent: 'center',
                             shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
                         }}>
-                        <UserAvatar size={26} fontSize={10} useAuthFallback />
+                        <Plus size={22} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={zoomOut}
+                        style={{
+                            backgroundColor: 'white', borderRadius: 14, width: 42, height: 42,
+                            alignItems: 'center', justifyContent: 'center',
+                            shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
+                        }}>
+                        <Minus size={22} color={Colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={centerOnUser}
