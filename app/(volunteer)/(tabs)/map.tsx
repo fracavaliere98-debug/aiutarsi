@@ -480,12 +480,20 @@ export default function VolunteerMap() {
         data: rawActivities = [],
         isFetching: loadingActivities,
     } = useQuery({
-        queryKey: ['map-activities', centerLat, centerLng, filters.radiusKm],
+        queryKey: ['map-activities', user?.id, centerLat, centerLng, filters.radiusKm],
         enabled: !loading,
         staleTime: 60_000,
         queryFn: async () => {
-            const results = await activityService.getActivitiesByRadius(centerLat, centerLng, filters.radiusKm);
-            return results.filter(act => ['APERTA', 'IN_CORSO'].includes(act.status));
+            const result = await activityService.getActivities({
+                userId: user?.id,
+                centerLat,
+                centerLng,
+                radiusKm: filters.radiusKm,
+                statuses: ['APERTA', 'IN_CORSO'],
+                limit: 100,
+                offset: 0,
+            });
+            return result.activities.filter(act => ['APERTA', 'IN_CORSO'].includes(act.status));
         },
     });
     const activities = rawActivities as ActivityWithDistance[];
@@ -1131,6 +1139,7 @@ export default function VolunteerMap() {
                     const activity = filteredActivities.find(a => a.id === selectedActivity);
                     if (!activity) return null;
                     const dist = formatDistance((activity as any).distanceMeters);
+                    const CategoryIcon = getCategoryIcon(activity.category);
                     return (
                         <Animated.View
                             entering={SlideInDown.duration(350).springify()}
@@ -1146,7 +1155,7 @@ export default function VolunteerMap() {
                             }}>
                             <View style={{ width: 40, height: 4, backgroundColor: '#e2e8f0', borderRadius: 99, alignSelf: 'center', marginBottom: 16 }} />
                             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
-                                <View style={{ width: 72, height: 72, borderRadius: 16, overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
+                                <View style={{ width: 88, height: 88, borderRadius: 18, overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
                                     {activity.imageUrl
                                         ? <Image source={{ uri: activity.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                                         : <View style={{ flex: 1, backgroundColor: `${Colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}><MapPin size={22} color={Colors.primary} /></View>
@@ -1156,18 +1165,24 @@ export default function VolunteerMap() {
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                                         <Text style={{ fontSize: 16, fontWeight: '900', color: '#1e1b4b', flex: 1 }} numberOfLines={1}>{activity.title}</Text>
                                         {activity.isUrgent && (
-                                            <View style={{ backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                                                <Text style={{ color: 'white', fontSize: 9, fontWeight: '900' }}>URGENTE</Text>
+                                            <View style={{ width: 26, height: 26, borderRadius: 99, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                                                <Zap size={13} color="white" />
                                             </View>
                                         )}
                                     </View>
                                     <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '600', marginBottom: 8 }}>{activity.npoName}</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                        <View style={{ backgroundColor: `${Colors.primary}15`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 }}>
-                                            <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.matchPercentage}% Match</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f8f9ff', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
+                                            <CategoryIcon size={12} color={Colors.primary} />
+                                            <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.category}</Text>
                                         </View>
+                                        {typeof activity.matchPercentage === 'number' && activity.matchPercentage > 0 && (
+                                            <View style={{ backgroundColor: `${Colors.primary}15`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
+                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.matchPercentage}% Match</Text>
+                                            </View>
+                                        )}
                                         {dist && (
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f8fafc', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
                                                 <MapPin size={11} color="#94a3b8" />
                                                 <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700' }}>{dist}</Text>
                                             </View>
