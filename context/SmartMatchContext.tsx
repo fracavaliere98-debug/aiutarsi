@@ -85,14 +85,14 @@ function deriveChips(user: any, activity: any, score: number) {
         else if (diffDays > 3 && diffDays <= 7) chips.push('Questa settimana');
     }
 
-    if (score >= 85) chips.push('Alta compatibilità');
+    if (score >= 80) chips.push('Alta compatibilità');
     else if (score >= 65) chips.push('Buon fit');
 
     return Array.from(new Set(chips)).slice(0, 3);
 }
 
 function deriveConfidence(score: number): Pick<OldSmartMatchResult, 'confidence' | 'confidenceLabel' | 'nextStep'> {
-    if (score >= 85) {
+    if (score >= 80) {
         return {
             confidence: 'top',
             confidenceLabel: 'Consiglio di Gemma',
@@ -191,17 +191,30 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             console.log('[SmartMatchContext] Fetching matches via unified ActivityService...');
 
             // 1. Chiamata al servizio (che usa get_activities_with_match sotto cofano)
-            const { activities } = await activityService.getActivities({
+            const primaryResult = await activityService.getActivities({
                 userId: user.id,
-                limit: 15, // buffer in caso alcune siano già prenotate
+                limit: 15,
                 centerLat: user.locationCoords?.lat || undefined,
                 centerLng: user.locationCoords?.lng || undefined,
                 statuses: ['APERTA', 'IN_CORSO'],
             });
 
+            let candidateActivities = primaryResult.activities;
+
+            if (!candidateActivities.length) {
+                console.warn('[SmartMatchContext] Primary Smart Match fetch returned 0 activities, trying broader fallback...');
+                const fallbackResult = await activityService.getActivities({
+                    userId: user.id,
+                    limit: 30,
+                });
+                candidateActivities = fallbackResult.activities.filter((activity) =>
+                    ['APERTA', 'IN_CORSO'].includes(activity.status)
+                );
+            }
+
             // 2. Filtriamo le attività a cui è già iscritto usando la lista già idratata dal service
             // per evitare query duplicate e semantiche di stato divergenti.
-            const mappedMatchesBase: OldSmartMatchResult[] = activities
+            const mappedMatchesBase: OldSmartMatchResult[] = candidateActivities
                 .filter(a => !a.iscritti.includes(user.id))
                 .map((a: any) => ({
                     id: a.id,
@@ -234,9 +247,27 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 : mappedMatchesBase;
 
             const prefs = await smartMatchPreferencesService.getPreferences(user.id);
-            const personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs);
+            let personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs);
 
-            console.log(`[SmartMatchContext] Found ${personalizedMatches.length} unified matches.`);
+            if (!personalizedMatches.length && gemmaEnrichedMatches.length > 0 && prefs.hiddenActivityIds.length > 0) {
+                console.warn(
+                    '[SmartMatchContext] All candidate matches were hidden by local preferences, ignoring hidden filter for this refresh.',
+                    { hiddenCount: prefs.hiddenActivityIds.length, candidateCount: gemmaEnrichedMatches.length }
+                );
+                personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, {
+                    ...prefs,
+                    hiddenActivityIds: [],
+                });
+            }
+
+            console.log(
+                '[SmartMatchContext] Candidate activities:',
+                candidateActivities.length,
+                'Visible matches:',
+                personalizedMatches.length,
+                'Hidden prefs:',
+                prefs.hiddenActivityIds.length
+            );
             setMatches(personalizedMatches);
             setLastUpdated(new Date());
         } catch (err: any) {

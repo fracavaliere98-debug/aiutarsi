@@ -13,11 +13,13 @@ import { useToast } from "../../../context/ToastContext";
 import { useState, useMemo } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
+import { useSmartMatch } from "../../../context/SmartMatchContext";
 
 export default function VolunteerDashboard() {
     const router = useRouter();
     const { user } = useAuth();
     const { activities, userReviews, volunteerStats, error, loadData } = useActivities();
+    const { refresh: refreshSmartMatch } = useSmartMatch();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -54,11 +56,14 @@ export default function VolunteerDashboard() {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        // Simulate refresh - in real app, this would fetch new data
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await Promise.all([
+            loadData(),
+            refreshSmartMatch(),
+        ]);
         showToast('success', 'Dati aggiornati!');
         setRefreshing(false);
     };
+
 
 
     if (error) {

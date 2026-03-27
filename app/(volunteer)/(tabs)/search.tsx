@@ -361,10 +361,12 @@ export default function SearchScreen() {
         return sortedActivities
             .filter((activity) => {
                 const match = smartMatchMap.get(activity.id);
-                return match?.confidence === 'top' || (typeof match?.score === 'number' && match.score >= 85);
+                const score = typeof match?.score === 'number' ? match.score : (activity.matchPercentage ?? 0);
+                return match?.confidence === 'top' || score >= 80;
             })
             .sort((a, b) => {
-                const scoreDiff = (smartMatchMap.get(b.id)?.score ?? 0) - (smartMatchMap.get(a.id)?.score ?? 0);
+                const scoreDiff =
+                    ((smartMatchMap.get(b.id)?.score ?? b.matchPercentage ?? 0) - (smartMatchMap.get(a.id)?.score ?? a.matchPercentage ?? 0));
                 if (scoreDiff !== 0) return scoreDiff;
                 return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
             })
