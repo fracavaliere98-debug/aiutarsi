@@ -27,18 +27,16 @@ export default function VolunteerPrivacyScreen() {
             return;
         }
 
-        setAllowCalls(user.allow_calls !== false);
-        setProfilePublic(user.profile_public !== false);
-        setShowEmail(!!user.show_email);
-        setShowVolunteeringHistory(user.show_volunteering_history !== false);
-        setIsFetching(false);
-    }, [
-        user?.id,
-        user?.allow_calls,
-        user?.profile_public,
-        user?.show_email,
-        user?.show_volunteering_history,
-    ]);
+        const fetchPrivacy = async () => {
+            setAllowCalls(user.allow_calls !== false);
+            setProfilePublic(user.profile_public !== false);
+            setShowEmail(!!user.show_email);
+            setShowVolunteeringHistory(user.show_volunteering_history !== false);
+            setIsFetching(false);
+        };
+
+        void fetchPrivacy();
+    }, [user, user?.id]);
 
     const handleSave = async () => {
         if (!user) return;

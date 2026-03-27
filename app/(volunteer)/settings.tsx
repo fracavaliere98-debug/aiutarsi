@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { Settings, LogOut, Bell, ChevronRight, Shield, HelpCircle, Pencil, Heart, Check, Trash2, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock } from 'lucide-react-native';
+import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -17,6 +17,12 @@ import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
+import { storageService } from "../../services/StorageService";
+
+const IMAGE_PICKER_MEDIA_TYPES =
+    (ImagePicker as any).MediaType?.images
+        ? [(ImagePicker as any).MediaType.images]
+        : ['images'];
 
 export default function VolunteerSettings() {
     const insets = useSafeAreaInsets();
@@ -111,7 +117,7 @@ export default function VolunteerSettings() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
+            mediaTypes: IMAGE_PICKER_MEDIA_TYPES as any,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
@@ -145,7 +151,8 @@ export default function VolunteerSettings() {
         }
     }, [user]);
 
-    // Automatic location fetching
+    // Automatic location fetching for display only.
+    // Do not auto-save from this screen: profile writes should happen only on explicit user actions.
     useEffect(() => {
         let isMounted = true;
         
@@ -184,15 +191,6 @@ export default function VolunteerSettings() {
                         const formattedLocation = `Posizione attuale - ${city}`;
 
                         setLocationInput(formattedLocation);
-
-                        // Update user profile automatically - only if different
-                        if (user?.locationString !== formattedLocation) {
-                            updateUserProfile({
-                                location_lat: latitude,
-                                location_lng: longitude,
-                                locationString: formattedLocation
-                            });
-                        }
                     }
                 } catch (geoError: any) {
                     console.warn("Geocoding failed:", geoError.message);
@@ -207,27 +205,43 @@ export default function VolunteerSettings() {
         fetchLocation();
         
         return () => { isMounted = false; };
-    }, []); // Only run once on mount
+    }, [user?.locationString]);
 
     const saveProfile = async () => {
         setIsSaving(true);
         try {
-            const profileUpdates: Partial<any> = {
-                name: `${firstName} ${lastName}`,
-                bio,
-                phone,
-            };
-            if (avatar) {
-                profileUpdates.avatar_url = avatar;
+            if (!user?.id) {
+                throw new Error("Utente non disponibile.");
             }
 
-            await updateUserProfile(profileUpdates);
+            let avatarUrl = user.avatar_url || user.avatar || null;
+            if (avatar && (avatar.startsWith('file://') || avatar.startsWith('content://') || avatar.startsWith('data:'))) {
+                avatarUrl = await storageService.uploadAvatar(user.id, avatar);
+            } else if (avatar) {
+                avatarUrl = avatar;
+            }
+
+            const fullName = `${firstName} ${lastName}`.trim();
+
+            await updateUserProfile({
+                full_name: fullName,
+                bio,
+                phone,
+                avatar_url: avatarUrl,
+                name: fullName,
+            });
+            console.log("[DEBUG] VolunteerSettings: saveProfile updateUserProfile resolved");
+
             setShowEditProfile(false);
             setAvatar(null);
+            setFirstName(fullName.split(" ")[0] || "");
+            setLastName(fullName.split(" ").slice(1).join(" "));
             showToast('success', 'Profilo salvato correttamente');
+            console.log("[DEBUG] VolunteerSettings: saveProfile success UI updated");
         } catch (error: any) {
             alert("Errore salvataggio profilo: " + error.message);
         } finally {
+            console.log("[DEBUG] VolunteerSettings: saveProfile finally setIsSaving false");
             setIsSaving(false);
         }
     };
