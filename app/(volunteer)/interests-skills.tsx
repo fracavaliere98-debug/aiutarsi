@@ -59,10 +59,16 @@ export default function VolunteerInterestsSkillsSettings() {
                 interests: selectedInterests,
                 skills: selectedSkills,
             });
+
+            if (!user?.id) {
+                throw new Error("Utente non disponibile.");
+            }
+
             await updateUserProfile({
-                interests: selectedInterests,
                 skills: selectedSkills,
+                interests: selectedInterests,
             });
+
             console.log("[DEBUG] VolunteerInterestsSkills: save completed");
             showToast("success", "Preferenze aggiornate!");
             router.back();
@@ -102,21 +108,21 @@ export default function VolunteerInterestsSkillsSettings() {
                                     <TouchableOpacity
                                         onPress={() => toggleInterest(item.label)}
                                         className={`flex-col items-center justify-center p-4 rounded-3xl border ${isSelected
-                                            ? "bg-primary/10 border-primary/20"
+                                            ? "bg-accent/10 border-accent/20"
                                             : "bg-white border-slate-200 shadow-sm"
                                             }`}
                                         style={{ aspectRatio: 1.1 }}
                                     >
                                         <Text style={{ fontSize: 32, marginBottom: 8 }}>{item.emoji}</Text>
                                         <Text
-                                            className={`font-black text-sm text-center ${isSelected ? "text-primary" : "text-slate-500"}`}
+                                            className={`font-black text-sm text-center ${isSelected ? "text-accent" : "text-slate-500"}`}
                                             numberOfLines={2}
                                         >
                                             {item.label}
                                         </Text>
                                         {isSelected && (
                                             <View className="absolute top-3 right-3">
-                                                <CheckCircle2 size={18} color={Colors.primary} fill="white" />
+                                                <CheckCircle2 size={18} color={Colors.accent} fill="white" />
                                             </View>
                                         )}
                                     </TouchableOpacity>
@@ -147,16 +153,16 @@ export default function VolunteerInterestsSkillsSettings() {
                                     <TouchableOpacity
                                         onPress={() => toggleSkill(item.label)}
                                         className={`flex-col items-center justify-center px-1 py-4 rounded-2xl border ${isSelected
-                                            ? "bg-accent/10 border-accent/20"
+                                            ? "bg-primary/10 border-primary/20"
                                             : "bg-white border-slate-200 shadow-sm"
                                             }`}
                                         style={{ gap: 8 }}
                                     >
-                                        <View className={`p-2 rounded-xl ${isSelected ? "bg-accent/20" : "bg-slate-50"}`}>
-                                            <Icon size={20} color={isSelected ? Colors.accent : "#94a3b8"} />
+                                        <View className={`p-2 rounded-xl ${isSelected ? "bg-primary/20" : "bg-slate-50"}`}>
+                                            <Icon size={20} color={isSelected ? Colors.primary : "#94a3b8"} />
                                         </View>
                                         <Text
-                                            className={`font-bold text-[10px] text-center px-1 ${isSelected ? "text-accent" : "text-slate-500"}`}
+                                            className={`font-bold text-[10px] text-center px-1 ${isSelected ? "text-primary" : "text-slate-500"}`}
                                             numberOfLines={2}
                                             adjustsFontSizeToFit
                                         >

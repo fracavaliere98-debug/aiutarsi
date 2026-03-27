@@ -76,6 +76,7 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
 
     const visibleAvatars = iscritti.slice(0, MAX_AVATARS);
     const overflowCount = iscritti.length - MAX_AVATARS;
+    const isVolunteerEnrolled = user?.role === 'VOLUNTEER' && !!user?.id && iscritti.includes(user.id);
 
     return (
         <SoftCard
@@ -188,7 +189,7 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                     {/* Right: action button — flexShrink:0 so it never overflows */}
                     <View style={{ flexShrink: 0 }}>
                         {user?.role === 'VOLUNTEER' ? (
-                            <Text className="text-accent font-bold text-xs">ISCRIVITI →</Text>
+                            <Text className="text-accent font-bold text-xs">{isVolunteerEnrolled ? 'DETTAGLI →' : 'ISCRIVITI →'}</Text>
                         ) : user?.role === 'NPO' && npoId === user.id ? (
                             <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
                         ) : (

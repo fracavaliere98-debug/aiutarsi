@@ -9,7 +9,6 @@ import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
-import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 import { GemmaAvatar } from '../GemmaAvatar';
 
 interface VolunteerCommunityScreenProps {
@@ -63,11 +62,6 @@ export function VolunteerCommunityScreen({
             }) || null
         );
     }, [activities]);
-
-    const volunteerVoices = useMemo(
-        () => posts.filter((post) => post.author?.role === 'VOLUNTEER').slice(0, 2),
-        [posts]
-    );
 
     const gemmaTarget = suggestedActivities[0];
 
@@ -152,32 +146,6 @@ export function VolunteerCommunityScreen({
                         </View>
                     </View>
                 </TouchableOpacity>
-            ) : null}
-
-            {volunteerVoices.length > 0 ? (
-                <View
-                    style={{
-                        marginHorizontal: 16,
-                        marginBottom: 16,
-                        borderRadius: 28,
-                        backgroundColor: '#ffffff',
-                        borderWidth: 1,
-                        borderColor: '#e5e7eb',
-                        paddingVertical: 16,
-                    }}
-                >
-                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                            Voci dei volontari
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-                            Cose viste da vicino.
-                        </Text>
-                    </View>
-                    {volunteerVoices.map((post) => (
-                        <CommunityCompactPostCard key={`volunteer_voice_${post.id}`} post={post} />
-                    ))}
-                </View>
             ) : null}
 
             <View

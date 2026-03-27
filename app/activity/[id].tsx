@@ -727,7 +727,7 @@ export default function ActivityDetail() {
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Recensisci</Text>
                     </TouchableOpacity>
                 ) : isWaitingPresenceConfirmation ? (
-                    <View style={{ backgroundColor: '#fff7ed', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderWidth: 1, borderColor: '#fed7aa', maxWidth: SCREEN_W * 0.56 }}>
+                    <View style={{ backgroundColor: '#fff7ed', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderWidth: 1, borderColor: '#fed7aa', width: '100%' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                             <AlertTriangle size={14} color="#c2410c" />
                             <Text style={{ color: '#c2410c', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
