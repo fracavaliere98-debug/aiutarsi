@@ -753,7 +753,16 @@ export default function ActivityDetail() {
                                     try { await unenrollFromActivity(activity.id); }
                                     catch { setLocalIscrittiOverride(prev); }
                                 }}
-                                style={{ backgroundColor: '#fff0f0', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#fecaca' }}
+                                style={{
+                                    backgroundColor: '#fff0f0',
+                                    paddingHorizontal: 14,
+                                    minHeight: 50,
+                                    borderRadius: 28,
+                                    borderWidth: 1,
+                                    borderColor: '#fecaca',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
                             >
                                 <Text style={{ color: '#dc2626', fontWeight: '700' }}>Annulla</Text>
                             </TouchableOpacity>
