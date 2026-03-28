@@ -6,6 +6,7 @@ import { WebView } from "react-native-webview";
 import { PageHeader } from "../../../components/PageHeader";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { ScreenWrapper } from "../../../components/ScreenWrapper";
+import { UserAvatar } from "../../../components/UserAvatar";
 import {
     ArrowRight, Search, X, MapPin, Target, Calendar, Plus, Minus,
     Clock, Users, Globe, BookOpen, Dog, Palette, Heart, Code,
