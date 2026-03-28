@@ -18,7 +18,7 @@ import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated } from "react-native";
+import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, StyleSheet } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useMarketingCaptureShortcut } from "../hooks/useMarketingCaptureShortcut";
@@ -26,6 +26,7 @@ import BannedScreen from "../components/BannedScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { STACK_TRANSITIONS } from "../constants/motion";
 import { BrandedLoadingVideo } from "../components/BrandedLoadingVideo";
+import { consumeIntroVideoTransition } from "../utils/introVideoTransition";
 
 const appIntroVideo = require("../assets/videos/hailuo-2_3_bright_lens_flare_Create_a_premium_mobile_app_opening_animation_for_a_brand_call-0.mp4");
 
@@ -57,6 +58,11 @@ function RootLayoutNav() {
   const hasCheckedForUpdates = useRef(false);
   const [showStartupVideo, setShowStartupVideo] = useState(true);
   const startupVideoOpacity = useRef(new Animated.Value(1)).current;
+
+  const playIntroOverlay = () => {
+    startupVideoOpacity.setValue(1);
+    setShowStartupVideo(true);
+  };
 
   // Register for push notifications and keep last_seen_at updated
   usePushNotifications();
@@ -141,9 +147,7 @@ function RootLayoutNav() {
   }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router]);
 
   useEffect(() => {
-    if (!isLoaded || isAuthLoading || isLoggingOut) return;
-
-    startupVideoOpacity.setValue(1);
+    if (!isLoaded || isAuthLoading || isLoggingOut || !showStartupVideo) return;
 
     const fadeTimer = setTimeout(() => {
       Animated.timing(startupVideoOpacity, {
@@ -161,7 +165,14 @@ function RootLayoutNav() {
       clearTimeout(fadeTimer);
       clearTimeout(timer);
     };
-  }, [isLoaded, isAuthLoading, isLoggingOut, startupVideoOpacity]);
+  }, [isLoaded, isAuthLoading, isLoggingOut, showStartupVideo, startupVideoOpacity]);
+
+  useEffect(() => {
+    if (!isLoaded || isAuthLoading || isLoggingOut) return;
+    if (consumeIntroVideoTransition()) {
+      playIntroOverlay();
+    }
+  }, [segmentKey, isLoaded, isAuthLoading, isLoggingOut]);
 
   // Loading spinner (Combined: Initial Load + Ongoing Auth actions + Logout Guard + Redirection Guard)
   if (!isLoaded || isAuthLoading || isLoggingOut || (!user && inProtectedGroup)) {
@@ -169,14 +180,6 @@ function RootLayoutNav() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
         <ActivityIndicator size="large" color="#311b92" />
       </View>
-    );
-  }
-
-  if (showStartupVideo) {
-    return (
-      <Animated.View style={{ flex: 1, opacity: startupVideoOpacity, backgroundColor: "white" }}>
-        <BrandedLoadingVideo source={appIntroVideo} showOverlay={false} startAtSeconds={2} />
-      </Animated.View>
     );
   }
 
@@ -192,30 +195,44 @@ function RootLayoutNav() {
   // unless we want to show a generic unauthorized state, but the sub-layouts handle it.
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack screenOptions={STACK_TRANSITIONS.root}>
-        <Stack.Screen name="index" options={STACK_TRANSITIONS.root} />
-        <Stack.Screen name="onboarding" options={STACK_TRANSITIONS.push} />
+    <View style={{ flex: 1, backgroundColor: "white" }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Stack screenOptions={STACK_TRANSITIONS.root}>
+          <Stack.Screen name="index" options={STACK_TRANSITIONS.root} />
+          <Stack.Screen name="onboarding" options={STACK_TRANSITIONS.push} />
 
-        <Stack.Screen name="(volunteer)" options={STACK_TRANSITIONS.root} />
-        <Stack.Screen name="(npo)" options={STACK_TRANSITIONS.root} />
-        <Stack.Screen name="(corporate)" options={STACK_TRANSITIONS.root} />
-        <Stack.Screen name="admin" options={STACK_TRANSITIONS.root} />
+          <Stack.Screen name="(volunteer)" options={STACK_TRANSITIONS.root} />
+          <Stack.Screen name="(npo)" options={STACK_TRANSITIONS.root} />
+          <Stack.Screen name="(corporate)" options={STACK_TRANSITIONS.root} />
+          <Stack.Screen name="admin" options={STACK_TRANSITIONS.root} />
 
-        {/* Shared Routes */}
-        <Stack.Screen name="activity/[id]" options={STACK_TRANSITIONS.push} />
-        <Stack.Screen name="feedback/[id]" options={STACK_TRANSITIONS.modal} />
-        <Stack.Screen name="npo-profile/[id]" options={STACK_TRANSITIONS.push} />
-        <Stack.Screen name="blocked-users" options={STACK_TRANSITIONS.push} />
-        <Stack.Screen name="community/create-post" options={STACK_TRANSITIONS.modal} />
-        <Stack.Screen name="help-center" options={STACK_TRANSITIONS.modal} />
-        <Stack.Screen name="terms" options={STACK_TRANSITIONS.push} />
-        <Stack.Screen name="dev/marketing-capture" options={STACK_TRANSITIONS.push} />
-      </Stack>
-    </KeyboardAvoidingView>
+          {/* Shared Routes */}
+          <Stack.Screen name="activity/[id]" options={STACK_TRANSITIONS.push} />
+          <Stack.Screen name="feedback/[id]" options={STACK_TRANSITIONS.modal} />
+          <Stack.Screen name="npo-profile/[id]" options={STACK_TRANSITIONS.push} />
+          <Stack.Screen name="blocked-users" options={STACK_TRANSITIONS.push} />
+          <Stack.Screen name="community/create-post" options={STACK_TRANSITIONS.modal} />
+          <Stack.Screen name="help-center" options={STACK_TRANSITIONS.modal} />
+          <Stack.Screen name="terms" options={STACK_TRANSITIONS.push} />
+          <Stack.Screen name="dev/marketing-capture" options={STACK_TRANSITIONS.push} />
+        </Stack>
+      </KeyboardAvoidingView>
+
+      {showStartupVideo && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            opacity: startupVideoOpacity,
+          }}
+        >
+          <BrandedLoadingVideo source={appIntroVideo} showOverlay={false} startAtSeconds={2} />
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
