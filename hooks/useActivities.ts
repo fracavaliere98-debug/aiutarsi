@@ -42,6 +42,9 @@ export function useActivities(filters: ActivityFilters = {}) {
         queryKey: ['activities', filters],
         initialPageParam: 0,
         staleTime: 60_000, // activities stale after 1 minute
+        refetchOnMount: true,
+        refetchOnReconnect: true,
+        retry: 1,
         queryFn: async ({ pageParam }) => {
             return activityService.getActivities({
                 category: filters.category,

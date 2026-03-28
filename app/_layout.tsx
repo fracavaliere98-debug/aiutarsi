@@ -2,7 +2,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityProvider } from "../context/ActivityContext";
 import { NotificationProvider } from "../context/NotificationContext";
@@ -18,13 +18,16 @@ import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useMarketingCaptureShortcut } from "../hooks/useMarketingCaptureShortcut";
 import BannedScreen from "../components/BannedScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { STACK_TRANSITIONS } from "../constants/motion";
+import { BrandedLoadingVideo } from "../components/BrandedLoadingVideo";
+
+const appIntroVideo = require("../assets/videos/hailuo-2_3_bright_lens_flare_Create_a_premium_mobile_app_opening_animation_for_a_brand_call-0.mp4");
 
 SplashScreen.preventAutoHideAsync();
 
@@ -52,6 +55,8 @@ function RootLayoutNav() {
   const router = useRouter();
   const isRedirecting = useRef(false);
   const hasCheckedForUpdates = useRef(false);
+  const [showStartupVideo, setShowStartupVideo] = useState(true);
+  const startupVideoOpacity = useRef(new Animated.Value(1)).current;
 
   // Register for push notifications and keep last_seen_at updated
   usePushNotifications();
@@ -135,12 +140,43 @@ function RootLayoutNav() {
 
   }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router]);
 
+  useEffect(() => {
+    if (!isLoaded || isAuthLoading || isLoggingOut) return;
+
+    startupVideoOpacity.setValue(1);
+
+    const fadeTimer = setTimeout(() => {
+      Animated.timing(startupVideoOpacity, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: true,
+      }).start();
+    }, 3300);
+
+    const timer = setTimeout(() => {
+      setShowStartupVideo(false);
+    }, 4000);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(timer);
+    };
+  }, [isLoaded, isAuthLoading, isLoggingOut, startupVideoOpacity]);
+
   // Loading spinner (Combined: Initial Load + Ongoing Auth actions + Logout Guard + Redirection Guard)
   if (!isLoaded || isAuthLoading || isLoggingOut || (!user && inProtectedGroup)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
         <ActivityIndicator size="large" color="#311b92" />
       </View>
+    );
+  }
+
+  if (showStartupVideo) {
+    return (
+      <Animated.View style={{ flex: 1, opacity: startupVideoOpacity, backgroundColor: "white" }}>
+        <BrandedLoadingVideo source={appIntroVideo} showOverlay={false} startAtSeconds={2} />
+      </Animated.View>
     );
   }
 

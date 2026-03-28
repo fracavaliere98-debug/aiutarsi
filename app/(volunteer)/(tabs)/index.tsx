@@ -3,7 +3,7 @@ import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-reac
 import { Colors } from "../../../constants/Colors";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useActivities } from "../../../context/ActivityContext";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
@@ -22,6 +22,16 @@ export default function VolunteerDashboard() {
     const { refresh: refreshSmartMatch } = useSmartMatch();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
+
+    useFocusEffect(
+        useMemo(
+            () => () => {
+                void loadData();
+                void refreshSmartMatch();
+            },
+            [loadData, refreshSmartMatch]
+        )
+    );
 
 
 
