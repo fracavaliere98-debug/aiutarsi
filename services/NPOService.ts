@@ -53,16 +53,19 @@ export class NPOService {
 
     // Helper map OldApplication
     private _mapDbAppToLocalApp(dbApp: any): OldApplication {
+        const npo = Array.isArray(dbApp.npo) ? dbApp.npo[0] : dbApp.npo;
+        const volunteer = Array.isArray(dbApp.volunteer) ? dbApp.volunteer[0] : dbApp.volunteer;
+
         return {
             id: dbApp.id,
             npoId: dbApp.npo_id,
-            npoName: dbApp.npo?.npo_name || 'NPO',
-            npoAvatar: dbApp.npo?.avatar_url || '',
+            npoName: npo?.npo_name || npo?.full_name || 'NPO',
+            npoAvatar: npo?.avatar_url || '',
             volunteerId: dbApp.volunteer_id,
-            volunteerName: dbApp.volunteer?.full_name || 'Volontario',
-            volunteerAvatar: dbApp.volunteer?.avatar_url || '',
+            volunteerName: volunteer?.full_name || 'Volontario',
+            volunteerAvatar: volunteer?.avatar_url || '',
             message: dbApp.message,
-            skills: dbApp.volunteer?.user_skills?.map((s: any) => s.skill) || [],
+            skills: volunteer?.user_skills?.map((s: any) => s.skill) || [],
             status: dbApp.status,
             appliedDate: dbApp.created_at,
             reviewedDate: dbApp.reviewed_at || undefined,

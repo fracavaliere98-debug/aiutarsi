@@ -359,7 +359,7 @@ export const profileRest = {
   listApplicationsForNPO: async (npoId: string, accessToken?: string) => {
     return request<any[]>(
       "GET",
-      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url,user_skills(skill)),npo:npo_id(npo_name,avatar_url)&npo_id=eq.${npoId}&order=created_at.desc`,
+      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url,user_skills(skill)),npo:npo_id(npo_name,full_name,avatar_url)&npo_id=eq.${npoId}&order=created_at.desc`,
       undefined,
       accessToken
     );
@@ -367,7 +367,7 @@ export const profileRest = {
   listApplicationsForVolunteer: async (volunteerId: string, accessToken?: string) => {
     return request<any[]>(
       "GET",
-      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url),npo:npo_id(npo_name,avatar_url)&volunteer_id=eq.${volunteerId}&order=created_at.desc`,
+      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url),npo:npo_id(npo_name,full_name,avatar_url)&volunteer_id=eq.${volunteerId}&order=created_at.desc`,
       undefined,
       accessToken
     );
