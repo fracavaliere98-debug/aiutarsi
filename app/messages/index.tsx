@@ -109,7 +109,7 @@ function SwipeableConversationItem({ children, onDelete }: { children: React.Rea
 export default function MessagesListScreen() {
     const router = useRouter();
     const { conversations, refreshConversations } = useChat();
-    const { user, getUserById } = useAuth();
+    const { user } = useAuth();
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'Tutti' | 'Gruppi Attività' | 'Privati'>('Tutti');
     const [showNpoPicker, setShowNpoPicker] = useState(false);
@@ -205,6 +205,13 @@ export default function MessagesListScreen() {
     // Force commit deletion when user leaves the screen
     useFocusEffect(
         useCallback(() => {
+            refreshConversations();
+            return undefined;
+        }, [refreshConversations])
+    );
+
+    useFocusEffect(
+        useCallback(() => {
             return () => {
                 if (pendingDeleteRef.current) {
                     const pending = pendingDeleteRef.current;
@@ -293,8 +300,8 @@ export default function MessagesListScreen() {
         const bConv = b.conversations;
 
         // Pure date-based sorting: most recent first (Standard behavior)
-        const aTime = new Date(aConv?.last_message_at || aConv?.created_at || 0).getTime();
-        const bTime = new Date(bConv?.last_message_at || bConv?.created_at || 0).getTime();
+            const aTime = new Date(aConv?.last_message_at || a?.inbox_visible_at || aConv?.created_at || 0).getTime();
+            const bTime = new Date(bConv?.last_message_at || b?.inbox_visible_at || bConv?.created_at || 0).getTime();
 
         return bTime - aTime;
     });
@@ -361,9 +368,9 @@ export default function MessagesListScreen() {
                 {activeTab === 'Privati' && filteredConversations.length === 0 ? (
                     <View className="flex-1 items-center justify-center px-10 pt-10">
                         <Text className="text-slate-400 font-bold text-center mb-2">Chat Private</Text>
-                        <Text className="text-slate-400 text-sm text-center leading-5">
-                            Al momento non è ancora possibile chattare direttamente con altri volontari. Stiamo lavorando per te!
-                        </Text>
+                                        <Text className="text-slate-400 text-sm text-center leading-5">
+                                            Nessuna chat privata visibile al momento. Avviane una da un profilo o dal pulsante in alto.
+                                        </Text>
                     </View>
                 ) : (
                     <FlatList
@@ -376,24 +383,25 @@ export default function MessagesListScreen() {
                             if (!conv) return null;
 
                             // Use denormalized fields directly from the parent conversation
-                            const lastMessageContent = conv.last_message_content || '';
-                            const lastMessageAt = conv.last_message_at || conv.created_at;
+                            const isStartedPrivate = conv.type === 'PRIVATE' && !!item.inbox_visible_at && !conv.last_message_at;
+                            const lastMessageContent = conv.last_message_content || (isStartedPrivate ? 'Chat avviata' : '');
+                            const lastMessageAt = conv.last_message_at || item.inbox_visible_at || conv.created_at;
                             const lastMessageSenderId = conv.last_message_sender_id;
 
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
-                            const isUnread = lastMessageAt && lastMessageAt > item.last_read_at && lastMessageSenderId !== user?.id;
+                            const isUnread = (item.unread_count || 0) > 0;
 
                             // Determine title and avatar
                             const activityData = conv.activities;
                             const activityTitle = Array.isArray(activityData) ? activityData[0]?.title : activityData?.title;
-                            let displayTitle = isGroup ? (activityTitle || 'Gruppo Attività') : 'Chat Diretta';
-                            let displayAvatar = undefined;
+                            let displayTitle = isGroup ? (activityTitle || 'Gruppo Attività') : (item.inbox_title || 'Chat Diretta');
+                            let displayAvatar = item.inbox_avatar_url;
 
                             if (!isGroup) {
                                 const other = conv.participants?.find((p: any) => p.user_id !== user?.id);
                                 if (other?.profiles) {
-                                    displayTitle = other.profiles.npo_name || other.profiles.name || 'Chat Diretta';
-                                    displayAvatar = other.profiles.avatar;
+                                    displayTitle = item.inbox_title || other.profiles.npo_name || other.profiles.name || 'Chat Diretta';
+                                    displayAvatar = item.inbox_avatar_url || other.profiles.avatar;
                                 }
                             }
 
@@ -404,7 +412,7 @@ export default function MessagesListScreen() {
                                         avatarUrl={displayAvatar}
                                         lastMessage={lastMessageContent}
                                         timestamp={formatRelativeDate(lastMessageAt)}
-                                        unreadCount={isUnread ? 1 : 0}
+                                        unreadCount={item.unread_count || 0}
                                         isGroup={isGroup}
                                         lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (conv.participants?.find((p: any) => p.user_id === lastMessageSenderId)?.profiles?.name || 'Utente') : undefined)}
                                         isOwnLastMessage={lastMessageSenderId === user?.id}

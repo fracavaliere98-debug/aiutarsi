@@ -129,7 +129,15 @@ export default function NPOProfileScreen() {
         if (!user || user.role !== "VOLUNTEER") return;
         try {
             const convId = await ChatService.startPrivateConversation(user.id, npoId);
-            router.push(`/messages/${convId}` as any);
+            router.push({
+                pathname: `/messages/${convId}` as any,
+                params: {
+                    targetUserId: npoId,
+                    targetName: npoUser.npoName || npoUser.name || "Ente",
+                    targetRole: "NPO",
+                    targetAvatar: npoUser.avatar || npoUser.avatar_url || "",
+                }
+            } as any);
         } catch (error) {
             console.error("Error starting chat with NPO:", error);
             showToast("error", "Errore nell'avvio della chat");

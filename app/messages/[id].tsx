@@ -15,7 +15,13 @@ import { useToast } from '../../context/ToastContext';
 import ReportModal from '../../components/ReportModal';
 
 export default function ChatDetailScreen() {
-    const { id } = useLocalSearchParams();
+    const { id, targetUserId, targetName, targetRole, targetAvatar } = useLocalSearchParams<{
+        id: string;
+        targetUserId?: string;
+        targetName?: string;
+        targetRole?: string;
+        targetAvatar?: string;
+    }>();
     const router = useRouter();
     const { user } = useAuth();
     const { markAsRead, updateConversationPreview } = useChat();
@@ -77,13 +83,27 @@ export default function ChatDetailScreen() {
         return conversation.participants?.find((p: any) => p.user_id !== user?.id);
     }, [conversation, user]);
 
+    const fallbackPrivateProfile = React.useMemo(() => {
+        if (!targetUserId) return null;
+        return {
+            id: String(targetUserId),
+            name: targetRole === 'NPO' ? undefined : (targetName || 'Volontario'),
+            npo_name: targetRole === 'NPO' ? (targetName || 'Ente') : undefined,
+            avatar: targetAvatar || undefined,
+            role: targetRole || undefined,
+        };
+    }, [targetAvatar, targetName, targetRole, targetUserId]);
+
     // For group chats, pick the NPO participant to show as header (if exists)
     const headerProfile = React.useMemo(() => {
+        if (fallbackPrivateProfile && (!conversation || conversation.type === 'PRIVATE')) {
+            return otherParticipant?.profiles || fallbackPrivateProfile;
+        }
         if (!conversation) return null;
         if (conversation.type === 'PRIVATE') return otherParticipant?.profiles || null;
         // For groups, no single profile - show activity title
         return null;
-    }, [conversation, otherParticipant]);
+    }, [conversation, fallbackPrivateProfile, otherParticipant]);
 
     // Online/offline – recalculated on every render (conversation refreshes every 30s)
     const isOnline = React.useMemo(() => {
@@ -155,13 +175,29 @@ export default function ChatDetailScreen() {
         };
         setMessages(prev => [pendingMsg, ...prev]);
 
+        let watchdogTriggered = false;
+        const watchdogId = setTimeout(() => {
+            watchdogTriggered = true;
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, __pending: false, __failed: true } : m));
+            setIsSending(false);
+            showToast('error', 'Invio lento o bloccato. Premi ↺ per riprovare.');
+        }, 12000);
+
         try {
             const newMsg = await ChatService.sendMessage(id as string, user!.id, text);
+            clearTimeout(watchdogId);
             // Replace pending message with real message from DB
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg } : m));
+            setMessages(prev => {
+                const hasPending = prev.some(m => m.id === tempId);
+                if (!hasPending) {
+                    return mergeMessages(prev, [newMsg]);
+                }
+                return prev.map(m => m.id === tempId ? { ...newMsg } : m);
+            });
             // Optimistically update the conversation list preview immediately
             updateConversationPreview(id as string, text, user!.id);
         } catch (e) {
+            clearTimeout(watchdogId);
             if (e instanceof ChatFilterError) {
                 // Remove pending, restore input
                 setMessages(prev => prev.filter(m => m.id !== tempId));
@@ -170,10 +206,14 @@ export default function ChatDetailScreen() {
             } else {
                 // Mark as failed with retry option
                 setMessages(prev => prev.map(m => m.id === tempId ? { ...m, __failed: true } : m));
-                showToast('error', 'Invio fallito. Premi ↺ per riprovare.');
+                if (!watchdogTriggered) {
+                    showToast('error', 'Invio fallito. Premi ↺ per riprovare.');
+                }
             }
         } finally {
-            setIsSending(false);
+            if (!watchdogTriggered) {
+                setIsSending(false);
+            }
         }
     };
 
@@ -213,6 +253,21 @@ export default function ChatDetailScreen() {
         try {
             if (isInitial) {
                 const conv = await ChatService.getConversationDetails(id as string);
+                if (targetUserId && user?.id && conv?.type !== 'PRIVATE') {
+                    const privateConvId = await ChatService.startPrivateConversation(user.id, String(targetUserId));
+                    if (privateConvId && privateConvId !== id) {
+                        router.replace({
+                            pathname: `/messages/${privateConvId}` as any,
+                            params: {
+                                targetUserId,
+                                targetName,
+                                targetRole,
+                                targetAvatar,
+                            }
+                        } as any);
+                        return;
+                    }
+                }
                 setConversation(conv);
             }
 
@@ -240,7 +295,7 @@ export default function ChatDetailScreen() {
             setIsRefreshing(false);
             setIsLoadingMore(false);
         }
-    }, [id, markAsRead, user?.id]);
+    }, [id, markAsRead, router, targetAvatar, targetName, targetRole, targetUserId, user?.id]);
 
     const handleLoadMore = () => {
         if (!hasMore || isLoadingMore || isRefreshing) return;
@@ -348,10 +403,10 @@ export default function ChatDetailScreen() {
     // Header display name
     const displayTitle = headerProfile
         ? (headerProfile.npo_name || headerProfile.name || 'Chat')
-        : (conversation?.activities?.title || conversation?.name || 'Gruppo');
+        : (fallbackPrivateProfile?.npo_name || fallbackPrivateProfile?.name || conversation?.activities?.title || conversation?.name || 'Gruppo');
 
-    const displayAvatar = headerProfile?.avatar;
-    const otherUserId = otherParticipant?.user_id;
+    const displayAvatar = headerProfile?.avatar || fallbackPrivateProfile?.avatar;
+    const otherUserId = otherParticipant?.user_id || (targetUserId ? String(targetUserId) : undefined);
 
     return (
         <SafeAreaView className="flex-1 bg-white" edges={['top']}>

@@ -75,6 +75,7 @@ async function request<T>(
         }
 
         if (xhr.status < 200 || xhr.status >= 300) {
+          console.error(`[DEBUG] profileRest ${method} ${path} error body`, xhr.responseText);
           reject(new Error(xhr.responseText || `${method} ${path} failed with ${xhr.status}`));
           return;
         }
@@ -143,6 +144,7 @@ async function request<T>(
   const text = await withTimeout(response.text(), `${method} ${path} body`, timeoutMs);
 
   if (!response.ok) {
+    console.error(`[DEBUG] profileRest ${method} ${path} error body`, text);
     throw new Error(text || `${method} ${path} failed with ${response.status}`);
   }
 
@@ -158,6 +160,135 @@ async function request<T>(
 }
 
 export const profileRest = {
+  getChatInbox: async (userId: string, accessToken?: string) => {
+    return request<any[]>(
+      "POST",
+      `/rest/v1/rpc/get_chat_inbox`,
+      { p_user_id: userId },
+      accessToken
+    );
+  },
+  getConversationMetadata: async (conversationId: string, accessToken?: string) => {
+    return request<any[]>(
+      "GET",
+      `/rest/v1/conversations?id=eq.${conversationId}&select=id,type,activity_id,created_at,last_message_content,last_message_at,last_message_sender_id,activities(title,npo:profiles!npo_id(npo_name)),participants:conversation_participants(user_id,last_read_at,inbox_visible_at,hidden_at,notifications_muted,profiles(name:full_name,npo_name,avatar:avatar_url,role,phone,allow_calls,last_seen_at))`,
+      undefined,
+      accessToken
+    );
+  },
+  getMessages: async (conversationId: string, before?: string, limit: number = 20, accessToken?: string) => {
+    const beforeFilter = before ? `&created_at=lt.${encodeURIComponent(before)}` : "";
+    return request<any[]>(
+      "GET",
+      `/rest/v1/messages?conversation_id=eq.${conversationId}${beforeFilter}&select=id,conversation_id,sender_id,content,metadata,created_at,profiles:sender_id(name:full_name,avatar:avatar_url)&order=created_at.desc&limit=${limit}`,
+      undefined,
+      accessToken
+    );
+  },
+  markConversationRead: async (conversationId: string, userId: string, accessToken?: string) => {
+    return request(
+      "PATCH",
+      `/rest/v1/conversation_participants?conversation_id=eq.${conversationId}&user_id=eq.${userId}`,
+      { last_read_at: new Date().toISOString() },
+      accessToken,
+      { Prefer: "return=minimal" }
+    );
+  },
+  hideConversation: async (conversationId: string, userId: string, accessToken?: string) => {
+    return request(
+      "POST",
+      `/rest/v1/rpc/hide_conversation_for_user`,
+      { p_conversation_id: conversationId, p_user_id: userId },
+      accessToken
+    );
+  },
+  listVolunteerChatApplications: async (userId: string, accessToken?: string) => {
+    return request<Array<{ npo_id: string }>>(
+      "GET",
+      `/rest/v1/applications?volunteer_id=eq.${userId}&select=npo_id`,
+      undefined,
+      accessToken
+    );
+  },
+  listVolunteerFollowedNpos: async (userId: string, accessToken?: string) => {
+    return request<Array<{ npo_id: string }>>(
+      "GET",
+      `/rest/v1/npo_followers?follower_id=eq.${userId}&select=npo_id`,
+      undefined,
+      accessToken
+    );
+  },
+  listVolunteerActivityNpos: async (userId: string, accessToken?: string) => {
+    return request<Array<{ activities?: { npo_id?: string | null } | null }>>(
+      "GET",
+      `/rest/v1/activity_participants?user_id=eq.${userId}&status=in.(APPROVED,REGISTERED,PENDING)&select=activities!inner(npo_id)`,
+      undefined,
+      accessToken
+    );
+  },
+  listNpoApplications: async (npoId: string, accessToken?: string) => {
+    return request<Array<{ volunteer_id: string; volunteer?: { id: string; name?: string | null; npo_name?: string | null; avatar?: string | null; role?: string | null } | null }>>(
+      "GET",
+      `/rest/v1/applications?npo_id=eq.${npoId}&select=volunteer_id,volunteer:profiles!applications_volunteer_id_fkey(id,name:full_name,npo_name,avatar:avatar_url,role)`,
+      undefined,
+      accessToken
+    );
+  },
+  listNpoActivities: async (npoId: string, accessToken?: string) => {
+    return request<Array<{ id: string; title: string; status: string }>>(
+      "GET",
+      `/rest/v1/activities?npo_id=eq.${npoId}&status=neq.CANCELLATA&select=id,title,status`,
+      undefined,
+      accessToken
+    );
+  },
+  listActivityParticipants: async (activityIds: string[], accessToken?: string) => {
+    if (!activityIds.length) return [];
+    const inFilter = activityIds.join(",");
+    return request<Array<{ activity_id: string; user_id: string; status: string }>>(
+      "GET",
+      `/rest/v1/activity_participants?activity_id=in.(${inFilter})&status=in.(APPROVED,REGISTERED)&select=activity_id,user_id,status`,
+      undefined,
+      accessToken
+    );
+  },
+  sendMessage: async (
+    payload: { conversation_id: string; sender_id: string; content: string; metadata?: unknown },
+    accessToken?: string
+  ) => {
+    return request<any[]>(
+      "POST",
+      `/rest/v1/rpc/send_chat_message`,
+      {
+        p_conversation_id: payload.conversation_id,
+        p_sender_id: payload.sender_id,
+        p_content: payload.content,
+        p_metadata: payload.metadata ?? {},
+      },
+      accessToken
+    );
+  },
+  sendMessageLegacy: async (
+    payload: { conversation_id: string; sender_id: string; content: string; metadata?: unknown },
+    accessToken?: string
+  ) => {
+    return request<any[]>(
+      "POST",
+      `/rest/v1/messages?select=id,conversation_id,sender_id,content,metadata,created_at`,
+      payload,
+      accessToken,
+      { Prefer: "return=representation" }
+    );
+  },
+  startPrivateConversationBetween: async (userId1: string, userId2: string, accessToken?: string) => {
+    const conversationId = await request<string | null>(
+      "POST",
+      `/rest/v1/rpc/start_private_conversation_between`,
+      { p_user_id_1: userId1, p_user_id_2: userId2 },
+      accessToken
+    );
+    return typeof conversationId === 'string' ? conversationId : null;
+  },
   joinActivity: async (
     payload: { activity_id: string; user_id: string; status: "REGISTERED" | "PENDING"; message?: string; phone?: string },
     accessToken?: string

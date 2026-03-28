@@ -43,14 +43,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         try {
             const data = await ChatService.getConversations(user.id);
             setConversations(data);
-
-            // Fetch unread count from view
-            const { data: unreadData } = await supabase
-                .from('unread_message_counts')
-                .select('unread_count')
-                .eq('user_id', user.id);
-
-            const totalUnread = unreadData?.reduce((acc, curr) => acc + (curr.unread_count || 0), 0) || 0;
+            const totalUnread = data.reduce((acc: number, curr: any) => acc + (curr.unread_count || 0), 0);
             setUnreadCount(totalUnread);
         } catch (error) {
             console.error("Error refreshing conversations:", error);
@@ -140,6 +133,22 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             supabase.removeChannel(messagesChannel);
             supabase.removeChannel(participantsChannel);
             supabase.removeChannel(convsDeleteChannel);
+        };
+    }, [refreshConversations, user, isQuietRoute]);
+
+    useEffect(() => {
+        if (!user || isQuietRoute) return;
+
+        const conversationsChannel = supabase.channel(`public:conversations:context:${user.id}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'conversations' },
+                () => { refreshConversations(); }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(conversationsChannel);
         };
     }, [refreshConversations, user, isQuietRoute]);
 

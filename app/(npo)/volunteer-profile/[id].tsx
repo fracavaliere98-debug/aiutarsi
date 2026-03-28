@@ -163,7 +163,15 @@ export default function NPOVolunteerProfile() {
         if (!user) return;
         try {
             const convId = await ChatService.startPrivateConversation(currentUser?.id || '', user.id);
-            router.push(`/messages/${convId}` as any);
+            router.push({
+                pathname: `/messages/${convId}` as any,
+                params: {
+                    targetUserId: user.id,
+                    targetName: user.name || 'Volontario',
+                    targetRole: 'VOLUNTEER',
+                    targetAvatar: user.avatar || '',
+                }
+            } as any);
         } catch (error) {
             console.error("Error starting chat with volunteer:", error);
         }

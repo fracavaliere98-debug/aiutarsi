@@ -1,4 +1,6 @@
 import { supabase } from '../utils/supabase';
+import { profileRest } from '../utils/profileRest';
+import { authService } from './AuthService';
 import { MessageMetadata } from '../types/chat';
 import { filterMessage, recordMessageSent, getFilterErrorMessage } from '../utils/chatFilter';
 
@@ -11,52 +13,77 @@ export class ChatFilterError extends Error {
 }
 
 class ChatService {
+    private async _withTimeout<T>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        try {
+            return await Promise.race([
+                promise,
+                new Promise<T>((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+                }),
+            ]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
+    private async _getAccessToken(): Promise<string> {
+        const cached = authService.getCachedAccessToken();
+        if (cached) return cached;
+
+        const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('auth.getSession timeout after 1500ms')), 1500))
+        ]) as any;
+
+        const token = data?.session?.access_token;
+        if (!token) {
+            throw new Error('Sessione assente o token utente non disponibile');
+        }
+        authService.setCachedAccessToken(token);
+        return token;
+    }
+
     /**
      * Fetch all conversations for a specific user
      */
     async getConversations(userId: string) {
-        const { data, error } = await supabase
-            .from('conversation_participants')
-            .select(`
-                conversation_id,
-                last_read_at,
-                conversations!inner (
-                    id,
-                    type,
-                    activity_id,
-                    created_at,
-                    last_message_content,
-                    last_message_at,
-                    last_message_sender_id,
-                    activities (title),
-                    participants:conversation_participants (
-                        user_id,
-                        profiles (
-                            name:full_name,
-                            npo_name,
-                            avatar:avatar_url
-                        )
-                    )
-                )
-            `)
-            .eq('user_id', userId)
-            .order('last_message_at', { foreignTable: 'conversations', ascending: false, nullsFirst: false });
+        const accessToken = await this._getAccessToken();
+        const data = await profileRest.getChatInbox(userId, accessToken);
 
-        if (error) {
-            console.error('Error fetching conversations:', error);
-            throw error;
-        }
-
-        const nonEmptyConversations = (data || []).filter((participant: any) => {
-            const conversation = participant.conversations;
-            return !!conversation?.last_message_at && !!conversation?.last_message_content?.trim();
-        });
+        const visibleConversations = (data || []).map((row: any) => ({
+            conversation_id: row.conversation_id,
+            last_read_at: row.last_read_at,
+            inbox_visible_at: row.inbox_visible_at,
+            unread_count: row.unread_count || 0,
+            inbox_title: row.title,
+            inbox_avatar_url: row.avatar_url,
+            other_user_id: row.other_user_id,
+            conversations: {
+                id: row.conversation_id,
+                type: row.conversation_type,
+                activity_id: row.activity_id,
+                created_at: row.created_at,
+                last_message_content: row.last_message_content,
+                last_message_at: row.last_message_at,
+                last_message_sender_id: row.last_message_sender_id,
+                activities: row.conversation_type === 'ACTIVITY_GROUP' ? { title: row.title } : null,
+                participants: row.other_user_id ? [{
+                    user_id: row.other_user_id,
+                    profiles: {
+                        name: row.title,
+                        npo_name: row.title,
+                        avatar: row.avatar_url,
+                    }
+                }] : [],
+            }
+        }));
 
         // Filter out conversations with blocked users
         try {
             const blockedIds = await this.getBlockedUserIds(userId);
             if (blockedIds.length > 0) {
-                return nonEmptyConversations.filter((p: any) => {
+                return visibleConversations.filter((p: any) => {
                     if (p.conversations?.type === 'PRIVATE') {
                         const other = p.conversations.participants?.find((part: any) => part.user_id !== userId);
                         if (other && blockedIds.includes(other.user_id)) {
@@ -70,88 +97,36 @@ class ChatService {
             console.error('Error filtering blocked users in conversations:', e);
         }
 
-        return nonEmptyConversations;
+        return visibleConversations.sort((a: any, b: any) => {
+            const aConv = a.conversations;
+            const bConv = b.conversations;
+            const aTime = new Date(aConv?.last_message_at || a.inbox_visible_at || aConv?.created_at || 0).getTime();
+            const bTime = new Date(bConv?.last_message_at || b.inbox_visible_at || bConv?.created_at || 0).getTime();
+            return bTime - aTime;
+        });
     }
 
     /**
      * Start a private conversation between two users
      */
     async startPrivateConversation(userId1: string, userId2: string) {
-        // Checking if conversation already exists
-        // Find conversations where both users are participants
-        const { data: existingParticipant, error: errCheck } = await supabase
-            .from('conversation_participants')
-            .select('conversation_id, conversations!inner(type)')
-            .eq('user_id', userId1)
-            .eq('conversations.type', 'PRIVATE');
-
-        if (errCheck) console.error('Error checking existing conversation:', errCheck);
-
-        if (existingParticipant && existingParticipant.length > 0) {
-            const convIds = existingParticipant.map(p => p.conversation_id);
-
-            // Check if userId2 is also a participant in any of these private conversations
-            const { data: commonPart } = await supabase
-                .from('conversation_participants')
-                .select('conversation_id')
-                .in('conversation_id', convIds)
-                .eq('user_id', userId2)
-                .single();
-
-            if (commonPart) {
-                return commonPart.conversation_id;
-            }
+        const accessToken = await this._getAccessToken();
+        const conversationId = await profileRest.startPrivateConversationBetween(userId1, userId2, accessToken);
+        if (!conversationId) {
+            throw new Error('Impossibile creare la conversazione privata');
         }
 
-        const { data: conversation, error: convError } = await supabase
-            .from('conversations')
-            .insert({ type: 'PRIVATE' })
-            .select()
-            .single();
-
-        if (convError) throw convError;
-
-        await supabase.from('conversation_participants').insert([
-            { conversation_id: conversation.id, user_id: userId1 },
-            { conversation_id: conversation.id, user_id: userId2 }
-        ]);
-
-        return conversation.id;
+        return conversationId;
     }
 
     /**
      * Get details of a single conversation with messages
      */
     async getConversationDetails(conversationId: string) {
-        const { data, error } = await supabase
-            .from('conversations')
-            .select(`
-                *,
-                activities (
-                    title,
-                    npo:profiles!npo_id (
-                        npo_name
-                    )
-                ),
-                participants:conversation_participants (
-                    user_id,
-                    last_read_at,
-                    profiles (
-                        name:full_name,
-                        npo_name,
-                        avatar:avatar_url,
-                        role,
-                        phone,
-                        allow_calls,
-                        last_seen_at
-                    )
-                ),
-                messages (*)
-            `)
-            .eq('id', conversationId)
-            .single();
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        const rows = await profileRest.getConversationMetadata(conversationId, accessToken);
+        const data = Array.isArray(rows) ? rows[0] : rows;
+        if (!data) throw new Error('Conversazione non trovata');
 
         // Auto-sync participants for group chats when details are fetched
         if (data && data.type === 'ACTIVITY_GROUP' && data.activity_id) {
@@ -162,34 +137,10 @@ class ChatService {
     }
 
     async getConversationMetadata(conversationId: string) {
-        const { data, error } = await supabase
-            .from('conversations')
-            .select(`
-                *,
-                activities (
-                    title,
-                    npo:profiles!npo_id (
-                        npo_name
-                    )
-                ),
-                participants:conversation_participants (
-                    user_id,
-                    last_read_at,
-                    profiles (
-                        name:full_name,
-                        npo_name,
-                        avatar:avatar_url,
-                        role,
-                        phone,
-                        allow_calls,
-                        last_seen_at
-                    )
-                )
-            `)
-            .eq('id', conversationId)
-            .single();
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        const rows = await profileRest.getConversationMetadata(conversationId, accessToken);
+        const data = Array.isArray(rows) ? rows[0] : rows;
+        if (!data) throw new Error('Conversazione non trovata');
         return data;
     }
 
@@ -204,43 +155,48 @@ class ChatService {
             throw new ChatFilterError(getFilterErrorMessage(clientResult));
         }
 
-        // ── Layer 2: Server-side Edge Function (authoritative) ─────────────
-        try {
-            const { data: fnData, error: fnError } = await supabase.functions.invoke('chat-filter', {
-                body: { message: content, userId: senderId },
-            });
-            if (!fnError && fnData && fnData.allowed === false) {
-                const reasonMap: Record<string, string> = {
-                    rate_limit: '🕐 Stai scrivendo troppo velocemente. Aspetta qualche secondo.',
-                    banned_word: '⛔ Messaggio non consentito: contiene parole inappropriate.',
-                    spam_url: '🔗 I link non sono consentiti in questa chat.',
-                    spam_pattern: '⚠️ Messaggio bloccato: rilevato contenuto spam.',
-                    missing_fields: '⛔ Messaggio non valido.',
-                };
-                throw new ChatFilterError(reasonMap[fnData.reason] ?? '⛔ Messaggio non inviato.');
-            }
-        } catch (e) {
-            // Re-throw only ChatFilterErrors; network/server errors are fail-open
-            if (e instanceof ChatFilterError) throw e;
-            console.warn('chat-filter edge function unavailable, continuing:', e);
+        // ── Insert message ────────────────────────────────────────────────
+        const accessToken = authService.getCachedAccessToken();
+        if (!accessToken) {
+            throw new Error('Token utente non disponibile per inviare il messaggio');
         }
 
-        // ── Insert message ────────────────────────────────────────────────
-        const { data, error } = await supabase
-            .from('messages')
-            .insert({
-                conversation_id: conversationId,
-                sender_id: senderId,
-                content,
-                metadata
-            })
-            .select()
-            .single();
+        console.log('[DEBUG] ChatService: sendMessage rpc start', {
+            conversationId,
+            senderId,
+            contentLength: content.length,
+        });
 
-        if (error) throw error;
+        const rows = await profileRest.sendMessage({
+            conversation_id: conversationId,
+            sender_id: senderId,
+            content,
+            metadata,
+        }, accessToken);
+
+        const data = Array.isArray(rows) ? rows[0] : rows;
+        if (!data) {
+            throw new Error('Messaggio inviato ma risposta vuota');
+        }
+
+        console.log('[DEBUG] ChatService: sendMessage rpc completed', {
+            conversationId,
+            messageId: data.id,
+        });
 
         // Record successful send for rate-limit window
         recordMessageSent();
+
+        // Best-effort server-side moderation after send: never blocks delivery.
+        void this._withTimeout(
+            supabase.functions.invoke('chat-filter', {
+                body: { message: content, userId: senderId },
+            }),
+            'chat-filter invoke background',
+            1500
+        ).catch((e) => {
+            console.warn('chat-filter edge function unavailable after send:', e);
+        });
 
         return data;
     }
@@ -249,36 +205,13 @@ class ChatService {
      * Mark conversation as read
      */
     async markAsRead(conversationId: string, userId: string) {
-        const { error } = await supabase
-            .from('conversation_participants')
-            .update({ last_read_at: new Date().toISOString() })
-            .eq('conversation_id', conversationId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.markConversationRead(conversationId, userId, accessToken);
     }
 
     async getMessages(conversationId: string, before?: string, limit: number = 20) {
-        let query = supabase
-            .from('messages')
-            .select(`
-                *,
-                profiles:sender_id (
-                    name:full_name,
-                    avatar:avatar_url
-                )
-            `)
-            .eq('conversation_id', conversationId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (before) {
-            query = query.lt('created_at', before);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        const data = await profileRest.getMessages(conversationId, before, limit, accessToken);
         return data;
     }
 
@@ -305,40 +238,32 @@ class ChatService {
         if (error) throw error;
     }
 
-    /** Remove the current user from a conversation (soft-delete from their perspective) */
+    /** Hide the current user from a conversation inbox without destroying membership */
     async leaveConversation(conversationId: string, userId: string) {
-        const { error } = await supabase
-            .from('conversation_participants')
-            .delete()
-            .eq('conversation_id', conversationId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
+        const accessToken = await this._getAccessToken();
+        await profileRest.hideConversation(conversationId, userId, accessToken);
     }
 
     /**
      * Get NPOs available for chat (where user is participant/approved)
      */
     async getAvailableNpos(userId: string) {
-        // Find NPOs where the user has applied
-        const { data: applications, error } = await supabase
-            .from('applications')
-            .select('npo_id')
-            .eq('volunteer_id', userId);
+        const accessToken = await this._getAccessToken();
+        const [applications, followers, activityNpos] = await Promise.all([
+            profileRest.listVolunteerChatApplications(userId, accessToken),
+            profileRest.listVolunteerFollowedNpos(userId, accessToken),
+            profileRest.listVolunteerActivityNpos(userId, accessToken),
+        ]);
 
-        if (error) throw error;
-
-        // @ts-ignore - Handle nested object from join
-        const npoIds = Array.from(new Set(applications?.map(app => app.npo_id).filter(id => !!id)));
+        const npoIds = Array.from(new Set([
+            ...(applications || []).map((app: any) => app.npo_id),
+            ...(followers || []).map((row: any) => row.npo_id),
+            ...(activityNpos || []).map((row: any) => row.activities?.npo_id).filter(Boolean),
+        ].filter(Boolean)));
 
         if (npoIds.length === 0) return { data: [] };
 
-        const { data: npos, error: npoErr } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', npoIds);
-
-        if (npoErr) throw npoErr;
+        const npos = await profileRest.getBasicProfiles(npoIds, accessToken);
         return { data: npos };
     }
 
@@ -346,26 +271,8 @@ class ChatService {
      * Get available entities for an NPO to start a chat with
      */
     async getAvailableEntitiesForNPO(npoId: string) {
-        // 1. Get Volunteers who have joined this NPO (from applications table)
-        const { data: applications, error: appErr } = await supabase
-            .from('applications')
-            .select(`
-                volunteer_id,
-                volunteer:profiles!applications_volunteer_id_fkey (
-                    id, 
-                    name:full_name, 
-                    npo_name,
-                    avatar:avatar_url, 
-                    role
-                )
-            `)
-            .eq('npo_id', npoId)
-        // .eq('status', 'APPROVED') // Se vogliamo solo quelli approvati
-
-        if (appErr) {
-            console.error('Error fetching NPO volunteers:', appErr);
-            throw appErr;
-        }
+        const accessToken = await this._getAccessToken();
+        const applications = await profileRest.listNpoApplications(npoId, accessToken);
 
         const volunteersMap = new Map();
         applications?.forEach(app => {
@@ -380,18 +287,25 @@ class ChatService {
             }
         });
 
-        // 2. Get OldActivity Groups (activities created by this NPO)
-        // We only want activities that have participants
-        const { data: activities, error: aErr } = await supabase
-            .from('activities')
-            .select('id, title, activity_participants(count)')
-            .eq('npo_id', npoId)
-            .neq('status', 'CANCELLATA');
+        const activities = await profileRest.listNpoActivities(npoId, accessToken);
+        const activityParticipants = await profileRest.listActivityParticipants((activities || []).map((a: any) => a.id), accessToken);
+        const participantIds = Array.from(new Set((activityParticipants || []).map((p: any) => p.user_id).filter(Boolean)));
+        const participantProfiles = await profileRest.getBasicProfiles(participantIds, accessToken);
 
-        if (aErr) throw aErr;
+        participantProfiles.forEach((profile: any) => {
+            if (profile?.role === 'VOLUNTEER' && !volunteersMap.has(profile.id)) {
+                volunteersMap.set(profile.id, {
+                    id: profile.id,
+                    name: profile.full_name || 'Volontario',
+                    avatar: profile.avatar_url || undefined,
+                    type: 'VOLUNTEER',
+                    isGroup: false
+                });
+            }
+        });
 
         const groups = activities
-            ?.filter(a => (a.activity_participants as any)?.[0]?.count > 0)
+            ?.filter((a: any) => (activityParticipants || []).some((p: any) => p.activity_id === a.id))
             .map(a => ({
                 id: a.id,
                 name: a.title,
@@ -431,8 +345,19 @@ class ChatService {
                 .select()
                 .single();
 
-            if (cErr) throw cErr;
-            convId = conversation.id;
+            if (cErr) {
+                const { data: fallbackExisting, error: fallbackErr } = await supabase
+                    .from('conversations')
+                    .select('id')
+                    .eq('type', 'ACTIVITY_GROUP')
+                    .eq('activity_id', activityId)
+                    .single();
+
+                if (fallbackErr || !fallbackExisting) throw cErr;
+                convId = fallbackExisting.id;
+            } else {
+                convId = conversation.id;
+            }
         }
 
         const { data: activityParts } = await supabase
