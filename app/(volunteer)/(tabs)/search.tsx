@@ -20,6 +20,7 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
+import { useAuth } from "../../../context/AuthContext";
 import { useSmartMatch } from "../../../context/SmartMatchContext";
 import { INTERESTS } from "../../../constants/Interests";
 
@@ -243,7 +244,8 @@ function FilterModal({
 export default function SearchScreen() {
     const router = useRouter();
     const { showToast } = useToast();
-    const { matches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatch();
+    const { user } = useAuth();
+    const { matches, allMatches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatch();
 
     // Search state
     const [searchText, setSearchText] = useState("");
@@ -360,7 +362,8 @@ export default function SearchScreen() {
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => { setFilters(pendingFilters); setIsFilterModalVisible(false); };
 
-    const smartMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
+    const visibleMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
+    const smartMatchMap = useMemo(() => new Map(allMatches.map((match) => [match.id, match])), [allMatches]);
     // Base order remains chronological; top AI matches are lifted above it.
     const sortedActivities = useMemo(
         () => [...paginatedActivities].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
@@ -408,10 +411,12 @@ export default function SearchScreen() {
         const isDimmed = isFocusedMode && !isExpanded;
         const catColors = getCategoryColors(item.category);
         const aiMatch = smartMatchMap.get(item.id);
+        const visibleAiMatch = visibleMatchMap.get(item.id);
         const displayScore = typeof aiMatch?.score === 'number' ? aiMatch.score : (item.matchPercentage ?? 0);
         const displayBadge = aiMatch?.confidenceLabel || 'Gemma';
         const aiChips = aiMatch?.chips?.slice(0, 3) || [];
         const isTopGemma = aiMatch?.confidence === 'top';
+        const isEnrolled = !!user?.id && item.iscritti.includes(user.id);
         const isInTopSection = topMatchIds.has(item.id);
         const previousItem = index > 0 ? listActivities[index - 1] : null;
         const showTopSectionHeader = isInTopSection && index === 0;
@@ -513,13 +518,18 @@ export default function SearchScreen() {
                                     <Text className="text-white text-[10px] font-black uppercase">URGENTE</Text>
                                 </View>
                             )}
+                            {isEnrolled && (
+                                <View className="bg-emerald-600 px-2.5 py-1 rounded-full self-start shadow-md">
+                                    <Text className="text-white text-[10px] font-black uppercase">ISCRITTO</Text>
+                                </View>
+                            )}
                         </View>
 
                         {/* Heart Icon */}
                         <TouchableOpacity
                             onPress={(e) => {
                                 e.stopPropagation?.();
-                                if (aiMatch) void likeMatch(aiMatch);
+                                if (visibleAiMatch) void likeMatch(visibleAiMatch);
                             }}
                             className="absolute top-4 right-4 bg-black/20 p-2.5 rounded-full z-20 backdrop-blur-md"
                         >
@@ -610,16 +620,16 @@ export default function SearchScreen() {
                                         className="bg-primary flex-1 py-3.5 rounded-2xl items-center shadow-md">
                                         <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
                                     </TouchableOpacity>
-                                    {aiMatch && (
+                                    {visibleAiMatch && (
                                         <TouchableOpacity
-                                            onPress={() => void saveMatch(aiMatch)}
+                                            onPress={() => void saveMatch(visibleAiMatch)}
                                             className="bg-indigo-50 p-3.5 rounded-2xl items-center justify-center">
-                                            <Bookmark size={18} color={Colors.primary} fill={aiMatch.saved ? Colors.primary : 'transparent'} />
+                                            <Bookmark size={18} color={Colors.primary} fill={visibleAiMatch.saved ? Colors.primary : 'transparent'} />
                                         </TouchableOpacity>
                                     )}
-                                    {aiMatch && (
+                                    {visibleAiMatch && (
                                         <TouchableOpacity
-                                            onPress={() => void hideMatch(aiMatch)}
+                                            onPress={() => void hideMatch(visibleAiMatch)}
                                             className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
                                             <EyeOff size={18} color="#475569" />
                                         </TouchableOpacity>

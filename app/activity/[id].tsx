@@ -8,6 +8,7 @@ import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useCommunity } from "../../context/CommunityContext";
 import { useGamification } from "../../context/GamificationContext";
+import { useToast } from "../../context/ToastContext";
 import { activityService } from "../../services/ActivityService";
 import { AppActivity, AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
@@ -23,6 +24,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { supabase } from "../../utils/supabase";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CommunityCompactPostCard } from "../../components/community/CommunityCompactPostCard";
+import { addEventToDeviceCalendar } from "../../utils/calendar";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
@@ -72,6 +74,7 @@ export default function ActivityDetail() {
         volunteerReviews
     } = useActivities();
     const { handleActivityShare } = useGamification();
+    const { showToast } = useToast();
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
@@ -222,6 +225,35 @@ export default function ActivityDetail() {
 
     const slotsLeft = Math.max(0, (activity?.slots ?? 0) - currentIscritti.length);
 
+    const handleAddToCalendar = useCallback(async () => {
+        if (!activity || !isEnrolled || user?.role !== 'VOLUNTEER') return;
+
+        try {
+            const result = await addEventToDeviceCalendar({
+                title: activity.title,
+                startDate: new Date(activity.dateTime),
+                endDate: activity.endDateTime ? new Date(activity.endDateTime) : null,
+                location: activity.location?.address || null,
+                notes: `${activity.description || ''}\n\nOrganizzatore: ${npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}`.trim(),
+                url: `aiutarsiapp://activity/${activity.id}`,
+            });
+
+            if (!result.ok) {
+                if (result.reason === 'permission_denied') {
+                    showToast('warning', 'Permesso calendario negato.');
+                    return;
+                }
+                showToast('error', 'Calendario non disponibile su questo dispositivo.');
+                return;
+            }
+
+            showToast('success', 'Attività aggiunta al calendario!');
+        } catch (e) {
+            console.error('Error adding activity to calendar:', e);
+            showToast('error', 'Impossibile aggiungere l’attività al calendario.');
+        }
+    }, [activity, isEnrolled, npoUser?.name, npoUser?.npoName, showToast, user?.role]);
+
     // ─── Guards ──────────────────────────────────────────────────────────────
     if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={loadData} />;
     if (fetchLoading) return (
@@ -329,15 +361,28 @@ export default function ActivityDetail() {
                         borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden'
                     }}>
                         {/* Date & Time row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
+                        <TouchableOpacity
+                            activeOpacity={isEnrolled ? 0.7 : 1}
+                            disabled={!isEnrolled}
+                            onPress={handleAddToCalendar}
+                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}
+                        >
                             <View style={{ width: 38, height: 38, backgroundColor: '#ede9fe', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
                                 <Calendar size={18} color={Colors.primary} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>DATA E ORA</Text>
                                 <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>{formattedDateRange}</Text>
+                                {isEnrolled && (
+                                    <Text style={{ fontSize: 12, color: '#64748b' }}>
+                                        Tocca per aggiungerla al tuo calendario
+                                    </Text>
+                                )}
                             </View>
-                        </View>
+                            {isEnrolled && (
+                                <ChevronRight size={18} color={Colors.secondary} />
+                            )}
+                        </TouchableOpacity>
 
                         {/* Divider */}
                         <View style={{ height: 1, backgroundColor: '#e2e8f0', marginHorizontal: 16 }} />

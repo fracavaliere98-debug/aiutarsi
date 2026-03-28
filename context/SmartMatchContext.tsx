@@ -17,6 +17,7 @@ import { OldSmartMatchResult } from '../types';
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SmartMatchContextType {
     matches: OldSmartMatchResult[];
+    allMatches: OldSmartMatchResult[];
     isLoading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
@@ -31,6 +32,7 @@ interface SmartMatchContextType {
 // ── Context ───────────────────────────────────────────────────────────────────
 const SmartMatchContext = createContext<SmartMatchContextType>({
     matches: [],
+    allMatches: [],
     isLoading: false,
     error: null,
     refresh: async () => { },
@@ -148,6 +150,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
     const { user } = useAuth();
     const segments = useSegments();
     const [matches, setMatches] = useState<OldSmartMatchResult[]>([]);
+    const [allMatches, setAllMatches] = useState<OldSmartMatchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -174,6 +177,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         if (!user || user.role !== 'VOLUNTEER' || !user.profile_completed) {
             console.log('[SmartMatchContext] Skipping — user:', user?.role, 'profile_completed:', user?.profile_completed);
             setMatches([]);
+            setAllMatches([]);
             setError(null);
             setLastUpdated(null);
             setIsLoading(false);
@@ -247,7 +251,19 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 : mappedMatchesBase;
 
             const prefs = await smartMatchPreferencesService.getPreferences(user.id);
+            const allPersonalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, {
+                ...prefs,
+                hiddenActivityIds: [],
+            });
             let personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs);
+
+            const candidateSummary = candidateActivities.map((activity) => ({
+                id: activity.id,
+                title: activity.title,
+                status: activity.status,
+                matchPercentage: activity.matchPercentage || 0,
+                isEnrolled: activity.iscritti.includes(user.id),
+            }));
 
             if (!personalizedMatches.length && gemmaEnrichedMatches.length > 0 && prefs.hiddenActivityIds.length > 0) {
                 console.warn(
@@ -268,6 +284,17 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 'Hidden prefs:',
                 prefs.hiddenActivityIds.length
             );
+            console.log('[SmartMatchContext] Diagnostics', {
+                userId: user.id,
+                profileCompleted: user.profile_completed,
+                candidateSummary,
+                visibleMatchIds: personalizedMatches.map((match) => match.id),
+                excludedBecauseEnrolled: candidateSummary.filter((activity) => activity.isEnrolled),
+                hiddenByPrefs: candidateSummary.filter(
+                    (activity) => !activity.isEnrolled && !personalizedMatches.some((match) => match.id === activity.id)
+                ),
+            });
+            setAllMatches(allPersonalizedMatches);
             setMatches(personalizedMatches);
             setLastUpdated(new Date());
         } catch (err: any) {
@@ -340,6 +367,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
     const value = useMemo(
         () => ({
             matches,
+            allMatches,
             isLoading,
             error,
             refresh,
@@ -350,7 +378,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             markMatchSeen,
             resetHiddenMatches,
         }),
-        [matches, isLoading, error, refresh, lastUpdated, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches]
+        [matches, allMatches, isLoading, error, refresh, lastUpdated, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches]
     );
 
     return (

@@ -17,7 +17,8 @@
         "NSCameraUsageDescription": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo.",
         "NSPhotoLibraryUsageDescription": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo.",
         "NSPhotoLibraryAddUsageDescription": "AiutarSì ha bisogno di salvare immagini nella tua galleria quando scegli di esportare o condividere contenuti dall'app.",
-        "NSUserNotificationsUsageDescription": "AiutarSì usa le notifiche per aggiornarti su candidature, messaggi, attività e novità rilevanti."
+        "NSUserNotificationsUsageDescription": "AiutarSì usa le notifiche per aggiornarti su candidature, messaggi, attività e novità rilevanti.",
+        "NSCalendarsUsageDescription": "AiutarSì usa il calendario per aggiungere le attività a cui ti iscrivi nel tuo calendario personale."
       }
     },
     "android": {
@@ -34,7 +35,9 @@
       "permissions": [
         "INTERNET",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
       ]
     },
     "web": {
@@ -68,6 +71,12 @@
         {
           "locationAlwaysPermission": "Consenti ad AiutarSì di accedere alla tua posizione per trovare attività vicine.",
           "locationWhenInUsePermission": "Consenti ad AiutarSì di accedere alla tua posizione quando usi l'app per trovare attività vicine."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "AiutarSì usa il calendario per aggiungere le attività a cui ti iscrivi nel tuo calendario personale."
         }
       ],
       "expo-notifications",
