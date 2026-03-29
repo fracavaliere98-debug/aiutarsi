@@ -109,16 +109,16 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         question: "Come funziona il sistema di livelli?",
         answer:
           'Guadagni XP (Punti Esperienza) completando azioni nella piattaforma. All\'aumentare degli XP sali di livello:\n\n' +
-          "• Livello 1 → 0 XP\n" +
-          "• Livello 2 → 110 XP\n" +
-          "• Livello 3 → 450 XP\n" +
-          "• Livello 4 → 1.000 XP\n" +
-          "• Livello 5 → 2.000 XP\n" +
-          "• Livello 6 → 3.500 XP\n" +
-          "• Livello 7 → 5.500 XP\n" +
-          "• Livello 8 → 8.000 XP\n" +
-          "• Livello 9 → 11.000 XP\n" +
-          "• Livello 10+ → ogni +5.000 XP",
+          "• Livello 1 · Novizio → 0 XP\n" +
+          "• Livello 2 · Apprendista → 110 XP\n" +
+          "• Livello 3 · Sociale → 450 XP\n" +
+          "• Livello 4 · Attivo → 1.000 XP\n" +
+          "• Livello 5 · Esperto → 2.000 XP\n" +
+          "• Livello 6 · Mentore → 3.500 XP\n" +
+          "• Livello 7 · Pilastro → 5.500 XP\n" +
+          "• Livello 8 · Ambasciatore → 8.000 XP\n" +
+          "• Livello 9 · Leader → 11.000 XP\n" +
+          "• Livello 10+ · Leggenda → ogni +5.000 XP",
       },
       {
         id: "earn",
