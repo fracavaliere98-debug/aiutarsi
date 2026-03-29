@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Phone, MoreVertical, Send, Bell, BellOff, Users, X, Paperclip, PhoneOff, AlertCircle, ShieldOff } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatBubble } from '../../components/ChatBubble';
 import { Colors } from '../../constants/Colors';
 import ChatService, { ChatFilterError } from '../../services/ChatService';
@@ -23,6 +23,7 @@ export default function ChatDetailScreen() {
         targetAvatar?: string;
     }>();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { markAsRead, updateConversationPreview } = useChat();
     const { showToast } = useToast();
@@ -700,36 +701,40 @@ export default function ChatDetailScreen() {
             {/* Participants Modal */}
             <Modal visible={showParticipants} animationType="slide" onRequestClose={() => setShowParticipants(false)} statusBarTranslucent={true}>
                 <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-                    <View className="flex-1 bg-white p-6">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <Text className="text-2xl font-black text-primary">Partecipanti</Text>
-                        <TouchableOpacity onPress={() => setShowParticipants(false)} className="bg-slate-100 p-2 rounded-full">
-                            <X size={24} color="#64748b" />
-                        </TouchableOpacity>
-                    </View>
-                    <FlatList
-                        data={conversation?.participants || []}
-                        keyExtractor={(item) => item.user_id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                className="flex-row items-center mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100 active:bg-slate-100"
-                                onPress={() => {
-                                    setShowParticipants(false);
-                                    navigateToProfile(item.user_id);
-                                }}
-                            >
-                                <Image
-                                    source={{ uri: item.profiles?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.profiles?.npo_name || item.profiles?.name || 'U')}&background=random` }}
-                                    className="w-12 h-12 rounded-full bg-slate-200"
-                                />
-                                <View className="ml-3 flex-1">
-                                    <Text className="text-primary font-bold text-base">{item.profiles?.npo_name || item.profiles?.name || 'Utente'}</Text>
-                                    <Text className="text-slate-500 text-xs capitalize">{item.profiles?.role?.toLowerCase() || 'aderente'}</Text>
-                                </View>
-                                <ArrowLeft size={16} color={Colors.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+                    <View
+                        className="flex-1 bg-white"
+                        style={{ paddingTop: Math.max(insets.top, 16), paddingHorizontal: 24, paddingBottom: 24 }}
+                    >
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Text className="text-2xl font-black text-primary">Partecipanti</Text>
+                            <TouchableOpacity onPress={() => setShowParticipants(false)} className="bg-slate-100 p-2 rounded-full">
+                                <X size={24} color="#64748b" />
                             </TouchableOpacity>
-                        )}
-                    />
+                        </View>
+                        <FlatList
+                            data={conversation?.participants || []}
+                            keyExtractor={(item) => item.user_id}
+                            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    className="flex-row items-center mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100 active:bg-slate-100"
+                                    onPress={() => {
+                                        setShowParticipants(false);
+                                        navigateToProfile(item.user_id);
+                                    }}
+                                >
+                                    <Image
+                                        source={{ uri: item.profiles?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.profiles?.npo_name || item.profiles?.name || 'U')}&background=random` }}
+                                        className="w-12 h-12 rounded-full bg-slate-200"
+                                    />
+                                    <View className="ml-3 flex-1">
+                                        <Text className="text-primary font-bold text-base">{item.profiles?.npo_name || item.profiles?.name || 'Utente'}</Text>
+                                        <Text className="text-slate-500 text-xs capitalize">{item.profiles?.role?.toLowerCase() || 'aderente'}</Text>
+                                    </View>
+                                    <ArrowLeft size={16} color={Colors.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+                                </TouchableOpacity>
+                            )}
+                        />
                     </View>
                 </SafeAreaView>
             </Modal>

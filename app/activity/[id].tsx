@@ -464,12 +464,24 @@ export default function ActivityDetail() {
                                     {currentIscritti.slice(0, 8).map((volId, idx) => {
                                         const v = users.find(u => u.id === volId);
                                         return (
-                                            <View key={volId} style={{ marginRight: -10, zIndex: 20 - idx }}>
+                                            <TouchableOpacity
+                                                key={volId}
+                                                activeOpacity={0.8}
+                                                onPress={() => {
+                                                    if (!v) return;
+                                                    if (user?.role === 'NPO') {
+                                                        router.push(`/(npo)/volunteer-profile/${volId}` as any);
+                                                    } else {
+                                                        router.push(`/user-profile/${volId}` as any);
+                                                    }
+                                                }}
+                                                style={{ marginRight: -10, zIndex: 20 - idx }}
+                                            >
                                                 <Image
                                                     source={{ uri: v?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(v?.name || 'U')}&background=random` }}
                                                     style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'white' }}
                                                 />
-                                            </View>
+                                            </TouchableOpacity>
                                         );
                                     })}
                                     {currentIscritti.length > 8 && (
@@ -479,7 +491,7 @@ export default function ActivityDetail() {
                                     )}
                                 </View>
                                 <Text style={{ marginLeft: currentIscritti.length > 8 ? 18 : 14, fontSize: 12, color: '#64748b', fontWeight: '600' }}>
-                                    {currentIscritti.length} iscritto{currentIscritti.length !== 1 ? 'i' : ''}
+                                    {currentIscritti.length === 1 ? '1 iscritto' : `${currentIscritti.length} iscritti`}
                                 </Text>
                             </>
                         )}

@@ -374,7 +374,7 @@ export default function SearchScreen() {
             .filter((activity) => {
                 const match = smartMatchMap.get(activity.id);
                 const score = typeof match?.score === 'number' ? match.score : (activity.matchPercentage ?? 0);
-                return match?.confidence === 'top' || score >= 80;
+                return match?.confidence === 'top' || score >= 75;
             })
             .sort((a, b) => {
                 const scoreDiff =

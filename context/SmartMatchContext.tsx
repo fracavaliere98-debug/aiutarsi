@@ -239,10 +239,6 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     })
                     .catch((gemmaError) => {
                         console.error('[SmartMatchContext] Gemma reasons failed:', gemmaError);
-                        const message = String(gemmaError?.message || gemmaError || '');
-                        if (message.toLowerCase().includes('quota')) {
-                            setError('quota_daily');
-                        }
                         return mappedMatchesBase.map(match => ({
                             ...match,
                             reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`

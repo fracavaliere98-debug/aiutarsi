@@ -36,10 +36,10 @@ export function useActivities(filters: ActivityFilters = {}) {
         { activities: AppActivity[]; hasMore: boolean; totalCount: number },
         Error,
         { pages: { activities: AppActivity[]; hasMore: boolean; totalCount: number }[] },
-        ['activities', ActivityFilters],
+        ['activities', string, ActivityFilters],
         number
     >({
-        queryKey: ['activities', filters],
+        queryKey: ['activities', user?.id || 'anonymous', filters],
         initialPageParam: 0,
         staleTime: 60_000, // activities stale after 1 minute
         refetchOnMount: true,

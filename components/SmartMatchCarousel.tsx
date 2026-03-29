@@ -368,8 +368,8 @@ export function SmartMatchCarousel() {
         );
     }
 
-    // Daily quota exhausted — calm, informational (no retry, resets tomorrow)
-    if (error === 'quota_daily') {
+    // Daily quota exhausted — show informational state only when there are no fallback matches.
+    if (error === 'quota_daily' && matches.length === 0) {
         return (
             <View style={{ marginBottom: 32 }}>
                 {Header}
@@ -408,7 +408,7 @@ export function SmartMatchCarousel() {
     }
 
     // Generic error state
-    if (error) {
+    if (error && matches.length === 0) {
         return (
             <View style={{ marginBottom: 32 }}>
                 {Header}

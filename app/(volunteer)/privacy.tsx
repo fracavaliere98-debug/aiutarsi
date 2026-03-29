@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Switch, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { Phone, Eye, BookOpen, Mail, Save } from "lucide-react-native";
+import { Phone, Save } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { useAuth } from "../../context/AuthContext";
@@ -17,9 +17,6 @@ export default function VolunteerPrivacyScreen() {
 
     // Privacy flags
     const [allowCalls, setAllowCalls] = useState(true);
-    const [profilePublic, setProfilePublic] = useState(true);
-    const [showEmail, setShowEmail] = useState(false);
-    const [showVolunteeringHistory, setShowVolunteeringHistory] = useState(true);
 
     useEffect(() => {
         if (!user?.id) {
@@ -29,9 +26,6 @@ export default function VolunteerPrivacyScreen() {
 
         const fetchPrivacy = async () => {
             setAllowCalls(user.allow_calls !== false);
-            setProfilePublic(user.profile_public !== false);
-            setShowEmail(!!user.show_email);
-            setShowVolunteeringHistory(user.show_volunteering_history !== false);
             setIsFetching(false);
         };
 
@@ -45,15 +39,9 @@ export default function VolunteerPrivacyScreen() {
             console.log("[DEBUG] VolunteerPrivacy: saving", {
                 userId: user.id,
                 allowCalls,
-                profilePublic,
-                showEmail,
-                showVolunteeringHistory,
             });
             await updateUserProfile({
                 allow_calls: allowCalls,
-                profile_public: profilePublic,
-                show_email: showEmail,
-                show_volunteering_history: showVolunteeringHistory,
             });
             console.log("[DEBUG] VolunteerPrivacy: save completed");
             showToast("success", "Impostazioni privacy salvate!");
@@ -86,37 +74,6 @@ export default function VolunteerPrivacyScreen() {
                     value={allowCalls}
                     onValueChange={setAllowCalls}
                     trackTrue={Colors.success}
-                />
-            </SoftCard>
-
-            {/* Profile */}
-            <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
-            <SoftCard className="p-5 mb-5">
-                <PrivacyRow
-                    icon={<Eye size={22} color={profilePublic ? Colors.primary : Colors.secondary} />}
-                    iconBg={profilePublic ? "bg-blue-50" : "bg-slate-100"}
-                    title="Profilo pubblico"
-                    subtitle={profilePublic ? "Il tuo profilo puo essere scoperto dagli enti" : "Il tuo profilo e meno visibile nelle aree pubbliche"}
-                    value={profilePublic}
-                    onValueChange={setProfilePublic}
-                />
-                <View className="h-px bg-gray-100 my-4" />
-                <PrivacyRow
-                    icon={<Mail size={22} color={Colors.primary} />}
-                    iconBg="bg-blue-50"
-                    title="Mostra email di contatto"
-                    subtitle="L'email è visibile sul tuo profilo"
-                    value={showEmail}
-                    onValueChange={setShowEmail}
-                />
-                <View className="h-px bg-gray-100 my-4" />
-                <PrivacyRow
-                    icon={<BookOpen size={22} color={showVolunteeringHistory ? Colors.primary : Colors.secondary} />}
-                    iconBg={showVolunteeringHistory ? "bg-amber-50" : "bg-slate-100"}
-                    title="Mostra storico volontariato"
-                    subtitle={showVolunteeringHistory ? "Gli enti vedono le tue esperienze precedenti" : "Lo storico resta nascosto sul profilo"}
-                    value={showVolunteeringHistory}
-                    onValueChange={setShowVolunteeringHistory}
                 />
             </SoftCard>
 

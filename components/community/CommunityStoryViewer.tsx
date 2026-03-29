@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Story } from '../../types/stories';
@@ -15,6 +15,7 @@ interface CommunityStoryViewerProps {
 
 export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunityStoryViewerProps) {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     if (!viewer) return null;
 
     const currentStory = viewer.stories[viewer.index];
@@ -40,10 +41,10 @@ export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunitySto
     };
 
     return (
-        <Modal visible={!!viewer} animationType="fade" transparent onRequestClose={onClose}>
+        <Modal visible={!!viewer} animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' }}>
-                <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-                    <View style={{ paddingHorizontal: 10, paddingTop: 10, paddingBottom: 10 }}>
+                <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+                    <View style={{ paddingHorizontal: 10, paddingTop: Math.max(insets.top, 14), paddingBottom: 10 }}>
                         <View style={{ flexDirection: 'row', gap: 4, marginBottom: 12 }}>
                             {viewer.stories.map((story, idx) => (
                                 <View
@@ -97,7 +98,7 @@ export function CommunityStoryViewer({ viewer, onClose, onChange }: CommunitySto
                             <View
                                 style={{
                                     position: 'absolute',
-                                    bottom: 12,
+                                    bottom: Math.max(insets.bottom, 12),
                                     left: 0,
                                     right: 0,
                                     padding: 20,

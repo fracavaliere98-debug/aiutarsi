@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Share } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Share, Modal } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useNPOFollow } from "../../hooks/useNPOFollow";
@@ -8,7 +8,7 @@ import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import { supabase } from "../../utils/supabase";
-import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle } from "lucide-react-native";
+import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle, MoreVertical } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { UserAvatar } from "../../components/UserAvatar";
 import { SoftCard } from "../../components/SoftCard";
@@ -29,6 +29,7 @@ export default function NPOProfileScreen() {
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showActionsMenu, setShowActionsMenu] = useState(false);
     const [fetchedNpo, setFetchedNpo] = useState<AppUser | null>(null);
     const [isFetching, setIsFetching] = useState(false);
 
@@ -184,17 +185,14 @@ export default function NPOProfileScreen() {
                     <MessageCircle size={20} color="white" />
                 </TouchableOpacity>
             )}
-            {user?.role === "VOLUNTEER" && (
-                <TouchableOpacity
-                    onPress={() => setShowReportModal(true)}
-                    className="p-2 bg-white/20 rounded-full bg-red-500/20"
-                >
-                    <AlertTriangle size={20} color="white" />
-                </TouchableOpacity>
-            )}
             <TouchableOpacity onPress={handleShare} className="p-2 bg-white/20 rounded-full">
                 <Share2 size={20} color="white" />
             </TouchableOpacity>
+            {user?.role === "VOLUNTEER" && (
+                <TouchableOpacity onPress={() => setShowActionsMenu(true)} className="px-1 py-2">
+                    <MoreVertical size={20} color="white" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 
@@ -412,7 +410,7 @@ export default function NPOProfileScreen() {
                             <Text className="text-primary font-bold text-base mb-3">Informazioni</Text>
 
                             <View className="gap-4">
-                                {npoUser.publicEmail && (
+                                {npoUser.publicEmail && npoUser.show_email !== false && (
                                     <TouchableOpacity
                                         className="flex-row items-center gap-3"
                                         onPress={() => handleOpenLink(`mailto:${npoUser.publicEmail}`)}
@@ -427,7 +425,7 @@ export default function NPOProfileScreen() {
                                     </TouchableOpacity>
                                 )}
 
-                                {npoUser.phone && (
+                                {npoUser.phone && npoUser.allow_calls !== false && (
                                     <TouchableOpacity
                                         className="flex-row items-center gap-3"
                                         onPress={() => handleOpenLink(`tel:${npoUser.phone}`)}
@@ -574,6 +572,23 @@ export default function NPOProfileScreen() {
                     </View>
                 )}
             </View>
+
+            <Modal transparent visible={showActionsMenu} animationType="fade" onRequestClose={() => setShowActionsMenu(false)}>
+                <TouchableOpacity className="flex-1 bg-black/20" activeOpacity={1} onPress={() => setShowActionsMenu(false)}>
+                    <View className="absolute top-20 right-4 bg-white rounded-2xl shadow-xl border border-gray-100 w-52 overflow-hidden">
+                        <TouchableOpacity
+                            className="flex-row items-center px-4 py-3 active:bg-red-50"
+                            onPress={() => {
+                                setShowActionsMenu(false);
+                                setShowReportModal(true);
+                            }}
+                        >
+                            <AlertTriangle size={20} color="#ef4444" />
+                            <Text className="ml-3 text-red-500 font-medium">Segnala ente</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Modal di Segnalazione */}
             <ReportModal

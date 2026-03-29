@@ -119,7 +119,7 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                 {user?.location_string && (
                     <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.location_string}</Text>
                 )}
-                {(isOwnProfile || user?.show_email) && user?.email && (
+                {isOwnProfile && user?.email && (
                     <View className="flex-row items-center gap-1">
                         <Mail size={12} color="#94a3b8" />
                         <Text className="text-xs text-gray-400 font-medium">{user.email}</Text>
