@@ -6,6 +6,20 @@ import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
 export class ActivityService {
+    private async _withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        try {
+            return await Promise.race([
+                promise,
+                new Promise<T>((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+                }),
+            ]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
     private async _getAccessToken(): Promise<string> {
         const cached = authService.getCachedAccessToken();
         if (cached) return cached;
@@ -169,45 +183,59 @@ export class ActivityService {
         },
         signal?: AbortSignal
     ): Promise<{ activities: AppActivity[], totalCount: number, hasMore: boolean }> {
+        let accessToken: string | undefined;
+        if (filter?.userId) {
+            try {
+                accessToken = await this._getAccessToken();
+            } catch {
+                accessToken = undefined;
+            }
+        }
+
         // ── UNIFIED MATCH path: use new RPC for any geo or user-specific search (highest efficiency) ──────
         if ((filter?.userId || filter?.centerLat !== undefined) && !filter?.npoId) {
             try {
-                const { data, error, count } = await supabase.rpc('get_activities_with_match', {
-                    p_user_id: filter.userId || null,
-                    p_category: (filter.category === 'Tutti' ? null : filter.category) || null,
-                    p_search: filter.searchText || null,
-                    p_center_lat: filter.centerLat || null,
-                    p_center_lng: filter.centerLng || null,
-                    p_radius_km: filter.radiusKm || 100,
-                    p_limit: filter.limit || 50,
-                    p_offset: filter.offset || 0,
-                    p_skills: filter.skills || [],
-                    p_only_urgent: filter.onlyUrgent || false,
-                    p_date_from: filter.dateFrom || null,
-                    p_date_to: filter.dateTo || null,
-                    p_statuses: filter.statuses || ['APERTA', 'IN_CORSO', 'COMPLETATA']
-                }, { count: 'exact' });
-
-                if (error) throw error;
+                const data = await profileRest.getActivitiesWithMatch({
+                        p_user_id: filter.userId || null,
+                        p_category: (filter.category === 'Tutti' ? null : filter.category) || null,
+                        p_search: filter.searchText || null,
+                        p_center_lat: filter.centerLat || null,
+                        p_center_lng: filter.centerLng || null,
+                        p_radius_km: filter.radiusKm || 100,
+                        p_limit: filter.limit || 50,
+                        p_offset: filter.offset || 0,
+                        p_skills: filter.skills || [],
+                        p_only_urgent: filter.onlyUrgent || false,
+                        p_date_from: filter.dateFrom || null,
+                        p_date_to: filter.dateTo || null,
+                        p_statuses: filter.statuses || ['APERTA', 'IN_CORSO', 'COMPLETATA']
+                    },
+                    accessToken,
+                    6500
+                );
 
                 const ids = (data || []).map((r: any) => r.id);
                 if (ids.length === 0) return { activities: [], totalCount: 0, hasMore: false };
 
-                // Hydrate with participants and skills
-                const [{ data: skillRows }, { data: partRows }] = await Promise.all([
-                    supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
-                    supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
-                ]);
+                const [skillRows, partRows] = await this._withTimeout(
+                    Promise.all([
+                        profileRest.listActivitySkills(ids, accessToken),
+                        profileRest.listActivityParticipants(ids, accessToken),
+                    ]),
+                    3500,
+                    'activities.related_hydration'
+                );
 
                 const skillsMap: Record<string, string[]> = {};
-                for (const r of (skillRows || [])) {
-                    if (!skillsMap[r.activity_id]) skillsMap[r.activity_id] = [];
-                    skillsMap[r.activity_id].push(r.skill);
+                for (const row of skillRows || []) {
+                    if (!skillsMap[row.activity_id]) skillsMap[row.activity_id] = [];
+                    skillsMap[row.activity_id].push(row.skill);
                 }
-                const partsMap: Record<string, string[]> = {};
-                for (const r of (partRows || [])) {
-                    if (!partsMap[r.activity_id]) partsMap[r.activity_id] = [];
-                    partsMap[r.activity_id].push(r.user_id);
+
+                const participantsMap: Record<string, { user_id: string; status: string }[]> = {};
+                for (const row of partRows || []) {
+                    if (!participantsMap[row.activity_id]) participantsMap[row.activity_id] = [];
+                    participantsMap[row.activity_id].push({ user_id: row.user_id, status: row.status });
                 }
 
                 const activities = (data || []).map((r: any) => ({
@@ -221,15 +249,17 @@ export class ActivityService {
                         location_address: r.location_address,
                         location_lat: r.location_lat,
                         location_lng: r.location_lng,
+                        activity_skills: (skillsMap[r.id] || []).map((skill) => ({ skill })),
+                        activity_participants: participantsMap[r.id] || [],
                     }),
                     matchPercentage: r.match_percentage || 0,
                     skills: skillsMap[r.id] || [],
-                    iscritti: (partRows || [])
-                        .filter((p: any) => p.activity_id === r.id && ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
+                    iscritti: (participantsMap[r.id] || [])
+                        .filter((p: any) => ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
                         .map((p: any) => p.user_id)
                 }));
 
-                const totalCount = count || activities.length;
+                const totalCount = activities.length;
                 const hasMore = (filter.offset || 0) + activities.length < totalCount;
 
                 return { activities, totalCount, hasMore };
@@ -240,73 +270,47 @@ export class ActivityService {
 
         // ── STANDARD path: direct table query (used for NPO dashboards or simple lists) ──────
         try {
-            let query = supabase
-                .from('activities')
-                .select(`
-                    *,
-                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
-                    activity_skills!inner (skill),
-                    activity_participants (user_id, status)
-                `, { count: 'exact' });
-
-            if (filter?.category && filter.category !== "Tutti") {
-                query = query.eq('category', filter.category);
-            }
-            if (filter?.npoId) {
-                query = query.eq('npo_id', filter.npoId);
-            }
-            if (filter?.searchText) {
-                const term = `%${filter.searchText}%`;
-                // Optimized search
-                query = query.or(`title.ilike.${term},description.ilike.${term}`);
-            }
-            if (filter?.onlyUrgent) {
-                query = query.eq('is_urgent', true);
-            }
-            if (filter?.dateFrom) {
-                query = query.gte('date_start', filter.dateFrom);
-            }
-            if (filter?.dateTo) {
-                query = query.lte('date_start', filter.dateTo);
-            }
-
-            // Database-level skills filtering using !inner join (Intersection)
-            if (filter?.skills && filter.skills.length > 0) {
-                query = query.in('activity_skills.skill', filter.skills);
-            }
-
-            if (filter?.statuses && filter.statuses.length > 0) {
-                query = query.in('status', filter.statuses);
-            } else {
-                query = query.neq('status', 'CANCELLATA');
-            }
-
-            query = query.order('is_urgent', { ascending: false })
-                .order('date_start', { ascending: true })
-                .order('created_at', { ascending: false });
-
-            const limit = filter?.limit || (filter ? 20 : 1000);
+            const baseLimit = filter?.limit || (filter ? 20 : 1000);
+            const requestLimit = filter?.skills?.length ? Math.max(baseLimit * 3, 60) : baseLimit;
             const offset = filter?.offset || 0;
-            query = query.range(offset, offset + limit - 1);
 
-            const { data, error, count } = await (signal ? query.abortSignal(signal) : query);
+            const rows = await profileRest.listActivities(
+                {
+                    category: filter?.category,
+                    npoId: filter?.npoId,
+                    searchText: filter?.searchText,
+                    onlyUrgent: filter?.onlyUrgent,
+                    dateFrom: filter?.dateFrom,
+                    dateTo: filter?.dateTo,
+                    statuses: filter?.statuses,
+                    limit: requestLimit,
+                    offset,
+                },
+                accessToken,
+                5000
+            );
 
-            if (error) {
-                if (error.code === 'ABORTED' || error.message?.includes('abort')) {
-                    return { activities: [], totalCount: 0, hasMore: false };
-                }
-                throw error;
+            let activities = (rows || []).map((row: any) => this._mapDbActivityToApp(row));
+
+            if (filter?.skills?.length) {
+                activities = activities.filter((activity) =>
+                    filter.skills!.some((skill) => activity.skills.includes(skill))
+                );
             }
 
-            const activities = data.map((row: any) => this._mapDbActivityToApp(row));
-            const totalCount = count || 0;
-            const hasMore = offset + activities.length < totalCount;
+            if (filter?.onlyAvailable) {
+                activities = activities.filter((activity) => activity.iscritti.length < activity.slots);
+            }
 
-            return { activities, totalCount, hasMore };
+            const sliced = activities.slice(0, baseLimit);
+            const totalCount = activities.length;
+            const hasMore = activities.length > baseLimit;
+
+            return { activities: sliced, totalCount, hasMore };
 
         } catch (error) {
-            console.error('Error fetching activities:', error);
-            return { activities: [], totalCount: 0, hasMore: false };
+            console.error('[ActivityService] Standard activities fallback failed:', error);
+            throw error;
         }
     }
 

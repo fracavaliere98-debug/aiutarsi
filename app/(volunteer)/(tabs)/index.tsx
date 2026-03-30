@@ -10,7 +10,7 @@ import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActio
 import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
 import { useToast } from "../../../context/ToastContext";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
 import { useSmartMatch } from "../../../context/SmartMatchContext";
@@ -24,13 +24,9 @@ export default function VolunteerDashboard() {
     const [refreshing, setRefreshing] = useState(false);
 
     useFocusEffect(
-        useMemo(
-            () => () => {
-                void loadData();
-                void refreshSmartMatch();
-            },
-            [loadData, refreshSmartMatch]
-        )
+        useCallback(() => {
+            void loadData();
+        }, [loadData])
     );
 
 

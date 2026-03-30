@@ -62,6 +62,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const { data: rawActivities = [] } = useQuery({
         queryKey: ['activities_raw', user?.id],
         queryFn: async () => (await activityService.getActivities({ userId: user?.id })).activities,
+        placeholderData: (previousData) => previousData,
         staleTime: 60_000
     });
     const { data: reviews = [] } = useQuery({ queryKey: ['reviews'], queryFn: () => activityService.getReviews(), staleTime: 60_000 });

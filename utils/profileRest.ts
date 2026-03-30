@@ -49,6 +49,7 @@ async function request<T>(
       const xhr = new XMLHttpRequest();
       const timer = setTimeout(() => {
         xhr.abort();
+        console.log(`[DEBUG] profileRest ${method} ${path} timeout fired`, { timeoutMs, readyState: xhr.readyState });
         reject(new Error(`${method} ${path} timeout after ${timeoutMs}ms`));
       }, timeoutMs);
 
@@ -81,19 +82,27 @@ async function request<T>(
         }
 
         try {
+          if (path.startsWith('/functions/')) {
+            console.log(`[DEBUG] profileRest ${method} ${path} success body`, xhr.responseText.slice(0, 400));
+          }
           resolve(JSON.parse(xhr.responseText) as T);
         } catch {
+          if (path.startsWith('/functions/')) {
+            console.log(`[DEBUG] profileRest ${method} ${path} raw body`, String(xhr.responseText).slice(0, 400));
+          }
           resolve(xhr.responseText as T);
         }
       };
 
       xhr.onerror = () => {
         clearTimeout(timer);
+        console.log(`[DEBUG] profileRest ${method} ${path} onerror`, { readyState: xhr.readyState, status: xhr.status });
         reject(new Error(`${method} ${path} network error`));
       };
 
       xhr.ontimeout = () => {
         clearTimeout(timer);
+        console.log(`[DEBUG] profileRest ${method} ${path} ontimeout`, { readyState: xhr.readyState, status: xhr.status });
         reject(new Error(`${method} ${path} timeout after ${timeoutMs}ms`));
       };
 
@@ -160,6 +169,82 @@ async function request<T>(
 }
 
 export const profileRest = {
+  invokeGemmaHelpAssistant: async (
+    payload: { question: string; history?: unknown[]; mode?: "help_center" | "shadow"; role?: string | null },
+    accessToken?: string,
+    timeoutMs = 10000
+  ) => {
+    return request<any>(
+      "POST",
+      `/functions/v1/gemma-help-assistant`,
+      payload,
+      accessToken,
+      undefined,
+      timeoutMs
+    );
+  },
+  getActivitiesWithMatch: async (
+    payload: {
+      p_user_id?: string | null;
+      p_category?: string | null;
+      p_search?: string | null;
+      p_center_lat?: number | null;
+      p_center_lng?: number | null;
+      p_radius_km?: number | null;
+      p_limit?: number | null;
+      p_offset?: number | null;
+      p_skills?: string[] | null;
+      p_only_urgent?: boolean | null;
+      p_date_from?: string | null;
+      p_date_to?: string | null;
+      p_statuses?: string[] | null;
+    },
+    accessToken?: string,
+    timeoutMs = 8000
+  ) => {
+    return request<any[]>(
+      "POST",
+      `/rest/v1/rpc/get_activities_with_match`,
+      payload,
+      accessToken,
+      undefined,
+      timeoutMs
+    );
+  },
+  listActivities: async (
+    params: {
+      category?: string;
+      npoId?: string;
+      searchText?: string;
+      onlyUrgent?: boolean;
+      dateFrom?: string;
+      dateTo?: string;
+      statuses?: string[];
+      limit?: number;
+      offset?: number;
+    },
+    accessToken?: string,
+    timeoutMs = 8000
+  ) => {
+    const search = params.searchText ? `&or=${encodeURIComponent(`title.ilike.%${params.searchText}%,description.ilike.%${params.searchText}%`)}` : "";
+    const category = params.category && params.category !== "Tutti" ? `&category=eq.${encodeURIComponent(params.category)}` : "";
+    const npoId = params.npoId ? `&npo_id=eq.${params.npoId}` : "";
+    const urgent = params.onlyUrgent ? `&is_urgent=eq.true` : "";
+    const dateFrom = params.dateFrom ? `&date_start=gte.${encodeURIComponent(params.dateFrom)}` : "";
+    const dateTo = params.dateTo ? `&date_start=lte.${encodeURIComponent(params.dateTo)}` : "";
+    const statuses = params.statuses?.length ? `&status=in.(${params.statuses.map(encodeURIComponent).join(",")})` : `&status=neq.CANCELLATA`;
+    const limit = params.limit ?? 20;
+    const offset = params.offset ?? 0;
+
+    return request<any[]>(
+      "GET",
+      `/rest/v1/activities?select=*,profiles:npo_id(npo_name,full_name,public_email,email,is_verified),activity_skills(skill),activity_participants(user_id,status)${category}${npoId}${search}${urgent}${dateFrom}${dateTo}${statuses}&order=is_urgent.desc,date_start.asc,created_at.desc&limit=${limit}&offset=${offset}`,
+      undefined,
+      accessToken,
+      undefined,
+      timeoutMs
+    );
+  },
   getChatInbox: async (userId: string, accessToken?: string) => {
     return request<any[]>(
       "POST",
@@ -226,6 +311,25 @@ export const profileRest = {
       accessToken
     );
   },
+  listVolunteerRegisteredActivities: async (userId: string, accessToken?: string) => {
+    return request<Array<{
+      activity_id: string;
+      status: string | null;
+      created_at?: string | null;
+      activities?: {
+        id: string;
+        title: string;
+        date_start: string;
+        status?: string | null;
+        npo_id?: string | null;
+      } | null;
+    }>>(
+      "GET",
+      `/rest/v1/activity_participants?user_id=eq.${userId}&status=in.(APPROVED,REGISTERED,PENDING)&select=activity_id,status,created_at,activities!inner(id,title,date_start,status,npo_id)&order=created_at.desc`,
+      undefined,
+      accessToken
+    );
+  },
   listNpoApplications: async (npoId: string, accessToken?: string) => {
     return request<Array<{ volunteer_id: string; volunteer?: { id: string; name?: string | null; npo_name?: string | null; avatar?: string | null; role?: string | null } | null }>>(
       "GET",
@@ -248,6 +352,16 @@ export const profileRest = {
     return request<Array<{ activity_id: string; user_id: string; status: string }>>(
       "GET",
       `/rest/v1/activity_participants?activity_id=in.(${inFilter})&status=in.(APPROVED,REGISTERED)&select=activity_id,user_id,status`,
+      undefined,
+      accessToken
+    );
+  },
+  listActivitySkills: async (activityIds: string[], accessToken?: string) => {
+    if (!activityIds.length) return [];
+    const inFilter = activityIds.join(",");
+    return request<Array<{ activity_id: string; skill: string }>>(
+      "GET",
+      `/rest/v1/activity_skills?activity_id=in.(${inFilter})&select=activity_id,skill`,
       undefined,
       accessToken
     );

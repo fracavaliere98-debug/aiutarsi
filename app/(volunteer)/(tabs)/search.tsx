@@ -10,7 +10,7 @@ import {
     Heart, ChevronDown, CheckCircle2, Share2, Sparkles, Zap, Bookmark, EyeOff
 } from "lucide-react-native";
 import { AppActivity } from "../../../types";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useActivities } from "../../../hooks/useActivities";
 import { activityService } from "../../../services/ActivityService";
 import { supabase } from "../../../utils/supabase";
@@ -294,15 +294,6 @@ export default function SearchScreen() {
         radiusKm: searchCenter ? filters.radiusKm : undefined,
         statuses: ['APERTA', 'IN_CORSO'],
     });
-
-    useFocusEffect(
-        useMemo(
-            () => () => {
-                void refetch();
-            },
-            [refetch]
-        )
-    );
 
     // Search debounce
     useEffect(() => {

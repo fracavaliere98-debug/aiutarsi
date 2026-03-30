@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Compass, Calendar as CalendarIcon, Globe, User as UserIcon } from 'lucide-react-native';
+import { Home, Compass, Calendar as CalendarIcon, Globe, LifeBuoy } from 'lucide-react-native';
 import { TouchableOpacity, View, Text, GestureResponderEvent } from "react-native";
 import { Colors } from "../../../constants/Colors";
 
@@ -107,14 +107,15 @@ export default function VolunteerTabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="profile"
+                name="help"
                 options={{
-                    title: "Profilo",
-                    tabBarIcon: ({ color, size }) => <UserIcon color={color} size={size} />,
+                    title: "Aiuto?",
+                    tabBarIcon: ({ color, size }) => <LifeBuoy color={color} size={size} />,
                 }}
             />
             {/* Hidden – map is accessible via Esplora */}
             <Tabs.Screen name="map" options={{ href: null }} />
+            <Tabs.Screen name="profile" options={{ href: null }} />
         </Tabs>
     );
 }

@@ -272,12 +272,34 @@ export function NPOCommunityScreen({
                     paddingTop: 18,
                 }}
             >
-                <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
-                    Tutto il feed
-                </Text>
-                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
-                    Tutti i post.
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
+                            Tutto il feed
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
+                            Tutti i post.
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => router.push('/community/create-post' as any)}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 8,
+                            backgroundColor: Colors.primary,
+                            paddingHorizontal: 14,
+                            paddingVertical: 10,
+                            borderRadius: 999,
+                        }}
+                    >
+                        <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', lineHeight: 18 }}>+</Text>
+                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                            Pubblica
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );

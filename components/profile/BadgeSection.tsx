@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetModal } from "../SheetModal";
 import { Info, X, Clock, Award, Star, CheckCircle2 } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
@@ -56,6 +57,7 @@ const ProgressBar = ({ progress, label, color = Colors.accent }: { progress: num
 
 export function BadgeSection({ badges }: BadgeSectionProps) {
     const { state } = useGamification();
+    const insets = useSafeAreaInsets();
     const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
@@ -245,7 +247,10 @@ export function BadgeSection({ badges }: BadgeSectionProps) {
 
             {/* Modal: All Badges Info */}
             <SheetModal visible={showInfoModal} onClose={() => setShowInfoModal(false)}>
-                <View className="flex-1 bg-white px-8 pt-12">
+                <View
+                    className="flex-1 bg-white px-8"
+                    style={{ paddingTop: Math.max(insets.top, 20) + 16 }}
+                >
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Text className="text-2xl font-black text-primary">Tutti i Badge</Text>

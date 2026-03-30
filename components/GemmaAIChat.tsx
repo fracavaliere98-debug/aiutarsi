@@ -9,7 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -20,12 +20,12 @@ import Animated, {
 import { X, Send } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 import { supabase } from '../utils/supabase';
+import { profileRest } from '../utils/profileRest';
 import { GemmaAvatar } from './GemmaAvatar';
 import { useAuth } from '../context/AuthContext';
 import { getFirstName } from '../utils/getFirstName';
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+import { authService } from '../services/AuthService';
+import { buildContextAwareHelpAnswer, type LocalHelpContext } from '../utils/gemmaHelpLocal';
 
 interface Message {
     role: 'user' | 'model';
@@ -40,6 +40,85 @@ interface GemmaAIChatProps {
     title?: string;
     subtitle?: string;
     initialMessage?: string;
+}
+
+async function loadLocalHelpContext(user: any, accessToken?: string): Promise<LocalHelpContext> {
+    const userId = user?.id;
+    const isVolunteer = user?.role === 'VOLUNTEER';
+    const isNpo = user?.role === 'NPO';
+    const [applications, followedRows, registeredRows, npoActivities, npoApplications] = await Promise.all([
+        isVolunteer && userId ? profileRest.listApplicationsForVolunteer(userId, accessToken).catch(() => []) : Promise.resolve([]),
+        isVolunteer && userId ? profileRest.listVolunteerFollowedNpos(userId, accessToken).catch(() => []) : Promise.resolve([]),
+        isVolunteer && userId ? profileRest.listVolunteerRegisteredActivities(userId, accessToken).catch(() => []) : Promise.resolve([]),
+        isNpo && userId ? profileRest.listNpoActivities(userId, accessToken).catch(() => []) : Promise.resolve([]),
+        isNpo && userId ? profileRest.listApplicationsForNPO(userId, accessToken).catch(() => []) : Promise.resolve([]),
+    ]);
+
+    const followedIds = Array.from(new Set((followedRows || []).map((row) => row.npo_id).filter(Boolean)));
+    const followedProfiles = followedIds.length
+        ? await profileRest.getBasicProfiles(followedIds, accessToken).catch(() => [])
+        : [];
+    const followedMap = new Map((followedProfiles || []).map((profile) => [profile.id, profile.npo_name || profile.full_name || 'NPO']));
+    const registeredNpoIds = Array.from(
+        new Set((registeredRows || []).map((row: any) => row.activities?.npo_id).filter(Boolean))
+    );
+    const registeredNpoProfiles = registeredNpoIds.length
+        ? await profileRest.getBasicProfiles(registeredNpoIds, accessToken).catch(() => [])
+        : [];
+    const registeredNpoMap = new Map(
+        (registeredNpoProfiles || []).map((profile) => [profile.id, profile.npo_name || profile.full_name || 'NPO'])
+    );
+
+    return {
+        profile: {
+            displayName: user?.full_name || user?.name || user?.npo_name || 'Profilo',
+            role: user?.role || null,
+            bio: user?.bio || null,
+            location: user?.location_string || user?.address_full || null,
+            website: user?.website || user?.npo_website || null,
+            npoName: user?.npo_name || null,
+            skills: Array.isArray(user?.skills) ? user.skills.filter(Boolean) : [],
+            interests: Array.isArray(user?.interests) ? user.interests.filter(Boolean) : [],
+        },
+        followedNpos: followedIds.map((id) => ({ id, name: followedMap.get(id) || 'NPO' })),
+        pendingNpos: (applications || [])
+            .filter((application: any) => application.status === 'PENDING')
+            .map((application: any) => ({
+                id: application.npo_id,
+                name: application.npo?.npo_name || application.npo?.full_name || 'NPO',
+            })),
+        approvedNpos: (applications || [])
+            .filter((application: any) => application.status === 'APPROVED')
+            .map((application: any) => ({
+                id: application.npo_id,
+                name: application.npo?.npo_name || application.npo?.full_name || 'NPO',
+            })),
+        registeredActivities: (registeredRows || [])
+            .map((row: any) => ({
+                id: row.activities?.id || row.activity_id,
+                title: row.activities?.title || 'Attività',
+                dateStart: row.activities?.date_start,
+                status: row.status,
+                npoName: row.activities?.npo_id ? registeredNpoMap.get(row.activities.npo_id) : undefined,
+            })),
+        npoActivities: (npoActivities || []).map((activity: any) => ({
+            id: activity.id,
+            title: activity.title || 'Attività',
+            status: activity.status,
+        })),
+        pendingVolunteers: (npoApplications || [])
+            .filter((application: any) => application.status === 'PENDING')
+            .map((application: any) => ({
+                id: application.volunteer_id,
+                name: application.volunteer?.full_name || application.volunteer?.name || 'Volontario',
+            })),
+        approvedVolunteers: (npoApplications || [])
+            .filter((application: any) => application.status === 'APPROVED')
+            .map((application: any) => ({
+                id: application.volunteer_id,
+                name: application.volunteer?.full_name || application.volunteer?.name || 'Volontario',
+            })),
+    };
 }
 
 // Typing dots animation component
@@ -98,6 +177,8 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
     initialMessage = 'Ciao! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?'
 }) => {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
+    const requestSeqRef = useRef(0);
     const firstName = getFirstName(user?.full_name || user?.name);
     const resolvedInitialMessage = firstName
         ? `Ciao ${firstName}! Sono Gemma 👋 Posso aiutarti su funzionalità, regole e flussi di AiutarSì. Come posso aiutarti?`
@@ -113,9 +194,26 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
         setMessages([{ role: 'model', text: resolvedInitialMessage }]);
     }, [resolvedInitialMessage, visible]);
 
+    useEffect(() => {
+        console.log('[DEBUG] GemmaAIChat: visibility', {
+            visible,
+            mode,
+            isLoading,
+            messageCount: messages.length,
+        });
+    }, [visible, mode, isLoading, messages.length]);
+
     const sendMessage = async () => {
         const question = input.trim();
         if (!question || isLoading) return;
+        const requestId = ++requestSeqRef.current;
+        const startedAt = Date.now();
+        console.log('[DEBUG] GemmaAIChat: send start', {
+            requestId,
+            mode,
+            questionLength: question.length,
+            messageCount: messages.length,
+        });
 
         setInput('');
         setIsLoading(true);
@@ -131,10 +229,16 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const accessToken = sessionData.session?.access_token;
+            const cachedAccessToken = authService.getCachedAccessToken();
+            const accessToken = cachedAccessToken || (await supabase.auth.getSession()).data.session?.access_token;
+            console.log('[DEBUG] GemmaAIChat: auth resolved', {
+                requestId,
+                tokenSource: cachedAccessToken ? 'cache' : 'session',
+                hasAccessToken: !!accessToken,
+                elapsedMs: Date.now() - startedAt,
+            });
 
-            if (!accessToken) {
+            if (mode === 'shadow' && !accessToken) {
                 throw new Error('Sessione non valida. Effettua di nuovo l’accesso.');
             }
 
@@ -145,29 +249,85 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                     role: m.role,
                     parts: [{ text: m.text }],
                 }));
-
-            const response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: supabaseAnonKey,
-                    ...(mode === 'shadow' ? { Authorization: `Bearer ${accessToken}` } : {}),
-                },
-                body: JSON.stringify({ question, history, mode, role: user?.role || null }),
+            console.log('[DEBUG] GemmaAIChat: payload prepared', {
+                requestId,
+                historyCount: history.length,
+                elapsedMs: Date.now() - startedAt,
             });
 
-            const payload = await response.json().catch(() => null);
-
-            if (!response.ok) {
-                const serverMessage =
-                    payload?.error ||
-                    payload?.message ||
-                    `HTTP ${response.status}`;
-                throw new Error(serverMessage);
+            if (mode === 'help_center') {
+                const localContext = user?.id
+                    ? await loadLocalHelpContext(user, accessToken || undefined)
+                    : {
+                        profile: {
+                            displayName: 'Profilo',
+                            role: user?.role || null,
+                            bio: null,
+                            location: null,
+                            website: null,
+                            npoName: null,
+                            skills: [],
+                            interests: [],
+                        },
+                        followedNpos: [],
+                        pendingNpos: [],
+                        approvedNpos: [],
+                        registeredActivities: [],
+                        npoActivities: [],
+                        pendingVolunteers: [],
+                        approvedVolunteers: [],
+                    };
+                const recentUserQuestions = messages
+                    .filter((message) => message.role === 'user')
+                    .map((message) => message.text)
+                    .filter(Boolean)
+                    .slice(-2);
+                const answer = buildContextAwareHelpAnswer(question, localContext, user?.role, recentUserQuestions);
+                setMessages(prev => {
+                    const updated = [...prev];
+                    const lastIdx = updated.length - 1;
+                    if (updated[lastIdx]) {
+                        updated[lastIdx] = {
+                            role: 'model',
+                            text: answer,
+                            isTyping: false,
+                        };
+                    }
+                    return updated;
+                });
+                scrollRef.current?.scrollToEnd({ animated: true });
+                console.log('[DEBUG] GemmaAIChat: help_center local answer committed', {
+                    requestId,
+                    totalElapsedMs: Date.now() - startedAt,
+                    followedNpos: localContext.followedNpos.length,
+                    pendingNpos: localContext.pendingNpos.length,
+                    approvedNpos: localContext.approvedNpos.length,
+                    registeredActivities: localContext.registeredActivities.length,
+                    npoActivities: localContext.npoActivities.length,
+                    pendingVolunteers: localContext.pendingVolunteers.length,
+                    approvedVolunteers: localContext.approvedVolunteers.length,
+                });
+                setIsLoading(false);
+                return;
             }
 
-            const data = payload;
+            const data = await profileRest.invokeGemmaHelpAssistant(
+                { question, history, mode, role: user?.role || null },
+                mode === 'shadow' ? accessToken || undefined : undefined,
+                12000
+            );
+            console.log('[DEBUG] GemmaAIChat: response resolved', {
+                requestId,
+                hasData: !!data,
+                dataKeys: data ? Object.keys(data) : [],
+                elapsedMs: Date.now() - startedAt,
+            });
             const answer = data?.answer || 'Mi dispiace, ho avuto un problema. Riprova!';
+            console.log('[DEBUG] GemmaAIChat: answer ready', {
+                requestId,
+                answerLength: answer.length,
+                elapsedMs: Date.now() - startedAt,
+            });
 
             // Replace placeholder with typed text
             setMessages(prev => {
@@ -207,16 +367,27 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                 scrollRef.current?.scrollToEnd({ animated: false });
                 if (charIndex >= answer.length) {
                     clearInterval(interval);
+                    console.log('[DEBUG] GemmaAIChat: typing done', {
+                        requestId,
+                        totalElapsedMs: Date.now() - startedAt,
+                    });
                     setIsLoading(false);
                 }
             }, 18);
 
         } catch (error: any) {
             console.error('[GemmaAIChat] invoke failed:', error);
+            console.log('[DEBUG] GemmaAIChat: invoke failed detail', {
+                requestId,
+                error: error?.message || String(error),
+                elapsedMs: Date.now() - startedAt,
+            });
             const fallbackMessage =
-                error?.message && typeof error.message === 'string'
-                    ? `Errore Gemma: ${error.message}`
-                    : 'Errore di connessione. Riprova tra poco! 🔌';
+                mode === 'help_center'
+                    ? buildLocalHelpFallback(question, user?.role)
+                    : (error?.message && typeof error.message === 'string'
+                        ? `Errore Gemma: ${error.message}`
+                        : 'Errore di connessione. Riprova tra poco! 🔌');
             setMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
@@ -242,7 +413,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingHorizontal: 20,
-                    paddingTop: 20,
+                    paddingTop: Math.max(insets.top, 16) + 8,
                     paddingBottom: 16,
                     borderBottomWidth: 1,
                     borderBottomColor: '#f1f5f9',

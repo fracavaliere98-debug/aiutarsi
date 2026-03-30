@@ -41,6 +41,7 @@ export function useActivities(filters: ActivityFilters = {}) {
     >({
         queryKey: ['activities', user?.id || 'anonymous', filters],
         initialPageParam: 0,
+        placeholderData: (previousData) => previousData,
         staleTime: 60_000, // activities stale after 1 minute
         refetchOnMount: true,
         refetchOnReconnect: true,

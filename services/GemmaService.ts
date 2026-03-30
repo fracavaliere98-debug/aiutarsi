@@ -68,27 +68,77 @@ export type CommunityPostDraftResult = {
 };
 
 class GemmaService {
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
   private buildSmartMatchFallback(matches: OldSmartMatchResult[]): SmartMatchReasonResult {
+    const top = matches[0]?.activity?.title;
     return {
-      summary: "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
+      summary: top
+        ? `Partirei da ${top}: qui vedo il punto di contatto piu forte con quello che ti interessa adesso.`
+        : "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
       reasons: matches.map((match) => ({
         activityId: match.activity.id,
-        reason: `${Math.round(match.score || 0)}% in linea con il tuo profilo.`,
+        reason: this.buildSmartMatchReason(match),
       })),
     };
   }
 
+  private buildSmartMatchReason(match: OldSmartMatchResult): string {
+    const activity = match.activity;
+    if (!activity) return `${Math.round(match.score || 0)}% in linea con il tuo profilo.`;
+
+    const bits: string[] = [];
+    if (activity.isUrgent) bits.push('è urgente');
+    if (activity.category) bits.push(`tocca il tema ${activity.category.toLowerCase()}`);
+    if (activity.skills?.length) bits.push(`richiede ${activity.skills.slice(0, 2).join(' e ').toLowerCase()}`);
+
+    const when = activity.dateTime ? new Date(activity.dateTime).getTime() : null;
+    if (when) {
+      const diffDays = (when - Date.now()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0 && diffDays <= 3) bits.push('parte nei prossimi giorni');
+      else if (diffDays > 3 && diffDays <= 7) bits.push('succede questa settimana');
+    }
+
+    if (!bits.length) {
+      return `${activity.title} è tra le opportunità più coerenti con il tuo profilo in questo momento.`;
+    }
+
+    const lead = match.score >= 80
+      ? `${activity.title} è una delle attività più forti per te perché`
+      : `${activity.title} merita attenzione perché`;
+
+    return `${lead} ${bits.slice(0, 3).join(', ')}.`;
+  }
+
   private async getShadowAccessToken() {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const startedAt = Date.now();
+    const { data: sessionData } = await this.withTimeout(supabase.auth.getSession(), 1200, 'gemma.auth.getSession');
     if (sessionData.session?.access_token) {
+      console.log('[DEBUG] GemmaService: getShadowAccessToken from session', { elapsedMs: Date.now() - startedAt });
       return sessionData.session.access_token;
     }
 
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    const { data: refreshData, error: refreshError } = await this.withTimeout(supabase.auth.refreshSession(), 1800, 'gemma.auth.refreshSession');
     if (refreshError) {
       console.warn("[GemmaService] Session refresh failed:", refreshError.message);
     }
 
+    console.log('[DEBUG] GemmaService: getShadowAccessToken from refresh', {
+      hasToken: !!refreshData.session?.access_token,
+      elapsedMs: Date.now() - startedAt,
+    });
     return refreshData.session?.access_token || null;
   }
 
@@ -96,7 +146,13 @@ class GemmaService {
     body: Record<string, unknown>,
     options?: { allowMissingAuth?: boolean }
   ) {
+    const startedAt = Date.now();
     const accessToken = await this.getShadowAccessToken();
+    console.log('[DEBUG] GemmaService: invokeShadowGemma auth resolved', {
+      hasAccessToken: !!accessToken,
+      allowMissingAuth: !!options?.allowMissingAuth,
+      elapsedMs: Date.now() - startedAt,
+    });
 
     if (!accessToken) {
       if (options?.allowMissingAuth) {
@@ -105,6 +161,12 @@ class GemmaService {
       throw new Error("Sessione non valida. Effettua di nuovo l'accesso.");
     }
 
+    const controller = new AbortController();
+    const abortId = setTimeout(() => controller.abort(), 2200);
+    console.log('[DEBUG] GemmaService: invokeShadowGemma request start', {
+      elapsedMs: Date.now() - startedAt,
+      bodyKeys: Object.keys(body),
+    });
     const response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
       method: "POST",
       headers: {
@@ -116,9 +178,20 @@ class GemmaService {
         mode: "shadow",
         ...body,
       }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(abortId));
+    console.log('[DEBUG] GemmaService: invokeShadowGemma response', {
+      status: response.status,
+      ok: response.ok,
+      elapsedMs: Date.now() - startedAt,
     });
 
     const payload = await response.json().catch(() => null);
+    console.log('[DEBUG] GemmaService: invokeShadowGemma payload', {
+      hasPayload: !!payload,
+      payloadKeys: payload ? Object.keys(payload) : [],
+      elapsedMs: Date.now() - startedAt,
+    });
 
     if (!response.ok) {
       throw new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
@@ -128,39 +201,7 @@ class GemmaService {
   }
 
   async getSmartMatchReasons(matches: OldSmartMatchResult[]): Promise<SmartMatchReasonResult> {
-    const accessToken = await this.getShadowAccessToken();
-    if (!accessToken) {
-      return this.buildSmartMatchFallback(matches);
-    }
-
-    const matchedActivities = matches.map((match) => ({
-      id: match.activity.id,
-      title: match.activity.title,
-      npoName: match.activity.npoName,
-      category: match.activity.category,
-      description: match.activity.description,
-      matchPercentage: match.score,
-    }));
-
-    try {
-      const data = await this.invokeShadowGemma({
-        question: "Parla come Gemma in modo umano e incoraggiante: spiega quali attivita senti piu adatte a questa persona e da quale partiresti oggi.",
-        responseFormat: "smart_match_reasons",
-        matchedActivities,
-      }, { allowMissingAuth: true });
-
-      if (!data) {
-        return this.buildSmartMatchFallback(matches);
-      }
-
-      return {
-        summary: data?.summary || "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
-        reasons: Array.isArray(data?.reasons) ? data.reasons : [],
-      };
-    } catch (error) {
-      console.warn("[GemmaService] Smart Match fallback:", error);
-      return this.buildSmartMatchFallback(matches);
-    }
+    return this.buildSmartMatchFallback(matches);
   }
 
   async getNPOInsightDrafts(insights: NPOInsightDraftInput[]): Promise<NPOInsightDraftResult> {

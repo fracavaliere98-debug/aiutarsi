@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { MessageSquare, Bell, Plus } from "lucide-react-native";
+import { MessageSquare, Bell } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { UserAvatar } from "./UserAvatar";
 import { useNotifications } from "../context/NotificationContext";
@@ -44,23 +44,13 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
                 )}
             </TouchableOpacity>
 
-            {showAddPost ? (
-                <TouchableOpacity
-                    onPress={() => router.push('/community/create-post' as any)}
-                    className="bg-white/20 p-2.5 rounded-2xl border border-white/20 active:scale-90"
-                    activeOpacity={0.85}
-                >
-                    <Plus size={iconSize} color="white" />
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity
-                    onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
-                    className="rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
-                    style={{ width: avatarSize, height: avatarSize }}
-                >
-                    <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
-                </TouchableOpacity>
-            )}
+            <TouchableOpacity
+                onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
+                className="rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
+                style={{ width: avatarSize, height: avatarSize }}
+            >
+                <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
+            </TouchableOpacity>
         </View>
     );
 }

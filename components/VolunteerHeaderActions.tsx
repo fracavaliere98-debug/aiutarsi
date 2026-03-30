@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Bell, MessageCircle, Plus } from 'lucide-react-native';
+import { Bell, MessageCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { UserAvatar } from './UserAvatar';
 import { useChat } from '../context/ChatContext';
@@ -43,22 +43,12 @@ export const VolunteerHeaderActions = ({ showAddPost }: { showAddPost?: boolean 
                 )}
             </TouchableOpacity>
 
-            {showAddPost ? (
-                <TouchableOpacity
-                    onPress={() => router.push('/community/create-post' as any)}
-                    className="bg-white/20 p-2.5 rounded-2xl border border-white/20 active:scale-90"
-                    activeOpacity={0.85}
-                >
-                    <Plus size={iconSize} color="white" />
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity
-                    onPress={() => router.push("/(volunteer)/profile" as any)}
-                    className="ml-0.5"
-                >
-                    <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
-                </TouchableOpacity>
-            )}
+            <TouchableOpacity
+                onPress={() => router.push("/(volunteer)/profile" as any)}
+                className="ml-0.5"
+            >
+                <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
+            </TouchableOpacity>
         </View>
     );
 };
