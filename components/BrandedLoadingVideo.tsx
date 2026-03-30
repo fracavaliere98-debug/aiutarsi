@@ -35,7 +35,7 @@ export function BrandedLoadingVideo({
                 player={player}
                 style={StyleSheet.absoluteFill}
                 nativeControls={false}
-                allowsFullscreen={false}
+                fullscreenOptions={{ enable: false }}
                 contentFit={contentFit}
             />
             {showOverlay && (

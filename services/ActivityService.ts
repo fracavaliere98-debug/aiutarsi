@@ -667,6 +667,10 @@ export class ActivityService {
                 phone: row.phone || row.volunteer?.phone
             }));
         } catch (error) {
+            if ((error as any)?.message?.includes('Sessione assente o token utente non disponibile')) {
+                console.log('[ActivityService] Skipping activity applications fetch until session is ready');
+                return [];
+            }
             console.error("Error fetching activity applications", error);
             return [];
         }

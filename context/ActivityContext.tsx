@@ -67,7 +67,12 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     });
     const { data: reviews = [] } = useQuery({ queryKey: ['reviews'], queryFn: () => activityService.getReviews(), staleTime: 60_000 });
     const { data: volunteerReviews = [] } = useQuery({ queryKey: ['volunteer_reviews'], queryFn: () => activityService.getVolunteerReviews(), staleTime: 60_000 });
-    const { data: activityApplications = [] } = useQuery({ queryKey: ['activity_applications'], queryFn: () => activityService.getActivityApplications(), staleTime: 60_000 });
+    const { data: activityApplications = [] } = useQuery({
+        queryKey: ['activity_applications', user?.id],
+        queryFn: () => activityService.getActivityApplications(),
+        staleTime: 60_000,
+        enabled: !!user && user.role === 'NPO',
+    });
 
     const loadData = useCallback(async () => {
         setError(false);
