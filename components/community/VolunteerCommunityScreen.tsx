@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,9 @@ import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
 import { GemmaAvatar } from '../GemmaAvatar';
+import { useAuth } from '../../context/AuthContext';
+import { useApplications } from '../../context/ApplicationContext';
+import { supabase } from '../../utils/supabase';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
@@ -43,6 +46,97 @@ export function VolunteerCommunityScreen({
     onStoryPress,
 }: VolunteerCommunityScreenProps) {
     const router = useRouter();
+    const { user } = useAuth();
+    const { getVolunteerApplications } = useApplications();
+
+    const followedNpoIds = useMemo(
+        () => (user?.followedNPOs || []).filter(Boolean),
+        [user?.followedNPOs]
+    );
+    const [sharedVolunteerAuthorIds, setSharedVolunteerAuthorIds] = useState<string[]>([]);
+    const affiliatedNpoIds = useMemo(
+        () =>
+            getVolunteerApplications(user?.id || '')
+                .filter((application) => application.status === 'APPROVED')
+                .map((application) => application.npoId)
+                .filter(Boolean),
+        [getVolunteerApplications, user?.id]
+    );
+    const suggestedNpoIds = useMemo(
+        () => Array.from(new Set(suggestedActivities.map((activity) => activity.npoId).filter(Boolean))).slice(0, 12),
+        [suggestedActivities]
+    );
+    const allowedStoryNpoIds = useMemo(
+        () => Array.from(new Set([...followedNpoIds, ...affiliatedNpoIds, ...suggestedNpoIds])),
+        [followedNpoIds, affiliatedNpoIds, suggestedNpoIds]
+    );
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadSharedVolunteerAuthors = async () => {
+            const volunteerAuthorIds = Array.from(
+                new Set(
+                    posts
+                        .filter((post) => post.author?.role === 'VOLUNTEER' && post.author_id)
+                        .map((post) => post.author_id)
+                        .filter(Boolean) as string[]
+                )
+            );
+
+            if (!affiliatedNpoIds.length || !volunteerAuthorIds.length) {
+                if (isMounted) setSharedVolunteerAuthorIds([]);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('applications')
+                .select('volunteer_id,npo_id')
+                .in('volunteer_id', volunteerAuthorIds)
+                .in('npo_id', affiliatedNpoIds)
+                .eq('status', 'APPROVED');
+
+            if (error) {
+                console.error('VolunteerCommunityScreen shared volunteer lookup error:', error);
+                if (isMounted) setSharedVolunteerAuthorIds([]);
+                return;
+            }
+
+            if (isMounted) {
+                setSharedVolunteerAuthorIds(
+                    Array.from(new Set((data || []).map((row: any) => row.volunteer_id).filter(Boolean)))
+                );
+            }
+        };
+
+        void loadSharedVolunteerAuthors();
+        return () => {
+            isMounted = false;
+        };
+    }, [affiliatedNpoIds, posts]);
+    const prioritizedPosts = useMemo(() => {
+        const followedSet = new Set(followedNpoIds);
+        const affiliatedSet = new Set(affiliatedNpoIds);
+        const sharedVolunteerSet = new Set(sharedVolunteerAuthorIds);
+        return [...posts]
+            .filter((post) => {
+                if (post.author?.role === 'VOLUNTEER') {
+                    return !!post.author_id && sharedVolunteerSet.has(post.author_id);
+                }
+                return true;
+            })
+            .sort((a, b) => {
+            const relationWeight = (post: CommunityPost) => {
+                if (post.author?.role === 'VOLUNTEER') return 3;
+                if (post.author?.role !== 'NPO' || !post.author_id) return 4;
+                if (affiliatedSet.has(post.author_id)) return 0;
+                if (followedSet.has(post.author_id)) return 1;
+                return 2;
+            };
+            const diff = relationWeight(a) - relationWeight(b);
+            if (diff !== 0) return diff;
+            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        });
+    }, [posts, followedNpoIds, affiliatedNpoIds, sharedVolunteerAuthorIds]);
 
     const weekendActivity = useMemo(() => {
         const now = new Date();
@@ -109,6 +203,10 @@ export function VolunteerCommunityScreen({
                 allowAddStory={true}
                 onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)}
                 onStoryPress={onStoryPress}
+                allowedAuthorIds={allowedStoryNpoIds}
+                followedAuthorIds={followedNpoIds}
+                affiliatedAuthorIds={affiliatedNpoIds}
+                sharedNpoIds={affiliatedNpoIds}
             />
 
             {weekendActivity ? (
@@ -241,9 +339,22 @@ export function VolunteerCommunityScreen({
 
     return (
         <FlashList
-            data={posts}
+            data={prioritizedPosts}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <CommunityPostCard post={item} />}
+            renderItem={({ item }) => (
+                <CommunityPostCard
+                    post={item}
+                    npoRelation={
+                        item.author?.role !== 'NPO' || !item.author_id
+                            ? null
+                            : affiliatedNpoIds.includes(item.author_id)
+                                ? 'affiliated'
+                                : followedNpoIds.includes(item.author_id)
+                                    ? 'followed'
+                                    : null
+                    }
+                />
+            )}
             estimatedItemSize={320}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}

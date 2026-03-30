@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
-import { MoreHorizontal } from 'lucide-react-native';
+import { Heart, MoreHorizontal, Users } from 'lucide-react-native';
 import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community';
 import { Colors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
@@ -14,9 +14,10 @@ const SCREEN_W = Dimensions.get('window').width;
 
 interface CommunityPostCardProps {
     post: CommunityPost;
+    npoRelation?: 'followed' | 'affiliated' | null;
 }
 
-export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) => {
+export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPostCardProps) => {
     const router = useRouter();
     const { user } = useAuth();
     const { toggleReaction, deletePost, reportPost } = useCommunity();
@@ -121,6 +122,22 @@ export const CommunityPostCard = React.memo(({ post }: CommunityPostCardProps) =
                     <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{authorName}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
                         <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
+                        {npoRelation === 'affiliated' && (
+                            <View style={{ backgroundColor: '#eff6ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Users size={10} color="#2563eb" />
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: '#2563eb' }}>
+                                    Ne fai parte
+                                </Text>
+                            </View>
+                        )}
+                        {npoRelation === 'followed' && (
+                            <View style={{ backgroundColor: '#fff1f7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Heart size={10} color={Colors.accent} fill={Colors.accent} />
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
+                                    Sei un follower
+                                </Text>
+                            </View>
+                        )}
                         {post.linked_activity && (
                             <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>

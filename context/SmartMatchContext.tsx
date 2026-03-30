@@ -10,6 +10,7 @@ import React, {
 import { useSegments } from 'expo-router';
 import { activityService } from '../services/ActivityService';
 import { gemmaService } from '../services/GemmaService';
+import { npoService } from '../services/NPOService';
 import { smartMatchPreferencesService } from '../services/SmartMatchPreferencesService';
 import { useAuth } from './AuthContext';
 import { OldSmartMatchResult } from '../types';
@@ -115,12 +116,25 @@ function deriveConfidence(score: number): Pick<OldSmartMatchResult, 'confidence'
     };
 }
 
-function rerankWithPreferences(matches: OldSmartMatchResult[], user: any, prefs: Awaited<ReturnType<typeof smartMatchPreferencesService.getPreferences>>) {
+function rerankWithPreferences(
+    matches: OldSmartMatchResult[],
+    user: any,
+    prefs: Awaited<ReturnType<typeof smartMatchPreferencesService.getPreferences>>,
+    relations: { followedNpoIds: Set<string>; affiliatedNpoIds: Set<string> },
+    options?: { ignoreHidden?: boolean; excludeEnrolledUserId?: string | null }
+) {
     return matches
-        .filter((match) => !prefs.hiddenActivityIds.includes(match.id))
+        .filter((match) => options?.ignoreHidden || !prefs.hiddenActivityIds.includes(match.id))
+        .filter((match) => {
+            const enrolledUserId = options?.excludeEnrolledUserId;
+            if (!enrolledUserId) return true;
+            const iscritti = match.activity?.iscritti || [];
+            return !iscritti.includes(enrolledUserId);
+        })
         .map((match) => {
             const activity = match.activity;
             let adjustedScore = match.score || 0;
+            const npoId = activity?.npoId;
 
             if (prefs.savedActivityIds.includes(match.id)) adjustedScore += 8;
             if (prefs.likedActivityIds.includes(match.id)) adjustedScore += 10;
@@ -128,6 +142,8 @@ function rerankWithPreferences(matches: OldSmartMatchResult[], user: any, prefs:
             if (activity?.npoId && prefs.likedNpoIds.includes(activity.npoId)) adjustedScore += 6;
             if (prefs.seenActivityIds.includes(match.id)) adjustedScore -= 4;
             if (activity?.isUrgent) adjustedScore += 3;
+            if (npoId && relations.affiliatedNpoIds.has(npoId)) adjustedScore += 10;
+            else if (npoId && relations.followedNpoIds.has(npoId)) adjustedScore += 5;
 
             const chips = deriveChips(user, activity, adjustedScore);
             const confidence = deriveConfidence(adjustedScore);
@@ -155,6 +171,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const isFetchingRef = useRef(false);
+    const fetchSeqRef = useRef(0);
     const segmentKey = segments.join('/');
     const isQuietRoute = [
         '(volunteer)/settings',
@@ -169,7 +186,10 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
     ].some((route) => segmentKey.includes(route));
 
     const fetchMatches = useCallback(async () => {
+        const fetchId = ++fetchSeqRef.current;
+        const startedAt = Date.now();
         if (isQuietRoute) {
+            console.log('[DEBUG] SmartMatchContext: skipped on quiet route', { fetchId, segmentKey });
             return;
         }
 
@@ -192,7 +212,25 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
         setError(null);
 
         try {
-            console.log('[SmartMatchContext] Fetching matches via unified ActivityService...');
+            console.log('[SmartMatchContext] Fetching matches via unified ActivityService...', {
+                fetchId,
+                userId: user.id,
+                startedAt,
+            });
+
+            const [prefs, volunteerApplications] = await Promise.all([
+                smartMatchPreferencesService.getPreferences(user.id),
+                npoService.getApplicationsForVolunteer(user.id).catch(() => []),
+            ]);
+            const relations = {
+                followedNpoIds: new Set((user.followedNPOs || []).filter(Boolean)),
+                affiliatedNpoIds: new Set(
+                    (volunteerApplications || [])
+                        .filter((application) => application.status === 'APPROVED')
+                        .map((application) => application.npoId)
+                        .filter(Boolean)
+                ),
+            };
 
             // 1. Chiamata al servizio (che usa get_activities_with_match sotto cofano)
             const primaryResult = await activityService.getActivities({
@@ -201,6 +239,11 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 centerLat: user.locationCoords?.lat || undefined,
                 centerLng: user.locationCoords?.lng || undefined,
                 statuses: ['APERTA', 'IN_CORSO'],
+            });
+            console.log('[DEBUG] SmartMatchContext: primary activities resolved', {
+                fetchId,
+                count: primaryResult.activities.length,
+                elapsedMs: Date.now() - startedAt,
             });
 
             let candidateActivities = primaryResult.activities;
@@ -214,6 +257,11 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 candidateActivities = fallbackResult.activities.filter((activity) =>
                     ['APERTA', 'IN_CORSO'].includes(activity.status)
                 );
+                console.log('[DEBUG] SmartMatchContext: broader fallback resolved', {
+                    fetchId,
+                    count: candidateActivities.length,
+                    elapsedMs: Date.now() - startedAt,
+                });
             }
 
             // 2. Filtriamo le attività a cui è già iscritto usando la lista già idratata dal service
@@ -231,6 +279,11 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             const gemmaEnrichedMatches = mappedMatchesBase.length > 0
                 ? await gemmaService.getSmartMatchReasons(mappedMatchesBase)
                     .then(result => {
+                        console.log('[DEBUG] SmartMatchContext: gemma reasons resolved', {
+                            fetchId,
+                            reasonsCount: result.reasons?.length || 0,
+                            elapsedMs: Date.now() - startedAt,
+                        });
                         const reasonsMap = new Map(result.reasons.map((item: any) => [item.activityId, item.reason]));
                         return mappedMatchesBase.map(match => ({
                             ...match,
@@ -239,6 +292,11 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     })
                     .catch((gemmaError) => {
                         console.error('[SmartMatchContext] Gemma reasons failed:', gemmaError);
+                        console.log('[DEBUG] SmartMatchContext: gemma reasons fallback', {
+                            fetchId,
+                            error: gemmaError?.message || String(gemmaError),
+                            elapsedMs: Date.now() - startedAt,
+                        });
                         return mappedMatchesBase.map(match => ({
                             ...match,
                             reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`
@@ -246,12 +304,12 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                     })
                 : mappedMatchesBase;
 
-            const prefs = await smartMatchPreferencesService.getPreferences(user.id);
-            const allPersonalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, {
-                ...prefs,
-                hiddenActivityIds: [],
+            const allPersonalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs, relations, {
+                ignoreHidden: true,
             });
-            let personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs);
+            let personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, prefs, relations, {
+                excludeEnrolledUserId: user.id,
+            });
 
             const candidateSummary = candidateActivities.map((activity) => ({
                 id: activity.id,
@@ -269,6 +327,9 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 personalizedMatches = rerankWithPreferences(gemmaEnrichedMatches, user, {
                     ...prefs,
                     hiddenActivityIds: [],
+                }, relations, {
+                    ignoreHidden: true,
+                    excludeEnrolledUserId: user.id,
                 });
             }
 
@@ -281,6 +342,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
                 prefs.hiddenActivityIds.length
             );
             console.log('[SmartMatchContext] Diagnostics', {
+                fetchId,
                 userId: user.id,
                 profileCompleted: user.profile_completed,
                 candidateSummary,
@@ -293,42 +355,89 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             setAllMatches(allPersonalizedMatches);
             setMatches(personalizedMatches);
             setLastUpdated(new Date());
+            console.log('[DEBUG] SmartMatchContext: fetch completed', {
+                fetchId,
+                visibleCount: personalizedMatches.length,
+                allCount: allPersonalizedMatches.length,
+                elapsedMs: Date.now() - startedAt,
+            });
         } catch (err: any) {
             console.error('[SmartMatchContext] Error fetching matches:', err);
+            console.log('[DEBUG] SmartMatchContext: fetch failed', {
+                fetchId,
+                error: err?.message || String(err),
+                elapsedMs: Date.now() - startedAt,
+            });
             setError((current) => current || 'Impossibile caricare i suggerimenti. Riprova tra poco.');
         } finally {
             setIsLoading(false);
             isFetchingRef.current = false;
         }
-    }, [isQuietRoute, user]);
+    }, [isQuietRoute, segmentKey, user]);
 
     // Invalidate cache and refetch on refresh
     const refresh = useCallback(async () => {
         await fetchMatches();
     }, [fetchMatches]);
 
+    const updateLocalMatchState = useCallback((updater: (current: OldSmartMatchResult) => OldSmartMatchResult | null) => {
+        setAllMatches((prev) =>
+            prev
+                .map((match) => updater(match) ?? match)
+                .sort((a, b) => (b.score || 0) - (a.score || 0))
+        );
+        setMatches((prev) =>
+            prev
+                .map((match) => updater(match))
+                .filter((match): match is OldSmartMatchResult => match !== null)
+                .sort((a, b) => (b.score || 0) - (a.score || 0))
+        );
+    }, []);
+
     const saveMatch = useCallback(async (match: OldSmartMatchResult) => {
         if (!user?.id) return;
+        const nextSaved = !match.saved;
         await smartMatchPreferencesService.toggleSaved(user.id, match.id);
-        await fetchMatches();
-    }, [fetchMatches, user?.id]);
+        updateLocalMatchState((current) => {
+            if (current.id !== match.id) return current;
+            return {
+                ...current,
+                saved: nextSaved,
+            };
+        });
+    }, [updateLocalMatchState, user?.id]);
 
     const hideMatch = useCallback(async (match: OldSmartMatchResult) => {
         if (!user?.id) return;
         await smartMatchPreferencesService.hideActivity(user.id, match.id);
-        await fetchMatches();
-    }, [fetchMatches, user?.id]);
+        setMatches((prev) => prev.filter((current) => current.id !== match.id));
+        setAllMatches((prev) => prev.map((current) => current.id === match.id ? { ...current, seen: true } : current));
+    }, [user?.id]);
 
     const likeMatch = useCallback(async (match: OldSmartMatchResult) => {
         if (!user?.id || !match.activity) return;
+        const nextLiked = !match.liked;
         await smartMatchPreferencesService.toggleLikedActivity(
             user.id,
             match.id,
             match.activity.category,
             match.activity.npoId
         );
-        await fetchMatches();
-    }, [fetchMatches, user?.id]);
+        updateLocalMatchState((current) => {
+            if (current.id !== match.id) return current;
+            const baseScore = current.score || 0;
+            const nextScore = nextLiked ? Math.min(99, baseScore + 10) : Math.max(0, baseScore - 10);
+            const nextConfidence = deriveConfidence(nextScore);
+            return {
+                ...current,
+                liked: nextLiked,
+                score: nextScore,
+                confidence: nextConfidence.confidence,
+                confidenceLabel: nextConfidence.confidenceLabel,
+                nextStep: nextConfidence.nextStep,
+            };
+        });
+    }, [updateLocalMatchState, user?.id]);
 
     const markMatchSeen = useCallback(async (match: OldSmartMatchResult) => {
         if (!user?.id) return;
