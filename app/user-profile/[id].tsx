@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter, Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -29,7 +29,13 @@ export default function UserProfileRedirect() {
         // Fallback: look up by ID via auth context
         const found = getUserById?.(id);
         setTargetUser(found || null);
-    }, [id, users]);
+    }, [id, users, getUserById]);
+
+    useEffect(() => {
+        if (targetUser === null) {
+            router.back();
+        }
+    }, [targetUser, router]);
 
     if (targetUser === undefined) {
         return (
@@ -40,9 +46,11 @@ export default function UserProfileRedirect() {
     }
 
     if (!targetUser) {
-        // OldUser not found — go back
-        router.back();
-        return null;
+        return (
+            <View className="flex-1 items-center justify-center bg-white">
+                <ActivityIndicator size="small" color="#D81B60" />
+            </View>
+        );
     }
 
     // Redirect based on role
