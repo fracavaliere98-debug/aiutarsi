@@ -27,6 +27,31 @@ type SearchDoc = {
     answer: string;
 };
 
+type IntentName =
+    | 'activities'
+    | 'applications'
+    | 'followed_npos'
+    | 'profile'
+    | 'npo_activities'
+    | 'npo_volunteers'
+    | 'xp_badges'
+    | 'notifications'
+    | 'calendar'
+    | 'community'
+    | 'recommendation'
+    | 'faq';
+
+type IntentScore = {
+    name: IntentName;
+    score: number;
+    reasons: string[];
+};
+
+type ConversationMemory = {
+    lastIntent: IntentName | null;
+    lastEntityType: 'activity' | 'npo' | 'profile' | 'volunteer' | 'faq' | null;
+};
+
 export function normalizeText(value: string) {
     return value
         .toLowerCase()
@@ -85,6 +110,163 @@ export function buildLocalHelpFallback(question: string, role?: string | null) {
     }
 
     return 'Posso aiutarti sulle guide di AiutarSì e sul tuo contesto in app. Prova a chiedermi di attività, candidature, profilo, NPO, calendario, badge o notifiche.';
+}
+
+function hasAny(text: string, patterns: RegExp[]) {
+    return patterns.some((pattern) => pattern.test(text));
+}
+
+function addScore(target: Record<IntentName, IntentScore>, name: IntentName, amount: number, reason: string) {
+    target[name].score += amount;
+    target[name].reasons.push(reason);
+}
+
+function readConversationMemory(question: string, recentUserQuestions: string[] = []): ConversationMemory {
+    const normalizedQuestion = normalizeText(question);
+    const lastQuestion = normalizeText(recentUserQuestions[recentUserQuestions.length - 1] || '');
+    const isFollowUp = /^(e |ed |oppure|invece|quali|quale|quelle|quelli|quello|come|chi|dove)/.test(normalizedQuestion);
+
+    if (!isFollowUp) {
+        return { lastIntent: null, lastEntityType: null };
+    }
+
+    if (hasAny(lastQuestion, [/(attivit|iscritt|registrat|impegn|weekend|prossim|calend)/])) {
+        return { lastIntent: 'activities', lastEntityType: 'activity' };
+    }
+    if (hasAny(lastQuestion, [/(segu|follower|enti segu|npo segu)/])) {
+        return { lastIntent: 'followed_npos', lastEntityType: 'npo' };
+    }
+    if (hasAny(lastQuestion, [/(candidat|domand|richiest|approvat|accettat)/])) {
+        return { lastIntent: 'applications', lastEntityType: 'npo' };
+    }
+    if (hasAny(lastQuestion, [/(profil|bio|competenz|skill|interess)/])) {
+        return { lastIntent: 'profile', lastEntityType: 'profile' };
+    }
+    if (hasAny(lastQuestion, [/(volontar|approvazione|approvat)/])) {
+        return { lastIntent: 'npo_volunteers', lastEntityType: 'volunteer' };
+    }
+    if (hasAny(lastQuestion, [/(livell|xp|badge)/])) {
+        return { lastIntent: 'xp_badges', lastEntityType: 'faq' };
+    }
+
+    return { lastIntent: null, lastEntityType: null };
+}
+
+function scoreIntent(question: string, role: string | null | undefined, recentUserQuestions: string[] = []): IntentScore[] {
+    const normalizedQuestion = normalizeText(question);
+    const memory = readConversationMemory(question, recentUserQuestions);
+    const intents: Record<IntentName, IntentScore> = {
+        activities: { name: 'activities', score: 0, reasons: [] },
+        applications: { name: 'applications', score: 0, reasons: [] },
+        followed_npos: { name: 'followed_npos', score: 0, reasons: [] },
+        profile: { name: 'profile', score: 0, reasons: [] },
+        npo_activities: { name: 'npo_activities', score: 0, reasons: [] },
+        npo_volunteers: { name: 'npo_volunteers', score: 0, reasons: [] },
+        xp_badges: { name: 'xp_badges', score: 0, reasons: [] },
+        notifications: { name: 'notifications', score: 0, reasons: [] },
+        calendar: { name: 'calendar', score: 0, reasons: [] },
+        community: { name: 'community', score: 0, reasons: [] },
+        recommendation: { name: 'recommendation', score: 0, reasons: [] },
+        faq: { name: 'faq', score: 0, reasons: [] },
+    };
+
+    if (hasAny(normalizedQuestion, [/(attivit|iscritt|registrat|impegn|weekend|prossim|disponibil)/])) {
+        addScore(intents, 'activities', 8, 'activity keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(calend|oggi|domani|settiman)/])) {
+        addScore(intents, 'calendar', 6, 'calendar keywords');
+        addScore(intents, 'activities', 3, 'calendar implies activities');
+    }
+    if (hasAny(normalizedQuestion, [/(candidat|domand|richiest|approvat|accettat|rifiutat|pending)/])) {
+        addScore(intents, 'applications', 8, 'application keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(segu|seguo|follower|enti segu|npo segu|associazioni segu|quali enti|quali npo|associazioni seguite)/])) {
+        addScore(intents, 'followed_npos', 10, 'follow keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(profil|bio|competenz|skill|interess|chi sono|su di me)/])) {
+        addScore(intents, 'profile', 8, 'profile keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(livell|xp|badge|esperienz)/])) {
+        addScore(intents, 'xp_badges', 8, 'gamification keywords');
+        addScore(intents, 'faq', 3, 'faq overlap');
+    }
+    if (hasAny(normalizedQuestion, [/(notifich|avvis|promemori)/])) {
+        addScore(intents, 'notifications', 8, 'notification keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(community|post|storie|story|feed)/])) {
+        addScore(intents, 'community', 7, 'community keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(consigli|da dove parto|cosa posso fare|cosa mi consigli)/])) {
+        addScore(intents, 'recommendation', 9, 'recommendation keywords');
+    }
+
+    if (role === 'NPO' && hasAny(normalizedQuestion, [/(attivit|pubblicat|opportunit|progett)/])) {
+        addScore(intents, 'npo_activities', 9, 'npo activities keywords');
+    }
+    if (role === 'NPO' && hasAny(normalizedQuestion, [/(volontar|approvazione|candidature ricevute|chi e in attesa|chi e gia approvato|gia approvat|in attesa)/])) {
+        addScore(intents, 'npo_volunteers', 11, 'npo volunteers keywords');
+    }
+
+    if (memory.lastIntent) {
+        addScore(intents, memory.lastIntent, 4, 'follow-up memory');
+        if (memory.lastIntent === 'activities' && hasAny(normalizedQuestion, [/(quali|quelle|quelli|questo weekend|domani|oggi)/])) {
+            addScore(intents, 'activities', 4, 'follow-up refinement');
+        }
+        if (memory.lastIntent === 'followed_npos' && hasAny(normalizedQuestion, [/(quali|enti|npo|associazioni)/])) {
+            addScore(intents, 'followed_npos', 4, 'follow-up refinement');
+        }
+        if (memory.lastIntent === 'npo_volunteers' && hasAny(normalizedQuestion, [/(chi|approvat|attesa|volontar)/])) {
+            addScore(intents, 'npo_volunteers', 5, 'npo volunteer follow-up refinement');
+        }
+    }
+
+    if (topLevelFollowQuestion(normalizedQuestion)) {
+        addScore(intents, 'followed_npos', 4, 'direct follow phrasing');
+    }
+
+    if (role === 'NPO' && hasAny(normalizedQuestion, [/(chi)/]) && hasAny(normalizedQuestion, [/(approvat|attesa)/])) {
+        addScore(intents, 'npo_volunteers', 4, 'npo who-is-approved phrasing');
+    }
+
+    return Object.values(intents).sort((a, b) => b.score - a.score);
+}
+
+function topLevelFollowQuestion(normalizedQuestion: string) {
+    return /(quali enti|quali npo|chi seguo|enti seguo|npo seguo)/.test(normalizedQuestion);
+}
+
+function renderBulletList(lines: string[], emptyMessage: string, intro: string, nextStep?: string) {
+    if (!lines.length) {
+        return emptyMessage;
+    }
+    const body = `${intro}\n\n• ${lines.join('\n• ')}`;
+    return nextStep ? `${body}\n\n${nextStep}` : body;
+}
+
+function buildActionLine(intent: IntentName, role?: string | null) {
+    switch (intent) {
+        case 'activities':
+        case 'calendar':
+            return 'Se vuoi, puoi aprire il calendario o tornare in Esplora per vedere altro.';
+        case 'followed_npos':
+            return 'Se vuoi, puoi aprire la Community per vedere gli ultimi aggiornamenti di questi enti.';
+        case 'applications':
+            return 'Se vuoi, posso anche riassumerti le attività legate a queste candidature.';
+        case 'profile':
+            return 'Se vuoi, posso anche dirti cosa conviene completare o aggiornare nel profilo.';
+        case 'npo_activities':
+            return 'Se vuoi, posso anche dirti quali attività meritano più attenzione adesso.';
+        case 'npo_volunteers':
+            return 'Se vuoi, posso anche riassumerti chi è già approvato e chi è ancora in attesa.';
+        case 'xp_badges':
+            return role === 'NPO'
+                ? 'Se vuoi, posso spiegarti meglio livelli, badge e progressi dell’ente.'
+                : 'Se vuoi, posso spiegarti meglio livelli, badge e progressi del profilo.';
+        case 'community':
+            return 'Se vuoi, posso anche aiutarti a capire cosa pubblicare o dove guardare in Community.';
+        default:
+            return undefined;
+    }
 }
 
 function scoreTextMatch(query: string, text: string) {
@@ -205,8 +387,9 @@ export function buildContextAwareHelpAnswer(
     role?: string | null,
     recentUserQuestions: string[] = []
 ) {
-    const normalizedQuestion = normalizeText(question);
-    const compositeQuestion = [...recentUserQuestions.slice(-2), question].join(' ');
+    const compositeQuestion = [...recentUserQuestions.slice(-3), question].join(' ');
+    const rankedIntents = scoreIntent(question, role, recentUserQuestions);
+    const topIntent = rankedIntents[0]?.name || 'faq';
     const registeredLabels = context.registeredActivities.map((activity) => {
         const dateLabel = formatDateLabel(activity.dateStart);
         return dateLabel
@@ -220,14 +403,19 @@ export function buildContextAwareHelpAnswer(
     const pendingVolunteerNames = context.pendingVolunteers.map((volunteer) => volunteer.name);
     const approvedVolunteerNames = context.approvedVolunteers.map((volunteer) => volunteer.name);
 
-    if (role === 'NPO' && /(attivit|pubblicat|turn|opportunit)/.test(normalizedQuestion)) {
+    if (role === 'NPO' && topIntent === 'npo_activities') {
         if (!npoActivityTitles.length) {
             return "Al momento la tua NPO non ha attività pubblicate. Se vuoi, posso spiegarti come crearne una nuova.";
         }
-        return `La tua NPO ha ${npoActivityTitles.length} ${npoActivityTitles.length === 1 ? 'attività pubblicata' : 'attività pubblicate'}.\n\n• ${npoActivityTitles.slice(0, 5).join('\n• ')}`;
+        return renderBulletList(
+            npoActivityTitles.slice(0, 5),
+            "Al momento la tua NPO non ha attività pubblicate.",
+            `La tua NPO ha ${npoActivityTitles.length} ${npoActivityTitles.length === 1 ? 'attività pubblicata' : 'attività pubblicate'}.`,
+            buildActionLine('npo_activities', role)
+        );
     }
 
-    if (role === 'NPO' && /(volontar|candidat|domand|approv)/.test(normalizedQuestion)) {
+    if (role === 'NPO' && topIntent === 'npo_volunteers') {
         const parts: string[] = [];
         if (approvedVolunteerNames.length) {
             parts.push(`volontari approvati: ${formatList(approvedVolunteerNames.slice(0, 5))}`);
@@ -241,7 +429,7 @@ export function buildContextAwareHelpAnswer(
         return `Situazione volontari della tua NPO:\n\n• ${parts.join('\n• ')}`;
     }
 
-    if (/(profil|chi sono|bio|competenz|skill|interess)/.test(normalizedQuestion)) {
+    if (topIntent === 'profile') {
         const lines = [
             context.profile.bio ? `Bio: ${context.profile.bio}` : '',
             context.profile.skills.length ? `Competenze: ${formatList(context.profile.skills.slice(0, 6))}` : '',
@@ -250,25 +438,37 @@ export function buildContextAwareHelpAnswer(
         ].filter(Boolean);
 
         if (lines.length) {
-            return `Ecco cosa risulta nel tuo profilo.\n\n${lines.map((line) => `• ${line}`).join('\n')}`;
+            return `${context.profile.displayName ? `${context.profile.displayName}, ` : ''}ecco cosa risulta nel tuo profilo.\n\n${lines.map((line) => `• ${line}`).join('\n')}\n\n${buildActionLine('profile', role)}`;
         }
     }
 
-    if (/(attivit|iscritt|registrat|calend|impegn|prossim)/.test(normalizedQuestion)) {
+    if (topIntent === 'activities' || topIntent === 'calendar') {
         if (!registeredLabels.length) {
             return "In questo momento non risulti iscritta a nessuna attività. Se vuoi, posso aiutarti a capire dove cercarle in Esplora o come leggere i consigliati di Gemma.";
         }
-        return `Al momento hai ${registeredLabels.length} ${registeredLabels.length === 1 ? 'attività registrata' : 'attività registrate'}.\n\n• ${registeredLabels.slice(0, 4).join('\n• ')}${registeredLabels.length > 4 ? '\n• ...e altre nel tuo calendario personale.' : ''}`;
+        const extra = registeredLabels.length > 4 ? [...registeredLabels.slice(0, 4), '...e altre nel tuo calendario personale.'] : registeredLabels.slice(0, 4);
+        return renderBulletList(
+            extra,
+            "In questo momento non risulti iscritta a nessuna attività.",
+            `Al momento hai ${registeredLabels.length} ${registeredLabels.length === 1 ? 'attività registrata' : 'attività registrate'}.`,
+            buildActionLine(topIntent, role)
+        );
     }
 
-    if (/(segu|follower|npo segu|enti segu)/.test(normalizedQuestion)) {
+    if (topIntent === 'followed_npos') {
         if (!followedNames.length) {
             return "In questo momento non segui nessuna NPO. Puoi aprire il profilo di un ente e toccare Segui per ricevere i suoi aggiornamenti in Community e nelle storie.";
         }
-        return `Segui ${followedNames.length} ${followedNames.length === 1 ? 'NPO' : 'NPO'}.\n\n• ${followedNames.slice(0, 5).join('\n• ')}${followedNames.length > 5 ? '\n• ...e altre.' : ''}`;
+        const items = followedNames.length > 5 ? [...followedNames.slice(0, 5), '...e altre.'] : followedNames.slice(0, 5);
+        return renderBulletList(
+            items,
+            "In questo momento non segui nessuna NPO.",
+            `Segui ${followedNames.length} ${followedNames.length === 1 ? 'NPO' : 'NPO'}.`,
+            buildActionLine('followed_npos', role)
+        );
     }
 
-    if (/(candidat|domand|richiest|approvat|accettat|npo faccio parte|enti faccio parte)/.test(normalizedQuestion)) {
+    if (topIntent === 'applications') {
         const parts: string[] = [];
         if (approvedNames.length) {
             parts.push(`fai già parte di ${formatList(approvedNames.slice(0, 4))}`);
@@ -282,13 +482,25 @@ export function buildContextAwareHelpAnswer(
         return `Ecco la tua situazione attuale: ${parts.join(' e ')}.`;
     }
 
-    if (/(cosa posso fare|cosa mi consigli|da dove parto|consigliami)/.test(normalizedQuestion)) {
+    if (topIntent === 'recommendation') {
         if (registeredLabels.length) {
             return `Ti conviene partire da ciò che hai già in corso, per esempio ${registeredLabels[0]}. Se vuoi, posso anche aiutarti a leggere meglio i consigliati di Gemma o a capire quali NPO stai già seguendo.`;
         }
         if (pendingNames.length) {
             return `Hai già candidature aperte con ${formatList(pendingNames.slice(0, 3))}. Nel frattempo ti conviene controllare Esplora e le novità delle NPO che segui.`;
         }
+    }
+
+    if (topIntent === 'xp_badges') {
+        return buildLocalHelpFallback(question, role);
+    }
+
+    if (topIntent === 'notifications') {
+        return `Le notifiche ti avvisano su attività, candidature, messaggi e novità importanti delle NPO che segui. Se vuoi, posso anche dirti quali promemoria possono arrivarti prima o dopo un’attività.`;
+    }
+
+    if (topIntent === 'community') {
+        return `In Community puoi seguire aggiornamenti, post e storie degli enti che segui o di cui fai parte. Se vuoi, posso anche aiutarti a capire cosa guardare prima o cosa pubblicare.`;
     }
 
     const docs = buildSearchDocs(context, role);
@@ -301,7 +513,7 @@ export function buildContextAwareHelpAnswer(
     if (matches.length) {
         const top = matches[0].doc.answer;
         if (matches.length === 1) {
-            return top;
+            return buildActionLine('faq', role) ? `${top}\n\n${buildActionLine('faq', role)}` : top;
         }
         const related = matches
             .slice(1)
