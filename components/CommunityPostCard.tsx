@@ -23,7 +23,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
     const { user } = useAuth();
     const { toggleReaction, deletePost, reportPost } = useCommunity();
     const { showToast } = useToast();
-    const { followNPO, isProcessing } = useNPOFollow();
+    const { followNPO, isFollowingNPO, isProcessingNPO } = useNPOFollow();
 
     const handleMenuPress = () => {
         if (!user) return;
@@ -79,7 +79,9 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
 
     const authorName = post.author?.npo_name || post.author?.full_name || 'NPO';
     const isNpoAuthor = post.author?.role === 'NPO';
-    const canFollowFromCommunity = !!user && user.role === 'VOLUNTEER' && isNpoAuthor && user.id !== post.author_id && !npoRelation;
+    const isLocallyFollowed = isNpoAuthor && !!post.author_id && isFollowingNPO(post.author_id);
+    const effectiveRelation = npoRelation || (isLocallyFollowed ? 'followed' : null);
+    const canFollowFromCommunity = !!user && user.role === 'VOLUNTEER' && isNpoAuthor && user.id !== post.author_id && !effectiveRelation;
     const authorProfileRoute = post.author?.role === 'VOLUNTEER'
         ? `/user-profile/${post.author_id}`
         : `/npo-profile/${post.author_id}`;
@@ -126,7 +128,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                     <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{authorName}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
                         <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
-                        {npoRelation === 'affiliated' && (
+                        {effectiveRelation === 'affiliated' && (
                             <View style={{ backgroundColor: '#eff6ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Users size={10} color="#2563eb" />
                                 <Text style={{ fontSize: 10, fontWeight: '800', color: '#2563eb' }}>
@@ -134,7 +136,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                 </Text>
                             </View>
                         )}
-                        {npoRelation === 'followed' && (
+                        {effectiveRelation === 'followed' && (
                             <View style={{ backgroundColor: '#fff1f7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Heart size={10} color={Colors.accent} fill={Colors.accent} />
                                 <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
@@ -145,7 +147,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                         {canFollowFromCommunity && (
                             <TouchableOpacity
                                 activeOpacity={0.85}
-                                disabled={isProcessing}
+                                disabled={isProcessingNPO(post.author_id)}
                                 onPress={async () => {
                                     const ok = await followNPO(post.author_id);
                                     if (ok) {
@@ -164,7 +166,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                     gap: 5,
                                 }}
                             >
-                                {isProcessing ? (
+                                {isProcessingNPO(post.author_id) ? (
                                     <ActivityIndicator size="small" color="#fff" />
                                 ) : (
                                     <>
