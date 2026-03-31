@@ -1,0 +1,7 @@
+appId: host.exp.Exponent
+---
+- launchApp
+- tapOn:
+    id: "volunteer-settings-report"
+- assertVisible:
+    id: "volunteer-report-screen"

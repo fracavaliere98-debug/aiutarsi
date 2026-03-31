@@ -169,6 +169,20 @@ async function request<T>(
 }
 
 export const profileRest = {
+  processNotificationJobs: async (
+    payload?: { limit?: number },
+    accessToken?: string,
+    timeoutMs = 10000
+  ) => {
+    return request<{ success: boolean; processed?: Record<string, number>; error?: string }>(
+      "POST",
+      `/functions/v1/process-notification-jobs`,
+      payload || {},
+      accessToken,
+      undefined,
+      timeoutMs
+    );
+  },
   invokeGemmaHelpAssistant: async (
     payload: { question: string; history?: unknown[]; mode?: "help_center" | "shadow"; role?: string | null },
     accessToken?: string,

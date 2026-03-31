@@ -5,9 +5,7 @@ import { CommunityPost, PostReaction, ReactionType } from '../types/community';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
 import { moderateCommunityContent } from '../utils/communityModeration';
-import { dispatchBulkNotifications } from '../utils/notificationDispatch';
-import { npoService } from '../services/NPOService';
-import { canNotifyFollowersForContent, markFollowersContentNotified } from '../utils/npoContentNotificationRateLimit';
+import { triggerNotificationJobs } from '../utils/notificationJobs';
 
 interface CommunityContextType {
     posts: CommunityPost[];
@@ -180,30 +178,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error;
 
-        if (user.role === 'NPO') {
-            try {
-                const shouldNotify = await canNotifyFollowersForContent(user.id, 'post');
-                if (shouldNotify) {
-                    const followers = await npoService.getFollowers(user.id);
-                    const payloads = followers.map((follower) => ({
-                        userId: follower.id,
-                        type: 'FOLLOWED_NPO_POST' as const,
-                        title: `${user.npoName || user.name || 'La NPO che segui'} ha pubblicato un aggiornamento`,
-                        message: caption?.trim()
-                            ? caption.trim().slice(0, 120)
-                            : 'Apri la community per vedere il nuovo post.',
-                        npoId: user.id,
-                    }));
-
-                    if (payloads.length > 0) {
-                        await dispatchBulkNotifications(payloads);
-                        await markFollowersContentNotified(user.id, 'post');
-                    }
-                }
-            } catch (notifyError) {
-                console.warn('[CommunityContext] Failed to notify followers about new post', notifyError);
-            }
-        }
+        if (user.role === 'NPO') triggerNotificationJobs({ minIntervalMs: 0 });
 
         await fetchFeed();
     };

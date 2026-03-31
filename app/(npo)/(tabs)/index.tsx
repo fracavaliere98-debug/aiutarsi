@@ -16,9 +16,6 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
 import { InsightCarousel } from "../../../components/InsightCarousel";
 import { reportService } from "../../../services/ReportService";
-import { dispatchNotification } from "../../../utils/notificationDispatch";
-import { shouldSendLowCoverageAlert, markLowCoverageAlertSent } from "../../../utils/npoCoverageAlerts";
-import { markWeeklyRecapSent, shouldSendWeeklyRecap } from "../../../utils/npoWeeklyRecap";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
@@ -73,33 +70,6 @@ export default function NPODashboard() {
             });
             if (cancelled) return;
             setLowCoverageCount(summary.lowCoverageActivities.length);
-
-            const shouldSendRecap = await shouldSendWeeklyRecap(user.id);
-            if (shouldSendRecap) {
-                await dispatchNotification({
-                    userId: user.id,
-                    type: 'NPO_WEEKLY_RECAP',
-                    title: 'Come sta andando',
-                    message: `Questa settimana hai avuto ${summary.newFollowersThisWeek} nuovi follower, ${summary.registrationsThisWeek} nuovi iscritti e ${summary.activeFollowersOnContent} follower attivi sui contenuti.`,
-                    npoId: user.id,
-                });
-                await markWeeklyRecapSent(user.id);
-            }
-
-            const primary = summary.lowCoverageActivities[0];
-            if (!primary) return;
-            const shouldSend = await shouldSendLowCoverageAlert(primary.id);
-            if (!shouldSend) return;
-
-            await dispatchNotification({
-                userId: user.id,
-                type: 'NPO_LOW_COVERAGE',
-                title: 'Attività da rinforzare',
-                message: `${primary.title} ha ancora pochi volontari iscritti`,
-                activityId: primary.id,
-                npoId: user.id,
-            });
-            await markLowCoverageAlertSent(primary.id);
         }
 
         void evaluateCoverage();

@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { npoService } from '../services/NPOService';
-import { AppUser } from '../types';
 
 export const useNPOFollow = () => {
     const { user, setUser } = useAuth();

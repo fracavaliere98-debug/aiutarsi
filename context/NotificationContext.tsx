@@ -4,10 +4,11 @@ import { Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 import { useToast } from "./ToastContext";
+import { triggerNotificationJobs } from "../utils/notificationJobs";
 
 export interface AppNotification {
     id: string;
-    type: "ACTIVITY_UPDATE" | "SUCCESS" | "INFO" | "URGENT" | "VOLUNTEER_ENROLLED" | "APPLICATION_RECEIVED" | "APPLICATION_APPROVED" | "APPLICATION_REJECTED" | "SKILL_MATCH" | "GAMIFICATION_REMIND" | "BADGE_UNLOCKED" | "CHAT_MESSAGE" | "ACTIVITY_REMINDER" | "REVIEW_REMINDER" | "FOLLOWED_NPO_ACTIVITY" | "FOLLOWED_NPO_POST" | "FOLLOWED_NPO_STORY" | "NPO_WEEKLY_RECAP" | "NPO_LOW_COVERAGE";
+    type: "ACTIVITY_UPDATE" | "SUCCESS" | "INFO" | "URGENT" | "VOLUNTEER_ENROLLED" | "APPLICATION_RECEIVED" | "APPLICATION_APPROVED" | "APPLICATION_REJECTED" | "SKILL_MATCH" | "GAMIFICATION_REMIND" | "BADGE_UNLOCKED" | "CHAT_MESSAGE" | "ACTIVITY_REMINDER" | "REVIEW_REMINDER" | "FOLLOWED_NPO_ACTIVITY" | "FOLLOWED_NPO_POST" | "FOLLOWED_NPO_STORY" | "NPO_WEEKLY_RECAP" | "VOLUNTEER_WEEKLY_RECAP" | "NPO_LOW_COVERAGE";
     title: string;
     message: string;
     timestamp: string;
@@ -79,6 +80,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                     : '/(volunteer)/(tabs)/profile';
             case 'NPO_WEEKLY_RECAP':
                 return '/(npo)/report';
+            case 'VOLUNTEER_WEEKLY_RECAP':
+                return '/(volunteer)/report';
             case 'NPO_LOW_COVERAGE':
                 return notif.activityId ? `/activity/${notif.activityId}` : '/(npo)/report';
             case 'FOLLOWED_NPO_POST':
@@ -135,6 +138,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
         fetchNotifications();
     }, [user, isQuietRoute]);
+
+    useEffect(() => {
+        if (!user?.id || isQuietRoute) return;
+        triggerNotificationJobs();
+    }, [user?.id, isQuietRoute]);
 
     // Supabase Realtime Listener
     useEffect(() => {
@@ -327,6 +335,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (normalized === 'FOLLOWED_NPO_POST') return 'FOLLOWED_NPO_POST';
             if (normalized === 'FOLLOWED_NPO_STORY') return 'FOLLOWED_NPO_STORY';
             if (normalized === 'NPO_WEEKLY_RECAP') return 'NPO_WEEKLY_RECAP';
+            if (normalized === 'VOLUNTEER_WEEKLY_RECAP') return 'VOLUNTEER_WEEKLY_RECAP';
             if (normalized === 'NPO_LOW_COVERAGE') return 'NPO_LOW_COVERAGE';
             return 'INFO';
         };

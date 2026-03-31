@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
-import { Bell, CheckCircle, Info, AlertCircle, MessageCircle, CalendarClock, HeartHandshake } from "lucide-react-native";
+import { Bell, CheckCircle, Info, AlertCircle, MessageCircle, CalendarClock, HeartHandshake, ChartColumnIncreasing } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
@@ -25,6 +25,8 @@ export default function NotificationsScreen() {
                 return { Icon: HeartHandshake, color: "#db2777" };
             case "FOLLOWED_NPO_ACTIVITY":
                 return { Icon: Bell, color: Colors.primary };
+            case "VOLUNTEER_WEEKLY_RECAP":
+                return { Icon: ChartColumnIncreasing, color: "#7c3aed" };
             case "SUCCESS":
                 return { Icon: CheckCircle, color: "#22c55e" };
             case "URGENT":

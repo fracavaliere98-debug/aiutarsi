@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock } from 'lucide-react-native';
+import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock, ChartColumnIncreasing } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -257,18 +257,21 @@ export default function VolunteerSettings() {
         label,
         color,
         onPress,
-        last = false
+        last = false,
+        testID,
     }: {
         icon: any,
         label: string,
         color: string,
         onPress?: () => void,
-        last?: boolean
+        last?: boolean,
+        testID?: string,
     }) => (
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
             className={`flex-row items-center justify-between py-4 ${!last ? 'border-b border-gray-50' : ''}`}
+            testID={testID}
         >
             <View className="flex-row items-center gap-4">
                 <View style={{ backgroundColor: color + '15' }} className="p-2.5 rounded-2xl">
@@ -365,6 +368,13 @@ export default function VolunteerSettings() {
                         label="Porta un amico"
                         color={Colors.primary}
                         onPress={() => router.push("/(volunteer)/referral" as any)}
+                    />
+                    <MenuItem
+                        icon={ChartColumnIncreasing}
+                        label="Report"
+                        color={Colors.accent}
+                        onPress={() => router.push("/(volunteer)/report" as any)}
+                        testID="volunteer-settings-report"
                         last
                     />
                 </SoftCard>

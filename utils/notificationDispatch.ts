@@ -19,6 +19,7 @@ type AppPushType =
     | 'FOLLOWED_NPO_POST'
     | 'FOLLOWED_NPO_STORY'
     | 'NPO_WEEKLY_RECAP'
+    | 'VOLUNTEER_WEEKLY_RECAP'
     | 'NPO_LOW_COVERAGE';
 
 type DispatchNotificationPayload = {

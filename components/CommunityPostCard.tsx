@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Alert, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Alert, Animated, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Heart, MoreHorizontal, Users } from 'lucide-react-native';
 import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNPOFollow } from '../hooks/useNPOFollow';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -22,6 +23,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
     const { user } = useAuth();
     const { toggleReaction, deletePost, reportPost } = useCommunity();
     const { showToast } = useToast();
+    const { followNPO, isProcessing } = useNPOFollow();
 
     const handleMenuPress = () => {
         if (!user) return;
@@ -76,6 +78,8 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
     }
 
     const authorName = post.author?.npo_name || post.author?.full_name || 'NPO';
+    const isNpoAuthor = post.author?.role === 'NPO';
+    const canFollowFromCommunity = !!user && user.role === 'VOLUNTEER' && isNpoAuthor && user.id !== post.author_id && !npoRelation;
     const authorProfileRoute = post.author?.role === 'VOLUNTEER'
         ? `/user-profile/${post.author_id}`
         : `/npo-profile/${post.author_id}`;
@@ -138,10 +142,44 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                 </Text>
                             </View>
                         )}
-                        {post.linked_activity && (
+                        {canFollowFromCommunity && (
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                disabled={isProcessing}
+                                onPress={async () => {
+                                    const ok = await followNPO(post.author_id);
+                                    if (ok) {
+                                        showToast('success', `Ora segui ${authorName}`);
+                                    } else {
+                                        showToast('error', 'Impossibile seguire questa NPO adesso');
+                                    }
+                                }}
+                                style={{
+                                    backgroundColor: Colors.primary,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 5,
+                                    borderRadius: 999,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                }}
+                            >
+                                {isProcessing ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <>
+                                        <Heart size={10} color="#fff" />
+                                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>
+                                            Segui
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                        {post.linked_activity && post.linked_activity.status === 'IN_CORSO' && (
                             <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
-                                    {post.linked_activity.status === 'IN_CORSO' ? 'LIVE' : 'Attività collegata'}
+                                    LIVE
                                 </Text>
                             </View>
                         )}
