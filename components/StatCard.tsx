@@ -8,9 +8,10 @@ interface StatCardProps {
     valueColor?: string;
     className?: string;
     onPress?: () => void;
+    testID?: string;
 }
 
-export function StatCard({ value, label, icon, valueColor = "text-primary", className = "", onPress }: StatCardProps) {
+export function StatCard({ value, label, icon, valueColor = "text-primary", className = "", onPress, testID }: StatCardProps) {
     const Content = (
         <View className="items-center px-1">
             <View className="flex-row items-center">
@@ -32,6 +33,7 @@ export function StatCard({ value, label, icon, valueColor = "text-primary", clas
                 activeOpacity={0.7}
                 onPress={onPress}
                 className={`bg-white py-5 justify-center rounded-[24px] border border-slate-200 shadow-md ${className}`}
+                testID={testID}
             >
                 {Content}
             </TouchableOpacity>
@@ -39,7 +41,7 @@ export function StatCard({ value, label, icon, valueColor = "text-primary", clas
     }
 
     return (
-        <View className={`bg-white py-5 justify-center rounded-[24px] border border-slate-200 shadow-md ${className}`}>
+        <View className={`bg-white py-5 justify-center rounded-[24px] border border-slate-200 shadow-md ${className}`} testID={testID}>
             {Content}
         </View>
     );

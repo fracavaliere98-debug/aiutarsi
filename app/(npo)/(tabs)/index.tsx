@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../../context/ActivityContext";
@@ -15,6 +15,10 @@ import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
 import { InsightCarousel } from "../../../components/InsightCarousel";
+import { reportService } from "../../../services/ReportService";
+import { dispatchNotification } from "../../../utils/notificationDispatch";
+import { shouldSendLowCoverageAlert, markLowCoverageAlertSent } from "../../../utils/npoCoverageAlerts";
+import { markWeeklyRecapSent, shouldSendWeeklyRecap } from "../../../utils/npoWeeklyRecap";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
@@ -24,6 +28,7 @@ export default function NPODashboard() {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { insights, dismissInsight } = useNPOInsights();
+    const [lowCoverageCount, setLowCoverageCount] = useState(0);
 
     // Refresh followers when screen gains focus to update "online" status
     useFocusEffect(
@@ -55,6 +60,53 @@ export default function NPODashboard() {
     const approvedActivityApps = activityApplications.filter(a => a.status === "APPROVED");
 
     const totalEnrollmentsCount = approvedNpoApps.length + approvedActivityApps.length;
+
+    useEffect(() => {
+        let cancelled = false;
+        async function evaluateCoverage() {
+            if (!user?.id) return;
+            const summary = await reportService.getNPOReportSummary({
+                npoId: user.id,
+                activities,
+                applications: allNpoApps,
+                activityApplications,
+            });
+            if (cancelled) return;
+            setLowCoverageCount(summary.lowCoverageActivities.length);
+
+            const shouldSendRecap = await shouldSendWeeklyRecap(user.id);
+            if (shouldSendRecap) {
+                await dispatchNotification({
+                    userId: user.id,
+                    type: 'NPO_WEEKLY_RECAP',
+                    title: 'Come sta andando',
+                    message: `Questa settimana hai avuto ${summary.newFollowersThisWeek} nuovi follower, ${summary.registrationsThisWeek} nuovi iscritti e ${summary.activeFollowersOnContent} follower attivi sui contenuti.`,
+                    npoId: user.id,
+                });
+                await markWeeklyRecapSent(user.id);
+            }
+
+            const primary = summary.lowCoverageActivities[0];
+            if (!primary) return;
+            const shouldSend = await shouldSendLowCoverageAlert(primary.id);
+            if (!shouldSend) return;
+
+            await dispatchNotification({
+                userId: user.id,
+                type: 'NPO_LOW_COVERAGE',
+                title: 'Attività da rinforzare',
+                message: `${primary.title} ha ancora pochi volontari iscritti`,
+                activityId: primary.id,
+                npoId: user.id,
+            });
+            await markLowCoverageAlertSent(primary.id);
+        }
+
+        void evaluateCoverage();
+        return () => {
+            cancelled = true;
+        };
+    }, [activities, activityApplications, allNpoApps, user?.id]);
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
@@ -92,7 +144,8 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/reviews" as any)}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-dashboard-report-rating"
                 >
                     <StatCard
                         value={npoRating.toFixed(1)}
@@ -104,7 +157,8 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/projects" as any)}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-dashboard-report-activities"
                 >
                     <StatCard
                         value={myActivities.length}
@@ -116,7 +170,8 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/volunteers?tab=FOLLOWERS" as any)}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-dashboard-report-followers"
                 >
                     <StatCard
                         value={followerCount}
@@ -128,7 +183,8 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/volunteers?tab=STORICO" as any)}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-dashboard-report-volunteers"
                 >
                     <StatCard
                         value={totalEnrollmentsCount}
@@ -138,6 +194,20 @@ export default function NPODashboard() {
                     />
                 </TouchableOpacity>
             </View>
+
+            {lowCoverageCount > 0 && (
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    className="mb-6 bg-orange-50 border border-orange-100 rounded-3xl px-5 py-4"
+                    testID="npo-dashboard-low-coverage"
+                >
+                    <Text className="text-orange-700 font-black text-sm mb-1">Attività da attenzionare</Text>
+                    <Text className="text-orange-700/80 text-xs">
+                        Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per vedere il report.
+                    </Text>
+                </TouchableOpacity>
+            )}
 
             {/* AI Insight Carousel - bleed to screen edges */}
             <View style={{ marginHorizontal: -24, paddingHorizontal: 0 }}>

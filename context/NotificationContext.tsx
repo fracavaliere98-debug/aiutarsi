@@ -7,7 +7,7 @@ import { useToast } from "./ToastContext";
 
 export interface AppNotification {
     id: string;
-    type: "ACTIVITY_UPDATE" | "SUCCESS" | "INFO" | "URGENT" | "VOLUNTEER_ENROLLED" | "APPLICATION_RECEIVED" | "APPLICATION_APPROVED" | "APPLICATION_REJECTED" | "SKILL_MATCH" | "GAMIFICATION_REMIND" | "BADGE_UNLOCKED" | "CHAT_MESSAGE";
+    type: "ACTIVITY_UPDATE" | "SUCCESS" | "INFO" | "URGENT" | "VOLUNTEER_ENROLLED" | "APPLICATION_RECEIVED" | "APPLICATION_APPROVED" | "APPLICATION_REJECTED" | "SKILL_MATCH" | "GAMIFICATION_REMIND" | "BADGE_UNLOCKED" | "CHAT_MESSAGE" | "ACTIVITY_REMINDER" | "REVIEW_REMINDER" | "FOLLOWED_NPO_ACTIVITY" | "FOLLOWED_NPO_POST" | "FOLLOWED_NPO_STORY" | "NPO_WEEKLY_RECAP" | "NPO_LOW_COVERAGE";
     title: string;
     message: string;
     timestamp: string;
@@ -62,6 +62,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             case 'VOLUNTEER_ENROLLED':
             case 'SKILL_MATCH':
             case 'ACTIVITY_UPDATE':
+            case 'ACTIVITY_REMINDER':
+            case 'REVIEW_REMINDER':
+            case 'FOLLOWED_NPO_ACTIVITY':
             case 'APPLICATION_APPROVED':
             case 'APPLICATION_REJECTED':
                 return notif.activityId
@@ -74,6 +77,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 return user?.role === 'NPO'
                     ? '/(npo)/(tabs)/profile'
                     : '/(volunteer)/(tabs)/profile';
+            case 'NPO_WEEKLY_RECAP':
+                return '/(npo)/report';
+            case 'NPO_LOW_COVERAGE':
+                return notif.activityId ? `/activity/${notif.activityId}` : '/(npo)/report';
+            case 'FOLLOWED_NPO_POST':
+            case 'FOLLOWED_NPO_STORY':
+                return user?.role === 'NPO'
+                    ? '/(npo)/(tabs)/community'
+                    : '/(volunteer)/(tabs)/community';
             default:
                 if (notif.activityId) {
                     return `/activity/${notif.activityId}`;
@@ -309,6 +321,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (normalized === 'SKILL_MATCH') return 'SKILL_MATCH';
             if (normalized === 'GAMIFICATION_REMIND') return 'GAMIFICATION_REMIND';
             if (normalized === 'BADGE_UNLOCKED') return 'BADGE_UNLOCKED';
+            if (normalized === 'ACTIVITY_REMINDER') return 'ACTIVITY_REMINDER';
+            if (normalized === 'REVIEW_REMINDER') return 'REVIEW_REMINDER';
+            if (normalized === 'FOLLOWED_NPO_ACTIVITY') return 'FOLLOWED_NPO_ACTIVITY';
+            if (normalized === 'FOLLOWED_NPO_POST') return 'FOLLOWED_NPO_POST';
+            if (normalized === 'FOLLOWED_NPO_STORY') return 'FOLLOWED_NPO_STORY';
+            if (normalized === 'NPO_WEEKLY_RECAP') return 'NPO_WEEKLY_RECAP';
+            if (normalized === 'NPO_LOW_COVERAGE') return 'NPO_LOW_COVERAGE';
             return 'INFO';
         };
 

@@ -8,6 +8,7 @@ export default function NPOLayout() {
             <Stack.Screen name="create-activity" options={STACK_TRANSITIONS.modal} />
             <Stack.Screen name="edit-activity/[id]" options={STACK_TRANSITIONS.modal} />
             <Stack.Screen name="notifications" options={STACK_TRANSITIONS.modal} />
+            <Stack.Screen name="report" options={{ ...STACK_TRANSITIONS.push, title: 'Come sta andando?' }} />
             <Stack.Screen name="edit-profile" options={{ ...STACK_TRANSITIONS.modal, title: 'Modifica Profilo' }} />
             <Stack.Screen name="security" options={{ ...STACK_TRANSITIONS.modal, title: 'Sicurezza' }} />
         </Stack>

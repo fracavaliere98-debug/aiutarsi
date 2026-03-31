@@ -2,7 +2,7 @@ import React from "react";
 import { Alert, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2 } from "lucide-react-native";
+import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2, ChartColumnIncreasing } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
@@ -26,6 +26,7 @@ const MenuItem = ({
     onPress,
     badge,
     last = false,
+    testID,
 }: {
     icon: any;
     label: string;
@@ -34,11 +35,13 @@ const MenuItem = ({
     onPress?: () => void;
     badge?: string | number;
     last?: boolean;
+    testID?: string;
 }) => (
     <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
         className={`flex-row items-center justify-between py-4 ${!last ? "border-b border-gray-50" : ""}`}
+        testID={testID}
     >
         <View className="flex-row items-center gap-4 flex-1 pr-3">
             <View style={{ backgroundColor: color + "15" }} className="p-2.5 rounded-2xl">
@@ -146,6 +149,14 @@ export default function NPOSettingsScreen() {
                     color={Colors.primary}
                     badge={teamCount}
                     onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
+                />
+                <MenuItem
+                    icon={ChartColumnIncreasing}
+                    label="Report"
+                    description="Follower, crescita, iscritti e attività da attenzionare"
+                    color={Colors.accent}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-settings-report"
                 />
                 <MenuItem
                     icon={Eye}

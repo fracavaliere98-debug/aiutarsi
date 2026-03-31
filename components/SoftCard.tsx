@@ -8,9 +8,10 @@ interface SoftCardProps {
     className?: string;
     onPress?: () => void;
     style?: ViewStyle;
+    testID?: string;
 }
 
-export function SoftCard({ children, className = "", onPress, style }: SoftCardProps) {
+export function SoftCard({ children, className = "", onPress, style, testID }: SoftCardProps) {
     const baseClasses = "bg-white rounded-[32px] shadow-sm border border-slate-100";
     const combinedClasses = `${baseClasses} ${className}`;
     const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
@@ -25,6 +26,7 @@ export function SoftCard({ children, className = "", onPress, style }: SoftCardP
                     onPressIn={onPressIn}
                     onPressOut={onPressOut}
                     activeOpacity={0.9}
+                    testID={testID}
                 >
                     {children}
                 </TouchableOpacity>
@@ -33,7 +35,7 @@ export function SoftCard({ children, className = "", onPress, style }: SoftCardP
     }
 
     return (
-        <View className={combinedClasses} style={style}>
+        <View className={combinedClasses} style={style} testID={testID}>
             {children}
         </View>
     );

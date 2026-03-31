@@ -5,6 +5,9 @@ import { Story } from '../types/stories';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
 import { moderateCommunityContent } from '../utils/communityModeration';
+import { canNotifyFollowersForContent, markFollowersContentNotified } from '../utils/npoContentNotificationRateLimit';
+import { dispatchBulkNotifications } from '../utils/notificationDispatch';
+import { npoService } from '../services/NPOService';
 
 interface StoriesContextType {
     stories: Story[];
@@ -98,6 +101,32 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
             expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         });
         if (error) throw error;
+
+        if (user.role === 'NPO') {
+            try {
+                const shouldNotify = await canNotifyFollowersForContent(user.id, 'story');
+                if (shouldNotify) {
+                    const followers = await npoService.getFollowers(user.id);
+                    const payloads = followers.map((follower) => ({
+                        userId: follower.id,
+                        type: 'FOLLOWED_NPO_STORY' as const,
+                        title: `${user.npoName || user.name || 'La NPO che segui'} ha pubblicato una nuova storia`,
+                        message: caption?.trim()
+                            ? caption.trim().slice(0, 100)
+                            : 'Apri la community per vederla.',
+                        npoId: user.id,
+                    }));
+
+                    if (payloads.length > 0) {
+                        await dispatchBulkNotifications(payloads);
+                        await markFollowersContentNotified(user.id, 'story');
+                    }
+                }
+            } catch (notifyError) {
+                console.warn('[StoriesContext] Failed to notify followers about new story', notifyError);
+            }
+        }
+
         await fetchStories();
     };
 

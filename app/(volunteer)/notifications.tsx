@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
-import { Bell, CheckCircle, Info, AlertCircle, MessageCircle } from "lucide-react-native";
+import { Bell, CheckCircle, Info, AlertCircle, MessageCircle, CalendarClock, HeartHandshake } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
@@ -19,6 +19,12 @@ export default function NotificationsScreen() {
         switch (type) {
             case "ACTIVITY_UPDATE":
                 return { Icon: AlertCircle, color: Colors.accent };
+            case "ACTIVITY_REMINDER":
+                return { Icon: CalendarClock, color: Colors.primary };
+            case "REVIEW_REMINDER":
+                return { Icon: HeartHandshake, color: "#db2777" };
+            case "FOLLOWED_NPO_ACTIVITY":
+                return { Icon: Bell, color: Colors.primary };
             case "SUCCESS":
                 return { Icon: CheckCircle, color: "#22c55e" };
             case "URGENT":

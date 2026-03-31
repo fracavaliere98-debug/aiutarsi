@@ -4,7 +4,7 @@ import { useNotifications } from "../../context/NotificationContext";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { EmptyState } from "../../components/EmptyState";
-import { CheckCircle, AlertCircle, Info, Users, Calendar, FileText, MessageCircle } from "lucide-react-native";
+import { CheckCircle, AlertCircle, Info, Users, Calendar, FileText, MessageCircle, ChartColumnIncreasing, BellRing } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -34,6 +34,10 @@ export default function NPONotificationsScreen() {
                 return { Icon: AlertCircle, color: "#ef4444" };
             case "ACTIVITY_UPDATE":
                 return { Icon: Calendar, color: Colors.primary };
+            case "NPO_WEEKLY_RECAP":
+                return { Icon: ChartColumnIncreasing, color: Colors.primary };
+            case "NPO_LOW_COVERAGE":
+                return { Icon: BellRing, color: "#ea580c" };
             case "INFO":
                 if (title?.startsWith("Nuovo messaggio da")) {
                     return { Icon: MessageCircle, color: Colors.primary };

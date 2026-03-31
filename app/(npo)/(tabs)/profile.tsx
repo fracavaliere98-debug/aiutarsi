@@ -223,6 +223,8 @@ export default function NPOProfileScreen() {
                         label="RATING"
                         valueColor="text-yellow-500"
                         icon={<Star size={14} color="#eab308" fill="#eab308" />}
+                        onPress={() => router.push("/(npo)/report" as any)}
+                        testID="npo-profile-report-rating"
                     />
                 </View>
                 <View className="flex-1 h-24">
@@ -231,6 +233,8 @@ export default function NPOProfileScreen() {
                         label="FOLLOWER"
                         valueColor="text-pink-600"
                         icon={<Users size={14} color="#db2777" />}
+                        onPress={() => router.push("/(npo)/report" as any)}
+                        testID="npo-profile-report-followers"
                     />
                 </View>
                 <View className="flex-1 h-24">
@@ -239,6 +243,8 @@ export default function NPOProfileScreen() {
                         label="ORE DONATE"
                         valueColor="text-indigo-600"
                         icon={<Clock size={14} color="#4f46e5" />}
+                        onPress={() => router.push("/(npo)/report" as any)}
+                        testID="npo-profile-report-hours"
                     />
                 </View>
             </View>

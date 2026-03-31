@@ -1,0 +1,51 @@
+# Maestro Smoke Test — NPO dashboard -> report
+# Prerequisiti:
+# - app installata sul device/emulatore
+# - account NPO di test disponibile via env:
+#   NPO_TEST_EMAIL
+#   NPO_TEST_PASSWORD
+
+appId: ${APP_ID}
+
+---
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-landing-login"
+    optional: true
+
+- assertVisible:
+    id: "input-email"
+
+- tapOn:
+    id: "input-email"
+- inputText: ${NPO_TEST_EMAIL}
+
+- tapOn:
+    id: "input-password"
+- inputText: ${NPO_TEST_PASSWORD}
+
+- tapOn:
+    id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- waitForAnimationToEnd
+- assertVisible:
+    id: "tab-home"
+
+- tapOn:
+    id: "npo-dashboard-report-followers"
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "npo-report-screen"
+- assertVisible:
+    id: "npo-report-new-followers"
+- assertVisible:
+    id: "npo-report-applications"

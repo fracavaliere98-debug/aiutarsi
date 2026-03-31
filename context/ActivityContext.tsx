@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { AppState } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppActivity, AppActivityApplication, OldReview, OldVolunteerReview } from "../types";
 import { useAuth } from "./AuthContext";
@@ -7,7 +6,9 @@ import { useNotifications } from "./NotificationContext";
 import { useGamification } from "./GamificationContext";
 import { activityService } from "../services/ActivityService";
 import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
-import { calculateSmartMatch } from "../utils/SmartMatch";
+import { clearActivityReminderNotifications, scheduleActivityReminderNotifications } from "../utils/notificationScheduler";
+import { dispatchBulkNotifications } from "../utils/notificationDispatch";
+import { npoService } from "../services/NPOService";
 
 export interface VolunteerStats {
     totalHours: number;
@@ -83,7 +84,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
                 queryClient.invalidateQueries({ queryKey: ['volunteer_reviews'] }),
                 queryClient.invalidateQueries({ queryKey: ['activity_applications'] })
             ]);
-        } catch (error) { setError(true); }
+        } catch { setError(true); }
     }, [queryClient]);
 
     // Check gamification completion based on activities changes
@@ -95,6 +96,27 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             }
         });
     }, [rawActivities, user, handleActivityCompletion, gamificationLoaded]);
+
+    useEffect(() => {
+        if (!user || user.role !== 'VOLUNTEER') return;
+
+        const enrolledUpcoming = rawActivities.filter((activity) => {
+            if (!activity.iscritti.includes(user.id)) return false;
+            if (!(activity.status === 'APERTA' || activity.status === 'IN_CORSO')) return false;
+            return new Date(activity.endDateTime || activity.dateTime).getTime() > Date.now();
+        });
+
+        void Promise.all(
+            enrolledUpcoming.map((activity) =>
+                scheduleActivityReminderNotifications({
+                    id: activity.id,
+                    title: activity.title,
+                    dateTime: activity.dateTime,
+                    endDateTime: activity.endDateTime,
+                })
+            )
+        );
+    }, [rawActivities, user]);
 
     // Pagination State
     const [pageRawActivities, setPageRawActivities] = useState<AppActivity[]>([]);
@@ -157,7 +179,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
                 abortControllerRef.current = null;
             }
         }
-    }, [offset, currentCategory, currentSearch]);
+    }, [offset, currentCategory, currentSearch, user?.id]);
 
     // Listeners
     useEffect(() => {
@@ -179,6 +201,20 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
                 matchPercentage: 0,
                 skills: activityData.skills || [],
             });
+            try {
+                const followers = await npoService.getFollowers(user!.id);
+                const payloads = followers.map((follower: any) => ({
+                    userId: follower.id,
+                    type: "FOLLOWED_NPO_ACTIVITY" as const,
+                    title: `Nuova attività da ${user!.npoName || user!.name}`,
+                    message: `${activityData.title} è ora disponibile`,
+                    activityId: newAct.id,
+                    npoId: user!.id,
+                }));
+                await dispatchBulkNotifications(payloads);
+            } catch (error) {
+                console.warn("[DEBUG] ActivityContext: failed to notify followers about new activity", error);
+            }
             return newAct.id as string;
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
@@ -193,6 +229,14 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
             const currentActivity = rawActivities.find(a => a.id === activityId);
+            if (currentActivity) {
+                await scheduleActivityReminderNotifications({
+                    id: currentActivity.id,
+                    title: currentActivity.title,
+                    dateTime: currentActivity.dateTime,
+                    endDateTime: currentActivity.endDateTime,
+                });
+            }
             void addNotification({
                 userId: currentActivity?.npoId || "",
                 type: "VOLUNTEER_ENROLLED",
@@ -210,6 +254,7 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const unenrollMutation = useMutation({
         mutationFn: async (activityId: string) => {
             await activityService.withdrawApplication(activityId, user!.id);
+            await clearActivityReminderNotifications(activityId);
             // Optimistic update
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a));
