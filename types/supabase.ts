@@ -593,10 +593,12 @@ export type Database = {
           bio: string | null
           company_name: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
           embedding: string | null
           expo_push_token: string | null
           full_name: string | null
+          gender: string | null
           id: string
           impact_points: number | null
           is_verified: boolean | null
@@ -626,10 +628,12 @@ export type Database = {
           bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           embedding?: string | null
           expo_push_token?: string | null
           full_name?: string | null
+          gender?: string | null
           id: string
           impact_points?: number | null
           is_verified?: boolean | null
@@ -656,10 +660,12 @@ export type Database = {
           bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           embedding?: string | null
           expo_push_token?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           impact_points?: number | null
           is_verified?: boolean | null

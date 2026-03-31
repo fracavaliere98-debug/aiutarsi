@@ -6,23 +6,32 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
 import { useEffect, useState } from "react";
-import { Camera, UserRound, Gift } from "lucide-react-native";
+import { Camera, UserRound, Gift, Calendar, ChevronDown, Check } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from "../../services/AuthService";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
-
-
-
-// ... imports
+import { CalendarPicker } from "../../components/CalendarPicker";
+import {
+    GENDER_OPTIONS,
+    normalizeBirthDateInput,
+    isoToBirthDateLabel,
+    validateVolunteerDemographics,
+    birthDateToIso,
+    getAdultMaxDate,
+} from "../../utils/profileDemographics";
 
 export default function OnboardingProfile() {
     const router = useRouter();
-    const { updateUserProfile, logout } = useAuth();
+    const { updateUserProfile, logout, user } = useAuth();
     const { showToast } = useToast();
     const [bio, setBio] = useState("");
     const [avatar, setAvatar] = useState<string | null>(null);
     const [referralCode, setReferralCode] = useState("");
+    const [gender, setGender] = useState<string>(user?.gender || "");
+    const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+    const [birthDateInput, setBirthDateInput] = useState(isoToBirthDateLabel(user?.date_of_birth));
+    const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -68,6 +77,15 @@ export default function OnboardingProfile() {
 
         const interests = params.interests ? JSON.parse(params.interests as string) : [];
         const skills = params.skills ? JSON.parse(params.skills as string) : [];
+        const demographics = validateVolunteerDemographics({
+            gender,
+            birthDateInput,
+        });
+
+        if (!demographics.ok) {
+            showToast("error", demographics.error);
+            return;
+        }
 
         // Resolve referral code if entered
         let referredById = undefined;
@@ -86,6 +104,8 @@ export default function OnboardingProfile() {
                 interests,
                 skills,
                 bio,
+                gender: demographics.gender,
+                date_of_birth: demographics.dateOfBirth,
                 avatar_url: avatar || undefined,
                 referred_by: referredById || undefined
             });
@@ -169,6 +189,65 @@ export default function OnboardingProfile() {
                             />
                         </View>
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
+                            <Text className="text-sm font-bold text-primary mb-3">Sesso</Text>
+                            <View className="relative">
+                                <TouchableOpacity
+                                    onPress={() => setShowGenderDropdown((current) => !current)}
+                                    className="bg-background-light px-4 py-4 rounded-2xl border border-primary/10 flex-row items-center justify-between"
+                                >
+                                    <Text className={`${gender ? "text-primary" : "text-secondary/60"} font-medium`}>
+                                        {GENDER_OPTIONS.find((option) => option.value === gender)?.label || "Seleziona il sesso"}
+                                    </Text>
+                                    <ChevronDown size={18} color={Colors.primary} />
+                                </TouchableOpacity>
+
+                                {showGenderDropdown && (
+                                    <View className="mt-2 bg-white border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+                                        {GENDER_OPTIONS.map((option, index) => {
+                                            const selected = gender === option.value;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={option.value}
+                                                    onPress={() => {
+                                                        setGender(option.value);
+                                                        setShowGenderDropdown(false);
+                                                    }}
+                                                    className={`px-4 py-4 flex-row items-center justify-between ${index < GENDER_OPTIONS.length - 1 ? "border-b border-primary/5" : ""}`}
+                                                >
+                                                    <Text className={`${selected ? "text-primary" : "text-secondary"} font-medium`}>
+                                                        {option.label}
+                                                    </Text>
+                                                    {selected ? <Check size={16} color={Colors.primary} /> : null}
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
+                            <Text className="text-sm font-bold text-primary mb-3">Data di nascita</Text>
+                            <View className="flex-row items-center gap-2">
+                                <TextInput
+                                    className="flex-1 bg-background-light p-4 rounded-2xl border border-primary/10 text-primary"
+                                    placeholder="GG/MM/AAAA"
+                                    placeholderTextColor="#9ca3af"
+                                    keyboardType="number-pad"
+                                    value={birthDateInput}
+                                    onChangeText={(value) => setBirthDateInput(normalizeBirthDateInput(value))}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowBirthDatePicker(true)}
+                                    className="w-14 h-14 rounded-2xl border border-primary/15 bg-primary/10 items-center justify-center"
+                                >
+                                    <Calendar size={20} color={Colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                            <Text className="text-[11px] text-secondary/70 mt-2 leading-relaxed">
+                                Campo obbligatorio. Devi avere almeno 18 anni.
+                            </Text>
+                        </View>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <View className="flex-row items-center gap-2 mb-3">
                                 <View className="w-8 h-8 rounded-full items-center justify-center bg-accent/10">
                                     <Gift size={15} color={Colors.accent} />
@@ -201,12 +280,19 @@ export default function OnboardingProfile() {
                             <Text className="text-white text-lg font-bold">Inizia l&apos;avventura</Text>
                         )}
                     </TouchableOpacity>
-
-                    <TouchableOpacity onPress={finishOnboarding} className="mt-4 items-center py-2">
-                        <Text className="text-secondary font-medium text-base">Salta per ora</Text>
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
+            <CalendarPicker
+                visible={showBirthDatePicker}
+                value={birthDateToIso(birthDateInput) || ""}
+                onClose={() => setShowBirthDatePicker(false)}
+                maxDate={getAdultMaxDate()}
+                minDate={new Date("1920-01-01T00:00:00")}
+                onSelect={(from) => {
+                    setBirthDateInput(isoToBirthDateLabel(from));
+                    setShowBirthDatePicker(false);
+                }}
+            />
         </ScreenWrapper>
     );
 }

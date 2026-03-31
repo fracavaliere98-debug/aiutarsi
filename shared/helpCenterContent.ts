@@ -83,6 +83,12 @@ export const COMMON_GUIDE_SECTIONS: GuideSection[] = [
     title: "Assistente AI (Gemma)",
     faqs: [
       {
+        id: "gemma_capabilities",
+        question: "Cosa puoi fare?",
+        answer:
+          "Posso aiutarti a capire come usare AiutarSì, spiegarti dove trovare attività, candidature, notifiche, calendario, community, XP e badge. Inoltre posso leggere il tuo contesto reale nell'app, per esempio attività registrate, NPO seguite, candidature e profilo, senza inventare informazioni.",
+      },
+      {
         id: "whoisgemma",
         question: "Chi è Gemma?",
         answer:
@@ -159,6 +165,12 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         question: "Come mi iscrivo a un'attività?",
         answer:
           'Cerca un\'attività che ti interessa (tramite Home, Esplora o Mappa), apri il dettaglio e tocca "Iscriviti". Sarai confermato automaticamente per il turno.',
+      },
+      {
+        id: "findact",
+        question: "Come trovo o cerco un'attività?",
+        answer:
+          'Puoi cercare attività in tre modi: dalla Home con i consigliati, da Esplora usando ricerca e filtri, oppure dalla Mappa per vedere quelle vicine. Apri il dettaglio dell’attività che ti interessa e poi tocca "Iscriviti".',
       },
       {
         id: "statusact",

@@ -39,6 +39,8 @@ type IntentName =
     | 'calendar'
     | 'community'
     | 'recommendation'
+    | 'guide'
+    | 'capabilities'
     | 'faq';
 
 type IntentScore = {
@@ -152,6 +154,39 @@ function readConversationMemory(question: string, recentUserQuestions: string[] 
     return { lastIntent: null, lastEntityType: null };
 }
 
+function hasPersonalContextMarkers(normalizedQuestion: string) {
+    return hasAny(normalizedQuestion, [
+        /\b(io|mio|mia|miei|mie|mi|sono|ho)\b/,
+        /(iscritt|registrat|candidat|seguo|profilo|mie attivit|miei enti|mio calendario)/,
+    ]);
+}
+
+function isContextLookupQuestion(normalizedQuestion: string, role?: string | null) {
+    if (role === 'NPO') {
+        return hasAny(normalizedQuestion, [
+            /(ho pubblicat|quali attivit ho|chi e in attesa|chi e gia approvato|volontari approvati|volontari in attesa)/,
+        ]);
+    }
+
+    return hasAny(normalizedQuestion, [
+        /(a quali attivit sono iscritt|dove vedo le attivit a cui sono registrat|quali enti seguo|come stanno le mie candidature|cosa ho in calendario|cosa c e nel mio profilo|faccio parte di)/,
+    ]);
+}
+
+function isGuideQuestion(normalizedQuestion: string) {
+    return hasAny(normalizedQuestion, [
+        /(come trovo|come cerco|dove cerco|come funziona|come faccio a trovare|dove trovo)/,
+        /(esplora|mappa|home|consigliati|smart match)/,
+        /(come cambio password|come elimino|chi vede|come creo|come pubblico|come mi iscrivo|posso usare)/,
+    ]);
+}
+
+function isCapabilityQuestion(normalizedQuestion: string) {
+    return hasAny(normalizedQuestion, [
+        /(cosa puoi fare|come puoi aiutarmi|in cosa mi puoi aiutare|cosa sai fare)/,
+    ]);
+}
+
 function scoreIntent(question: string, role: string | null | undefined, recentUserQuestions: string[] = []): IntentScore[] {
     const normalizedQuestion = normalizeText(question);
     const memory = readConversationMemory(question, recentUserQuestions);
@@ -167,8 +202,13 @@ function scoreIntent(question: string, role: string | null | undefined, recentUs
         calendar: { name: 'calendar', score: 0, reasons: [] },
         community: { name: 'community', score: 0, reasons: [] },
         recommendation: { name: 'recommendation', score: 0, reasons: [] },
+        guide: { name: 'guide', score: 0, reasons: [] },
+        capabilities: { name: 'capabilities', score: 0, reasons: [] },
         faq: { name: 'faq', score: 0, reasons: [] },
     };
+
+    const personalContext = hasPersonalContextMarkers(normalizedQuestion);
+    const contextLookup = isContextLookupQuestion(normalizedQuestion, role);
 
     if (hasAny(normalizedQuestion, [/(attivit|iscritt|registrat|impegn|weekend|prossim|disponibil)/])) {
         addScore(intents, 'activities', 8, 'activity keywords');
@@ -179,6 +219,9 @@ function scoreIntent(question: string, role: string | null | undefined, recentUs
     }
     if (hasAny(normalizedQuestion, [/(candidat|domand|richiest|approvat|accettat|rifiutat|pending)/])) {
         addScore(intents, 'applications', 8, 'application keywords');
+    }
+    if (hasAny(normalizedQuestion, [/(di quale ente faccio gia parte|di quale ente faccio parte|faccio gia parte|faccio parte di|mia candidatura)/])) {
+        addScore(intents, 'applications', 10, 'membership/application phrasing');
     }
     if (hasAny(normalizedQuestion, [/(segu|seguo|follower|enti segu|npo segu|associazioni segu|quali enti|quali npo|associazioni seguite)/])) {
         addScore(intents, 'followed_npos', 10, 'follow keywords');
@@ -198,6 +241,14 @@ function scoreIntent(question: string, role: string | null | undefined, recentUs
     }
     if (hasAny(normalizedQuestion, [/(consigli|da dove parto|cosa posso fare|cosa mi consigli)/])) {
         addScore(intents, 'recommendation', 9, 'recommendation keywords');
+    }
+    if (isGuideQuestion(normalizedQuestion)) {
+        addScore(intents, 'guide', 11, 'guide keywords');
+        addScore(intents, 'faq', 4, 'guide faq overlap');
+    }
+    if (isCapabilityQuestion(normalizedQuestion)) {
+        addScore(intents, 'capabilities', 14, 'capabilities keywords');
+        addScore(intents, 'faq', 4, 'capabilities faq overlap');
     }
 
     if (role === 'NPO' && hasAny(normalizedQuestion, [/(attivit|pubblicat|opportunit|progett)/])) {
@@ -226,6 +277,16 @@ function scoreIntent(question: string, role: string | null | undefined, recentUs
 
     if (role === 'NPO' && hasAny(normalizedQuestion, [/(chi)/]) && hasAny(normalizedQuestion, [/(approvat|attesa)/])) {
         addScore(intents, 'npo_volunteers', 4, 'npo who-is-approved phrasing');
+    }
+    if (!contextLookup && (intents.guide.score > 0 || intents.capabilities.score > 0 || !personalContext)) {
+        addScore(intents, 'faq', 2, 'generic question prefers guides');
+        if (intents.guide.score > 0) addScore(intents, 'guide', 4, 'generic guide preference');
+        if (intents.capabilities.score > 0) addScore(intents, 'capabilities', 4, 'generic capability preference');
+        if (intents.activities.score > 0) addScore(intents, 'activities', -5, 'avoid personal activity branch for generic how-to');
+        if (intents.applications.score > 0) addScore(intents, 'applications', -4, 'avoid personal applications branch for generic how-to');
+        if (intents.followed_npos.score > 0) addScore(intents, 'followed_npos', -3, 'avoid personal follows branch for generic how-to');
+        if (intents.profile.score > 0) addScore(intents, 'profile', -6, 'avoid personal profile branch for product guidance');
+        if (intents.npo_activities.score > 0) addScore(intents, 'npo_activities', -6, 'avoid npo activity state branch for product guidance');
     }
 
     return Object.values(intents).sort((a, b) => b.score - a.score);
@@ -390,6 +451,7 @@ export function buildContextAwareHelpAnswer(
     const compositeQuestion = [...recentUserQuestions.slice(-3), question].join(' ');
     const rankedIntents = scoreIntent(question, role, recentUserQuestions);
     const topIntent = rankedIntents[0]?.name || 'faq';
+    const normalizedQuestion = normalizeText(question);
     const registeredLabels = context.registeredActivities.map((activity) => {
         const dateLabel = formatDateLabel(activity.dateStart);
         return dateLabel
@@ -402,6 +464,26 @@ export function buildContextAwareHelpAnswer(
     const npoActivityTitles = context.npoActivities.map((activity) => activity.title);
     const pendingVolunteerNames = context.pendingVolunteers.map((volunteer) => volunteer.name);
     const approvedVolunteerNames = context.approvedVolunteers.map((volunteer) => volunteer.name);
+
+    if (topIntent === 'capabilities') {
+        return "Posso aiutarti in due modi: spiegarti come usare AiutarSì e leggere il tuo contesto reale nell'app. Per esempio posso dirti come trovare attività, leggere candidature, NPO seguite, profilo, calendario, notifiche, community, XP e badge. Se vuoi, puoi chiedermi anche \"Come trovo un'attività?\" oppure \"Che cosa c'è nel mio profilo?\".";
+    }
+
+    if (topIntent === 'guide') {
+        if (role !== 'NPO' && /(come trovo|come cerco|dove cerco|attivit|esplora|mappa)/.test(normalizedQuestion)) {
+            return 'Puoi cercare attività dalla Home con i consigliati, da Esplora usando ricerca e filtri, oppure dalla Mappa per vedere quelle vicine. Quando ne trovi una interessante, apri il dettaglio e tocca "Iscriviti".';
+        }
+        const docs = buildSearchDocs(context, role);
+        const guideMatch = docs
+            .map((doc) => ({ doc, score: scoreTextMatch(question, `${doc.title}. ${doc.body}`) }))
+            .filter((item) => item.score > 0)
+            .sort((a, b) => b.score - a.score)[0];
+
+        if (guideMatch) {
+            return `${guideMatch.doc.answer}\n\nSe vuoi, posso anche dirti cosa vedi adesso nel tuo profilo o nelle tue attività.`;
+        }
+
+    }
 
     if (role === 'NPO' && topIntent === 'npo_activities') {
         if (!npoActivityTitles.length) {

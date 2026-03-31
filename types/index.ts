@@ -81,6 +81,8 @@ export type AppUser = Omit<User,
     location_lat?: number | null;
     location_lng?: number | null;
     public_email?: string | null;
+    gender?: string | null;
+    date_of_birth?: string | null;
     profile_completed: boolean;
     last_seen_at?: string | null;
     expo_push_token?: string | null;

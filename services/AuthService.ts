@@ -186,6 +186,8 @@ export class AuthService {
             phone: metadata.phone,
             website: metadata.website,
             public_email: metadata.publicEmail || metadata.public_email,
+            gender: metadata.gender,
+            date_of_birth: metadata.date_of_birth,
             profile_completed: metadata.profile_completed || metadata.profileCompleted || false,
             // Legacy aliases
             publicEmail: metadata.publicEmail || metadata.public_email,
@@ -499,6 +501,8 @@ export class AuthService {
             profile_completed: profile.profile_completed || false,
             isVerified: profile.is_verified,
             publicEmail: profile.public_email,
+            gender: profile.gender,
+            date_of_birth: profile.date_of_birth,
             lastSeenAt: profile.last_seen_at,
             createdAt: profile.created_at,
             badges: profile.badges || [],
@@ -748,7 +752,7 @@ export class AuthService {
         const profileTableFields = [
             'full_name', 'avatar_url', 'bio', 'npo_name', 'company_name',
             'phone', 'website', 'location_string', 'location_lat', 'location_lng',
-            'public_email', 'profile_completed', 'impact_points', 'is_verified',
+            'public_email', 'gender', 'date_of_birth', 'profile_completed', 'impact_points', 'is_verified',
             'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
             'allow_calls', 'expo_push_token', 'deletion_requested_at',
             'npo_vat_id', 'npo_website', 'referent_name', 'referent_role', 'referent_avatar_url',
@@ -901,7 +905,11 @@ export class AuthService {
                     console.log("[DEBUG] AuthService: background rehydrate completed");
                 }
             }).catch((rehydrateError) => {
-                console.warn("[DEBUG] AuthService: background rehydrate skipped/fail", this._formatErrorDetails(rehydrateError));
+                if (this._isTimeoutError(rehydrateError, 'getCurrentUser.afterUpdate')) {
+                    console.log("[DEBUG] AuthService: background rehydrate skipped timeout");
+                } else {
+                    console.warn("[DEBUG] AuthService: background rehydrate skipped/fail", this._formatErrorDetails(rehydrateError));
+                }
             });
 
             console.log("[DEBUG] AuthService: updateProfile finished in", Date.now() - startedAt, "ms");
@@ -1096,7 +1104,7 @@ export class AuthService {
         const metadataFields = [
             'full_name', 'avatar_url', 'bio', 'npo_name', 'company_name',
             'phone', 'website', 'location_string', 'location_lat', 'location_lng',
-            'public_email', 'profile_completed', 'impact_points', 'is_verified',
+            'public_email', 'gender', 'date_of_birth', 'profile_completed', 'impact_points', 'is_verified',
             'profile_public', 'show_email', 'show_volunteering_history', 'volunteer_list_visible',
             'allow_calls', 'expo_push_token', 'deletion_requested_at',
             'npo_vat_id', 'npo_website', 'referent_name', 'referent_role', 'referent_avatar_url',

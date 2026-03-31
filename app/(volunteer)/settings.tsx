@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
-import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock, ChartColumnIncreasing } from 'lucide-react-native';
+import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock, ChartColumnIncreasing, Calendar, ChevronDown, Check } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -18,6 +18,15 @@ import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
 import { storageService } from "../../services/StorageService";
+import { CalendarPicker } from "../../components/CalendarPicker";
+import {
+    GENDER_OPTIONS,
+    normalizeBirthDateInput,
+    birthDateToIso,
+    isoToBirthDateLabel,
+    validateVolunteerDemographics,
+    getAdultMaxDate,
+} from "../../utils/profileDemographics";
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images
@@ -45,6 +54,10 @@ export default function VolunteerSettings() {
     const [phone, setPhone] = useState(user?.phone || "");
     const [avatar, setAvatar] = useState<string | null>(null);
     const [locationInput, setLocationInput] = useState(user?.locationString || "Rilevamento in corso...");
+    const [gender, setGender] = useState(user?.gender || "");
+    const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+    const [birthDateInput, setBirthDateInput] = useState(isoToBirthDateLabel(user?.date_of_birth));
+    const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
     const [isAvatarUploading, setIsAvatarUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -147,6 +160,9 @@ export default function VolunteerSettings() {
             setLastName(parts.slice(1).join(" "));
             setBio(user.bio || "");
             setPhone(user.phone || "");
+            setGender(user.gender || "");
+            setShowGenderDropdown(false);
+            setBirthDateInput(isoToBirthDateLabel(user.date_of_birth));
             if (user.locationString) setLocationInput(user.locationString);
         }
     }, [user]);
@@ -214,6 +230,19 @@ export default function VolunteerSettings() {
                 throw new Error("Utente non disponibile.");
             }
 
+            const currentGender = user?.gender || "";
+            const currentBirthDate = user?.date_of_birth || "";
+            const demographics = validateVolunteerDemographics({
+                gender,
+                birthDateInput,
+                existingGender: currentGender,
+                existingDateOfBirth: currentBirthDate,
+            });
+
+            if (!demographics.ok) {
+                throw new Error(demographics.error);
+            }
+
             let avatarUrl = user.avatar_url || user.avatar || null;
             if (avatar && (avatar.startsWith('file://') || avatar.startsWith('content://') || avatar.startsWith('data:'))) {
                 avatarUrl = await storageService.uploadAvatar(user.id, avatar);
@@ -227,6 +256,8 @@ export default function VolunteerSettings() {
                 full_name: fullName,
                 bio,
                 phone,
+                ...(currentGender ? {} : { gender: demographics.gender }),
+                ...(currentBirthDate ? {} : { date_of_birth: demographics.dateOfBirth }),
                 avatar_url: avatarUrl,
                 name: fullName,
             });
@@ -562,17 +593,103 @@ export default function VolunteerSettings() {
                                 </View>
                             </View>
 
+                            <View className="flex-row gap-3">
+                            <View style={{ flex: 1 }}>
+                                <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Sesso</Text>
+                                <View className={`rounded-2xl shadow-sm border ${user?.gender ? "bg-gray-100 border-gray-100" : "bg-gray-50 border-gray-100"} overflow-hidden`}>
+                                    {user?.gender ? (
+                                        <View className="p-4">
+                                            <Text className="text-secondary font-medium text-base">
+                                                {GENDER_OPTIONS.find((option) => option.value === user.gender)?.label || user.gender}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <View className="relative">
+                                            <TouchableOpacity
+                                                onPress={() => setShowGenderDropdown((current) => !current)}
+                                                className="px-4 py-4 flex-row items-center justify-between"
+                                                style={{ minHeight: 56 }}
+                                            >
+                                                <Text className={`${gender ? "text-primary" : "text-secondary/60"} font-medium`}>
+                                                    {GENDER_OPTIONS.find((option) => option.value === gender)?.label || "Seleziona il sesso"}
+                                                </Text>
+                                                <ChevronDown size={18} color={Colors.primary} />
+                                            </TouchableOpacity>
+                                            {showGenderDropdown && (
+                                                <View className="border-t border-primary/5 bg-white">
+                                                    {GENDER_OPTIONS.map((option, index) => {
+                                                        const selected = gender === option.value;
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={option.value}
+                                                                onPress={() => {
+                                                                    setGender(option.value);
+                                                                    setShowGenderDropdown(false);
+                                                                }}
+                                                                className={`px-4 py-4 flex-row items-center justify-between ${index < GENDER_OPTIONS.length - 1 ? "border-b border-primary/5" : ""}`}
+                                                            >
+                                                                <Text className={`${selected ? "text-primary" : "text-secondary"} font-medium`}>
+                                                                    {option.label}
+                                                                </Text>
+                                                                {selected ? <Check size={16} color={Colors.primary} /> : null}
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                                <Text className="text-secondary/60 text-xs mt-2 ml-1">
+                                    {user?.gender ? "Questo dato non può più essere modificato." : "Questo dato potrà essere salvato una sola volta."}
+                                </Text>
+                            </View>
+
+                            <View style={{ flex: 1 }}>
+                                <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Data di nascita</Text>
+                                <View
+                                    className={`px-4 rounded-2xl shadow-sm border ${user?.date_of_birth ? "bg-gray-100 border-gray-100" : "bg-gray-50 border-gray-100"}`}
+                                    style={{ minHeight: 56, justifyContent: 'center', paddingVertical: 12 }}
+                                >
+                                    {user?.date_of_birth ? (
+                                        <Text className="text-secondary font-medium" style={{ lineHeight: 20 }}>{isoToBirthDateLabel(user.date_of_birth)}</Text>
+                                    ) : (
+                                        <View className="flex-row items-center gap-2">
+                                            <TextInput
+                                                value={birthDateInput}
+                                                onChangeText={(value) => setBirthDateInput(normalizeBirthDateInput(value))}
+                                                keyboardType="number-pad"
+                                                placeholder="GG/MM/AAAA"
+                                                placeholderTextColor="#9ca3af"
+                                                className="flex-1 text-primary font-medium p-0"
+                                                style={{ paddingVertical: 0, lineHeight: 20, fontSize: 16 }}
+                                            />
+                                            <TouchableOpacity
+                                                onPress={() => setShowBirthDatePicker(true)}
+                                                className="w-8 h-8 rounded-lg border border-primary/15 bg-primary/10 items-center justify-center"
+                                            >
+                                                <Calendar size={15} color={Colors.primary} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text className="text-secondary/60 text-xs mt-2 ml-1">
+                                    {user?.date_of_birth ? "Questo dato non può più essere modificato." : "Devi avere almeno 18 anni. Una volta salvata, non potrai più modificarla."}
+                                </Text>
+                            </View>
+                            </View>
+
                             <View>
-                                <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Bio</Text>
-                                <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100">
+                                <Text className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-2 ml-1">Biografia</Text>
+                                <View className="p-4 rounded-2xl shadow-sm border bg-gray-50 border-gray-100 min-h-[160px]">
                                     <TextInput
                                         value={bio}
                                         onChangeText={setBio}
                                         multiline
-                                        numberOfLines={3}
+                                        numberOfLines={5}
                                         placeholder="Raccontaci qualcosa di te..."
                                         placeholderTextColor="#9ca3af"
-                                        className="text-base text-primary font-medium p-0"
+                                        className="text-base text-primary font-medium p-0 min-h-[128px]"
                                         verticalAlign="top"
                                     />
                                 </View>
@@ -605,6 +722,17 @@ export default function VolunteerSettings() {
                             </View>
                         </View>
                     </ScrollView>
+                    <CalendarPicker
+                        visible={showBirthDatePicker}
+                        value={birthDateToIso(birthDateInput) || ""}
+                        onClose={() => setShowBirthDatePicker(false)}
+                        maxDate={getAdultMaxDate()}
+                        minDate={new Date("1920-01-01T00:00:00")}
+                        onSelect={(from) => {
+                            setBirthDateInput(isoToBirthDateLabel(from));
+                            setShowBirthDatePicker(false);
+                        }}
+                    />
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </Modal>

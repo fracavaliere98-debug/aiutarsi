@@ -7,9 +7,9 @@
  *   Calls onSelect(fromDate, toDate).
  * All dates are "YYYY-MM-DD" strings.
  */
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, Platform, ScrollView } from 'react-native';
+import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 
 export interface CalendarPickerProps {
@@ -23,6 +23,7 @@ export interface CalendarPickerProps {
     onSelect: (from: string, to: string) => void;
     onClose: () => void;
     minDate?: Date;
+    maxDate?: Date;
 }
 
 const MONTHS_IT = [
@@ -41,10 +42,11 @@ function parseDate(s: string) { return s ? new Date(s) : null; }
 
 export function CalendarPicker({
     visible, value = '', valueTo = '', rangeMode = false,
-    onSelect, onClose, minDate,
+    onSelect, onClose, minDate, maxDate,
 }: CalendarPickerProps) {
-    const today = new Date();
+    const today = useMemo(() => new Date(), []);
     const min = minDate || today;
+    const max = maxDate || null;
 
     const initDate = parseDate(value) || today;
     const [viewYear, setViewYear] = useState(initDate.getFullYear());
@@ -55,6 +57,18 @@ export function CalendarPicker({
     const [pendingTo, setPendingTo] = useState<string>(valueTo);
     // Track whether we're picking start or end
     const [pickingEnd, setPickingEnd] = useState<boolean>(false);
+    const [showMonthYearPicker, setShowMonthYearPicker] = useState(false);
+
+    useEffect(() => {
+        if (!visible) return;
+        const fresh = parseDate(value) || today;
+        setViewYear(fresh.getFullYear());
+        setViewMonth(fresh.getMonth());
+        setPendingFrom(value);
+        setPendingTo(valueTo);
+        setPickingEnd(false);
+        setShowMonthYearPicker(false);
+    }, [visible, value, valueTo, today]);
 
     function prevMonth() {
         if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
@@ -97,7 +111,14 @@ export function CalendarPicker({
         setPendingFrom(value);
         setPendingTo(valueTo);
         setPickingEnd(false);
+        setShowMonthYearPicker(false);
         onClose();
+    }
+
+    function jumpToMonthYear(month: number, year: number) {
+        setViewMonth(month);
+        setViewYear(year);
+        setShowMonthYearPicker(false);
     }
 
     function isDisabled(day: number) {
@@ -105,7 +126,13 @@ export function CalendarPicker({
         d.setHours(0, 0, 0, 0);
         const m = new Date(min);
         m.setHours(0, 0, 0, 0);
-        return d < m;
+        if (d < m) return true;
+        if (max) {
+            const maxCopy = new Date(max);
+            maxCopy.setHours(0, 0, 0, 0);
+            if (d > maxCopy) return true;
+        }
+        return false;
     }
 
     const ds = (day: number) => dateStr(viewYear, viewMonth, day);
@@ -136,6 +163,16 @@ export function CalendarPicker({
         const d = new Date(s);
         return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
     };
+
+    const yearOptions = useMemo(() => {
+        const minYear = min.getFullYear();
+        const maxYear = (max || today).getFullYear();
+        const years: number[] = [];
+        for (let year = maxYear; year >= minYear; year -= 1) {
+            years.push(year);
+        }
+        return years;
+    }, [min, max, today]);
 
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
@@ -172,13 +209,86 @@ export function CalendarPicker({
                         <TouchableOpacity onPress={prevMonth} style={{ padding: 8, borderRadius: 20, backgroundColor: '#f1f5f9' }}>
                             <ChevronLeft size={18} color={Colors.primary} />
                         </TouchableOpacity>
-                        <Text style={{ flex: 1, textAlign: 'center', fontWeight: '900', fontSize: 16, color: Colors.primary }}>
-                            {MONTHS_IT[viewMonth]} {viewYear}
-                        </Text>
+                        <TouchableOpacity
+                            onPress={() => setShowMonthYearPicker((current) => !current)}
+                            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}
+                        >
+                            <Text style={{ fontWeight: '900', fontSize: 16, color: Colors.primary }}>
+                                {MONTHS_IT[viewMonth]} {viewYear}
+                            </Text>
+                            <ChevronDown size={16} color={Colors.primary} />
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={nextMonth} style={{ padding: 8, borderRadius: 20, backgroundColor: '#f1f5f9' }}>
                             <ChevronRight size={18} color={Colors.primary} />
                         </TouchableOpacity>
                     </View>
+
+                    {showMonthYearPicker && (
+                        <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
+                            <View style={{ backgroundColor: '#f8fafc', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 10 }}>
+                                    Scegli mese e anno
+                                </Text>
+                                <View style={{ flexDirection: 'row', gap: 12, minHeight: 268 }}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 8 }}>Mese</Text>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                            {MONTHS_IT.map((monthLabel, monthIndex) => {
+                                                const selected = monthIndex === viewMonth;
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={monthLabel}
+                                                        onPress={() => jumpToMonthYear(monthIndex, viewYear)}
+                                                        style={{
+                                                            width: '31%',
+                                                            paddingVertical: 10,
+                                                            borderRadius: 14,
+                                                            backgroundColor: selected ? `${Colors.primary}18` : 'white',
+                                                            borderWidth: 1,
+                                                            borderColor: selected ? `${Colors.primary}55` : '#e2e8f0',
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
+                                                        <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? Colors.primary : '#475569' }}>
+                                                            {monthLabel.slice(0, 3)}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                    <View style={{ width: 96, minHeight: 268 }}>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 8 }}>Anno</Text>
+                                        <ScrollView style={{ maxHeight: 268 }} showsVerticalScrollIndicator={false}>
+                                            <View style={{ gap: 8 }}>
+                                                {yearOptions.map((year) => {
+                                                    const selected = year === viewYear;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={year}
+                                                            onPress={() => jumpToMonthYear(viewMonth, year)}
+                                                            style={{
+                                                                paddingVertical: 10,
+                                                                borderRadius: 14,
+                                                                backgroundColor: selected ? `${Colors.primary}18` : 'white',
+                                                                borderWidth: 1,
+                                                                borderColor: selected ? `${Colors.primary}55` : '#e2e8f0',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        >
+                                                            <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? Colors.primary : '#475569' }}>
+                                                                {year}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+                                        </ScrollView>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    )}
 
                     {/* Day names */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 4 }}>
