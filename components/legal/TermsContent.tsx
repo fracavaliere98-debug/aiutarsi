@@ -25,7 +25,7 @@ export function TermsContent() {
     {
       title: "1. Identita del prestatore del servizio",
       paragraphs: [
-        "Ai sensi del D.Lgs. 9 aprile 2003, n. 70, il prestatore del servizio deve essere identificato in modo diretto e permanente. Prima della pubblicazione questi campi devono essere completati con dati reali: ragione sociale o nome del titolare [DA COMPLETARE], sede legale [DA COMPLETARE], codice fiscale e/o partita IVA [DA COMPLETARE], iscrizione REA o Registro delle Imprese se applicabile [DA COMPLETARE], PEC [DA COMPLETARE], indirizzo email di contatto diretto [DA COMPLETARE].",
+        "Ai sensi del D.Lgs. 9 aprile 2003, n. 70, il prestatore del servizio deve essere identificato in modo diretto e permanente. Prima della pubblicazione questi campi devono essere completati con dati reali: ragione sociale o nome del titolare [DA COMPLETARE], sede legale [DA COMPLETARE], codice fiscale e/o partita IVA [DA COMPLETARE], iscrizione REA o Registro delle Imprese se applicabile [DA COMPLETARE], PEC [DA COMPLETARE], indirizzo email di contatto diretto aiutarsi.it@gmail.com.",
         "Se l'attivita e soggetta a licenze, autorizzazioni o vigilanza settoriale, devono essere indicati anche gli estremi dell'autorita competente. In assenza di tali dati, la pagina non puo considerarsi completa sotto il profilo informativo.",
       ],
     },
@@ -89,7 +89,7 @@ export function TermsContent() {
       title: "10. Moderazione, restrizioni e segnalazioni",
       paragraphs: [
         "Il gestore puo adottare misure ragionevoli e proporzionate per contrastare contenuti illeciti, abusi della piattaforma, violazioni dei presenti termini, comportamenti rischiosi per la comunita o per adempiere a obblighi normativi, inclusi avvisi, limitazioni di visibilita, rimozione di contenuti, sospensione temporanea o chiusura dell'account.",
-        "Gli utenti possono inviare segnalazioni relative a contenuti o condotte potenzialmente illeciti o contrari ai presenti termini tramite il Centro assistenza o scrivendo a support@aiutarsi.it, fermo restando che l'indirizzo legale o dedicato alle segnalazioni DSA deve essere indicato in modo espresso se diverso [DA COMPLETARE]. Quando richiesto dalla normativa applicabile, il gestore fornisce una motivazione della decisione adottata e consente i rimedi previsti dalla legge.",
+        "Gli utenti possono inviare segnalazioni relative a contenuti o condotte potenzialmente illeciti o contrari ai presenti termini tramite il Centro assistenza o scrivendo a aiutarsi.it@gmail.com, fermo restando che l'indirizzo legale o dedicato alle segnalazioni DSA deve essere indicato in modo espresso se diverso [DA COMPLETARE]. Quando richiesto dalla normativa applicabile, il gestore fornisce una motivazione della decisione adottata e consente i rimedi previsti dalla legge.",
       ],
     },
     {
@@ -175,7 +175,9 @@ export function TermsContent() {
         I presenti termini disciplinano l&apos;accesso e l&apos;uso dell&apos;app AiutarSi e dei
         servizi digitali collegati. Alcuni dati obbligatori per legge non risultano
         presenti nel repository e sono quindi indicati come [DA COMPLETARE]. Devono
-        essere sostituiti con informazioni reali prima della pubblicazione.
+        essere sostituiti con informazioni reali prima della pubblicazione. Per richieste
+        di contatto e supporto, l&apos;indirizzo operativo indicato nell&apos;app è
+        aiutarsi.it@gmail.com.
       </Text>
 
       {sections.map((section) => (

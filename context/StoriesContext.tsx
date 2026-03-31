@@ -5,7 +5,6 @@ import { Story } from '../types/stories';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
 import { moderateCommunityContent } from '../utils/communityModeration';
-import { triggerNotificationJobs } from '../utils/notificationJobs';
 
 interface StoriesContextType {
     stories: Story[];
@@ -99,8 +98,6 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
             expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         });
         if (error) throw error;
-
-        if (user.role === 'NPO') triggerNotificationJobs({ minIntervalMs: 0 });
 
         await fetchStories();
     };

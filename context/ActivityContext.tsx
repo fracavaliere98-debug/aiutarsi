@@ -6,7 +6,6 @@ import { useNotifications } from "./NotificationContext";
 import { useGamification } from "./GamificationContext";
 import { activityService } from "../services/ActivityService";
 import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
-import { triggerNotificationJobs } from "../utils/notificationJobs";
 
 export interface VolunteerStats {
     totalHours: number;
@@ -178,7 +177,6 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
                 matchPercentage: 0,
                 skills: activityData.skills || [],
             });
-            triggerNotificationJobs({ minIntervalMs: 0 });
             return newAct.id as string;
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities_raw'] })
@@ -193,7 +191,6 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: Array.from(new Set([...a.iscritti, user!.id])) } : a));
             const currentActivity = rawActivities.find(a => a.id === activityId);
-            triggerNotificationJobs({ minIntervalMs: 0 });
             void addNotification({
                 userId: currentActivity?.npoId || "",
                 type: "VOLUNTEER_ENROLLED",
@@ -214,7 +211,6 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             // Optimistic update
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a));
-            triggerNotificationJobs({ minIntervalMs: 0 });
             addNotification({ userId: user!.id, type: "INFO", title: "Iscrizione annullata", message: "La tua iscrizione è stata annullata con successo.", activityId });
             return true;
         },

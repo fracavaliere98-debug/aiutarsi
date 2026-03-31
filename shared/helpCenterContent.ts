@@ -92,7 +92,7 @@ export const COMMON_GUIDE_SECTIONS: GuideSection[] = [
         id: "accuracy",
         question: "Le risposte di Gemma sono sempre corrette?",
         answer:
-          "Gemma risponde basandosi esclusivamente sulle informazioni ufficiali di AiutarSì e sui dati disponibili nell'app. Se non conosce una risposta, ti inviterà a consultare le guide o a contattare il supporto, senza inventare informazioni.",
+          "Gemma risponde basandosi esclusivamente sulle informazioni ufficiali di AiutarSì e sui dati disponibili nell'app. Se non conosce una risposta, ti inviterà a consultare le guide o a scrivere a aiutarsi.it@gmail.com, senza inventare informazioni.",
       },
     ],
   },

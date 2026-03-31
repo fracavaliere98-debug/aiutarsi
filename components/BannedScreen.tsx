@@ -11,7 +11,7 @@ interface BannedScreenProps {
 
 export default function BannedScreen({ reason, reportId, onLogout }: BannedScreenProps) {
   const handleContact = () => {
-    Linking.openURL(`mailto:support@aiutarsi.it?subject=Account%20Sospeso&body=ID%20Segnalazione:%20${reportId || 'N/D'}`);
+    Linking.openURL(`mailto:aiutarsi.it@gmail.com?subject=Account%20Sospeso&body=ID%20Segnalazione:%20${reportId || 'N/D'}`);
   };
 
   const displayReportId = reportId ? (reportId.length > 8 ? reportId.substring(0, 8).toUpperCase() : reportId.toUpperCase()) : null;
@@ -41,7 +41,7 @@ export default function BannedScreen({ reason, reportId, onLogout }: BannedScree
         )}
         
         <Text style={styles.helpText}>
-          Se ritieni che ci sia stato un errore, puoi contattare il supporto.
+          Se ritieni che ci sia stato un errore, puoi contattare il supporto scrivendo a aiutarsi.it@gmail.com.
         </Text>
 
         {displayReportId && (

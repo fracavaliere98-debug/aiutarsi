@@ -5,7 +5,6 @@ import { CommunityPost, PostReaction, ReactionType } from '../types/community';
 import { useAuth } from './AuthContext';
 import { storageService } from '../services/StorageService';
 import { moderateCommunityContent } from '../utils/communityModeration';
-import { triggerNotificationJobs } from '../utils/notificationJobs';
 
 interface CommunityContextType {
     posts: CommunityPost[];
@@ -177,8 +176,6 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         });
 
         if (error) throw error;
-
-        if (user.role === 'NPO') triggerNotificationJobs({ minIntervalMs: 0 });
 
         await fetchFeed();
     };

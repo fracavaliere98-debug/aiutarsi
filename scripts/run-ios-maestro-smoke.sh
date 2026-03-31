@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SIMULATOR_NAME="${IOS_SMOKE_SIMULATOR:-iPhone 17}"
 METRO_PORT="${RCT_METRO_PORT:-8081}"
 METRO_LOG="${ROOT_DIR}/.expo/metro-smoke.log"
+DEV_CLIENT_URL="${IOS_SMOKE_DEV_CLIENT_URL:-com.aiutarsi.app://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A${METRO_PORT}}"
 
 export PATH="/opt/homebrew/opt/openjdk/bin:/Users/francescocavaliere/.maestro/bin:$PATH"
 
@@ -98,8 +99,11 @@ open -a Simulator >/dev/null 2>&1 || true
 xcrun simctl boot "$SIMULATOR_UDID" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$SIMULATOR_UDID" -b
 
+echo "Resetting installed app state..."
+xcrun simctl uninstall "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
+
 echo "Starting Expo dev server on port $METRO_PORT..."
-npx expo start --dev-client --port "$METRO_PORT" --non-interactive >"$METRO_LOG" 2>&1 &
+npx expo start --dev-client --clear --port "$METRO_PORT" --non-interactive >"$METRO_LOG" 2>&1 &
 METRO_PID=$!
 
 for _ in {1..30}; do
@@ -114,8 +118,12 @@ npx expo run:ios --device "$SIMULATOR_UDID" --no-bundler
 
 echo "Launching app..."
 xcrun simctl launch "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
+xcrun simctl openurl "$SIMULATOR_UDID" "$DEV_CLIENT_URL" >/dev/null 2>&1 || true
+sleep 3
 
 for flow in "${FLOWS[@]}"; do
+  xcrun simctl openurl "$SIMULATOR_UDID" "$DEV_CLIENT_URL" >/dev/null 2>&1 || true
+  sleep 2
   echo "Running Maestro flow: $flow"
   maestro test --device "$SIMULATOR_UDID" -e APP_ID="$APP_ID" "$flow"
 done

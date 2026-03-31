@@ -89,7 +89,19 @@ export function CommunityHero({
                                 {badgeLabel}
                             </Text>
                         </View>
-                    ) : <View />}
+                    ) : (
+                        <Text
+                            style={{
+                                color: 'rgba(255,255,255,0.76)',
+                                fontSize: 11,
+                                fontWeight: '900',
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.8,
+                            }}
+                        >
+                            {eyebrow}
+                        </Text>
+                    )}
 
                     {onClose ? (
                         <TouchableOpacity
@@ -113,18 +125,20 @@ export function CommunityHero({
 
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                     <View style={{ flex: 1 }}>
-                        <Text
-                            style={{
-                                color: 'rgba(255,255,255,0.76)',
-                                fontSize: 11,
-                                fontWeight: '900',
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.8,
-                                marginBottom: 8,
-                            }}
-                        >
-                            {eyebrow}
-                        </Text>
+                        {badgeLabel ? (
+                            <Text
+                                style={{
+                                    color: 'rgba(255,255,255,0.76)',
+                                    fontSize: 11,
+                                    fontWeight: '900',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: 0.8,
+                                    marginBottom: 8,
+                                }}
+                            >
+                                {eyebrow}
+                            </Text>
+                        ) : null}
                         <Text
                             style={{
                                 color: 'white',

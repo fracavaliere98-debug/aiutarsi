@@ -10,17 +10,20 @@ appId: ${APP_ID}
 
 ---
 
-- launchApp:
-    clearState: true
 - waitForAnimationToEnd
 
-# Se siamo sulla Landing Page, naviga al login (opzionale, ignorato se non visibile)
+- extendedWaitUntil:
+    visible:
+      id: "btn-landing-login"
+    timeout: 20000
+
 - tapOn:
     id: "btn-landing-login"
-    optional: true
 
-- assertVisible:
-    id: "input-email"
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 15000
 
 # Inserisci le credenziali
 - tapOn:

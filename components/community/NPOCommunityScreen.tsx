@@ -40,13 +40,7 @@ export function NPOCommunityScreen({
     const { user, getNPOFollowers } = useAuth();
     const { applications } = useApplications();
     const [draftLoadingId, setDraftLoadingId] = useState<string | null>(null);
-    const [todayDraft, setTodayDraft] = useState<CommunityPostDraftResult | null>(null);
     const [showHero, setShowHero] = useState(true);
-
-    const volunteerVoices = useMemo(
-        () => posts.filter((post) => post.author?.role === 'VOLUNTEER').slice(0, 2),
-        [posts]
-    );
 
     const npoVoices = useMemo(
         () => posts.filter((post) => post.author?.role === 'NPO' && post.author_id !== user?.id).slice(0, 2),
@@ -92,35 +86,6 @@ export function NPOCommunityScreen({
         };
     }, [activities, applications, getNPOFollowers, myOpenActivities.length, user]);
 
-    React.useEffect(() => {
-        let cancelled = false;
-
-        gemmaService.getCommunityPostDraft({
-            purpose: recentCompletedActivity ? 'recent_recap' : 'community_update',
-            activity: recentCompletedActivity ? {
-                id: recentCompletedActivity.id,
-                title: recentCompletedActivity.title,
-                description: recentCompletedActivity.description,
-                dateTime: recentCompletedActivity.dateTime,
-                location: recentCompletedActivity.location?.address,
-                npoName: recentCompletedActivity.npoName,
-            } : undefined,
-            metrics,
-        }).then((draft) => {
-            if (!cancelled) {
-                setTodayDraft(draft);
-            }
-        }).catch(() => {
-            if (!cancelled) {
-                setTodayDraft(null);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [metrics, recentCompletedActivity]);
-
     const openDraftScreen = (draft: CommunityPostDraftResult, params: {
         label: string;
         activity?: AppActivity | null;
@@ -141,13 +106,7 @@ export function NPOCommunityScreen({
         purpose: 'activity_promo' | 'recent_recap' | 'community_update';
         label: string;
         activity?: AppActivity | null;
-        useCachedTodayDraft?: boolean;
     }) => {
-        if (params.useCachedTodayDraft && todayDraft) {
-            openDraftScreen(todayDraft, params);
-            return;
-        }
-
         setDraftLoadingId(params.id);
         try {
             const draft = await gemmaService.getCommunityPostDraft({
@@ -184,13 +143,11 @@ export function NPOCommunityScreen({
             {showHero ? (
                 <CommunityHero
                     eyebrow="Condividi"
-                    title="Fai sentire chi siete."
+                    title="Ti suggeriamo un post!"
                     subtitle={
-                        todayDraft?.caption
-                            ? todayDraft.caption
-                            : recentCompletedActivity
-                                ? 'Hai già qualcosa da raccontare.'
-                                : 'Post veri, volontari veri, NPO affini.'
+                        recentCompletedActivity
+                            ? 'Hai già qualcosa da raccontare.'
+                            : 'Post veri, volontari veri, NPO affini.'
                     }
                     accent="#311b92"
                     accentSoft="rgba(255,255,255,0.12)"
@@ -202,7 +159,6 @@ export function NPOCommunityScreen({
                             purpose: recentCompletedActivity ? 'recent_recap' : 'community_update',
                             label: recentCompletedActivity ? 'Bozza recap' : 'Bozza community',
                             activity: recentCompletedActivity,
-                            useCachedTodayDraft: true,
                         })
                     }
                     onClose={() => setShowHero(false)}
@@ -210,32 +166,6 @@ export function NPOCommunityScreen({
             ) : null}
 
             <StoriesRow allowAddStory={true} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={onStoryPress} />
-
-            {volunteerVoices.length > 0 ? (
-                <View
-                    style={{
-                        marginHorizontal: 16,
-                        marginBottom: 16,
-                        borderRadius: 28,
-                        backgroundColor: '#ffffff',
-                        borderWidth: 1,
-                        borderColor: '#e5e7eb',
-                        paddingVertical: 16,
-                    }}
-                >
-                    <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                            Volontari da ascoltare
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-                            Voci dal campo.
-                        </Text>
-                    </View>
-                    {volunteerVoices.map((post) => (
-                        <CommunityCompactPostCard key={`npo_volunteer_voice_${post.id}`} post={post} />
-                    ))}
-                </View>
-            ) : null}
 
             {npoVoices.length > 0 ? (
                 <View

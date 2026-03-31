@@ -6,16 +6,20 @@ appId: ${APP_ID}
 
 ---
 
-- launchApp:
-    clearState: true
 - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "btn-landing-login"
+    timeout: 20000
 
 - tapOn:
     id: "btn-landing-login"
-    optional: true
 
-- assertVisible:
-    id: "input-email"
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 15000
 
 - tapOn:
     id: "input-email"

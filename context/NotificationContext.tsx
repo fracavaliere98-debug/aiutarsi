@@ -4,7 +4,6 @@ import { Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../utils/supabase";
 import { useToast } from "./ToastContext";
-import { triggerNotificationJobs } from "../utils/notificationJobs";
 
 export interface AppNotification {
     id: string;
@@ -138,11 +137,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
         fetchNotifications();
     }, [user, isQuietRoute]);
-
-    useEffect(() => {
-        if (!user?.id || isQuietRoute) return;
-        triggerNotificationJobs();
-    }, [user?.id, isQuietRoute]);
 
     // Supabase Realtime Listener
     useEffect(() => {
