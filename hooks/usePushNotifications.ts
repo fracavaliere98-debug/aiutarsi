@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
 import { requestNotificationPermission } from '../utils/permissions';
+import { getExpoProjectId } from '../utils/runtimeConfig';
 
 /**
  * usePushNotifications
@@ -54,8 +55,13 @@ export function usePushNotifications() {
             // Get the Expo push token
             let token: string;
             try {
+                const projectId = getExpoProjectId();
+                if (!projectId) {
+                    console.warn('[Push] Missing Expo projectId, skipping token registration');
+                    return;
+                }
                 const response = await Notifications.getExpoPushTokenAsync({
-                    projectId: 'b14b866c-c340-4e7d-a7ad-a6ec9a9935b3', // From app.json > expo.extra.eas.projectId
+                    projectId,
                 });
                 token = response.data;
             } catch (error) {

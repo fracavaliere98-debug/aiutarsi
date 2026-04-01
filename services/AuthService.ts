@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabase';
 import { profileRest } from '../utils/profileRest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
+import { getSupabaseProjectRef } from '../utils/runtimeConfig';
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
@@ -466,11 +467,11 @@ export class AuthService {
         // 3. PULIZIA MANUALE NUCLEARE (Storage)
         try {
             const keys = await AsyncStorage.getAllKeys();
-            const SUPABASE_PROJECT_ID = 'pavnfiladmnwbptwlwpr'; // ID dal log utente
+            const supabaseProjectRef = getSupabaseProjectRef();
 
             const keysToRemove = keys.filter(key =>
                 key.includes('supabase') ||
-                key.includes(SUPABASE_PROJECT_ID) ||
+                (supabaseProjectRef ? key.includes(supabaseProjectRef) : false) ||
                 key.includes('auth-token') ||
                 key === this.STORAGE_KEY
             );

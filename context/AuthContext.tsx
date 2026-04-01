@@ -6,6 +6,7 @@ import { AppUser } from "../types";
 import { authService } from "../services/AuthService";
 import { supabase } from "../utils/supabase";
 import { profileService } from "../services/ProfileService";
+import { getSupabaseProjectRef } from "../utils/runtimeConfig";
 
 interface AuthContextType {
     user: AppUser | null;
@@ -335,8 +336,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             console.log("[DEBUG] AuthContext: Force clearing all storage");
             const keys = await AsyncStorage.getAllKeys();
-            // Project ID: pavnfiladmnwbptwlwpr
-            const authKeys = keys.filter(k => k.includes('supabase') || k.includes('pavnfiladmnwbptwlwpr') || k === 'auth_user');
+            const supabaseProjectRef = getSupabaseProjectRef();
+            const authKeys = keys.filter((key) => (
+                key.includes('supabase')
+                || (supabaseProjectRef ? key.includes(supabaseProjectRef) : false)
+                || key === 'auth_user'
+            ));
             if (authKeys.length > 0) {
                 await AsyncStorage.multiRemove(authKeys);
             }

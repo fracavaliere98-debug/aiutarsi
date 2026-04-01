@@ -16,7 +16,9 @@
     "test:match": "npx -y tsx scripts/test_smart_match.ts",
     "test:integration": "npx -y tsx scripts/test_integration.ts",
     "test:regression": "npm run test:match && npm run test:integration",
-    "generate-audit": "npx -y tsx scripts/generate-audit.ts"
+    "generate-audit": "npx -y tsx scripts/generate-audit.ts",
+    "bootstrap:runtime-settings": "npx -y tsx scripts/bootstrap_runtime_settings.ts",
+    "test:prod-migration": "npx -y tsx scripts/test_prod_migration_readiness.ts && npx -y tsx scripts/test_prod_schema_readiness.ts /tmp/prod_ready_public_schema.sql && npx -y tsx scripts/test_bootstrap_runtime_settings.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
