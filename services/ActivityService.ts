@@ -39,6 +39,9 @@ export class ActivityService {
 
     // Helper: Map DB Activity to AppActivity
     private _mapDbActivityToApp(dbActivity: any): AppActivity {
+        if (!dbActivity) {
+            throw new Error("Activity row missing");
+        }
         const activity: AppActivity = {
             ...dbActivity,
             // Core mappings
@@ -792,6 +795,10 @@ export class ActivityService {
 
             if (error) {
                 console.error("Error fetching latest activity:", error);
+                return null;
+            }
+
+            if (!data) {
                 return null;
             }
 
