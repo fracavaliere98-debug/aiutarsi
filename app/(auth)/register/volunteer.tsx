@@ -8,6 +8,7 @@ import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
 import { Colors } from "../../../constants/Colors";
+import { trackEvent } from "../../../utils/monitoring";
 
 export default function VolunteerRegister() {
     const router = useRouter();
@@ -24,6 +25,14 @@ export default function VolunteerRegister() {
 
     const handleRegister = async () => {
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !acceptedPrivacy) {
+            trackEvent("auth_register_validation_failed", {
+                role: "VOLUNTEER",
+                hasFirstName: !!formData.firstName,
+                hasLastName: !!formData.lastName,
+                hasEmail: !!formData.email,
+                hasPassword: !!formData.password,
+                acceptedPrivacy,
+            });
             showToast("error", "Compila tutti i campi e accetta la Privacy.");
             return;
         }

@@ -7,6 +7,7 @@ import { Button } from "../../components/Button";
 import { AuthShell } from "../../components/auth/AuthShell";
 import { AuthField } from "../../components/auth/AuthField";
 import { Colors } from "../../constants/Colors";
+import { trackEvent } from "../../utils/monitoring";
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -17,6 +18,10 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!email || !password) {
+            trackEvent("auth_login_validation_failed", {
+                hasEmail: !!email,
+                hasPassword: !!password,
+            });
             Alert.alert("Attenzione", "Per favore inserisci email e password");
             return;
         }

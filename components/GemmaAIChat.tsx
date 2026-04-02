@@ -25,7 +25,8 @@ import { GemmaAvatar } from './GemmaAvatar';
 import { useAuth } from '../context/AuthContext';
 import { getFirstName } from '../utils/getFirstName';
 import { authService } from '../services/AuthService';
-import { buildContextAwareHelpAnswer, type LocalHelpContext } from '../utils/gemmaHelpLocal';
+import { buildContextAwareHelpAnswer, buildLocalHelpFallback, type LocalHelpContext } from '../utils/gemmaHelpLocal';
+import { isExpectedUserInputError, trackError, trackEvent } from '../utils/monitoring';
 
 interface Message {
     role: 'user' | 'model';
@@ -214,6 +215,12 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
             questionLength: question.length,
             messageCount: messages.length,
         });
+        trackEvent("gemma_request_started", {
+            mode,
+            requestId,
+            questionLength: question.length,
+            role: user?.role || "anonymous",
+        });
 
         setInput('');
         setIsLoading(true);
@@ -307,6 +314,12 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                     pendingVolunteers: localContext.pendingVolunteers.length,
                     approvedVolunteers: localContext.approvedVolunteers.length,
                 });
+                trackEvent("gemma_request_succeeded", {
+                    mode,
+                    requestId,
+                    role: user?.role || "anonymous",
+                    answerSource: "local_help",
+                });
                 setIsLoading(false);
                 return;
             }
@@ -371,6 +384,12 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                         requestId,
                         totalElapsedMs: Date.now() - startedAt,
                     });
+                    trackEvent("gemma_request_succeeded", {
+                        mode,
+                        requestId,
+                        role: user?.role || "anonymous",
+                        answerSource: "remote",
+                    });
                     setIsLoading(false);
                 }
             }, 18);
@@ -381,6 +400,22 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                 requestId,
                 error: error?.message || String(error),
                 elapsedMs: Date.now() - startedAt,
+            });
+            const expected = mode === "help_center" && isExpectedUserInputError(error);
+            trackError(error, {
+                source: "gemma_chat",
+                mode,
+                requestId,
+                questionLength: question.length,
+                role: user?.role || "anonymous",
+            }, {
+                source: "gemma_chat",
+                priority: expected ? "low" : (mode === "shadow" ? "high" : "normal"),
+                classification: expected
+                    ? "expected_user"
+                    : (mode === "shadow" ? "error_technical" : "warning_functional"),
+                issueName: mode === "shadow" ? "gemma_shadow_failed" : "gemma_help_failed",
+                expected,
             });
             const fallbackMessage =
                 mode === 'help_center'

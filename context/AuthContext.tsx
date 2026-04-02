@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Alert, AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { AppUser } from "../types";
@@ -7,6 +7,7 @@ import { authService } from "../services/AuthService";
 import { supabase } from "../utils/supabase";
 import { profileService } from "../services/ProfileService";
 import { getSupabaseProjectRef } from "../utils/runtimeConfig";
+import { isExpectedUserInputError, setMonitoringUser, trackError, trackEvent } from "../utils/monitoring";
 
 interface AuthContextType {
     user: AppUser | null;
@@ -110,6 +111,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // HANDLE CRITICAL AUTH ERRORS (e.g. Invalid Refresh Token)
                 if (result?.error && authService.isUnrecoverableAuthError(result.error)) {
                     console.error("[Supabase Auth] Unrecoverable session error detected during init:", result.error.message);
+                    trackError(result.error, {
+                        source: "auth_init",
+                        kind: "unrecoverable_session",
+                    });
                     await logout(); // Force clean slate
                     return;
                 }
@@ -131,6 +136,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             } catch (error) {
                 console.error("Auth init error:", error);
+            trackError(error, {
+                source: "auth_init",
+                kind: "init_failed",
+            }, {
+                source: "auth_init",
+                classification: "error_technical",
+                issueName: "auth_init_failed",
+            });
             } finally {
                 if (isMounted) setIsLoaded(true);
             }
@@ -141,6 +154,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // 3. Listen for Supabase Auth Changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Supabase Auth] Event: ${event}`);
+            trackEvent("auth_state_changed", {
+                event,
+                hasSession: !!session,
+                hasUser: !!session?.user,
+            });
 
             // Handle potential session errors during auth state change events
             if ((event as any) === 'INITIAL_SESSION_ERROR' || (event as any) === 'TOKEN_REFRESH_FAILED') {
@@ -183,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const code = path.split('referral/')[1];
                 if (code) {
                     console.log("AuthContext: Detected referral code:", code);
+                    trackEvent("referral_link_detected", { codeLength: code.length });
                     await AsyncStorage.setItem('@pending_referral_code', code);
                 }
             }
@@ -206,7 +225,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             subscription.unsubscribe();
             linkingSubscription.remove();
         };
-    }, [refreshUsers, scheduleUsersRefresh]);
+    }, [logout, refreshUsers, scheduleUsersRefresh]);
+
+    useEffect(() => {
+        setMonitoringUser(user);
+    }, [user]);
 
     // Heartbeat for "Online now" status
     useEffect(() => {
@@ -233,7 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         // Aggiorniamo lo user in locale così scatta la UI BannedScreen
                         setUser(prev => prev ? { ...prev, is_banned: true } : null);
                     }
-                } catch(e) {}
+                } catch {}
             }
         };
 
@@ -258,7 +281,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             subscription.remove();
             profileSubscription.unsubscribe();
         };
-    }, [user?.id]);
+    }, [user]);
 
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         // FORCE RESET LOGOUT GUARD
@@ -267,12 +290,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // setIsLoading(true); // Don't trigger global loading
         try {
+            trackEvent("auth_login_started", { emailDomain: email.split("@")[1] || "unknown" });
             const loggedUser = await authService.login(email, password);
             // State update is handled by onAuthStateChange
             setUser(loggedUser);
+            trackEvent("auth_login_succeeded", { role: loggedUser.role });
             return true;
         } catch (error) {
             console.warn("Login failed:", error);
+            const expected = isExpectedUserInputError(error);
+            trackError(error, {
+                source: "auth_login",
+                emailDomain: email.split("@")[1] || "unknown",
+            }, {
+                source: "auth_login",
+                priority: expected ? "low" : "high",
+                classification: expected ? "expected_user" : "error_technical",
+                issueName: "auth_login_failed",
+                expected,
+            });
             throw error;
         } finally {
             // setIsLoading(false);
@@ -287,12 +323,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 throw new Error("Missing required fields");
             }
 
+            trackEvent("auth_register_started", {
+                role: userData.role || "unknown",
+                emailDomain: userData.email.split("@")[1] || "unknown",
+            });
             const newUser = await authService.register(userData as any);
             setUser(newUser);
             await refreshUsers();
+            trackEvent("auth_register_succeeded", {
+                role: newUser.role,
+            });
             return true;
         } catch (error) {
             console.warn("Registration failed:", error);
+            const expected = isExpectedUserInputError(error);
+            trackError(error, {
+                source: "auth_register",
+                role: userData.role || "unknown",
+                emailDomain: userData.email?.split("@")[1] || "unknown",
+            }, {
+                source: "auth_register",
+                priority: expected ? "low" : "high",
+                classification: expected ? "expected_user" : "error_technical",
+                issueName: "auth_register_failed",
+                expected,
+            });
             throw error;
         } finally {
             // setIsLoading(false);
@@ -305,6 +360,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         try {
             console.log("[DEBUG] AuthContext: Update started for", data);
+            trackEvent("profile_update_started", {
+                userId: user.id,
+                role: user.role,
+                fields: Object.keys(data).join(","),
+            });
 
             // Sync to backend first to avoid optimistic local changes
             // from cascading into other providers while the save is still in flight.
@@ -325,9 +385,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 console.warn("Background users refresh failed after profile update:", refreshError);
             });
 
+            trackEvent("profile_update_succeeded", {
+                userId: user.id,
+                role: user.role,
+            });
             return true;
         } catch (error: any) {
             console.error("Update profile local error:", error);
+            trackError(error, {
+                source: "profile_update",
+                userId: user.id,
+                role: user.role,
+                fields: Object.keys(data).join(","),
+            }, {
+                source: "profile_update",
+                priority: "high",
+                classification: "error_technical",
+                issueName: "profile_update_failed",
+            });
             throw error;
         }
     }, [user, refreshUsers]);
@@ -388,6 +463,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         } catch (error) {
             console.error("[DEBUG] AuthContext: Critical logout error:", error);
+            trackError(error, {
+                source: "auth_logout",
+            }, {
+                source: "auth_logout",
+                priority: "normal",
+                classification: "warning_functional",
+                issueName: "auth_logout_failed",
+            });
         } finally {
             // Rilasciamo i flag dopo 800ms: tempo sufficiente per il redirect
             setTimeout(() => {
@@ -412,13 +495,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const fetchUserById = useCallback(async (id: string): Promise<AppUser | null> => {
         // Optimization: use a functional state check to avoid depending on usersDB directly in useEffects
-        let cached: AppUser | undefined;
-        
-        // We still need to check the cache, but we can do it inside setUsersDB if we wanted to be extreme.
-        // Or we just accept that if it's used in useEffect, it might re-run ONCE when the first user is added.
-        // However, a better pattern is to use a ref for the cache if we want to avoid deps entirely.
-        
-        // Let's use the functional update to check the CURRENT state without being a dependency
         const profile = await authService.getProfileById(id);
         if (profile) {
             setUsersDB(prev => {

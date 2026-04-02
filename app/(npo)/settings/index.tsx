@@ -2,7 +2,7 @@ import React from "react";
 import { Alert, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2, ChartColumnIncreasing } from "lucide-react-native";
+import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2, ChartColumnIncreasing, Mail } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
@@ -11,6 +11,7 @@ import { useApplications } from "../../../context/ApplicationContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { Colors } from "../../../constants/Colors";
+import { reportIssue } from "../../../utils/monitoring";
 
 const SectionHeader = ({ title }: { title: string }) => (
     <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-1">
@@ -190,6 +191,18 @@ export default function NPOSettingsScreen() {
                     description="FAQ e supporto con Gemma"
                     color="#ef4444"
                     onPress={() => router.push("/help-center" as any)}
+                />
+                <MenuItem
+                    icon={Mail}
+                    label="Segnala un problema"
+                    description="Invia una segnalazione con i dettagli tecnici dell'app"
+                    color={Colors.accent}
+                    onPress={() => {
+                        void reportIssue({
+                            user,
+                            screen: "npo_settings",
+                        });
+                    }}
                 />
                 <MenuItem
                     icon={FileText}

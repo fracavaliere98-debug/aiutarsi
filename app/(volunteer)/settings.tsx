@@ -19,6 +19,7 @@ import { useToast } from "../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
 import { storageService } from "../../services/StorageService";
 import { CalendarPicker } from "../../components/CalendarPicker";
+import { reportIssue } from "../../utils/monitoring";
 import {
     GENDER_OPTIONS,
     normalizeBirthDateInput,
@@ -455,6 +456,17 @@ export default function VolunteerSettings() {
                         label="Centro Assistenza"
                         color="#ef4444"
                         onPress={() => router.push('/help-center' as any)}
+                    />
+                    <MenuItem
+                        icon={Mail}
+                        label="Segnala un problema"
+                        color={Colors.accent}
+                        onPress={() => {
+                            void reportIssue({
+                                user,
+                                screen: "volunteer_settings",
+                            });
+                        }}
                     />
                     <MenuItem
                         icon={FileText}

@@ -6,6 +6,7 @@ import { useNotifications } from "./NotificationContext";
 import { useGamification } from "./GamificationContext";
 import { activityService } from "../services/ActivityService";
 import { eventEmitter, SyncEvents } from "../utils/EventEmitter";
+import { isExpectedUserInputError, trackError, trackEvent } from "../utils/monitoring";
 
 export interface VolunteerStats {
     totalHours: number;
@@ -284,20 +285,69 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
     const enrollInActivity = useCallback(async (activityId: string, message?: string, phone?: string) => {
         if (user?.role !== 'VOLUNTEER') return false;
         try {
-            return await enrollMutation.mutateAsync({ activityId, message, phone });
+            trackEvent("activity_enrollment_started", {
+                activityId,
+                userId: user.id,
+            });
+            const result = await enrollMutation.mutateAsync({ activityId, message, phone });
+            trackEvent("activity_enrollment_succeeded", {
+                activityId,
+                userId: user.id,
+            });
+            return result;
         } catch (error) {
             console.error("[DEBUG] ActivityContext: enrollInActivity failed", error);
+            const expected = isExpectedUserInputError(error);
+            trackError(error, {
+                source: "activity_enrollment",
+                activityId,
+                userId: user.id,
+            }, {
+                source: "activity_enrollment",
+                priority: expected ? "low" : "high",
+                classification: expected ? "expected_user" : "error_technical",
+                issueName: "activity_enrollment_failed",
+                expected,
+            });
             return false;
         }
     }, [user, enrollMutation]);
-    const unenrollFromActivity = useCallback(async (activityId: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await unenrollMutation.mutateAsync(activityId); } catch { return false; } }, [user, unenrollMutation]);
-    const applyToActivity = useCallback(async (activityId: string, message?: string, phone?: string) => { if (!user) return false; try { return await applyMutation.mutateAsync({ activityId, message, phone }); } catch { return false; } }, [user, applyMutation]);
+    const unenrollFromActivity = useCallback(async (activityId: string) => { if (user?.role !== 'VOLUNTEER') return false; try { return await unenrollMutation.mutateAsync(activityId); } catch (error) { trackError(error, { source: "activity_unenrollment", activityId, userId: user?.id || "unknown" }, { source: "activity_unenrollment", priority: "normal", classification: "warning_functional", issueName: "activity_unenrollment_failed" }); return false; } }, [user, unenrollMutation]);
+    const applyToActivity = useCallback(async (activityId: string, message?: string, phone?: string) => {
+        if (!user) return false;
+        try {
+            trackEvent("activity_application_started", {
+                activityId,
+                userId: user.id,
+            });
+            const result = await applyMutation.mutateAsync({ activityId, message, phone });
+            trackEvent("activity_application_succeeded", {
+                activityId,
+                userId: user.id,
+            });
+            return result;
+        } catch (error) {
+            const expected = isExpectedUserInputError(error);
+            trackError(error, {
+                source: "activity_application",
+                activityId,
+                userId: user.id,
+            }, {
+                source: "activity_application",
+                priority: expected ? "low" : "high",
+                classification: expected ? "expected_user" : "error_technical",
+                issueName: "activity_application_failed",
+                expected,
+            });
+            return false;
+        }
+    }, [user, applyMutation]);
     const submitReview = useCallback(async (reviewData: any) => { if (user?.role !== 'VOLUNTEER') return false; try { return await reviewMutation.mutateAsync(reviewData); } catch { return false; } }, [user, reviewMutation]);
     const submitVolunteerReviews = useCallback(async (reviewsData: any) => { try { await volunteerReviewsMutation.mutateAsync(reviewsData); } catch (error) { throw error; } }, [volunteerReviewsMutation]);
-    const updateActivity = useCallback(async (activityId: string, activityData: any) => { if (user?.role !== 'NPO') return false; try { return await updateMutation.mutateAsync({ activityId, activityData }); } catch { return false; } }, [user, updateMutation]);
+    const updateActivity = useCallback(async (activityId: string, activityData: any) => { if (user?.role !== 'NPO') return false; try { const result = await updateMutation.mutateAsync({ activityId, activityData }); trackEvent("activity_update_succeeded", { activityId, userId: user.id }); return result; } catch (error) { trackError(error, { source: "activity_update", activityId, userId: user.id }, { source: "activity_update", priority: "high", classification: "error_technical", issueName: "activity_update_failed" }); return false; } }, [user, updateMutation]);
     const deleteActivity = useCallback(async (activityId: string) => { if (user?.role !== 'NPO') return false; try { return await deleteMutation.mutateAsync(activityId); } catch { return false; } }, [user, deleteMutation]);
-    const approveActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { return await approveMutation.mutateAsync({ activityId, volunteerId }); } catch { return false; } }, [user, approveMutation]);
-    const rejectActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { return await rejectMutation.mutateAsync({ activityId, volunteerId }); } catch { return false; } }, [user, rejectMutation]);
+    const approveActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { const result = await approveMutation.mutateAsync({ activityId, volunteerId }); trackEvent("activity_application_approved", { activityId, volunteerId, userId: user.id }); return result; } catch (error) { trackError(error, { source: "activity_application_approve", activityId, volunteerId, userId: user.id }, { source: "activity_application_approve", priority: "normal", classification: "warning_functional", issueName: "activity_application_approve_failed" }); return false; } }, [user, approveMutation]);
+    const rejectActivityApplication = useCallback(async (activityId: string, volunteerId: string) => { if (user?.role !== 'NPO') return false; try { const result = await rejectMutation.mutateAsync({ activityId, volunteerId }); trackEvent("activity_application_rejected", { activityId, volunteerId, userId: user.id }); return result; } catch (error) { trackError(error, { source: "activity_application_reject", activityId, volunteerId, userId: user.id }, { source: "activity_application_reject", priority: "normal", classification: "warning_functional", issueName: "activity_application_reject_failed" }); return false; } }, [user, rejectMutation]);
 
     const getNPORating = useCallback((npoId: string): number => {
         const npoReviews = reviews.filter(r => r.npoId === npoId);

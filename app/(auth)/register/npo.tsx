@@ -8,6 +8,7 @@ import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
 import { Colors } from "../../../constants/Colors";
+import { trackEvent } from "../../../utils/monitoring";
 
 export default function NPORegister() {
     const router = useRouter();
@@ -24,6 +25,14 @@ export default function NPORegister() {
 
     const handleRegister = async () => {
         if (!formData.orgName || !formData.taxId || !formData.email || !formData.password || !acceptedPrivacy) {
+            trackEvent("auth_register_validation_failed", {
+                role: "NPO",
+                hasOrgName: !!formData.orgName,
+                hasTaxId: !!formData.taxId,
+                hasEmail: !!formData.email,
+                hasPassword: !!formData.password,
+                acceptedPrivacy,
+            });
             showToast("error", "Compila tutti i campi e accetta la privacy.");
             return;
         }

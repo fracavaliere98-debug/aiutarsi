@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { AlertTriangle, RotateCcw } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportIssue, trackError } from '../utils/monitoring';
 
 interface Props {
     children: ReactNode;
@@ -27,8 +28,15 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        // Log error to an error reporting service here (e.g. Sentry, Bugsnag)
-        console.error("Uncaught error:", error, errorInfo);
+        trackError(error, {
+            source: "error_boundary",
+            componentStack: errorInfo.componentStack || "n/a",
+        }, {
+            source: "error_boundary",
+            priority: "critical",
+            classification: "critical_crash",
+            issueName: "app_error_boundary",
+        });
     }
 
     handleReset = () => {
@@ -65,6 +73,18 @@ export class ErrorBoundary extends Component<Props, State> {
                         >
                             <RotateCcw size={20} color="white" className="mr-2" />
                             <Text className="text-white font-bold text-base">Riprova</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                void reportIssue({
+                                    screen: "global_error_boundary",
+                                    error: this.state.error,
+                                });
+                            }}
+                            className="mt-3 px-5 py-3 rounded-xl border border-primary/15 bg-primary/5 active:opacity-90"
+                        >
+                            <Text className="text-primary font-bold text-sm">Segnala un problema</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>

@@ -20,6 +20,7 @@ import {
     birthDateToIso,
     getAdultMaxDate,
 } from "../../utils/profileDemographics";
+import { trackError, trackEvent } from "../../utils/monitoring";
 
 export default function OnboardingProfile() {
     const router = useRouter();
@@ -83,6 +84,10 @@ export default function OnboardingProfile() {
         });
 
         if (!demographics.ok) {
+            trackEvent("onboarding_profile_validation_failed", {
+                role: user?.role || "VOLUNTEER",
+                reason: demographics.error,
+            });
             showToast("error", demographics.error);
             return;
         }
@@ -100,6 +105,12 @@ export default function OnboardingProfile() {
         // FINAL SAVE
         setIsUploading(true);
         try {
+            trackEvent("onboarding_profile_submit_started", {
+                role: user?.role || "VOLUNTEER",
+                hasAvatar: !!avatar,
+                hasBio: !!bio.trim(),
+                hasReferralCode: !!referralCode.trim(),
+            });
             const success = await updateUserProfile({
                 interests,
                 skills,
@@ -112,11 +123,27 @@ export default function OnboardingProfile() {
 
             if (success) {
                 console.log("[DEBUG] Onboarding Profile: SAVE SUCCESS. Redirecting to welcome.");
+                trackEvent("onboarding_profile_completed", {
+                    role: user?.role || "VOLUNTEER",
+                    interestsCount: interests.length,
+                    skillsCount: skills.length,
+                });
                 showToast('success', 'Profilo completato!');
                 router.replace("/onboarding/welcome" as any);
             }
         } catch (error: any) {
             console.error("[DEBUG] Onboarding Profile: SAVE FAILED", error);
+            trackError(error, {
+                source: "onboarding_profile_submit",
+                role: user?.role || "VOLUNTEER",
+                hasAvatar: !!avatar,
+                hasBio: !!bio.trim(),
+            }, {
+                source: "onboarding_profile_submit",
+                priority: "high",
+                classification: "error_technical",
+                issueName: "onboarding_profile_submit_failed",
+            });
             alert("Errore salvataggio profilo: " + error.message);
         } finally {
             setIsUploading(false);
