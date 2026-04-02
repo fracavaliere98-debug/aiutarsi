@@ -30,6 +30,7 @@ interface AuthContextType {
     getReferralCount: () => Promise<number>;
     updateEmail: (newEmail: string) => Promise<boolean>;
     updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+    resendSignupConfirmation: (email: string) => Promise<void>;
     getNPOFollowers: (npoId: string) => AppUser[];
 }
 
@@ -54,6 +55,7 @@ const AuthContext = createContext<AuthContextType>({
     getReferralCount: async () => 0,
     updateEmail: async () => false,
     updatePassword: async () => false,
+    resendSignupConfirmation: async () => { },
     getNPOFollowers: () => [],
 });
 
@@ -569,6 +571,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user]);
 
+    const resendSignupConfirmation = useCallback(async (email: string): Promise<void> => {
+        await authService.resendSignupConfirmation(email);
+        trackEvent("auth_confirmation_resend_requested", {
+            emailDomain: email.split("@")[1] || "unknown",
+        });
+    }, []);
+
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
     const resetUsers = useCallback(async () => {
         try {
@@ -601,8 +610,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         cancelAccountDeletion,
         getReferralCount,
         updateEmail,
-        updatePassword
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword]);
+        updatePassword,
+        resendSignupConfirmation
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation]);
 
     return (
         <AuthContext.Provider value={value}>

@@ -83,6 +83,7 @@ export type AppUser = Omit<User,
     public_email?: string | null;
     gender?: string | null;
     date_of_birth?: string | null;
+    email_confirmed?: boolean | null;
     profile_completed: boolean;
     last_seen_at?: string | null;
     expo_push_token?: string | null;

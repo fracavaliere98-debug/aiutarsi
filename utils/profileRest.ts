@@ -558,6 +558,17 @@ export const profileRest = {
       { Prefer: "return=minimal" }
     );
   },
+  ensureVolunteerProfile: async (payload: Record<string, unknown>, accessToken?: string) => {
+    return request(
+      "POST",
+      `/rest/v1/profiles`,
+      payload,
+      accessToken,
+      {
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      }
+    );
+  },
   replaceVolunteerSkills: async (userId: string, skills: string[], accessToken?: string) => {
     await request(
       "DELETE",

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { Alert, View, Text, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Award, Camera, Mail, Sparkles, ChevronRight } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -17,7 +17,7 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: ProfileHeaderProps) {
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, resendSignupConfirmation } = useAuth();
     const shouldShowProfilePrompt =
         !!isOwnProfile &&
         (!user?.profile_completed || !user?.bio || !user?.avatar_url);
@@ -45,6 +45,16 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const permanentUri = await saveImageToPermanentStorage(result.assets[0].uri);
             await updateUserProfile({ avatar_url: permanentUri });
+        }
+    };
+
+    const handleResendConfirmation = async () => {
+        if (!user?.email) return;
+        try {
+            await resendSignupConfirmation(user.email);
+            Alert.alert("Email inviata", "Ti abbiamo inviato una nuova mail di conferma.");
+        } catch (error: any) {
+            Alert.alert("Invio non riuscito", error?.message || "Non siamo riusciti a reinviare la mail di conferma.");
         }
     };
 
@@ -120,9 +130,21 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                     <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.location_string}</Text>
                 )}
                 {isOwnProfile && user?.email && (
-                    <View className="flex-row items-center gap-1">
-                        <Mail size={12} color="#94a3b8" />
-                        <Text className="text-xs text-gray-400 font-medium">{user.email}</Text>
+                    <View className="items-center">
+                        <View className="flex-row items-center gap-1">
+                            <Mail size={12} color="#94a3b8" />
+                            <Text className="text-xs text-gray-400 font-medium">{user.email}</Text>
+                        </View>
+                        {user.email_confirmed === false && (
+                            <View className="flex-row items-center mt-1">
+                                <Text className="text-[11px] text-orange-600 font-medium">
+                                    Ricordati di confermare la mail!
+                                </Text>
+                                <TouchableOpacity onPress={handleResendConfirmation} activeOpacity={0.8}>
+                                    <Text className="text-[11px] text-primary font-bold ml-1">Reinvia.</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
                 )}
             </View>

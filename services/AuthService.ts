@@ -4,6 +4,7 @@ import { profileRest } from '../utils/profileRest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 import { getSupabaseProjectRef } from '../utils/runtimeConfig';
+import * as Linking from 'expo-linking';
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
@@ -51,6 +52,30 @@ export class AuthService {
         ].filter(Boolean);
 
         return parts.join(' | ');
+    }
+
+    private async _ensureProfileRow(
+        userId: string,
+        accessToken: string,
+        seed?: Partial<AppUser>
+    ): Promise<void> {
+        const payload: Record<string, unknown> = {
+            id: userId,
+            updated_at: new Date().toISOString(),
+        };
+
+        const role = seed?.role || (await this.loadUserLocally())?.role || 'VOLUNTEER';
+        if (role) payload.role = role;
+        if (seed?.email) payload.email = seed.email;
+        if (seed?.full_name || seed?.name) payload.full_name = seed.full_name || seed.name;
+        if ((seed as any)?.npo_name || seed?.npoName) payload.npo_name = (seed as any)?.npo_name || seed?.npoName;
+        if ((seed as any)?.company_name || seed?.companyName) payload.company_name = (seed as any)?.company_name || seed?.companyName;
+
+        await this._withTimeout(
+            profileRest.ensureVolunteerProfile(payload, accessToken),
+            'profiles.ensure.rest',
+            8000
+        );
     }
 
     private async _getAccessTokenForRest(): Promise<string> {
@@ -189,6 +214,7 @@ export class AuthService {
             public_email: metadata.publicEmail || metadata.public_email,
             gender: metadata.gender,
             date_of_birth: metadata.date_of_birth,
+            email_confirmed: metadata.email_confirmed,
             profile_completed: metadata.profile_completed || metadata.profileCompleted || false,
             // Legacy aliases
             publicEmail: metadata.publicEmail || metadata.public_email,
@@ -517,6 +543,7 @@ export class AuthService {
             publicEmail: profile.public_email,
             gender: profile.gender,
             date_of_birth: profile.date_of_birth,
+            email_confirmed: profile.email_confirmed,
             lastSeenAt: profile.last_seen_at,
             createdAt: profile.created_at,
             badges: profile.badges || [],
@@ -741,6 +768,7 @@ export class AuthService {
         const startedAt = Date.now();
         let failedStage = 'initialization';
         let restProfileRow: any = null;
+        const currentStoredUser = await this.loadUserLocally();
         console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId, updates);
 
         // 1. Handle Avatar Upload first
@@ -809,6 +837,16 @@ export class AuthService {
         try {
             console.log("[DEBUG] AuthService: updateProfile payload prepared", payload);
             const accessToken = await this._getAccessTokenForRest();
+
+            if (shouldUpdateProfileRow || skillsToSync !== undefined || interestsToSync !== undefined) {
+                failedStage = 'profiles.ensure';
+                await this._ensureProfileRow(userId, accessToken, {
+                    ...(finalUpdates as Partial<AppUser>),
+                    id: userId,
+                    email: (finalUpdates as Partial<AppUser>).email || currentStoredUser?.email,
+                    role: (finalUpdates as Partial<AppUser>).role || currentStoredUser?.role,
+                });
+            }
 
             // 3. Perform Update to Public Profiles
             if (shouldUpdateProfileRow) {
@@ -984,6 +1022,27 @@ export class AuthService {
         // 2. Update Password
         const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
         if (updateError) throw new Error("Errore aggiornamento password: " + updateError.message);
+    }
+
+    async resendSignupConfirmation(email: string): Promise<void> {
+        const cleanEmail = email.trim();
+        if (!cleanEmail) throw new Error("Email non disponibile.");
+
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: cleanEmail,
+            options: {
+                emailRedirectTo: Linking.createURL('/login'),
+            },
+        });
+
+        if (error) {
+            let msg = error.message || 'Invio email fallito.';
+            if (msg.toLowerCase().includes('rate limit')) {
+                msg = 'Hai già richiesto una mail di conferma da poco. Riprova tra qualche minuto.';
+            }
+            throw new Error(msg);
+        }
     }
 
     // SELF-HEALING: Ensure a record exists in public.profiles for a given user ID
