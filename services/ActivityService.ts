@@ -788,7 +788,7 @@ export class ActivityService {
                 .eq('status', 'APERTA')
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error("Error fetching latest activity:", error);

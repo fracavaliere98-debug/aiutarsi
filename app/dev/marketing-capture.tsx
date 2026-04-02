@@ -1,6 +1,6 @@
 import React, { createRef, useMemo } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { ArrowRight, Clapperboard, Copy, FolderOpen, Image as ImageIcon, Layers3, Sparkles, Video } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
@@ -20,6 +20,7 @@ import {
     marketingVideoSpecs,
     type MarketingFrameSpec,
 } from '../../utils/marketingFrames';
+import { isProductionRuntime } from '../../utils/runtimeConfig';
 
 function RouteBadge({ label }: { label: string }) {
     return (
@@ -132,6 +133,7 @@ function FrameCard({
 export default function MarketingCaptureScreen() {
     const router = useRouter();
     const { showToast } = useToast();
+    const isProd = isProductionRuntime();
     const fileSystemModule = FileSystem as unknown as { documentDirectory?: string | null };
     const documentDirectory = fileSystemModule.documentDirectory ?? null;
     const previewRefs = useMemo(() => {
@@ -147,6 +149,10 @@ export default function MarketingCaptureScreen() {
             return acc;
         }, {});
     }, []);
+
+    if (isProd) {
+        return <Redirect href="/" />;
+    }
 
     const copyText = async (text: string, message: string) => {
         await Clipboard.setStringAsync(text);

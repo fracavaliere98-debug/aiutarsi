@@ -2,7 +2,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityProvider } from "../context/ActivityContext";
 import { NotificationProvider } from "../context/NotificationContext";
@@ -27,8 +27,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { STACK_TRANSITIONS } from "../constants/motion";
 import { BrandedLoadingVideo } from "../components/BrandedLoadingVideo";
 import { consumeIntroVideoTransition } from "../utils/introVideoTransition";
+import * as Sentry from "@sentry/react-native";
+import { initializeMonitoring } from "../utils/monitoring";
+import { isCorporateEnabled } from "../utils/runtimeConfig";
 
 const appIntroVideo = require("../assets/videos/hailuo-2_3_bright_lens_flare_Create_a_premium_mobile_app_opening_animation_for_a_brand_call-0.mp4");
+
+initializeMonitoring();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,10 +64,10 @@ function RootLayoutNav() {
   const [showStartupVideo, setShowStartupVideo] = useState(true);
   const startupVideoOpacity = useRef(new Animated.Value(1)).current;
 
-  const playIntroOverlay = () => {
+  const playIntroOverlay = useCallback(() => {
     startupVideoOpacity.setValue(1);
     setShowStartupVideo(true);
-  };
+  }, [startupVideoOpacity]);
 
   // Register for push notifications and keep last_seen_at updated
   usePushNotifications();
@@ -78,6 +83,8 @@ function RootLayoutNav() {
   const inProtectedGroup = inVolunteerGroup || inNPOGroup || inCorporateGroup;
 
   const onLandingPage = routeSegments.length === 0 || (routeSegments.length === 1 && routeSegments[0] === "index");
+  const corporateEnabled = isCorporateEnabled();
+  const inCorporateRegister = segmentKey.includes("register/corporate");
 
   // Navigation Guard Logic
   useEffect(() => {
@@ -95,9 +102,19 @@ function RootLayoutNav() {
 
     // 1. Unauthenticated users: Can't stay in protected/onboarding areas
     if (!user) {
-      if (inProtectedGroup || inOnboarding) {
+      if (inProtectedGroup || inOnboarding || (!corporateEnabled && inCorporateRegister)) {
         navigate("/");
       }
+      return;
+    }
+
+    if (!corporateEnabled && user.role === "CORPORATE") {
+      console.log("[DEBUG] RootLayoutNav: Corporate disabled in production, forcing logout");
+      isRedirecting.current = true;
+      void logout().finally(() => {
+        router.replace("/");
+        setTimeout(() => { isRedirecting.current = false; }, 800);
+      });
       return;
     }
 
@@ -144,7 +161,7 @@ function RootLayoutNav() {
       }).catch(e => console.log("[DEBUG] OTA Check error:", e));
     }
 
-  }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router]);
+    }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister]);
 
   useEffect(() => {
     if (!isLoaded || isAuthLoading || isLoggingOut || !showStartupVideo) return;
@@ -172,7 +189,7 @@ function RootLayoutNav() {
     if (consumeIntroVideoTransition()) {
       playIntroOverlay();
     }
-  }, [segmentKey, isLoaded, isAuthLoading, isLoggingOut]);
+  }, [segmentKey, isLoaded, isAuthLoading, isLoggingOut, playIntroOverlay]);
 
   // Loading spinner (Combined: Initial Load + Ongoing Auth actions + Logout Guard + Redirection Guard)
   if (!isLoaded || isAuthLoading || isLoggingOut || (!user && inProtectedGroup)) {
@@ -236,7 +253,7 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -302,3 +319,7 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const WrappedRootLayout = Sentry.wrap(RootLayout);
+
+export default WrappedRootLayout;

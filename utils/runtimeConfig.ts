@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 
 export function extractSupabaseProjectRef(url: string) {
     if (!url) return "";
@@ -19,4 +20,24 @@ export function getExpoProjectId() {
 
 export function getSupabaseProjectRef() {
     return extractSupabaseProjectRef(process.env.EXPO_PUBLIC_SUPABASE_URL || "");
+}
+
+export function getRuntimeEnvironment() {
+    if (process.env.EXPO_PUBLIC_APP_ENV) {
+        return process.env.EXPO_PUBLIC_APP_ENV;
+    }
+
+    if (Updates.channel) {
+        return Updates.channel;
+    }
+
+    return __DEV__ ? "development" : "production";
+}
+
+export function isProductionRuntime() {
+    return getRuntimeEnvironment() === "production";
+}
+
+export function isCorporateEnabled() {
+    return !isProductionRuntime();
 }
