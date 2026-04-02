@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
+import { getPasswordRequirementsText, getPasswordRequirementsShortText, isPasswordStrongEnough } from "../../utils/passwordValidation";
 import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock, ChartColumnIncreasing, Calendar, ChevronDown, Check } from 'lucide-react-native';
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -99,8 +100,8 @@ export default function VolunteerSettings() {
             Alert.alert("Errore", "Le password non coincidono.");
             return;
         }
-        if (newPassword.length < 6) {
-            Alert.alert("Errore", "La nuova password deve essere di almeno 6 caratteri.");
+        if (!isPasswordStrongEnough(newPassword)) {
+            Alert.alert("Errore", getPasswordRequirementsText());
             return;
         }
 
@@ -852,7 +853,7 @@ export default function VolunteerSettings() {
                                             onChangeText={setNewPassword}
                                             secureTextEntry
                                             className="text-primary font-medium text-lg p-0"
-                                            placeholder="Almeno 6 caratteri"
+                                            placeholder="8+ caratteri, 1 maiuscola, 1 numero"
                                             placeholderTextColor="#9ca3af"
                                         />
                                     </View>
@@ -873,7 +874,7 @@ export default function VolunteerSettings() {
                                 </View>
 
                                 <Text className="text-secondary/60 text-xs mt-1 px-1 leading-5">
-                                    Assicurati di usare una password robusta per proteggere il tuo account.
+                                    {getPasswordRequirementsShortText()}
                                 </Text>
                             </View>
                         </ScrollView>

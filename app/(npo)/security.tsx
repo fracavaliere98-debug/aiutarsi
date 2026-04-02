@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
 import { authService } from "../../services/AuthService";
+import { getPasswordRequirementsShortText, getPasswordRequirementsText, isPasswordStrongEnough } from "../../utils/passwordValidation";
 
 export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
     const { user } = useAuth();
@@ -49,9 +50,8 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
                     setIsLoading(false);
                     return;
                 }
-                const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-                if (!strongPasswordRegex.test(newPassword)) {
-                    showToast("error", "Password: 8+ caratteri, 1 maiuscola, 1 numero, 1 speciale.");
+                if (!isPasswordStrongEnough(newPassword)) {
+                    showToast("error", getPasswordRequirementsShortText());
                     setIsLoading(false);
                     return;
                 }
@@ -126,7 +126,7 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
                 <PasswordInput label="Conferma Nuova Password" value={confirmPassword} onChangeText={setConfirmPassword} showPassword={showPassword} setShowPassword={setShowPassword} />
 
                 <Text className="text-secondary/60 text-[10px] mt-2 leading-4">
-                    La password deve contenere almeno 8 caratteri, una maiuscola, un numero e un carattere speciale.
+                    {getPasswordRequirementsText()}
                 </Text>
             </SoftCard>
 

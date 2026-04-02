@@ -4,10 +4,14 @@ import { profileRest } from '../utils/profileRest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 import { getSupabaseProjectRef } from '../utils/runtimeConfig';
-import * as Linking from 'expo-linking';
+import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
+
+    private _getAuthEmailRedirectUrl(): string {
+        return 'aiutarsiapp://login';
+    }
 
     setCachedAccessToken(token: string | null | undefined): void {
         this._cachedAccessToken = token || null;
@@ -160,7 +164,7 @@ export class AuthService {
     }
 
     private _validatePassword(password: string): boolean {
-        return password.length >= 6;
+        return isPasswordStrongEnough(password);
     }
 
     // Identifies errors that cannot be solved by retrying (e.g. invalid session/token)
@@ -397,7 +401,7 @@ export class AuthService {
             throw new Error("Formato email non valido.");
         }
         if (!userData.password || !this._validatePassword(userData.password)) {
-            throw new Error("La password deve essere di almeno 6 caratteri.");
+            throw new Error(getPasswordRequirementsText());
         }
 
         // Prepare metadata (everything except email/password)
@@ -413,6 +417,7 @@ export class AuthService {
             email: cleanEmail,
             password: password!,
             options: {
+                emailRedirectTo: this._getAuthEmailRedirectUrl(),
                 data: {
                     ...metadata,
                     name: (metadata as any).full_name || (metadata as any).name,
@@ -1005,7 +1010,7 @@ export class AuthService {
 
     // Password update remains same (Auth only)
     async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
-        if (!this._validatePassword(newPassword)) throw new Error("La nuova password deve essere di almeno 6 caratteri.");
+        if (!this._validatePassword(newPassword)) throw new Error(getPasswordRequirementsText());
 
         // 1. Verify Old Password (by signing in)
         const { data: sessionData } = await supabase.auth.getSession();
@@ -1028,11 +1033,16 @@ export class AuthService {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Email non disponibile.");
 
+        console.log("[DEBUG] AuthService: resend signup confirmation start", {
+            emailDomain: cleanEmail.split("@")[1] || "unknown",
+            redirectTo: this._getAuthEmailRedirectUrl(),
+        });
+
         const { error } = await supabase.auth.resend({
             type: 'signup',
             email: cleanEmail,
             options: {
-                emailRedirectTo: Linking.createURL('/login'),
+                emailRedirectTo: this._getAuthEmailRedirectUrl(),
             },
         });
 
@@ -1041,8 +1051,11 @@ export class AuthService {
             if (msg.toLowerCase().includes('rate limit')) {
                 msg = 'Hai già richiesto una mail di conferma da poco. Riprova tra qualche minuto.';
             }
+            console.warn("[DEBUG] AuthService: resend signup confirmation failed", msg);
             throw new Error(msg);
         }
+
+        console.log("[DEBUG] AuthService: resend signup confirmation accepted");
     }
 
     // SELF-HEALING: Ensure a record exists in public.profiles for a given user ID

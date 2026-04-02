@@ -18,6 +18,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: ProfileHeaderProps) {
     const { updateUserProfile, resendSignupConfirmation } = useAuth();
+    const [isResendingConfirmation, setIsResendingConfirmation] = React.useState(false);
     const shouldShowProfilePrompt =
         !!isOwnProfile &&
         (!user?.profile_completed || !user?.bio || !user?.avatar_url);
@@ -49,12 +50,15 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
     };
 
     const handleResendConfirmation = async () => {
-        if (!user?.email) return;
+        if (!user?.email || isResendingConfirmation) return;
         try {
+            setIsResendingConfirmation(true);
             await resendSignupConfirmation(user.email);
             Alert.alert("Email inviata", "Ti abbiamo inviato una nuova mail di conferma.");
         } catch (error: any) {
             Alert.alert("Invio non riuscito", error?.message || "Non siamo riusciti a reinviare la mail di conferma.");
+        } finally {
+            setIsResendingConfirmation(false);
         }
     };
 
@@ -140,8 +144,10 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                                 <Text className="text-[11px] text-orange-600 font-medium">
                                     Ricordati di confermare la mail!
                                 </Text>
-                                <TouchableOpacity onPress={handleResendConfirmation} activeOpacity={0.8}>
-                                    <Text className="text-[11px] text-primary font-bold ml-1">Reinvia.</Text>
+                                <TouchableOpacity onPress={handleResendConfirmation} activeOpacity={0.8} disabled={isResendingConfirmation}>
+                                    <Text className="text-[11px] text-primary font-bold ml-1">
+                                        {isResendingConfirmation ? 'Invio...' : 'Reinvia.'}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         )}

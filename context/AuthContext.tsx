@@ -576,6 +576,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         trackEvent("auth_confirmation_resend_requested", {
             emailDomain: email.split("@")[1] || "unknown",
         });
+        trackEvent("auth_confirmation_resend_accepted", {
+            emailDomain: email.split("@")[1] || "unknown",
+        });
     }, []);
 
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
