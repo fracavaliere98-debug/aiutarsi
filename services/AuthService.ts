@@ -361,7 +361,7 @@ export class AuthService {
         return user;
     }
 
-    async register(userData: Omit<AppUser, 'id'>): Promise<AppUser> {
+    async register(userData: Omit<AppUser, 'id'>): Promise<{ user: AppUser; hasSession: boolean; requiresEmailConfirmation: boolean }> {
         if (!userData.email) {
             throw new Error("L'email è obbligatoria.");
         }
@@ -423,8 +423,11 @@ export class AuthService {
 
         if (!data.user) throw new Error("Registrazione fallita: nessun utente restituito");
 
-        // Since we disabled email confirmation, we should have a session immediately
-        // BUT, if for some reason we don't, we must sign in to ensure subsequent calls (updateProfile) work.
+        let hasSession = !!data.session;
+        let requiresEmailConfirmation = false;
+
+        // If no session is returned, try a silent sign-in. When Auth requires email confirmation,
+        // Supabase answers with "Email not confirmed": that is a valid post-signup state, not a failure.
         if (!data.session) {
             console.log("Registration successful but no session returned. Attempting auto-login...");
             const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -433,9 +436,15 @@ export class AuthService {
             });
             if (signInError) {
                 console.error("Auto-login after registration failed:", signInError.message);
-                throw new Error("Registrazione completata, ma login automatico fallito. Riprova ad accedere.");
+                if ((signInError.message || "").toLowerCase().includes("email not confirmed")) {
+                    requiresEmailConfirmation = true;
+                } else {
+                    throw new Error("Registrazione completata, ma login automatico fallito. Riprova ad accedere.");
+                }
+            } else {
+                hasSession = true;
+                console.log("[DEBUG] AuthService: auto-login success");
             }
-            console.log("[DEBUG] AuthService: auto-login success");
         }
 
         console.log("[DEBUG] AuthService: register success");
@@ -444,7 +453,11 @@ export class AuthService {
 
         const user = this._mapSupabaseUserToAppUser(data.user);
 
-        return user!;
+        return {
+            user: user!,
+            hasSession,
+            requiresEmailConfirmation,
+        };
     }
 
     async logout(): Promise<void> {

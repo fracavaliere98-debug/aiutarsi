@@ -39,13 +39,20 @@ export default function NPORegister() {
 
         setIsLoading(true);
         try {
-            await register({
+            const result = await register({
                 full_name: formData.orgName,
                 email: formData.email,
                 password: formData.password,
                 role: "NPO",
                 profile_completed: false,
             });
+
+            if (result.requiresEmailConfirmation) {
+                showToast("success", "Registrazione completata. Conferma la tua email e poi accedi.");
+                router.replace("/login");
+                return;
+            }
+
             router.replace("/onboarding/intro");
         } catch (error: any) {
             showToast("error", error.message || "Errore durante la registrazione.");

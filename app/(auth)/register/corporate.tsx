@@ -28,13 +28,20 @@ export default function CorporateRegister() {
 
         setIsLoading(true);
         try {
-            await register({
+            const result = await register({
                 full_name: formData.companyName,
                 email: formData.email,
                 password: formData.password,
                 role: "CORPORATE",
                 companyName: formData.companyName,
             });
+
+            if (result.requiresEmailConfirmation) {
+                Alert.alert("Registrazione completata", "Conferma la tua email e poi accedi.");
+                router.replace("/login");
+                return;
+            }
+
             router.replace("/(corporate)" as any);
         } catch (error: any) {
             Alert.alert("Errore", error.message || "Errore durante la registrazione.");

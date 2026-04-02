@@ -39,13 +39,19 @@ export default function VolunteerRegister() {
 
         setIsLoading(true);
         try {
-            await register({
+            const result = await register({
                 full_name: `${formData.firstName} ${formData.lastName}`,
                 email: formData.email,
                 password: formData.password,
                 role: "VOLUNTEER",
                 profile_completed: false,
             });
+
+            if (result.requiresEmailConfirmation) {
+                showToast("success", "Registrazione completata. Conferma la tua email e poi accedi.");
+                router.replace("/login");
+                return;
+            }
 
             router.replace("/onboarding/intro");
         } catch (error: any) {

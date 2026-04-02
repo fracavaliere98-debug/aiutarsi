@@ -14,7 +14,7 @@ interface AuthContextType {
     users: AppUser[];
     usersDB: AppUser[]; 
     login: (email: string, password: string) => Promise<boolean>;
-    register: (userData: Partial<AppUser>) => Promise<boolean>;
+    register: (userData: Partial<AppUser>) => Promise<{ ok: boolean; requiresEmailConfirmation: boolean }>;
     logout: () => void;
     isLoaded: boolean;
     isLoading: boolean;
@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthContextType>({
     users: [],
     usersDB: [],
     login: async () => false,
-    register: async () => false,
+    register: async () => ({ ok: false, requiresEmailConfirmation: false }),
     logout: () => { },
     isLoaded: false,
     isLoading: false,
@@ -315,7 +315,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
-    const register = useCallback(async (userData: Partial<AppUser>): Promise<boolean> => {
+    const register = useCallback(async (userData: Partial<AppUser>): Promise<{ ok: boolean; requiresEmailConfirmation: boolean }> => {
         // setIsLoading(true); // Don't trigger global loading
         try {
             // Check required fields (basic validation)
@@ -327,13 +327,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 role: userData.role || "unknown",
                 emailDomain: userData.email.split("@")[1] || "unknown",
             });
-            const newUser = await authService.register(userData as any);
-            setUser(newUser);
-            await refreshUsers();
-            trackEvent("auth_register_succeeded", {
-                role: newUser.role,
-            });
-            return true;
+            const result = await authService.register(userData as any);
+
+            if (result.hasSession) {
+                setUser(result.user);
+                await refreshUsers();
+                trackEvent("auth_register_succeeded", {
+                    role: result.user.role,
+                });
+            } else {
+                trackEvent("auth_register_confirmation_required", {
+                    role: result.user.role,
+                    emailDomain: userData.email?.split("@")[1] || "unknown",
+                });
+            }
+
+            return {
+                ok: true,
+                requiresEmailConfirmation: result.requiresEmailConfirmation,
+            };
         } catch (error) {
             console.warn("Registration failed:", error);
             const expected = isExpectedUserInputError(error);
