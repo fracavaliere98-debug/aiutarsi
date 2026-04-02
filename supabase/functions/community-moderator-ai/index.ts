@@ -21,6 +21,39 @@ const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 
+const BANNED_TERMS = [
+    'cazzo', 'vaffanculo', 'fanculo', 'stronzo', 'stronza', 'coglione', 'cogliona',
+    'minchia', 'affanculo', 'figlio di puttana', 'figlio di troia', 'bastardo', 'bastarda',
+    'puttana', 'troia', 'zoccola', 'mignotta', 'baldracca',
+    'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick',
+    'nigger', 'faggot',
+];
+
+const HATE_TERMS = [
+    'negro', 'negra', 'terrone', 'terronaccio', 'mongoloide', 'handicappato',
+    'odio i', 'odio gli', 'odio le',
+];
+
+const VIOLENCE_TERMS = [
+    'uccidi', 'ammazza', 'ammazzati', 'crepa', 'vattene a morire',
+    'mi ammazzo', 'voglio morire', 'preferisco morire',
+];
+
+const SEXUAL_TERMS = [
+    'nudo', 'nuda', 'sesso esplicito', 'porno', 'pornograf',
+];
+
+const SPAM_TERMS = [
+    'clicca qui', 'click here', 'guadagna facile', 'earn money fast',
+    'bitcoin', 'crypto', 'investimento sicuro', 'guaranteed profit',
+    'whatsapp', 'telegram',
+];
+
+const URL_PATTERN = /https?:\/\/[^\s]+/gi;
+const LONG_NUMBER_PATTERN = /\b\d{10,}\b/;
+const REPEATED_CHAR_PATTERN = /(.)\1{6,}/;
+const MANY_EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]{5,}/u;
+
 function jsonResponse(body: unknown, status = 200) {
     return new Response(JSON.stringify(body), {
         status,
@@ -81,6 +114,62 @@ function buildBypassAnalysis(reason: string) {
     };
 }
 
+function normalize(text: string) {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s:/._-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function classifyTextByRules(rawText: string) {
+    const text = normalize(rawText);
+    if (!text) return buildBypassAnalysis('No text to moderate.');
+
+    const findTerm = (terms: string[]) => terms.find((term) => text.includes(normalize(term)));
+
+    const violence = findTerm(VIOLENCE_TERMS);
+    if (violence) {
+        return { safe: false, reason: 'Contenuto violento o autolesionistico rilevato.', category: 'violence' };
+    }
+
+    const hate = findTerm(HATE_TERMS);
+    if (hate) {
+        return { safe: false, reason: 'Linguaggio d’odio o discriminatorio rilevato.', category: 'hate' };
+    }
+
+    const sexual = findTerm(SEXUAL_TERMS);
+    if (sexual) {
+        return { safe: false, reason: 'Contenuto sessualmente esplicito rilevato.', category: 'sexual' };
+    }
+
+    const banned = findTerm(BANNED_TERMS);
+    if (banned) {
+        return { safe: false, reason: 'Linguaggio offensivo o molesto rilevato.', category: 'harassment' };
+    }
+
+    const spam = findTerm(SPAM_TERMS);
+    if (spam) {
+        return { safe: false, reason: 'Pattern spam o truffa rilevato.', category: 'spam' };
+    }
+
+    if (URL_PATTERN.test(rawText) || LONG_NUMBER_PATTERN.test(rawText) || REPEATED_CHAR_PATTERN.test(rawText) || MANY_EMOJI_PATTERN.test(rawText)) {
+        return { safe: false, reason: 'Pattern spam automatico rilevato.', category: 'spam' };
+    }
+
+    return { safe: true, reason: 'Contenuto approvato dalle regole standard.', category: 'none' };
+}
+
+function buildCommunityRuleFallback(record: CommunityPost) {
+    return classifyTextByRules([record.caption || '', record.image_url ? 'image_attached' : ''].join(' '));
+}
+
+function buildChatRuleFallback(chat: ChatMessagePayload) {
+    return classifyTextByRules(chat.message || '');
+}
+
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     const chunkSize = 0x8000;
@@ -134,7 +223,7 @@ Deno.serve(async (req) => {
                 analysis = await parseModelJson(result);
             } catch (error) {
                 console.error('[Moderator Error] Chat moderation provider unavailable', error);
-                analysis = buildBypassAnalysis('Chat moderation temporarily unavailable.');
+                analysis = buildChatRuleFallback(chat);
             }
 
             if (!analysis.safe) {
@@ -185,7 +274,7 @@ Deno.serve(async (req) => {
             analysis = await parseModelJson(result);
         } catch (error) {
             console.error('[Moderator Error] Community moderation provider unavailable', error);
-            analysis = buildBypassAnalysis('Community moderation temporarily unavailable.');
+            analysis = buildCommunityRuleFallback(record);
         }
 
         if (!analysis.safe) {
