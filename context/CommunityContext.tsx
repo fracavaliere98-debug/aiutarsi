@@ -20,11 +20,26 @@ interface CommunityContextType {
 
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
 
+async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 8000): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<T>((_, reject) => {
+                timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
+}
+
 export function CommunityProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const segments = useSegments();
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const initialFetchInFlightRef = React.useRef<Promise<void> | null>(null);
     const segmentKey = segments.join('/');
     const isQuietRoute = [
         '(volunteer)/settings',
@@ -41,14 +56,27 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const getBlockedAuthorIds = useCallback(async () => {
         if (isQuietRoute || !user?.id) return [];
 
-        const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
-            supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
-            supabase.from('blocked_users').select('blocker_id').eq('blocked_id', user.id),
-        ]);
+        const startedAt = Date.now();
+        const [{ data: iBlocked, error: iBlockedError }, { data: blockedMe, error: blockedMeError }] = await withTimeout(
+            Promise.all([
+                supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id),
+                supabase.from('blocked_users').select('blocker_id').eq('blocked_id', user.id),
+            ]),
+            'community.blockedUsers',
+            8000
+        );
+
+        if (iBlockedError) throw iBlockedError;
+        if (blockedMeError) throw blockedMeError;
 
         const blockSet = new Set<string>();
         iBlocked?.forEach((r: any) => blockSet.add(r.blocked_id));
         blockedMe?.forEach((r: any) => blockSet.add(r.blocker_id));
+        console.log('[DEBUG] CommunityContext: blocked users loaded', {
+            userId: user.id,
+            count: blockSet.size,
+            elapsedMs: Date.now() - startedAt,
+        });
         return Array.from(blockSet);
     }, [user?.id, isQuietRoute]);
 
@@ -91,40 +119,88 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         return query;
     }, []);
 
+    const formatCommunityError = useCallback((error: unknown) => {
+        if (!error) return 'unknown error';
+        if (error instanceof Error) return error.message;
+        if (typeof error === 'string') return error;
+        try {
+            return JSON.stringify(error, null, 2);
+        } catch {
+            return String(error);
+        }
+    }, []);
+
     const fetchFeed = useCallback(async (lastCreatedAt?: string) => {
         if (isQuietRoute) return;
-        setIsLoading(true);
-        try {
-            const blockedAuthorIds = await getBlockedAuthorIds();
-            let query = buildPostsQuery(blockedAuthorIds);
-            query = query.order('created_at', { ascending: false }).limit(30);
-
-            if (lastCreatedAt) {
-                query = query.lt('created_at', lastCreatedAt);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-
-            const newPosts = (data as unknown as CommunityPost[]) || [];
-            if (lastCreatedAt) {
-                setPosts(prev => {
-                    const existingIds = new Set(prev.map(p => p.id));
-                    const uniqueNew = newPosts.filter(p => !existingIds.has(p.id));
-                    return [...prev, ...uniqueNew];
-                });
-            } else {
-                setPosts(newPosts);
-            }
-        } catch (e: any) {
-            console.error('Community fetchFeed error:', e);
-            if (e && typeof e === 'object') {
-                console.error('Error details:', JSON.stringify(e, null, 2));
-            }
-        } finally {
-            setIsLoading(false);
+        if (!lastCreatedAt && initialFetchInFlightRef.current) {
+            console.log('[DEBUG] CommunityContext: reusing in-flight base fetch', {
+                route: segmentKey,
+                userId: user?.id || null,
+            });
+            return initialFetchInFlightRef.current;
         }
-    }, [buildPostsQuery, getBlockedAuthorIds, isQuietRoute]);
+
+        const runFetch = async () => {
+            setIsLoading(true);
+            try {
+                const startedAt = Date.now();
+                console.log('[DEBUG] CommunityContext: fetchFeed start', {
+                    lastCreatedAt: lastCreatedAt || null,
+                    route: segmentKey,
+                    userId: user?.id || null,
+                });
+                const blockedAuthorIds = await getBlockedAuthorIds();
+                let query = buildPostsQuery(blockedAuthorIds);
+                query = query.order('created_at', { ascending: false }).limit(30);
+
+                if (lastCreatedAt) {
+                    query = query.lt('created_at', lastCreatedAt);
+                }
+
+                const { data, error } = await withTimeout(
+                    query,
+                    'community.feed',
+                    8000
+                );
+                if (error) throw error;
+
+                const newPosts = (data as unknown as CommunityPost[]) || [];
+                if (lastCreatedAt) {
+                    setPosts(prev => {
+                        const existingIds = new Set(prev.map(p => p.id));
+                        const uniqueNew = newPosts.filter(p => !existingIds.has(p.id));
+                        return [...prev, ...uniqueNew];
+                    });
+                } else {
+                    setPosts(newPosts);
+                }
+
+                console.log('[DEBUG] CommunityContext: fetchFeed resolved', {
+                    count: newPosts.length,
+                    blockedAuthorIds: blockedAuthorIds.length,
+                    elapsedMs: Date.now() - startedAt,
+                });
+            } catch (e: any) {
+                console.error('Community fetchFeed error:', e);
+                console.error('Error details:', formatCommunityError(e));
+                setPosts((prev) => prev ?? []);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const fetchPromise = runFetch().finally(() => {
+            if (!lastCreatedAt && initialFetchInFlightRef.current === fetchPromise) {
+                initialFetchInFlightRef.current = null;
+            }
+        });
+
+        if (!lastCreatedAt) {
+            initialFetchInFlightRef.current = fetchPromise;
+        }
+
+        return fetchPromise;
+    }, [buildPostsQuery, formatCommunityError, getBlockedAuthorIds, isQuietRoute, segmentKey, user?.id]);
 
     const fetchPostsForActivity = useCallback(async (activityId: string) => {
         if (!activityId) return [];
