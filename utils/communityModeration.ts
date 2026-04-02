@@ -6,6 +6,12 @@ type ModerationInput = {
     imageUrl?: string;
 };
 
+type ChatModerationInput = {
+    message: string;
+    userId?: string;
+    conversationId?: string;
+};
+
 type ModerationResult = {
     safe: boolean;
     reason?: string;
@@ -90,6 +96,39 @@ export async function moderateCommunityContent({ caption, imageUrl }: Moderation
         };
     } catch (error) {
         console.warn("[CommunityModeration] unavailable, allowing content", error);
+        return {
+            safe: true,
+            reason: "Moderazione temporaneamente non disponibile.",
+            category: "none",
+        };
+    }
+}
+
+export async function moderateChatMessage({ message, userId, conversationId }: ChatModerationInput): Promise<ModerationResult> {
+    const body = {
+        chat: {
+            message,
+            user_id: userId,
+            conversation_id: conversationId,
+        },
+    };
+
+    try {
+        const result = Platform.OS === "web"
+            ? await supabase.functions.invoke("community-moderator-ai", { body })
+            : { data: await invokeModeratorNative(body), error: null };
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        return {
+            safe: result.data?.analysis?.safe !== false,
+            reason: result.data?.analysis?.reason,
+            category: result.data?.analysis?.category,
+        };
+    } catch (error) {
+        console.warn("[ChatModeration] unavailable, allowing content", error);
         return {
             safe: true,
             reason: "Moderazione temporaneamente non disponibile.",

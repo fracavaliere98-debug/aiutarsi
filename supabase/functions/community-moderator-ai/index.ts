@@ -9,11 +9,77 @@ interface CommunityPost {
     author_id: string;
 }
 
+interface ChatMessagePayload {
+    message: string;
+    user_id?: string;
+    conversation_id?: string;
+}
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
 const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+function jsonResponse(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+function buildCommunityPrompt() {
+    return `Sei un moderatore AI per l'app "AiutarSi", una piattaforma di volontariato.
+Analizza il seguente post della community e determina se viola le regole della community.
+Cerca specificamente:
+1. Nudita o contenuti sessualmente espliciti.
+2. Linguaggio d'odio, discriminazione o bullismo.
+3. Spam, truffe, schemi Ponzi o pubblicita non autorizzata.
+4. Violenza gratuita o immagini disturbanti.
+
+Restituisci solo un JSON nel formato:
+{"safe": boolean, "reason": string, "category": "sexual" | "hate" | "spam" | "violence" | "none"}`;
+}
+
+function buildChatPrompt(message: string) {
+    return `Sei un moderatore AI per la chat di "AiutarSi", una piattaforma di volontariato.
+Analizza il seguente messaggio privato o di gruppo e determina se viola le regole della piattaforma.
+Blocca solo i casi davvero problematici:
+1. Minacce, violenza o istigazione all'autolesionismo.
+2. Hate speech, discriminazione grave, molestie o insulti pesanti.
+3. Spam, scam, phishing, promozione finanziaria aggressiva o contatti fraudolenti.
+4. Contenuti sessualmente espliciti.
+
+Non bloccare messaggi neutrali, coordinamento logistico, saluti, richieste di aiuto legittime o linguaggio colloquiale innocuo.
+
+Restituisci solo un JSON nel formato:
+{"safe": boolean, "reason": string, "category": "sexual" | "hate" | "spam" | "violence" | "harassment" | "none"}
+
+Messaggio da analizzare:
+${message}`;
+}
+
+async function parseModelJson(result: Awaited<ReturnType<ReturnType<typeof genAI.getGenerativeModel>["generateContent"]>>) {
+    const responseText = result.response.text();
+    try {
+        return JSON.parse(responseText.replace(/```json|```/g, "").trim());
+    } catch (parseError) {
+        console.error('[Moderator Error] Invalid model JSON', parseError, responseText);
+        return {
+            safe: true,
+            reason: 'Model output non-JSON; moderation bypassed.',
+            category: 'none',
+        };
+    }
+}
+
+function buildBypassAnalysis(reason: string) {
+    return {
+        safe: true,
+        reason,
+        category: 'none',
+    };
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
@@ -30,87 +96,96 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 Deno.serve(async (req) => {
     try {
-        let payload: { record?: CommunityPost } | null = null;
+        let payload: { record?: CommunityPost; chat?: ChatMessagePayload } | null = null;
         try {
             payload = await req.json();
         } catch (parseError) {
             console.error('[Moderator Error] Invalid request JSON', parseError);
-            return new Response(JSON.stringify({
+            return jsonResponse({
                 success: true,
                 analysis: {
                     safe: true,
                     reason: 'Invalid request payload; moderation bypassed.',
                     category: 'none',
                 },
-            }), {
-                headers: { 'Content-Type': 'application/json' },
             });
         }
 
-        const { record } = payload || {};
+        const { record, chat } = payload || {};
+
+        if (!record && !chat) {
+            return jsonResponse({
+                success: true,
+                analysis: {
+                    safe: true,
+                    reason: 'No moderation target provided; moderation bypassed.',
+                    category: 'none',
+                },
+            });
+        }
+
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        if (chat?.message?.trim()) {
+            console.log(`[Moderator] Analyzing chat message for user ${chat.user_id || 'unknown'}`);
+            let analysis;
+            try {
+                const result = await model.generateContent(buildChatPrompt(chat.message));
+                analysis = await parseModelJson(result);
+            } catch (error) {
+                console.error('[Moderator Error] Chat moderation provider unavailable', error);
+                analysis = buildBypassAnalysis('Chat moderation temporarily unavailable.');
+            }
+
+            if (!analysis.safe) {
+                console.warn(`[Moderator] Chat message flagged (${analysis.category}): ${analysis.reason}`);
+            }
+
+            return jsonResponse({ success: true, analysis });
+        }
 
         if (!record) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
                 success: true,
                 analysis: {
                     safe: true,
                     reason: 'No record provided; moderation bypassed.',
                     category: 'none',
                 },
-            }), {
-                headers: { 'Content-Type': 'application/json' },
             });
         }
 
         console.log(`[Moderator] Analyzing post ${record.id} by user ${record.author_id}`);
+        const prompt = buildCommunityPrompt();
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        // Prompt più severo e specifico per UGC
-        const prompt = `Sei un moderatore AI per l'app "AiutarSi", una piattaforma di volontariato. 
-    Analizza il seguente post (testo e/o immagine) e determina se viola le regole della community.
-    Cerca specificamente:
-    1. Nudità o contenuti sessualmente espliciti.
-    2. Linguaggio d'odio, discriminazione o bullismo.
-    3. Spam di Criptovalute, schemi Ponzi o pubblicità non autorizzata.
-    4. Violenza gratuita o immagini disturbanti.
-
-    Restituisci Solo un JSON nel formato: {"safe": boolean, "reason": string, "category": "sexual" | "hate" | "spam" | "violence" | "none"}`;
-
-        let result;
-        if (record.image_url) {
-            // Fetch image and analyze with Vision
-            const imageResp = await fetch(record.image_url);
-            if (!imageResp.ok) {
-                throw new Error(`Unable to fetch image for moderation: ${imageResp.status}`);
-            }
-            const imageData = await imageResp.arrayBuffer();
-
-            result = await model.generateContent([
-                prompt,
-                {
-                    inlineData: {
-                        data: arrayBufferToBase64(imageData),
-                        mimeType: "image/jpeg",
-                    },
-                },
-                `Caption: ${record.caption || "Nessuna didascalia"}`
-            ]);
-        } else {
-            result = await model.generateContent(`${prompt}\n\nTesto da analizzare: ${record.caption}`);
-        }
-
-        const responseText = result.response.text();
         let analysis;
         try {
-            analysis = JSON.parse(responseText.replace(/```json|```/g, "").trim());
-        } catch (parseError) {
-            console.error('[Moderator Error] Invalid model JSON', parseError, responseText);
-            analysis = {
-                safe: true,
-                reason: 'Model output non-JSON; moderation bypassed.',
-                category: 'none',
-            };
+            let result;
+            if (record.image_url) {
+                const imageResp = await fetch(record.image_url);
+                if (!imageResp.ok) {
+                    throw new Error(`Unable to fetch image for moderation: ${imageResp.status}`);
+                }
+                const imageData = await imageResp.arrayBuffer();
+
+                result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            data: arrayBufferToBase64(imageData),
+                            mimeType: "image/jpeg",
+                        },
+                    },
+                    `Caption: ${record.caption || "Nessuna didascalia"}`
+                ]);
+            } else {
+                result = await model.generateContent(`${prompt}\n\nTesto da analizzare: ${record.caption}`);
+            }
+
+            analysis = await parseModelJson(result);
+        } catch (error) {
+            console.error('[Moderator Error] Community moderation provider unavailable', error);
+            analysis = buildBypassAnalysis('Community moderation temporarily unavailable.');
         }
 
         if (!analysis.safe) {
@@ -133,11 +208,9 @@ Deno.serve(async (req) => {
             // await supabase.from('community_posts').delete().eq('id', record.id);
         }
 
-        return new Response(JSON.stringify({ success: true, analysis }), {
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return jsonResponse({ success: true, analysis });
     } catch (err) {
         console.error('[Moderator Error]', err);
-        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        return jsonResponse({ error: err.message }, 500);
     }
 });

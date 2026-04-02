@@ -3,6 +3,7 @@ import { profileRest } from '../utils/profileRest';
 import { authService } from './AuthService';
 import { MessageMetadata } from '../types/chat';
 import { filterMessage, recordMessageSent, getFilterErrorMessage } from '../utils/chatFilter';
+import { moderateChatMessage } from '../utils/communityModeration';
 
 /** Thrown when a message is blocked by the content filter */
 export class ChatFilterError extends Error {
@@ -189,13 +190,19 @@ class ChatService {
 
         // Best-effort server-side moderation after send: never blocks delivery.
         void this._withTimeout(
-            supabase.functions.invoke('chat-filter', {
-                body: { message: content, userId: senderId },
+            moderateChatMessage({
+                message: content,
+                userId: senderId,
+                conversationId,
             }),
-            'chat-filter invoke background',
+            'community-moderator-ai chat moderation background',
             1500
-        ).catch((e) => {
-            console.warn('chat-filter edge function unavailable after send:', e);
+        ).then((analysis) => {
+            if (!analysis.safe) {
+                console.warn('community-moderator-ai flagged chat message after send:', analysis);
+            }
+        }).catch((e) => {
+            console.warn('community-moderator-ai unavailable after chat send:', e);
         });
 
         return data;
