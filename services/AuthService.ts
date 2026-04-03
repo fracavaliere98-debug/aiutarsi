@@ -454,28 +454,15 @@ export class AuthService {
 
         if (!data.user) throw new Error("Registrazione fallita: nessun utente restituito");
 
-        let hasSession = !!data.session;
+        const hasSession = !!data.session;
         let requiresEmailConfirmation = false;
 
-        // If no session is returned, try a silent sign-in. When Auth requires email confirmation,
-        // Supabase answers with "Email not confirmed": that is a valid post-signup state, not a failure.
+        // When signup returns a user but no session, email confirmation is required.
+        // Do not attempt an automatic sign-in here: that creates a false technical error
+        // path in environments where email confirmation is intentionally enabled.
         if (!data.session) {
-            console.log("Registration successful but no session returned. Attempting auto-login...");
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: cleanEmail,
-                password: password!,
-            });
-            if (signInError) {
-                console.error("Auto-login after registration failed:", signInError.message);
-                if ((signInError.message || "").toLowerCase().includes("email not confirmed")) {
-                    requiresEmailConfirmation = true;
-                } else {
-                    throw new Error("Registrazione completata, ma login automatico fallito. Riprova ad accedere.");
-                }
-            } else {
-                hasSession = true;
-                console.log("[DEBUG] AuthService: auto-login success");
-            }
+            requiresEmailConfirmation = true;
+            console.log("[DEBUG] AuthService: signup completed without session, email confirmation required");
         }
 
         console.log("[DEBUG] AuthService: register success");
