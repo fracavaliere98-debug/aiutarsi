@@ -3,27 +3,21 @@
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 
-const painPoints = [
-  "I volontari non sanno dove trovare opportunità affidabili vicino a loro",
-  "Gli enti fanno fatica a raggiungere persone davvero interessate",
-  "Le attività locali e sociali sono sparse, poco visibili e difficili da coordinare",
-];
-
 const solutionColumns = [
   {
     eyebrow: "Per i volontari",
-    title: "Trova opportunità più vicine e più adatte a te.",
-    text: "Scopri attività locali, segui gli enti che ti interessano e resta aggiornato in modo semplice.",
+    title: "Trova opportunità vicine e affidabili.",
+    text: "Scopri attività locali, enti da seguire e occasioni utili senza perdere tempo.",
   },
   {
     eyebrow: "Per gli enti",
-    title: "Organizza meglio attività, visibilità e partecipazione.",
-    text: "Pubblica iniziative, coinvolgi persone interessate e mantieni una relazione viva con la tua comunità.",
+    title: "Organizza attività e partecipazione.",
+    text: "Pubblica iniziative, raccogli interesse e mantieni tutto più ordinato in un solo flusso.",
   },
   {
     eyebrow: "Per il territorio",
-    title: "Rendi il volontariato locale più visibile e coordinato.",
-    text: "AiutarSi mette in connessione persone, realtà sociali e opportunità che oggi restano troppo disperse.",
+    title: "Rendi il volontariato più visibile.",
+    text: "Persone, realtà sociali e opportunità locali smettono di restare sparse e difficili da trovare.",
   },
 ];
 
@@ -54,11 +48,11 @@ export default function LandingPage() {
   const handleContact = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const cleanEmail = email.trim();
-    const subject = encodeURIComponent("AiutarSi - Contatto landing");
+    const subject = encodeURIComponent("AiutarSì - Contatto landing");
     const body = encodeURIComponent(
       cleanEmail
-        ? `Ciao,\n\nvorrei avere maggiori informazioni su AiutarSi.\n\nEmail di contatto: ${cleanEmail}\n`
-        : "Ciao,\n\nvorrei avere maggiori informazioni su AiutarSi.\n"
+        ? `Ciao,\n\nvorrei avere maggiori informazioni su AiutarSì.\n\nEmail di contatto: ${cleanEmail}\n`
+        : "Ciao,\n\nvorrei avere maggiori informazioni su AiutarSì.\n"
     );
     window.location.href = `mailto:aiutarsi.it@gmail.com?subject=${subject}&body=${body}`;
   };
@@ -70,17 +64,7 @@ export default function LandingPage() {
 
       <header className="topbar">
         <div className="brand-lockup">
-          <Image
-            src="/logo-transparent.png"
-            alt="AiutarSi"
-            width={44}
-            height={44}
-            className="brand-icon"
-            priority
-          />
-          <div className="wordmark-crop" aria-label="AiutarSi">
-            <img src="/logo-lungo.jpeg" alt="AiutarSi" className="wordmark-image" />
-          </div>
+          <Image src="/logo-lungo.jpeg" alt="AiutarSì" width={300} height={110} className="brand-full" priority />
         </div>
 
         <nav className="topbar-links" aria-label="Navigazione">
@@ -92,10 +76,9 @@ export default function LandingPage() {
 
       <section className="hero-grid">
         <div className="hero-copy">
-          <p className="eyebrow">AiutarSi</p>
           <h1>Il modo più semplice per trovare, organizzare e vivere il volontariato locale.</h1>
           <p className="hero-text">
-            AiutarSi connette volontari, enti e comunità locali in un’unica esperienza semplice,
+            AiutarSì connette volontari, enti e comunità locali in un’unica esperienza semplice,
             umana e accessibile.
           </p>
 
@@ -139,26 +122,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="problem-section" id="problema">
-        <div className="section-heading">
-          <p className="eyebrow">Il problema</p>
-          <h2>Oggi fare volontariato è più difficile di quanto dovrebbe essere.</h2>
-        </div>
-
-        <div className="problem-grid">
-          {painPoints.map((item, index) => (
-            <article key={item} className="problem-card">
-              <span>{`0${index + 1}`}</span>
-              <p>{item}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="solution-section" id="soluzione">
         <div className="section-heading">
           <p className="eyebrow">La soluzione</p>
           <h2>Una piattaforma unica per volontari, enti e comunità.</h2>
+          <p className="section-subtitle">
+            Più semplice da usare, più chiara da capire, più utile nella vita reale.
+          </p>
         </div>
 
         <div className="section-grid">
@@ -181,6 +151,9 @@ export default function LandingPage() {
         <div className="section-heading">
           <p className="eyebrow">Come funziona</p>
           <h2>Come funziona</h2>
+          <p className="section-subtitle">
+            Tre passaggi chiari, pensati per rendere l’esperienza più naturale fin dal primo accesso.
+          </p>
         </div>
 
         <div className="steps-grid">
@@ -200,7 +173,7 @@ export default function LandingPage() {
       <section className="cta-band" id="download">
         <div>
           <p className="eyebrow">CTA finale</p>
-          <h2>Vuoi far parte di AiutarSi fin dall’inizio?</h2>
+          <h2>Vuoi far parte di AiutarSì fin dall’inizio?</h2>
         </div>
 
         <div className="cta-actions">

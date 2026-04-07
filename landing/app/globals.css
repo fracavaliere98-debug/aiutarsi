@@ -46,7 +46,7 @@ input {
 .page-shell {
   position: relative;
   overflow: hidden;
-  padding: 28px;
+  padding: 24px 28px 40px;
 }
 
 .atmosphere {
@@ -74,14 +74,13 @@ input {
 
 .topbar,
 .hero-grid,
-.problem-section,
 .solution-section,
 .how-section,
 .cta-band,
 .contact-band {
   position: relative;
   z-index: 1;
-  max-width: 1180px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -96,29 +95,12 @@ input {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
 
-.brand-icon {
-  width: 40px;
-  height: 40px;
+.brand-full {
+  width: auto;
+  height: 64px;
   object-fit: contain;
-}
-
-.wordmark-crop {
-  position: relative;
-  width: 230px;
-  height: 54px;
-  overflow: hidden;
-}
-
-.wordmark-image {
-  position: absolute;
-  left: 0;
-  top: -152px;
-  width: 230px;
-  max-width: none;
-  height: auto;
 }
 
 .topbar-links {
@@ -137,16 +119,19 @@ input {
 .pill-link {
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 13px 22px;
+  background: linear-gradient(135deg, rgba(91, 44, 160, 0.12), rgba(91, 44, 160, 0.04));
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(71, 33, 131, 0.08);
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.03fr) minmax(360px, 0.97fr);
-  gap: 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.92fr);
+  gap: 40px;
   align-items: center;
-  padding: 18px 0 34px;
+  padding: 26px 0 42px;
 }
 
 .eyebrow,
@@ -171,9 +156,9 @@ input {
 }
 
 .hero-copy h1 {
-  max-width: 13ch;
-  font-size: clamp(2.7rem, 5.6vw, 4.8rem);
-  line-height: 1.02;
+  max-width: 10.5ch;
+  font-size: clamp(3rem, 5.9vw, 5.4rem);
+  line-height: 0.98;
 }
 
 .hero-text,
@@ -187,7 +172,7 @@ input {
 }
 
 .hero-text {
-  max-width: 46ch;
+  max-width: 44ch;
   margin: 14px 0 0;
   font-size: 0.98rem;
 }
@@ -219,7 +204,7 @@ input {
 
 .secondary-cta {
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(91, 44, 160, 0.05);
   color: var(--accent);
 }
 
@@ -237,7 +222,7 @@ input {
 
 .phone-cluster {
   position: relative;
-  min-height: 560px;
+  min-height: 620px;
   width: 100%;
 }
 
@@ -253,10 +238,12 @@ input {
 
 .phone-card {
   position: absolute;
-  width: min(72%, 310px);
+  width: min(72%, 320px);
   border-radius: 34px;
   background: rgba(255, 255, 255, 0.92);
   padding: 20px;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  animation: floatCard 6s ease-in-out infinite;
 }
 
 .phone-card-left {
@@ -269,6 +256,7 @@ input {
   right: 6px;
   top: 0;
   transform: rotate(8deg);
+  animation-delay: 0.8s;
 }
 
 .phone-topline {
@@ -336,14 +324,13 @@ input {
   color: var(--ink);
 }
 
-.problem-section,
 .solution-section,
 .how-section {
-  margin-top: 34px;
+  margin-top: 40px;
 }
 
 .section-heading {
-  max-width: 780px;
+  width: 100%;
   margin-bottom: 18px;
 }
 
@@ -351,23 +338,29 @@ input {
   font-size: clamp(2.1rem, 4vw, 4rem);
 }
 
-.problem-grid,
+.section-subtitle {
+  margin: 14px 0 0;
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
 .section-grid,
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
 }
 
-.problem-card,
 .panel-card,
 .step-card {
-  padding: 22px;
+  padding: 24px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.76);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
 }
 
-.problem-card span,
 .step-number {
   display: inline-flex;
   margin-bottom: 12px;
@@ -381,7 +374,7 @@ input {
 .panel-card h3,
 .step-card h3 {
   margin: 0 0 12px;
-  font-size: 1.28rem;
+  font-size: 1.34rem;
   line-height: 1.14;
   font-family: var(--font-display), serif;
   font-weight: 700;
@@ -432,6 +425,20 @@ input {
   font-weight: 900;
 }
 
+.panel-card:hover,
+.step-card:hover,
+.pill-link:hover,
+.primary-cta:hover,
+.secondary-cta:hover {
+  transform: translateY(-2px);
+}
+
+.panel-card:hover,
+.step-card:hover {
+  border-color: rgba(91, 44, 160, 0.22);
+  box-shadow: 0 26px 54px rgba(71, 33, 131, 0.14);
+}
+
 .cta-band,
 .contact-band {
   display: grid;
@@ -476,10 +483,14 @@ input {
   font-size: 0.9rem;
 }
 
-.pill-link:hover,
-.primary-cta:hover,
-.secondary-cta:hover {
-  transform: translateY(-1px);
+@keyframes floatCard {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -10px;
+  }
 }
 
 @media (max-width: 1040px) {
@@ -512,7 +523,6 @@ input {
     flex-wrap: wrap;
   }
 
-  .problem-grid,
   .section-grid,
   .steps-grid {
     grid-template-columns: 1fr;
@@ -522,9 +532,14 @@ input {
     min-height: 650px;
   }
 
+  .brand-full {
+    height: 52px;
+  }
+
   .phone-card {
     width: calc(100% - 12px);
     transform: none;
+    animation: none;
   }
 
   .phone-card-left {
