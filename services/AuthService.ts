@@ -454,6 +454,11 @@ export class AuthService {
 
         if (!data.user) throw new Error("Registrazione fallita: nessun utente restituito");
 
+        const identities = Array.isArray((data.user as any).identities) ? (data.user as any).identities : null;
+        if (!data.session && identities && identities.length === 0) {
+            throw new Error("Questo indirizzo email è già registrato.");
+        }
+
         const hasSession = !!data.session;
         let requiresEmailConfirmation = false;
 
