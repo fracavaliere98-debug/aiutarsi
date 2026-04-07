@@ -1,0 +1,13 @@
+appId: com.aiutarsi.app
+---
+- launchApp
+- tapOn: "Accedi"
+- assertVisible: "Accedi al tuo profilo."
+- tapOn:
+    text: "mario.rossi@email.com"
+- inputText: "test.prod.sentry@invalidmail.com"
+- tapOn:
+    text: "••••••••"
+- inputText: "wrongpass123"
+- tapOn: "Accedi"
+- assertVisible: "Accedi al tuo profilo."

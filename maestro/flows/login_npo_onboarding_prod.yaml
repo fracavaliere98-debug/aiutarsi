@@ -1,0 +1,156 @@
+appId: ${APP_ID}
+
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: "btn-landing-login"
+    timeout: 30000
+
+- tapOn:
+    id: "btn-landing-login"
+
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 15000
+
+- tapOn:
+    id: "input-email"
+- inputText: ${LOGIN_EMAIL}
+
+- tapOn:
+    id: "input-password"
+- inputText: ${LOGIN_PASSWORD}
+
+- tapOn:
+    id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Benvenuti su"
+    timeout: 30000
+
+- tapOn:
+    text: "Configura Ente"
+
+- extendedWaitUntil:
+    visible:
+      text: "In quali settori operate?"
+    timeout: 20000
+
+- tapOn:
+    text: "Ambiente"
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Quali skill cercate?"
+    timeout: 20000
+
+- tapOn:
+    text: "Amministrazione e Gestione"
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Dettagli dell'ente"
+    timeout: 20000
+
+- tapOn:
+    text: "Raccontate brevemente chi siete e cosa fate..."
+- inputText: "Ente di test creato in produzione per verifiche end to end Android."
+
+- tapOn:
+    text: "Cerca indirizzo..."
+- inputText: "Via Roma Milano"
+
+- extendedWaitUntil:
+    visible:
+      text: "Via"
+    timeout: 15000
+
+- tapOn:
+    point: 50%, 54%
+
+- tapOn:
+    text: "Es. 12345678901"
+- inputText: "12345678901"
+
+- tapOn:
+    text: "contatti@tuoente.org"
+- inputText: "e2e.npo.public@example.com"
+
+- tapOn:
+    text: "Es. +39 02 1234567"
+- inputText: "+39021234567"
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Chi accoglie i volontari?"
+    timeout: 20000
+
+- tapOn:
+    text: "Es. Mario Rossi"
+- inputText: "Mario E2E"
+
+- tapOn:
+    text: "Es. Coordinatore Volontari"
+- inputText: "Referente Test"
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Verifica dell'ente"
+    timeout: 20000
+
+- tapOn:
+    text: "Carica documento"
+
+- extendedWaitUntil:
+    visible:
+      text: "Piu tardi"
+    timeout: 10000
+
+- tapOn:
+    text: "Piu tardi"
+
+- extendedWaitUntil:
+    visible:
+      text: "Anteprima profilo"
+    timeout: 20000
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Ultimo passaggio"
+    timeout: 20000
+
+- tapOn:
+    text: "Inizia il tuo viaggio"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "tab-community"
+    timeout: 30000

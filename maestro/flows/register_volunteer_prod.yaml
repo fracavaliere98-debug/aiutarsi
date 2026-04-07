@@ -1,0 +1,71 @@
+appId: ${APP_ID}
+
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      text: "Diventa volontario"
+    timeout: 30000
+
+- tapOn:
+    text: "Diventa volontario"
+
+- extendedWaitUntil:
+    visible:
+      text: "Profilo volontario"
+    timeout: 15000
+
+- tapOn:
+    text: "Mario"
+- inputText: ${VOLUNTEER_FIRST_NAME}
+
+- tapOn:
+    text: "Rossi"
+- inputText: ${VOLUNTEER_LAST_NAME}
+
+- tapOn:
+    text: "mario.rossi@email.com"
+- inputText: ${VOLUNTEER_EMAIL}
+
+- swipe:
+    start: 50%, 45%
+    end: 50%, 20%
+
+- tapOn:
+    text: "Crea una password sicura"
+- inputText: ${VOLUNTEER_PASSWORD}
+
+- swipe:
+    start: 50%, 45%
+    end: 50%, 20%
+
+- tapOn:
+    point: 14%, 67%
+
+- tapOn:
+    text: "Crea account"
+
+- extendedWaitUntil:
+    visible:
+      text: "Controlla la tua email."
+    timeout: 25000
+
+- assertVisible:
+    text: "Volontario in attesa di conferma"
+
+- assertVisible:
+    text: "Quasi fatto"
+
+- assertVisible:
+    text: ${VOLUNTEER_EMAIL}
+
+- assertVisible:
+    text: "Ruolo: Volontario"
+
+- assertVisible:
+    text: "Reinvia email"
+
+- assertVisible:
+    text: "Ho già confermato"

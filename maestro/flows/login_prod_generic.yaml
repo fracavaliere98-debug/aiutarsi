@@ -1,0 +1,38 @@
+appId: ${APP_ID}
+
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: "btn-landing-login"
+    timeout: 30000
+
+- tapOn:
+    id: "btn-landing-login"
+
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 15000
+
+- tapOn:
+    id: "input-email"
+- inputText: ${LOGIN_EMAIL}
+
+- tapOn:
+    id: "input-password"
+- inputText: ${LOGIN_PASSWORD}
+
+- tapOn:
+    id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: ${EXPECTED_TEXT}
+    timeout: 30000

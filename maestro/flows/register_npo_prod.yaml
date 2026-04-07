@@ -1,0 +1,79 @@
+appId: ${APP_ID}
+
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      text: "Diventa volontario"
+    timeout: 30000
+
+- tapOn:
+    text: "Diventa volontario"
+
+- extendedWaitUntil:
+    visible:
+      text: "Profilo volontario"
+    timeout: 15000
+
+- tapOn:
+    text: "Registrati come NPO"
+
+- extendedWaitUntil:
+    visible:
+      text: "Profilo ente"
+    timeout: 15000
+
+- tapOn:
+    text: "Associazione Onlus..."
+- inputText: ${NPO_NAME}
+
+- tapOn:
+    text: "12345678901"
+- inputText: ${NPO_TAX_ID}
+
+- tapOn:
+    text: "info@associazione.org"
+- inputText: ${NPO_EMAIL}
+
+- swipe:
+    start: 50%, 45%
+    end: 50%, 20%
+
+- tapOn:
+    text: "Crea una password sicura"
+- inputText: ${NPO_PASSWORD}
+
+- swipe:
+    start: 50%, 45%
+    end: 50%, 20%
+
+- tapOn:
+    point: 14%, 67%
+
+- tapOn:
+    text: "Crea account NPO"
+
+- extendedWaitUntil:
+    visible:
+      text: "Controlla la tua email."
+    timeout: 25000
+
+- assertVisible:
+    text: "Ente in attesa di conferma"
+
+- assertVisible:
+    text: "Quasi fatto"
+
+- assertVisible:
+    text: ${NPO_EMAIL}
+
+- assertVisible:
+    text: "Ruolo: Ente"
+
+- assertVisible:
+    text: "Reinvia email"
+
+- assertVisible:
+    text: "Ho già confermato"

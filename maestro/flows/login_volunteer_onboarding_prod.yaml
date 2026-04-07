@@ -1,0 +1,94 @@
+appId: ${APP_ID}
+
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: "btn-landing-login"
+    timeout: 30000
+
+- tapOn:
+    id: "btn-landing-login"
+
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 15000
+
+- tapOn:
+    id: "input-email"
+- inputText: ${LOGIN_EMAIL}
+
+- tapOn:
+    id: "input-password"
+- inputText: ${LOGIN_PASSWORD}
+
+- tapOn:
+    id: "btn-login"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Cosa ti appassiona?"
+    timeout: 30000
+
+- tapOn:
+    text: "Salta"
+
+- extendedWaitUntil:
+    visible:
+      text: "Cosa sai fare?"
+    timeout: 20000
+
+- tapOn:
+    text: "Assistenza e Compagnia"
+
+- tapOn:
+    text: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: "Completa il profilo"
+    timeout: 20000
+
+- tapOn:
+    text: "Raccontaci qualcosa di te, le tue esperienze o perché vuoi fare volontariato..."
+- inputText: "Profilo test volontario creato su produzione da E2E Android."
+
+- tapOn:
+    text: "Seleziona il sesso"
+- tapOn:
+    text: "Donna"
+
+- tapOn:
+    text: "GG/MM/AAAA"
+- inputText: "01011990"
+
+- swipe:
+    start: 50%, 80%
+    end: 50%, 20%
+
+- tapOn:
+    text: "Inizia l'avventura"
+
+- extendedWaitUntil:
+    visible:
+      text: "Ultimo passaggio"
+    timeout: 20000
+
+- tapOn:
+    text: "Inizia il tuo viaggio"
+
+- tapOn:
+    text: "Non ora"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 30000
