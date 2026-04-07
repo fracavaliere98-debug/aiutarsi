@@ -1,11 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalizeNotificationRequestBody } from "../_shared/notifyUserPayload.ts";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 Deno.serve(async (req) => {
     try {
-        const { userId, title, body, data } = await req.json();
+        const payload = await req.json();
+        const { userId, title, body, data } = normalizeNotificationRequestBody(payload);
 
         if (!userId || !title || !body) {
             return new Response(JSON.stringify({ error: "Missing userId/title/body" }), {

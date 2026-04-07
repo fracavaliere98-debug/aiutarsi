@@ -1,6 +1,6 @@
 import { runStagingNotificationSmoke } from "./run_staging_notification_smoke";
 
-runStagingNotificationSmoke("story_metrics")
+runStagingNotificationSmoke("retention")
   .then((lines) => {
     for (const line of lines) console.log(line);
   })
