@@ -11,10 +11,11 @@ import { trackEvent } from "../../utils/monitoring";
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, requestPasswordReset } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -34,6 +35,26 @@ export default function LoginScreen() {
             Alert.alert("Errore di Accesso", error.message || "Login fallito. Riprova.");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handlePasswordReset = async () => {
+        if (!email.trim()) {
+            Alert.alert("Email richiesta", "Inserisci prima la tua email per ricevere il link di reset.");
+            return;
+        }
+
+        setIsResetting(true);
+        try {
+            await requestPasswordReset(email);
+            Alert.alert(
+                "Controlla la tua email",
+                "Ti abbiamo inviato un link per reimpostare la password. Aprilo su questo dispositivo."
+            );
+        } catch (error: any) {
+            Alert.alert("Reset non riuscito", error?.message || "Non siamo riusciti a inviare la mail di reset.");
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -81,8 +102,13 @@ export default function LoginScreen() {
                     testID="input-password"
                 />
 
-                <TouchableOpacity style={styles.recoveryLinkWrap} activeOpacity={0.75}>
-                    <Text style={styles.recoveryLink}>Password dimenticata?</Text>
+                <TouchableOpacity
+                    style={styles.recoveryLinkWrap}
+                    activeOpacity={0.75}
+                    onPress={handlePasswordReset}
+                    disabled={isResetting}
+                >
+                    <Text style={styles.recoveryLink}>{isResetting ? "Invio..." : "Password dimenticata?"}</Text>
                 </TouchableOpacity>
 
                 <Button

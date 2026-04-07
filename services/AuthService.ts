@@ -13,6 +13,10 @@ export class AuthService {
         return 'aiutarsiapp://confirm-email';
     }
 
+    private _getPasswordRecoveryRedirectUrl(): string {
+        return 'aiutarsiapp://reset-password';
+    }
+
     setCachedAccessToken(token: string | null | undefined): void {
         this._cachedAccessToken = token || null;
     }
@@ -1048,6 +1052,47 @@ export class AuthService {
         }
 
         console.log("[DEBUG] AuthService: resend signup confirmation accepted");
+    }
+
+    async requestPasswordReset(email: string): Promise<void> {
+        const cleanEmail = email.trim();
+        if (!cleanEmail) throw new Error("Inserisci la tua email.");
+        if (!this._validateEmail(cleanEmail)) throw new Error("Formato email non valido.");
+
+        console.log("[DEBUG] AuthService: password reset start", {
+            emailDomain: cleanEmail.split("@")[1] || "unknown",
+            redirectTo: this._getPasswordRecoveryRedirectUrl(),
+        });
+
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo: this._getPasswordRecoveryRedirectUrl(),
+        });
+
+        if (error) {
+            let msg = error.message || "Invio email di reset fallito.";
+            if (msg.toLowerCase().includes("rate limit")) {
+                msg = "Hai già richiesto un reset da poco. Riprova tra qualche minuto.";
+            }
+            throw new Error(msg);
+        }
+
+        console.log("[DEBUG] AuthService: password reset accepted");
+    }
+
+    async completePasswordRecovery(newPassword: string): Promise<void> {
+        if (!this._validatePassword(newPassword)) {
+            throw new Error(getPasswordRequirementsText());
+        }
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session?.user) {
+            throw new Error("Sessione di recupero non disponibile. Apri il link della mail su questo dispositivo.");
+        }
+
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) {
+            throw new Error(error.message || "Non siamo riusciti ad aggiornare la password.");
+        }
     }
 
     // SELF-HEALING: Ensure a record exists in public.profiles for a given user ID

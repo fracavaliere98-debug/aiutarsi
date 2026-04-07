@@ -31,6 +31,8 @@ interface AuthContextType {
     updateEmail: (newEmail: string) => Promise<boolean>;
     updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
     resendSignupConfirmation: (email: string) => Promise<void>;
+    requestPasswordReset: (email: string) => Promise<void>;
+    completePasswordRecovery: (newPassword: string) => Promise<void>;
     getNPOFollowers: (npoId: string) => AppUser[];
 }
 
@@ -56,6 +58,8 @@ const AuthContext = createContext<AuthContextType>({
     updateEmail: async () => false,
     updatePassword: async () => false,
     resendSignupConfirmation: async () => { },
+    requestPasswordReset: async () => { },
+    completePasswordRecovery: async () => { },
     getNPOFollowers: () => [],
 });
 
@@ -600,6 +604,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
     }, []);
 
+    const requestPasswordReset = useCallback(async (email: string): Promise<void> => {
+        await authService.requestPasswordReset(email);
+        trackEvent("auth_password_reset_requested", {
+            emailDomain: email.split("@")[1] || "unknown",
+        });
+    }, []);
+
+    const completePasswordRecovery = useCallback(async (newPassword: string): Promise<void> => {
+        await authService.completePasswordRecovery(newPassword);
+        trackEvent("auth_password_reset_completed", {});
+    }, []);
+
     // Legacy Reset - Not really applicable with Supabase but kept for interface compatibility
     const resetUsers = useCallback(async () => {
         try {
@@ -633,8 +649,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         getReferralCount,
         updateEmail,
         updatePassword,
-        resendSignupConfirmation
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation]);
+        resendSignupConfirmation,
+        requestPasswordReset,
+        completePasswordRecovery
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation, requestPasswordReset, completePasswordRecovery]);
 
     return (
         <AuthContext.Provider value={value}>
