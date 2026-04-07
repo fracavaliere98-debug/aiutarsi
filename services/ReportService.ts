@@ -53,24 +53,31 @@ export function computeNPOReportSummary(params: {
     }[];
     followerRows?: { created_at?: string | null; follower_id?: string | null }[];
     postRows?: { id: string; created_at?: string | null }[];
-    storyRows?: { id: string; created_at?: string | null }[];
+    storyMetricRows?: { metric_date: string; stories_count: number }[];
     reactionRows?: { user_id?: string | null; created_at?: string | null }[];
 }): NPOReportSummary {
     const weekStart = startOfWeek();
     const monthStart = startOfMonth();
+    const weekStartDate = weekStart.slice(0, 10);
+    const monthStartDate = monthStart.slice(0, 10);
     const npoActivities = params.activities.filter((activity) => activity.npoId === params.npoId);
     const followerRows = params.followerRows || [];
     const postRows = params.postRows || [];
-    const storyRows = params.storyRows || [];
+    const storyMetricRows = params.storyMetricRows || [];
     const reactionRows = params.reactionRows || [];
     const followerIds = new Set(followerRows.map((row) => row.follower_id).filter(Boolean));
+
+    const sumStoryMetricsSince = (dateFrom: string) =>
+        storyMetricRows
+            .filter((row) => !!row.metric_date && row.metric_date >= dateFrom)
+            .reduce((sum, row) => sum + (row.stories_count || 0), 0);
 
     const newFollowersThisWeek = followerRows.filter((row: any) => row.created_at >= weekStart).length;
     const newFollowersThisMonth = followerRows.filter((row: any) => row.created_at >= monthStart).length;
     const postsThisWeek = postRows.filter((row) => !!row.created_at && row.created_at >= weekStart).length;
     const postsThisMonth = postRows.filter((row) => !!row.created_at && row.created_at >= monthStart).length;
-    const storiesThisWeek = storyRows.filter((row) => !!row.created_at && row.created_at >= weekStart).length;
-    const storiesThisMonth = storyRows.filter((row) => !!row.created_at && row.created_at >= monthStart).length;
+    const storiesThisWeek = sumStoryMetricsSince(weekStartDate);
+    const storiesThisMonth = sumStoryMetricsSince(monthStartDate);
     const reactionsThisWeek = reactionRows.filter((row) => !!row.created_at && row.created_at >= weekStart).length;
     const reactionsThisMonth = reactionRows.filter((row) => !!row.created_at && row.created_at >= monthStart).length;
     const activeFollowersOnContent = new Set(
@@ -175,15 +182,16 @@ export class ReportService {
         }[];
         followerRows?: { created_at?: string | null; follower_id?: string | null }[];
         postRows?: { id: string; created_at?: string | null }[];
-        storyRows?: { id: string; created_at?: string | null }[];
+        storyMetricRows?: { metric_date: string; stories_count: number }[];
         reactionRows?: { user_id?: string | null; created_at?: string | null }[];
     }): Promise<NPOReportSummary> {
         let followerRows = params.followerRows;
         let postRows = params.postRows;
-        let storyRows = params.storyRows;
+        let storyMetricRows = params.storyMetricRows;
         let reactionRows = params.reactionRows;
         if (!followerRows) {
             const { supabase } = await import('../utils/supabase');
+            const supabaseAny = supabase as any;
             const { data, error: followerError } = await supabase
                 .from('npo_followers')
                 .select('created_at, follower_id')
@@ -204,15 +212,17 @@ export class ReportService {
             }
             postRows = postData || [];
 
-            const { data: storyData, error: storyError } = await supabase
-                .from('stories')
-                .select('id, created_at')
-                .eq('author_id', params.npoId);
+            const monthStart = startOfMonth().slice(0, 10);
+            const { data: storyData, error: storyError } = await supabaseAny
+                .from('story_metrics_daily')
+                .select('metric_date, stories_count')
+                .eq('author_id', params.npoId)
+                .gte('metric_date', monthStart);
 
             if (storyError) {
                 console.error('[ReportService] story rows error', storyError);
             }
-            storyRows = storyData || [];
+            storyMetricRows = storyData || [];
 
             const postIds = (postRows || []).map((row) => row.id).filter(Boolean);
             if (postIds.length > 0) {
@@ -233,7 +243,7 @@ export class ReportService {
             ...params,
             followerRows,
             postRows,
-            storyRows,
+            storyMetricRows,
             reactionRows,
         });
     }
