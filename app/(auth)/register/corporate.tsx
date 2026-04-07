@@ -37,8 +37,14 @@ export default function CorporateRegister() {
             });
 
             if (result.requiresEmailConfirmation) {
-                Alert.alert("Registrazione completata", "Conferma la tua email e poi accedi.");
-                router.replace("/login");
+                Alert.alert("Registrazione completata", "Controlla la tua email per continuare.");
+                router.replace({
+                    pathname: "/confirm-email",
+                    params: {
+                        email: formData.email.trim(),
+                        role: "CORPORATE",
+                    },
+                });
                 return;
             }
 

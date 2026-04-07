@@ -10,7 +10,7 @@ export class AuthService {
     private _cachedAccessToken: string | null = null;
 
     private _getAuthEmailRedirectUrl(): string {
-        return 'aiutarsiapp://login';
+        return 'aiutarsiapp://confirm-email';
     }
 
     setCachedAccessToken(token: string | null | undefined): void {
