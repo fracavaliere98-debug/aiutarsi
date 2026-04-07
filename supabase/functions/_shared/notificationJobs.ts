@@ -134,6 +134,40 @@ export async function queueWeeklyNpoRecaps(supabase: any, now: Date) {
   const { data: npos } = await supabase.from("profiles").select("id,npo_name,full_name").eq("role", "NPO");
 
   for (const npo of npos || []) {
+    const { data: followerProbe } = await supabase
+      .from("npo_followers")
+      .select("follower_id")
+      .eq("npo_id", npo.id)
+      .gte("created_at", weekStart)
+      .limit(1);
+    const { data: registrationProbe } = await supabase
+      .from("activity_participants")
+      .select("activity_id,activities!inner(npo_id)")
+      .eq("activities.npo_id", npo.id)
+      .in("status", ["APPROVED", "REGISTERED"])
+      .gte("created_at", weekStart)
+      .limit(1);
+    const { data: applicationProbe } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("npo_id", npo.id)
+      .gte("created_at", weekStart)
+      .limit(1);
+
+    const hasWeeklyActivity = !!(followerProbe?.length || registrationProbe?.length || applicationProbe?.length);
+    if (!hasWeeklyActivity) {
+      await insertJob(supabase, {
+        user_id: npo.id,
+        type: "INFO",
+        title: "Riattiva la tua community",
+        message: "Questa settimana il tuo ente è rimasto fermo. Pubblica una storia o una nuova attività per tornare visibile ai volontari.",
+        payload: { npoId: npo.id, weekStart, reengagement: true },
+        scheduled_for: now.toISOString(),
+        dedupe_key: `npo_reengagement:${npo.id}:${weekStart.slice(0, 10)}`,
+      });
+      continue;
+    }
+
     const { count: followersCount } = await supabase
       .from("npo_followers")
       .select("*", { count: "exact", head: true })
@@ -168,6 +202,40 @@ export async function queueWeeklyVolunteerRecaps(supabase: any, now: Date) {
   const { data: volunteers } = await supabase.from("profiles").select("id,full_name").eq("role", "VOLUNTEER");
 
   for (const volunteer of volunteers || []) {
+    const { data: completedProbe } = await supabase
+      .from("activity_participants")
+      .select("activity_id,activities!inner(date_end,status)")
+      .eq("user_id", volunteer.id)
+      .in("status", ["APPROVED", "REGISTERED"])
+      .gte("created_at", weekStart)
+      .limit(1);
+    const { data: applicationsProbe } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("volunteer_id", volunteer.id)
+      .gte("created_at", weekStart)
+      .limit(1);
+    const { data: followedProbe } = await supabase
+      .from("npo_followers")
+      .select("npo_id")
+      .eq("follower_id", volunteer.id)
+      .gte("created_at", weekStart)
+      .limit(1);
+
+    const hasWeeklyActivity = !!(completedProbe?.length || applicationsProbe?.length || followedProbe?.length);
+    if (!hasWeeklyActivity) {
+      await insertJob(supabase, {
+        user_id: volunteer.id,
+        type: "INFO",
+        title: "Torna a dare una mano",
+        message: "Questa settimana non hai ancora mosso passi nella community. Scopri una nuova attività o segui un ente vicino a te.",
+        payload: { weekStart, reengagement: true },
+        scheduled_for: now.toISOString(),
+        dedupe_key: `volunteer_reengagement:${volunteer.id}:${weekStart.slice(0, 10)}`,
+      });
+      continue;
+    }
+
     const { data: completedActivities } = await supabase
       .from("activity_participants")
       .select("activity_id,activities!inner(date_end,status)")

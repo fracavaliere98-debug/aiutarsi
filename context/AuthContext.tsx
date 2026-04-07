@@ -93,6 +93,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }, delayMs);
     }, [refreshUsers]);
 
+    const syncBanStateFromProfile = useCallback(async (profileId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('is_banned, ban_reason, ban_report_id')
+                .eq('id', profileId)
+                .single();
+
+            if (error) throw error;
+            setUser(prev => prev ? {
+                ...prev,
+                is_banned: !!data?.is_banned,
+                ban_reason: data?.ban_reason || null,
+                ban_report_id: data?.ban_report_id || null,
+            } : null);
+        } catch (error) {
+            console.warn("[AuthContext] Failed to sync ban state from profile:", error);
+        }
+    }, []);
+
     // Load users and session on mount
     useEffect(() => {
         let isMounted = true;
@@ -253,10 +273,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 console.log("[Heartbeat] App returned to active. Immediate status update...");
                 updateStatus();
                 try {
-                    const { data } = await supabase.auth.refreshSession();
-                    if (data?.session?.user?.user_metadata?.is_banned) {
-                        // Aggiorniamo lo user in locale così scatta la UI BannedScreen
-                        setUser(prev => prev ? { ...prev, is_banned: true } : null);
+                    await supabase.auth.refreshSession();
+                    if (user?.id) {
+                        await syncBanStateFromProfile(user.id);
                     }
                 } catch {}
             }
@@ -283,7 +302,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             subscription.remove();
             profileSubscription.unsubscribe();
         };
-    }, [user]);
+    }, [user, syncBanStateFromProfile]);
 
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         // FORCE RESET LOGOUT GUARD

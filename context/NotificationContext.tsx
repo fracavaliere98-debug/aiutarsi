@@ -32,14 +32,29 @@ interface NotificationContextType {
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NOTIFICATION_FETCH_LIMIT = 50;
+const NOTIFICATION_SELECT_FIELDS = [
+    'id',
+    'user_id',
+    'type',
+    'title',
+    'message',
+    'read',
+    'related_activity_id',
+    'related_conversation_id',
+    'created_at',
+    'match_score',
+].join(',');
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
     const segments = useSegments();
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = useState<AppNotification[]>([]);
+    const [serverUnreadCount, setServerUnreadCount] = useState(0);
     const { showToast } = useToast();
     const handledResponseIds = useRef<Set<string>>(new Set());
+    const notificationReadStateRef = useRef<Map<string, boolean>>(new Map());
     const segmentKey = segments.join('/');
     const isQuietRoute = [
         '(volunteer)/settings',
@@ -103,20 +118,31 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         if (isQuietRoute) return;
         if (!user) {
             setAllNotifications([]);
+            setServerUnreadCount(0);
+            notificationReadStateRef.current = new Map();
             return;
         }
 
         const fetchNotifications = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('notifications')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: false });
+                const [notificationsRes, unreadRes] = await Promise.all([
+                    supabase
+                        .from('notifications')
+                        .select(NOTIFICATION_SELECT_FIELDS)
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(NOTIFICATION_FETCH_LIMIT),
+                    supabase
+                        .from('notifications')
+                        .select('id', { head: true, count: 'exact' })
+                        .eq('user_id', user.id)
+                        .eq('read', false),
+                ]);
 
-                if (error) throw error;
+                if (notificationsRes.error) throw notificationsRes.error;
+                if (unreadRes.error) throw unreadRes.error;
 
-                const mapped: AppNotification[] = data.map((n: any) => ({
+                const mapped: AppNotification[] = (notificationsRes.data || []).map((n: any) => ({
                     id: n.id,
                     userId: n.user_id,
                     type: n.type as any,
@@ -130,6 +156,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 }));
 
                 setAllNotifications(mapped);
+                setServerUnreadCount(unreadRes.count || 0);
+                notificationReadStateRef.current = new Map(mapped.map((notification) => [notification.id, notification.read]));
             } catch (error) {
                 console.error("Error fetching notifications:", error);
             }
@@ -168,7 +196,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                         matchScore: n.match_score
                     };
 
-                    setAllNotifications(prev => [newNotif, ...prev]);
+                    setAllNotifications(prev => [newNotif, ...prev].slice(0, NOTIFICATION_FETCH_LIMIT));
+                    notificationReadStateRef.current.set(newNotif.id, newNotif.read);
+                    setServerUnreadCount(prev => prev + (newNotif.read ? 0 : 1));
 
                     // Show Foreground Toast with custom logic
                     showToast('info', `${newNotif.title}: ${newNotif.message}`, 6000, {
@@ -189,9 +219,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 },
                 (payload) => {
                     const updated = payload.new;
+                    const previousRead = notificationReadStateRef.current.get(updated.id);
                     setAllNotifications(prev => 
                         prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
                     );
+                    notificationReadStateRef.current.set(updated.id, !!updated.read);
+                    if (previousRead === false && updated.read === true) {
+                        setServerUnreadCount(prev => Math.max(0, prev - 1));
+                    }
                 }
             )
             .subscribe();
@@ -229,9 +264,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, [user]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
+        const wasUnread = notificationReadStateRef.current.get(notificationId) === false;
         setAllNotifications(prev =>
             prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
         );
+        notificationReadStateRef.current.set(notificationId, true);
+        if (wasUnread) {
+            setServerUnreadCount(prev => Math.max(0, prev - 1));
+        }
 
         try {
             const { error } = await supabase
@@ -242,6 +282,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (error) throw error;
         } catch (e) {
             console.error("Failed to mark notification as read", e);
+            notificationReadStateRef.current.set(notificationId, false);
+            setAllNotifications(prev =>
+                prev.map(n => n.id === notificationId ? { ...n, read: false } : n)
+            );
+            if (wasUnread) {
+                setServerUnreadCount(prev => prev + 1);
+            }
         }
     }, []);
 
@@ -258,9 +305,16 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const markAllAsRead = useCallback(async () => {
         if (!user) return;
 
+        const previousNotifications = allNotifications;
+        const previousReadState = new Map(notificationReadStateRef.current);
+        const previousServerUnreadCount = serverUnreadCount;
         setAllNotifications(prev =>
             prev.map(n => n.userId === user.id ? { ...n, read: true } : n)
         );
+        notificationReadStateRef.current = new Map(
+            Array.from(notificationReadStateRef.current.entries()).map(([id]) => [id, true])
+        );
+        setServerUnreadCount(0);
 
         try {
             const { error } = await supabase
@@ -272,13 +326,17 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (error) throw error;
         } catch (e) {
             console.error("Failed to mark all as read", e);
+            notificationReadStateRef.current = previousReadState;
+            setAllNotifications(previousNotifications);
+            setServerUnreadCount(previousServerUnreadCount);
         }
-    }, [user]);
+    }, [user, serverUnreadCount, allNotifications]);
 
     const clearAll = useCallback(async () => {
         if (!user) return;
 
         setAllNotifications([]);
+        setServerUnreadCount(0);
 
         try {
             const { error } = await supabase
@@ -298,8 +356,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, [user, allNotifications]);
 
     const unreadCount = useMemo(() => {
-        return userNotifications.filter(n => !n.read).length;
-    }, [userNotifications]);
+        return serverUnreadCount;
+    }, [serverUnreadCount]);
 
     const getUnreadCount = useCallback(() => unreadCount, [unreadCount]);
 

@@ -5,7 +5,17 @@ function assert(condition: unknown, message: string): asserts condition {
 const publishableKey = process.env.STAGING_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_FKUql9lqBWUtKsFkQJGqvA_GciDonhq";
 const supabaseUrl = process.env.STAGING_SUPABASE_URL || "https://pavnfiladmnwbptwlwpr.supabase.co";
 
-export async function runStagingNotificationSmoke(mode: "pipeline" | "story_metrics" | "retention" | "event_driven" | "cron_modes" | "full") {
+export async function runStagingNotificationSmoke(
+  mode:
+    | "pipeline"
+    | "story_metrics"
+    | "retention"
+    | "event_driven"
+    | "cron_modes"
+    | "notification_context"
+    | "auth_ban_flow"
+    | "full"
+) {
   const response = await fetch(`${supabaseUrl}/functions/v1/notification-refactor-smoke`, {
     method: "POST",
     headers: {

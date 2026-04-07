@@ -3,13 +3,13 @@ import { createClient } from 'npm:@supabase/supabase-js'
 
 // Create a Supabase client with the Auth context of the logged in user.
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
 Deno.serve(async (req) => {
-  const { user, event, session } = await req.json()
+  const { user, event } = await req.json()
   
-  // This hook runs on user creation, sign in, and token refresh
-  if (event === 'TokenRefresh' || event === 'SignIn') {
+  // We only need to enrich claims on sign in. Live ban changes are handled
+  // by the client through Realtime + foreground profile refresh.
+  if (event === 'SignIn') {
     // Only fetch role and is_banned via the secure bypass query (service role needed to read profiles efficiently)
     // Actually, we must use service_role to read true profile data without RLS interference
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

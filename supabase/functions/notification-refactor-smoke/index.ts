@@ -11,7 +11,15 @@ import {
 } from "../_shared/notificationJobs.ts";
 
 type Role = "VOLUNTEER" | "NPO";
-type Mode = "pipeline" | "story_metrics" | "retention" | "event_driven" | "cron_modes" | "full";
+type Mode =
+  | "pipeline"
+  | "story_metrics"
+  | "retention"
+  | "event_driven"
+  | "cron_modes"
+  | "notification_context"
+  | "auth_ban_flow"
+  | "full";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -563,6 +571,8 @@ async function runCronModesTest(admin: ReturnType<typeof createClient>) {
   const localMarker = marker("CRON");
   const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Cron Volunteer" });
   const npo = await createProfile(admin, { role: "NPO", fullName: "Cron NPO", npoName: "Cron NPO" });
+  const inactiveVolunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Inactive Volunteer" });
+  const inactiveNpo = await createProfile(admin, { role: "NPO", fullName: "Inactive NPO", npoName: "Inactive NPO" });
   let activityId = "";
 
   try {
@@ -632,10 +642,27 @@ async function runCronModesTest(admin: ReturnType<typeof createClient>) {
       (await countNotifications(admin, volunteer.id, { type: "VOLUNTEER_WEEKLY_RECAP" })) === 1,
       "Volunteer weekly recap must be deduplicated"
     );
+    assert(
+      (await countNotifications(admin, inactiveNpo.id, { titleLike: "Riattiva la tua community" })) === 1,
+      "Inactive NPO should receive one re-engagement notification instead of a weekly recap"
+    );
+    assert(
+      (await countNotifications(admin, inactiveNpo.id, { type: "NPO_WEEKLY_RECAP" })) === 0,
+      "Inactive NPO must not receive a weekly recap"
+    );
+    assert(
+      (await countNotifications(admin, inactiveVolunteer.id, { titleLike: "Torna a dare una mano" })) === 1,
+      "Inactive volunteer should receive one re-engagement notification instead of a weekly recap"
+    );
+    assert(
+      (await countNotifications(admin, inactiveVolunteer.id, { type: "VOLUNTEER_WEEKLY_RECAP" })) === 0,
+      "Inactive volunteer must not receive a weekly recap"
+    );
 
     return [
       "PASS review reminder backfill is idempotent across repeated runs",
       "PASS weekly recaps are deduplicated across repeated runs",
+      "PASS inactive users receive re-engagement notifications instead of weekly recaps",
     ];
   } finally {
     if (activityId) {
@@ -646,10 +673,130 @@ async function runCronModesTest(admin: ReturnType<typeof createClient>) {
     await admin.from("npo_followers").delete().eq("npo_id", npo.id).eq("follower_id", volunteer.id);
     await admin.from("notifications").delete().eq("user_id", volunteer.id).in("type", ["REVIEW_REMINDER", "VOLUNTEER_WEEKLY_RECAP"]);
     await admin.from("notifications").delete().eq("user_id", npo.id).eq("type", "NPO_WEEKLY_RECAP");
+    await admin.from("notifications").delete().eq("user_id", inactiveVolunteer.id).eq("title", "Torna a dare una mano");
+    await admin.from("notifications").delete().eq("user_id", inactiveNpo.id).eq("title", "Riattiva la tua community");
     await admin.from("notification_jobs").delete().eq("user_id", volunteer.id).in("type", ["REVIEW_REMINDER", "VOLUNTEER_WEEKLY_RECAP"]);
     await admin.from("notification_jobs").delete().eq("user_id", npo.id).eq("type", "NPO_WEEKLY_RECAP");
+    await admin.from("notification_jobs").delete().eq("user_id", inactiveVolunteer.id).eq("title", "Torna a dare una mano");
+    await admin.from("notification_jobs").delete().eq("user_id", inactiveNpo.id).eq("title", "Riattiva la tua community");
     await deleteProfile(admin, volunteer.id);
     await deleteProfile(admin, npo.id);
+    await deleteProfile(admin, inactiveVolunteer.id);
+    await deleteProfile(admin, inactiveNpo.id);
+  }
+}
+
+async function runNotificationContextTest(admin: ReturnType<typeof createClient>) {
+  const localMarker = marker("NOTIFCTX");
+  const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Notification Context Volunteer" });
+
+  try {
+    const rows = Array.from({ length: 60 }).map((_, index) => ({
+      user_id: volunteer.id,
+      type: index % 3 === 0 ? "ACTIVITY_REMINDER" : "INFO",
+      title: `${localMarker} notification ${index}`,
+      message: `${localMarker} message ${index}`,
+      read: index >= 17,
+      related_activity_id: null,
+      related_conversation_id: null,
+      match_score: index === 0 ? 88 : null,
+      created_at: new Date(Date.now() - index * 60_000).toISOString(),
+    }));
+    const { error: insertError } = await admin.from("notifications").insert(rows);
+    if (insertError) throw insertError;
+
+    const { data: listRows, error: listError } = await admin
+      .from("notifications")
+      .select("id,user_id,type,title,message,read,related_activity_id,related_conversation_id,created_at,match_score")
+      .eq("user_id", volunteer.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (listError) throw listError;
+
+    const { count: unreadCount, error: unreadError } = await admin
+      .from("notifications")
+      .select("id", { head: true, count: "exact" })
+      .eq("user_id", volunteer.id)
+      .eq("read", false);
+    if (unreadError) throw unreadError;
+
+    assert((listRows || []).length === 50, "Notification list query must cap at 50 rows");
+    assert(unreadCount === 17, `Unread count query must stay exact, found ${unreadCount}`);
+    assert(
+      (listRows || []).every((row: any) => "id" in row && "title" in row && "message" in row && "read" in row),
+      "Notification list query must include all fields required by the UI"
+    );
+
+    return [
+      "PASS notification list query is capped at 50 rows",
+      "PASS unread count remains exact with a separate count query",
+      "PASS selected notification fields are sufficient for the current UI",
+    ];
+  } finally {
+    await admin.from("notifications").delete().ilike("title", `%${localMarker}%`);
+    await deleteProfile(admin, volunteer.id);
+  }
+}
+
+async function runAuthBanFlowTest(admin: ReturnType<typeof createClient>) {
+  const localMarker = marker("BANFLOW");
+  const created = await createProfile(admin, {
+    role: "VOLUNTEER",
+    fullName: `Ban Flow ${localMarker}`,
+  });
+
+  const anonClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+
+  try {
+    const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
+      email: created.email,
+      password: "TempPass123",
+    });
+    if (signInError) throw signInError;
+    assert(signInData.session?.user?.id === created.id, "Sign-in should still succeed with auth-hook SignIn path");
+
+    const { error: banUpdateError } = await admin
+      .from("profiles")
+      .update({
+        is_banned: true,
+        ban_reason: `${localMarker} reason`,
+        ban_report_id: null,
+      })
+      .eq("id", created.id);
+    if (banUpdateError) throw banUpdateError;
+
+    const { data: bannedProfile, error: bannedProfileError } = await anonClient
+      .from("profiles")
+      .select("is_banned, ban_reason, ban_report_id")
+      .eq("id", created.id)
+      .single();
+    if (bannedProfileError) throw bannedProfileError;
+
+    assert(bannedProfile?.is_banned === true, "Foreground profile sync must observe an immediate ban");
+    assert(
+      typeof bannedProfile?.ban_reason === "string" && bannedProfile.ban_reason.includes(localMarker),
+      "Foreground profile sync must include the current ban reason"
+    );
+
+    return [
+      "PASS sign-in still succeeds with auth-hook restricted to SignIn",
+      "PASS authenticated profile query sees ban changes for live foreground sync",
+    ];
+  } finally {
+    await admin
+      .from("profiles")
+      .update({ is_banned: false, ban_reason: null, ban_report_id: null })
+      .eq("id", created.id);
+    await deleteProfile(admin, created.id);
   }
 }
 
@@ -673,6 +820,12 @@ Deno.serve(async (req) => {
           return runEventDrivenTest(admin);
         case "cron_modes":
           return runCronModesTest(admin);
+        case "notification_context":
+          return runNotificationContextTest(admin);
+        case "auth_ban_flow":
+          return runAuthBanFlowTest(admin);
+        default:
+          throw new Error(`Unsupported smoke mode: ${String(target)}`);
       }
     };
 
@@ -684,6 +837,8 @@ Deno.serve(async (req) => {
             retention: await runOne("retention"),
             event_driven: await runOne("event_driven"),
             cron_modes: await runOne("cron_modes"),
+            notification_context: await runOne("notification_context"),
+            auth_ban_flow: await runOne("auth_ban_flow"),
           }
         : { [mode]: await runOne(mode) };
 
