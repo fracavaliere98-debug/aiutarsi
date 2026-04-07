@@ -73,19 +73,19 @@ export default function LandingPage() {
           <Image
             src="/logo-transparent.png"
             alt="AiutarSi"
-            width={164}
-            height={52}
-            className="brand-mark"
+            width={44}
+            height={44}
+            className="brand-icon"
             priority
           />
-          <span className="brand-tag">volontariato locale, semplice, umano</span>
+          <div className="wordmark-crop" aria-label="AiutarSi">
+            <img src="/logo-lungo.jpeg" alt="AiutarSi" className="wordmark-image" />
+          </div>
         </div>
 
         <nav className="topbar-links" aria-label="Navigazione">
-          <a href="#problema">Perché esiste</a>
-          <a href="#soluzione">Cosa fa</a>
-          <a href="#contatto" className="pill-link">
-            Contatti
+          <a href="#download" className="pill-link">
+            Scarica l&apos;app
           </a>
         </nav>
       </header>
@@ -101,10 +101,10 @@ export default function LandingPage() {
 
           <div className="hero-actions">
             <a href="#download" className="primary-cta">
-              Download iOS
+              Scarica l&apos;app
             </a>
-            <a href="#download" className="secondary-cta">
-              Download Android
+            <a href="#contatto" className="secondary-cta">
+              Entra in waitlist
             </a>
           </div>
 
@@ -134,11 +134,6 @@ export default function LandingPage() {
                 <li>Invita un amico</li>
                 <li>Attiva una nuova partecipazione</li>
               </ul>
-            </article>
-
-            <article className="floating-card">
-              <span className="floating-label">Attività e badge</span>
-              <p>Un’esperienza chiara, concreta e locale.</p>
             </article>
           </div>
         </div>
@@ -172,6 +167,11 @@ export default function LandingPage() {
               <p className="panel-eyebrow">{section.eyebrow}</p>
               <h3>{section.title}</h3>
               <p>{section.text}</p>
+              <div className="mini-graphic" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
             </article>
           ))}
         </div>
@@ -204,10 +204,10 @@ export default function LandingPage() {
         </div>
 
         <div className="cta-actions">
-          <a className="primary-cta" href="#contatto">
+          <a className="primary-cta" href="https://apps.apple.com" target="_blank" rel="noreferrer">
             Download iOS
           </a>
-          <a className="secondary-cta" href="#contatto">
+          <a className="secondary-cta" href="https://play.google.com/store" target="_blank" rel="noreferrer">
             Download Android
           </a>
         </div>

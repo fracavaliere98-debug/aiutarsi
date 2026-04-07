@@ -1,6 +1,6 @@
 :root {
-  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: Inter, "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-body: Inter, "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --bg: #fbf8f4;
   --paper: rgba(255, 255, 255, 0.9);
   --surface: rgba(255, 255, 255, 0.84);
@@ -96,23 +96,35 @@ input {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-.brand-mark {
-  width: auto;
-  height: 42px;
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
-.brand-tag {
-  color: var(--muted);
-  font-size: 0.94rem;
+.wordmark-crop {
+  position: relative;
+  width: 230px;
+  height: 54px;
+  overflow: hidden;
+}
+
+.wordmark-image {
+  position: absolute;
+  left: 0;
+  top: -152px;
+  width: 230px;
+  max-width: none;
+  height: auto;
 }
 
 .topbar-links {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   color: var(--muted);
 }
 
@@ -159,8 +171,9 @@ input {
 }
 
 .hero-copy h1 {
-  max-width: 12ch;
-  font-size: clamp(3.2rem, 6.8vw, 5.8rem);
+  max-width: 13ch;
+  font-size: clamp(2.7rem, 5.6vw, 4.8rem);
+  line-height: 1.02;
 }
 
 .hero-text,
@@ -174,8 +187,9 @@ input {
 }
 
 .hero-text {
-  max-width: 56ch;
-  margin: 18px 0 0;
+  max-width: 46ch;
+  margin: 14px 0 0;
+  font-size: 0.98rem;
 }
 
 .hero-actions,
@@ -210,9 +224,10 @@ input {
 }
 
 .micro-copy {
-  margin-top: 18px;
+  margin-top: 14px;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  max-width: 42ch;
 }
 
 .hero-visual {
@@ -222,7 +237,7 @@ input {
 
 .phone-cluster {
   position: relative;
-  min-height: 620px;
+  min-height: 560px;
   width: 100%;
 }
 
@@ -238,22 +253,22 @@ input {
 
 .phone-card {
   position: absolute;
-  width: min(78%, 340px);
-  border-radius: 38px;
+  width: min(72%, 310px);
+  border-radius: 34px;
   background: rgba(255, 255, 255, 0.92);
-  padding: 22px;
+  padding: 20px;
 }
 
 .phone-card-left {
   left: 0;
-  top: 54px;
-  transform: rotate(-12deg);
+  top: 42px;
+  transform: rotate(-9deg);
 }
 
 .phone-card-right {
   right: 6px;
   top: 0;
-  transform: rotate(10deg);
+  transform: rotate(8deg);
 }
 
 .phone-topline {
@@ -265,9 +280,9 @@ input {
 }
 
 .phone-card h3 {
-  margin: 12px 0 18px;
-  font-size: 2rem;
-  line-height: 0.98;
+  margin: 10px 0 16px;
+  font-size: 1.7rem;
+  line-height: 1;
   letter-spacing: -0.04em;
 }
 
@@ -302,8 +317,8 @@ input {
 
 .referral-box {
   margin-top: 14px;
-  padding: 18px;
-  font-size: 2rem;
+  padding: 16px;
+  font-size: 1.8rem;
   font-weight: 900;
   color: var(--accent);
 }
@@ -321,38 +336,10 @@ input {
   color: var(--ink);
 }
 
-.floating-card {
-  position: absolute;
-  left: 90px;
-  bottom: 40px;
-  max-width: 260px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  background: rgba(255, 248, 240, 0.92);
-  border: 1px solid rgba(91, 44, 160, 0.14);
-  box-shadow: var(--shadow);
-}
-
-.floating-label {
-  display: inline-block;
-  margin-bottom: 8px;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  font-weight: 800;
-}
-
-.floating-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
 .problem-section,
 .solution-section,
 .how-section {
-  margin-top: 42px;
+  margin-top: 34px;
 }
 
 .section-heading {
@@ -375,7 +362,7 @@ input {
 .problem-card,
 .panel-card,
 .step-card {
-  padding: 24px;
+  padding: 22px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.76);
 }
@@ -394,15 +381,41 @@ input {
 .panel-card h3,
 .step-card h3 {
   margin: 0 0 12px;
-  font-size: 1.48rem;
-  line-height: 1.12;
+  font-size: 1.28rem;
+  line-height: 1.14;
   font-family: var(--font-display), serif;
   font-weight: 700;
+}
+
+.mini-graphic {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mini-graphic span {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(91, 44, 160, 0.18), rgba(91, 44, 160, 0.5));
+}
+
+.mini-graphic span:nth-child(1) {
+  width: 28%;
+}
+
+.mini-graphic span:nth-child(2) {
+  width: 42%;
+}
+
+.mini-graphic span:nth-child(3) {
+  width: 18%;
 }
 
 .step-card {
   position: relative;
   overflow: hidden;
+  min-height: 240px;
 }
 
 .step-icon {
@@ -481,7 +494,7 @@ input {
   }
 
   .phone-cluster {
-    min-height: 680px;
+    min-height: 620px;
   }
 }
 
@@ -506,7 +519,7 @@ input {
   }
 
   .phone-cluster {
-    min-height: 760px;
+    min-height: 650px;
   }
 
   .phone-card {
@@ -521,12 +534,6 @@ input {
 
   .phone-card-right {
     right: 0;
-    top: 270px;
-  }
-
-  .floating-card {
-    left: 0;
-    bottom: 0;
-    max-width: 100%;
+    top: 250px;
   }
 }
