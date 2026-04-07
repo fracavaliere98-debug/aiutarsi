@@ -48,25 +48,6 @@ export async function dispatchNotification(payload: DispatchNotificationPayload)
     if (error) {
         console.error('[notificationDispatch] Failed to insert notification', error);
     }
-
-    try {
-        await supabase.functions.invoke('notify-user', {
-            body: {
-                userId: payload.userId,
-                title: payload.title,
-                body: payload.message,
-                data: {
-                    type: payload.type,
-                    activityId: payload.activityId,
-                    npoId: payload.npoId,
-                    conversationId: payload.conversationId,
-                    ...(payload.data || {}),
-                },
-            },
-        });
-    } catch (pushError) {
-        console.warn('[notificationDispatch] Push invoke failed', pushError);
-    }
 }
 
 export async function dispatchBulkNotifications(payloads: DispatchNotificationPayload[]) {

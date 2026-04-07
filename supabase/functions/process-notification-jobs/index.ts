@@ -1,8 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
-
 type NotificationJob = {
   id: string;
   user_id: string;
@@ -421,47 +419,6 @@ async function shouldSendJob(supabase: any, job: NotificationJob) {
   return true;
 }
 
-async function sendPush(supabase: any, userId: string, title: string, body: string, data: Record<string, unknown>) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("expo_push_token")
-    .eq("id", userId)
-    .single();
-
-  if (!profile?.expo_push_token) {
-    return { skipped: "missing_push_token" };
-  }
-
-  const unreadNotifsPromise = supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("read", false);
-
-  const unreadMsgsPromise = supabase.rpc("get_unread_messages_count", { p_user_id: userId });
-  const [{ count: unreadNotifs }, { data: unreadMsgs }] = await Promise.all([unreadNotifsPromise, unreadMsgsPromise]);
-  const badge = (unreadNotifs || 0) + (unreadMsgs || 0);
-
-  const expoRes = await fetch(EXPO_PUSH_URL, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      to: profile.expo_push_token,
-      sound: "default",
-      title,
-      body,
-      badge,
-      data,
-    }),
-  });
-
-  return await expoRes.json();
-}
-
 async function processDueJobs(supabase: any, now: Date, limit: number) {
   const { data: jobs } = await supabase
     .from("notification_jobs")
@@ -507,13 +464,6 @@ async function processDueJobs(supabase: any, now: Date, limit: number) {
         related_activity_id: job.related_activity_id || null,
         related_conversation_id: job.related_conversation_id || null,
         read: false,
-      });
-
-      await sendPush(supabase, job.user_id, job.title, job.message, {
-        type: job.type,
-        activityId: job.related_activity_id || undefined,
-        conversationId: job.related_conversation_id || undefined,
-        ...(job.payload || {}),
       });
 
       await supabase.from("notification_jobs").update({ status: "sent", sent_at: now.toISOString(), last_error: null }).eq("id", job.id);

@@ -136,24 +136,6 @@ export default function AdminVerificationDetail() {
         });
       }
 
-      // 4. Trigger Push Notification via Edge Function
-      try {
-        await supabase.functions.invoke('notify-user', {
-          body: {
-            userId: request.user_id,
-            title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
-            body: action === 'approved' 
-              ? `Ottime notizie! Il tuo ente è stato verificato ufficialmente.`
-              : cleanedNotes
-                ? `La tua richiesta di verifica non è stata approvata. Motivo: ${cleanedNotes}`
-                : `La tua richiesta di verifica non è stata approvata. Accedi per maggiori dettagli.`,
-            data: { type: 'verification_update', status: action }
-          }
-        });
-      } catch (pushError) {
-        console.error('Push notification failed:', pushError);
-      }
-
       Alert.alert('Successo', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);
       setShowRejectModal(false);
       setRejectionNotes('');
