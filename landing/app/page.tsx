@@ -1,51 +1,68 @@
-import Image from "next/image";
+"use client";
 
-const proofStats = [
-  { value: "Community + Match", label: "Una sola app per scoprire, partecipare e restare attivi." },
-  { value: "Gemma integrata", label: "Supporto rapido per dubbi, orientamento e prossimi passi." },
-  { value: "Volontari e NPO", label: "Due esperienze coordinate, senza flussi spezzati o dati duplicati." },
+import Image from "next/image";
+import { FormEvent, useState } from "react";
+
+const painPoints = [
+  "I volontari non sanno dove trovare opportunità affidabili vicino a loro",
+  "Gli enti fanno fatica a raggiungere persone davvero interessate",
+  "Le attività locali e sociali sono sparse, poco visibili e difficili da coordinare",
 ];
 
-const sections = [
+const solutionColumns = [
   {
     eyebrow: "Per i volontari",
-    title: "Attività vicine, chiare, con meno rumore.",
-    copy:
-      "Scopri opportunità rilevanti, salva quelle giuste, partecipa e tieni il filo con messaggi, storie e notifiche utili.",
+    title: "Trova opportunità più vicine e più adatte a te.",
+    text: "Scopri attività locali, segui gli enti che ti interessano e resta aggiornato in modo semplice.",
   },
   {
     eyebrow: "Per gli enti",
-    title: "Recruiting e relazione nello stesso posto.",
-    copy:
-      "Pubblica attività, ricevi candidature, aggiorna la community e mantieni viva la relazione con chi ti segue.",
+    title: "Organizza meglio attività, visibilità e partecipazione.",
+    text: "Pubblica iniziative, coinvolgi persone interessate e mantieni una relazione viva con la tua comunità.",
   },
   {
-    eyebrow: "Per l'orientamento",
-    title: "Gemma ti aiuta a non restare fermo.",
-    copy:
-      "Domande, suggerimenti e supporto contestuale per scegliere meglio cosa fare, quando candidarti e come continuare.",
+    eyebrow: "Per il territorio",
+    title: "Rendi il volontariato locale più visibile e coordinato.",
+    text: "AiutarSi mette in connessione persone, realtà sociali e opportunità che oggi restano troppo disperse.",
   },
 ];
 
-const flow = [
+const steps = [
   {
     step: "01",
-    title: "Entri e capisci subito dove sei utile",
-    text: "Il feed non prova a stupirti. Ti porta rapidamente verso attività, enti e storie rilevanti.",
+    title: "Crea il tuo profilo",
+    text: "Pochi dati per iniziare e rendere l’esperienza più utile fin da subito.",
+    icon: "●",
   },
   {
     step: "02",
-    title: "Ti candidi e resti nel loop",
-    text: "Stato candidatura, messaggi, reminder e community restano sincronizzati nello stesso percorso.",
+    title: "Esplora attività e opportunità vicine",
+    text: "Scopri cosa succede vicino a te e trova realtà affidabili da seguire.",
+    icon: "◐",
   },
   {
     step: "03",
-    title: "L'ente continua a coinvolgerti",
-    text: "Post, stories e notifiche trasformano una singola attività in una relazione più continua.",
+    title: "Partecipa, resta aggiornato, crea connessioni utili",
+    text: "Candidature, aggiornamenti e relazioni restano dentro un unico flusso.",
+    icon: "◆",
   },
 ];
 
 export default function LandingPage() {
+  const [email, setEmail] = useState("");
+
+  const handleContact = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const cleanEmail = email.trim();
+    const subject = encodeURIComponent("AiutarSi - Contatto landing");
+    const body = encodeURIComponent(
+      cleanEmail
+        ? `Ciao,\n\nvorrei avere maggiori informazioni su AiutarSi.\n\nEmail di contatto: ${cleanEmail}\n`
+        : "Ciao,\n\nvorrei avere maggiori informazioni su AiutarSi.\n"
+    );
+    window.location.href = `mailto:aiutarsi.it@gmail.com?subject=${subject}&body=${body}`;
+  };
+
   return (
     <main className="page-shell">
       <div className="atmosphere atmosphere-one" />
@@ -56,98 +73,123 @@ export default function LandingPage() {
           <Image
             src="/logo-transparent.png"
             alt="AiutarSi"
-            width={168}
+            width={164}
             height={52}
             className="brand-mark"
             priority
           />
-          <span className="brand-tag">volontariato, community, orientamento</span>
+          <span className="brand-tag">volontariato locale, semplice, umano</span>
         </div>
 
-        <nav className="topbar-links" aria-label="Azioni principali">
-          <a href="#esperienza">Esperienza</a>
-          <a href="#enti">Per gli enti</a>
-          <a href="#cta" className="pill-link">
-            Richiedi accesso
+        <nav className="topbar-links" aria-label="Navigazione">
+          <a href="#problema">Perché esiste</a>
+          <a href="#soluzione">Cosa fa</a>
+          <a href="#contatto" className="pill-link">
+            Contatti
           </a>
         </nav>
       </header>
 
       <section className="hero-grid">
         <div className="hero-copy">
-          <p className="eyebrow">AiutarSi per chi vuole essere utile davvero</p>
-          <h1>Volontariato più chiaro, locale e continuo.</h1>
+          <p className="eyebrow">AiutarSi</p>
+          <h1>Il modo più semplice per trovare, organizzare e vivere il volontariato locale.</h1>
           <p className="hero-text">
-            AiutarSi unisce attività, community e supporto AI in un prodotto pensato per persone e
-            organizzazioni che vogliono fare bene le cose, non solo “esserci”.
+            AiutarSi connette volontari, enti e comunità locali in un’unica esperienza semplice,
+            umana e accessibile.
           </p>
 
           <div className="hero-actions">
-            <a href="#cta" className="primary-cta">
-              Prenota la demo
+            <a href="#download" className="primary-cta">
+              Download iOS
             </a>
-            <a href="mailto:ciao@aiutarsi.app?subject=AiutarSi%20-%20Richiesta%20info" className="secondary-cta">
-              Scrivici
+            <a href="#download" className="secondary-cta">
+              Download Android
             </a>
           </div>
 
-          <div className="proof-strip">
-            {proofStats.map((item) => (
-              <article key={item.value} className="proof-card">
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </article>
-            ))}
+          <div className="micro-copy">
+            Una sola app per attività, enti, aggiornamenti e relazioni utili sul territorio.
           </div>
         </div>
 
         <div className="hero-visual">
-          <div className="device-stage">
-            <div className="device-card device-card-main">
-              <span className="device-label">Esperienza volontario</span>
-              <h2>Community, attività e scelte meno dispersive.</h2>
-              <p>
-                Una superficie unica per capire cosa fare adesso, cosa seguire e come restare attivi
-                nel tempo.
-              </p>
-            </div>
-            <div className="device-card device-card-side">
-              <span className="device-label">Gemma inside</span>
-              <Image
-                src="/gemma-intro.png"
-                alt="Anteprima Gemma"
-                width={320}
-                height={320}
-                className="gemma-shot"
-              />
-            </div>
+          <div className="phone-cluster">
+            <article className="phone-card phone-card-left">
+              <div className="phone-topline">Profilo volontario</div>
+              <h3>Apri il tuo profilo e inizia subito.</h3>
+              <div className="field-stack">
+                <span>Nome</span>
+                <span>Email</span>
+                <span>Password</span>
+              </div>
+              <div className="cta-bar">Crea account</div>
+            </article>
+
+            <article className="phone-card phone-card-right">
+              <div className="phone-topline">Referral Program</div>
+              <div className="referral-box">10C182EB</div>
+              <ul className="mini-steps">
+                <li>Condividi il codice</li>
+                <li>Invita un amico</li>
+                <li>Attiva una nuova partecipazione</li>
+              </ul>
+            </article>
+
+            <article className="floating-card">
+              <span className="floating-label">Attività e badge</span>
+              <p>Un’esperienza chiara, concreta e locale.</p>
+            </article>
           </div>
         </div>
       </section>
 
-      <section className="section-grid" id="esperienza">
-        {sections.map((section) => (
-          <article key={section.title} className="panel-card">
-            <p className="panel-eyebrow">{section.eyebrow}</p>
-            <h3>{section.title}</h3>
-            <p>{section.copy}</p>
-          </article>
-        ))}
+      <section className="problem-section" id="problema">
+        <div className="section-heading">
+          <p className="eyebrow">Il problema</p>
+          <h2>Oggi fare volontariato è più difficile di quanto dovrebbe essere.</h2>
+        </div>
+
+        <div className="problem-grid">
+          {painPoints.map((item, index) => (
+            <article key={item} className="problem-card">
+              <span>{`0${index + 1}`}</span>
+              <p>{item}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
-      <section className="narrative-block" id="enti">
-        <div className="narrative-copy">
-          <p className="eyebrow">Una base pulita per crescere</p>
-          <h2>Non una landing generica. Una promessa di prodotto precisa.</h2>
-          <p>
-            La pagina serve a spiegare tre cose con chiarezza: perché AiutarSi esiste, a chi è utile
-            e cosa cambia rispetto ai flussi frammentati che enti e volontari usano oggi.
-          </p>
+      <section className="solution-section" id="soluzione">
+        <div className="section-heading">
+          <p className="eyebrow">La soluzione</p>
+          <h2>Una piattaforma unica per volontari, enti e comunità.</h2>
         </div>
-        <div className="flow-stack">
-          {flow.map((item) => (
-            <article key={item.step} className="flow-card">
-              <span>{item.step}</span>
+
+        <div className="section-grid">
+          {solutionColumns.map((section) => (
+            <article key={section.title} className="panel-card">
+              <p className="panel-eyebrow">{section.eyebrow}</p>
+              <h3>{section.title}</h3>
+              <p>{section.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="how-section">
+        <div className="section-heading">
+          <p className="eyebrow">Come funziona</p>
+          <h2>Come funziona</h2>
+        </div>
+
+        <div className="steps-grid">
+          {steps.map((item) => (
+            <article key={item.step} className="step-card">
+              <div className="step-icon" aria-hidden="true">
+                {item.icon}
+              </div>
+              <span className="step-number">{item.step}</span>
               <h3>{item.title}</h3>
               <p>{item.text}</p>
             </article>
@@ -155,24 +197,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="cta-band" id="cta">
+      <section className="cta-band" id="download">
         <div>
-          <p className="eyebrow">Prossimo passo</p>
-          <h2>Usa questa landing come home pubblica di `aiutarsi.app`.</h2>
-          <p>
-            Su Vercel va bene così com&apos;è. Supabase non serve per la prima pubblicazione, a meno che
-            tu non voglia raccogliere lead o richieste demo con un form persistente.
-          </p>
+          <p className="eyebrow">CTA finale</p>
+          <h2>Vuoi far parte di AiutarSi fin dall’inizio?</h2>
         </div>
 
         <div className="cta-actions">
-          <a className="primary-cta" href="mailto:ciao@aiutarsi.app?subject=AiutarSi%20-%20Prenota%20una%20demo">
-            Richiedi una demo
+          <a className="primary-cta" href="#contatto">
+            Download iOS
           </a>
-          <a className="secondary-cta" href="mailto:ciao@aiutarsi.app?subject=AiutarSi%20-%20Partnership">
-            Partnership e media
+          <a className="secondary-cta" href="#contatto">
+            Download Android
           </a>
         </div>
+      </section>
+
+      <section className="contact-band" id="contatto">
+        <div className="contact-copy">
+          <p className="eyebrow">Contatti</p>
+          <h2>Lasciaci la tua email e ti ricontattiamo.</h2>
+          <p>
+            Se vuoi ricevere aggiornamenti, disponibilità o informazioni sul progetto, scrivici qui.
+          </p>
+        </div>
+
+        <form className="contact-form" onSubmit={handleContact}>
+          <label className="contact-label" htmlFor="contact-email">
+            Email
+          </label>
+          <input
+            id="contact-email"
+            type="email"
+            placeholder="nome@email.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="contact-input"
+          />
+          <button type="submit" className="primary-cta contact-submit">
+            Contattaci
+          </button>
+          <p className="contact-helper">Il form apre il tuo client mail verso aiutarsi.it@gmail.com.</p>
+        </form>
       </section>
     </main>
   );

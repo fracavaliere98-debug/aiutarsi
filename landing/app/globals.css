@@ -1,18 +1,17 @@
 :root {
   --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --bg: #f8f3ea;
-  --paper: rgba(255, 250, 243, 0.72);
-  --surface: rgba(255, 255, 255, 0.82);
-  --ink: #1d1a17;
-  --muted: #655b52;
-  --line: rgba(41, 31, 24, 0.12);
-  --accent: #db5e34;
-  --accent-deep: #b94824;
-  --accent-soft: #f2d3b6;
-  --olive: #445240;
-  --sun: #efb76a;
-  --shadow: 0 32px 80px rgba(79, 53, 25, 0.13);
+  --bg: #fbf8f4;
+  --paper: rgba(255, 255, 255, 0.9);
+  --surface: rgba(255, 255, 255, 0.84);
+  --ink: #231f27;
+  --muted: #655d72;
+  --line: rgba(90, 66, 133, 0.12);
+  --accent: #5b2ca0;
+  --accent-deep: #472183;
+  --accent-soft: #efe8fb;
+  --pink: #f5dff2;
+  --shadow: 0 24px 70px rgba(65, 35, 103, 0.12);
 }
 
 * {
@@ -27,9 +26,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(239, 183, 106, 0.3), transparent 32%),
-    radial-gradient(circle at top right, rgba(219, 94, 52, 0.14), transparent 26%),
-    linear-gradient(180deg, #fffaf2 0%, var(--bg) 48%, #f4ede4 100%);
+    radial-gradient(circle at top left, rgba(245, 223, 242, 0.85), transparent 28%),
+    radial-gradient(circle at top right, rgba(91, 44, 160, 0.08), transparent 24%),
+    linear-gradient(180deg, #ffffff 0%, #faf7fd 54%, #f6f1fb 100%);
   color: var(--ink);
   font-family: var(--font-body), sans-serif;
 }
@@ -39,9 +38,9 @@ a {
   text-decoration: none;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
+button,
+input {
+  font: inherit;
 }
 
 .page-shell {
@@ -53,31 +52,33 @@ img {
 .atmosphere {
   position: absolute;
   border-radius: 999px;
-  filter: blur(14px);
+  filter: blur(12px);
   pointer-events: none;
 }
 
 .atmosphere-one {
   top: -120px;
-  right: -80px;
-  width: 360px;
-  height: 360px;
-  background: rgba(219, 94, 52, 0.12);
+  right: -70px;
+  width: 320px;
+  height: 320px;
+  background: rgba(245, 223, 242, 0.8);
 }
 
 .atmosphere-two {
   left: -110px;
-  top: 420px;
-  width: 290px;
-  height: 290px;
-  background: rgba(102, 127, 91, 0.12);
+  top: 520px;
+  width: 260px;
+  height: 260px;
+  background: rgba(91, 44, 160, 0.1);
 }
 
 .topbar,
 .hero-grid,
-.section-grid,
-.narrative-block,
-.cta-band {
+.problem-section,
+.solution-section,
+.how-section,
+.cta-band,
+.contact-band {
   position: relative;
   z-index: 1;
   max-width: 1180px;
@@ -89,7 +90,7 @@ img {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 34px;
 }
 
 .brand-lockup {
@@ -125,15 +126,15 @@ img {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
-  gap: 36px;
+  grid-template-columns: minmax(0, 1.03fr) minmax(360px, 0.97fr);
+  gap: 34px;
   align-items: center;
-  padding: 28px 0 40px;
+  padding: 18px 0 34px;
 }
 
 .eyebrow,
@@ -141,39 +142,40 @@ img {
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 0.76rem;
-  color: var(--olive);
+  font-size: 0.78rem;
+  color: var(--accent);
   font-weight: 800;
 }
 
 .hero-copy h1,
-.narrative-copy h2,
-.cta-band h2 {
+.section-heading h2,
+.cta-band h2,
+.contact-copy h2 {
   margin: 0;
   font-family: var(--font-display), serif;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 0.95;
+  line-height: 0.96;
 }
 
 .hero-copy h1 {
-  max-width: 11ch;
-  font-size: clamp(3.6rem, 7vw, 6.8rem);
+  max-width: 12ch;
+  font-size: clamp(3.2rem, 6.8vw, 5.8rem);
 }
 
 .hero-text,
-.narrative-copy p,
-.cta-band p,
 .panel-card p,
-.flow-card p {
+.problem-card p,
+.step-card p,
+.contact-copy p {
   color: var(--muted);
-  line-height: 1.72;
-  font-size: 1.04rem;
+  line-height: 1.7;
+  font-size: 1.02rem;
 }
 
 .hero-text {
-  max-width: 54ch;
-  margin: 22px 0 0;
+  max-width: 56ch;
+  margin: 18px 0 0;
 }
 
 .hero-actions,
@@ -181,7 +183,7 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .primary-cta,
@@ -189,8 +191,8 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 54px;
-  padding: 0 22px;
+  min-height: 56px;
+  padding: 0 24px;
   border-radius: 999px;
   font-weight: 800;
 }
@@ -198,50 +200,19 @@ img {
 .primary-cta {
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
   color: white;
-  box-shadow: 0 20px 35px rgba(185, 72, 36, 0.22);
+  box-shadow: 0 18px 34px rgba(71, 33, 131, 0.22);
 }
 
 .secondary-cta {
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--ink);
-}
-
-.proof-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 28px;
-}
-
-.proof-card,
-.panel-card,
-.flow-card,
-.device-card,
-.cta-band {
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-}
-
-.proof-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 18px;
-  border-radius: 26px;
   background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
+  color: var(--accent);
 }
 
-.proof-card strong {
-  font-family: var(--font-display), serif;
-  font-size: 1.24rem;
-}
-
-.proof-card span {
+.micro-copy {
+  margin-top: 18px;
   color: var(--muted);
-  font-size: 0.94rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 .hero-visual {
@@ -249,134 +220,247 @@ img {
   justify-content: flex-end;
 }
 
-.device-stage {
+.phone-cluster {
   position: relative;
-  min-height: 590px;
+  min-height: 620px;
   width: 100%;
 }
 
-.device-card {
+.phone-card,
+.problem-card,
+.panel-card,
+.step-card,
+.cta-band,
+.contact-band {
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.phone-card {
   position: absolute;
-  border-radius: 32px;
-  background: linear-gradient(180deg, rgba(255, 253, 247, 0.92), rgba(255, 247, 237, 0.72));
-  backdrop-filter: blur(18px);
+  width: min(78%, 340px);
+  border-radius: 38px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 22px;
 }
 
-.device-card-main {
-  inset: 30px 40px 150px 0;
-  padding: 34px;
+.phone-card-left {
+  left: 0;
+  top: 54px;
+  transform: rotate(-12deg);
 }
 
-.device-card-side {
-  right: 0;
-  bottom: 0;
-  width: min(76%, 360px);
-  padding: 18px;
-  background: linear-gradient(180deg, rgba(68, 82, 64, 0.08), rgba(255, 255, 255, 0.9));
+.phone-card-right {
+  right: 6px;
+  top: 0;
+  transform: rotate(10deg);
 }
 
-.device-card h2 {
-  margin: 10px 0 14px;
-  max-width: 13ch;
-  font-family: var(--font-display), serif;
-  font-size: clamp(2.1rem, 4vw, 3.2rem);
-  line-height: 0.98;
-}
-
-.device-card p {
-  margin: 0;
-  max-width: 32ch;
-  color: var(--muted);
-  line-height: 1.65;
-}
-
-.device-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 9px 14px;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+.phone-topline {
+  font-size: 0.74rem;
   text-transform: uppercase;
-  color: var(--olive);
+  letter-spacing: 0.14em;
+  color: var(--accent);
   font-weight: 800;
 }
 
-.gemma-shot {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 22px;
+.phone-card h3 {
+  margin: 12px 0 18px;
+  font-size: 2rem;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
 }
 
-.section-grid {
+.field-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.field-stack span,
+.referral-box,
+.mini-steps li,
+.cta-bar {
+  border-radius: 18px;
+  background: #fbf9ff;
+  border: 1px solid rgba(91, 44, 160, 0.12);
+}
+
+.field-stack span {
+  display: block;
+  padding: 16px;
+  color: #8f879e;
+}
+
+.cta-bar {
+  margin-top: 16px;
+  padding: 16px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: white;
+  font-weight: 800;
+}
+
+.referral-box {
+  margin-top: 14px;
+  padding: 18px;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.mini-steps {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mini-steps li {
+  padding: 14px 16px;
+  color: var(--ink);
+}
+
+.floating-card {
+  position: absolute;
+  left: 90px;
+  bottom: 40px;
+  max-width: 260px;
+  padding: 18px 20px;
+  border-radius: 24px;
+  background: rgba(255, 248, 240, 0.92);
+  border: 1px solid rgba(91, 44, 160, 0.14);
+  box-shadow: var(--shadow);
+}
+
+.floating-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.floating-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.problem-section,
+.solution-section,
+.how-section {
+  margin-top: 42px;
+}
+
+.section-heading {
+  max-width: 780px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  font-size: clamp(2.1rem, 4vw, 4rem);
+}
+
+.problem-grid,
+.section-grid,
+.steps-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 26px;
 }
 
-.panel-card {
+.problem-card,
+.panel-card,
+.step-card {
   padding: 24px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.74);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.problem-card span,
+.step-number {
+  display: inline-flex;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .panel-card h3,
-.flow-card h3 {
+.step-card h3 {
   margin: 0 0 12px;
-  font-size: 1.5rem;
-  line-height: 1.15;
+  font-size: 1.48rem;
+  line-height: 1.12;
   font-family: var(--font-display), serif;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.narrative-block {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 28px;
-  margin-top: 36px;
-  align-items: start;
+.step-card {
+  position: relative;
+  overflow: hidden;
 }
 
-.narrative-copy,
-.flow-stack {
-  display: grid;
-  gap: 16px;
-}
-
-.narrative-copy h2,
-.cta-band h2 {
-  font-size: clamp(2.2rem, 4vw, 4rem);
-}
-
-.flow-card {
-  display: grid;
-  gap: 10px;
-  padding: 20px 22px;
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.75);
-}
-
-.flow-card span {
+.step-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  background: var(--accent-soft);
   color: var(--accent);
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
-.cta-band {
+.cta-band,
+.contact-band {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
   gap: 24px;
   align-items: center;
-  margin-top: 34px;
+  margin-top: 42px;
   padding: 28px;
   border-radius: 30px;
-  background: linear-gradient(135deg, rgba(255, 247, 235, 0.96), rgba(245, 239, 229, 0.82));
+  background: linear-gradient(135deg, rgba(245, 239, 251, 0.96), rgba(255, 255, 255, 0.82));
+}
+
+.contact-form {
+  display: grid;
+  gap: 12px;
+}
+
+.contact-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.contact-input {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0 16px;
+  color: var(--ink);
+}
+
+.contact-submit {
+  border: 0;
+  cursor: pointer;
+}
+
+.contact-helper {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .pill-link:hover,
@@ -387,8 +471,8 @@ img {
 
 @media (max-width: 1040px) {
   .hero-grid,
-  .narrative-block,
-  .cta-band {
+  .cta-band,
+  .contact-band {
     grid-template-columns: 1fr;
   }
 
@@ -396,8 +480,8 @@ img {
     justify-content: stretch;
   }
 
-  .device-stage {
-    min-height: 520px;
+  .phone-cluster {
+    min-height: 680px;
   }
 }
 
@@ -415,20 +499,34 @@ img {
     flex-wrap: wrap;
   }
 
-  .proof-strip,
-  .section-grid {
+  .problem-grid,
+  .section-grid,
+  .steps-grid {
     grid-template-columns: 1fr;
   }
 
-  .device-stage {
-    min-height: 560px;
+  .phone-cluster {
+    min-height: 760px;
   }
 
-  .device-card-main {
-    inset: 0 0 160px 0;
+  .phone-card {
+    width: calc(100% - 12px);
+    transform: none;
   }
 
-  .device-card-side {
-    width: calc(100% - 20px);
+  .phone-card-left {
+    left: 0;
+    top: 0;
+  }
+
+  .phone-card-right {
+    right: 0;
+    top: 270px;
+  }
+
+  .floating-card {
+    left: 0;
+    bottom: 0;
+    max-width: 100%;
   }
 }
