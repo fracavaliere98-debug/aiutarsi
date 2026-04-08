@@ -26,19 +26,19 @@ const steps = [
     step: "01",
     title: "Crea il tuo profilo",
     text: "Pochi dati per iniziare e rendere l’esperienza più utile fin da subito.",
-    icon: "●",
+    icon: "profile",
   },
   {
     step: "02",
     title: "Esplora attività e opportunità vicine",
     text: "Scopri cosa succede vicino a te e trova realtà affidabili da seguire.",
-    icon: "◐",
+    icon: "explore",
   },
   {
     step: "03",
     title: "Partecipa, resta aggiornato, crea connessioni utili",
     text: "Candidature, aggiornamenti e relazioni restano dentro un unico flusso.",
-    icon: "◆",
+    icon: "connect",
   },
 ];
 
@@ -155,9 +155,7 @@ export default function LandingPage() {
         <div className="steps-grid">
           {steps.map((item) => (
             <article key={item.step} className="step-card">
-              <div className="step-icon" aria-hidden="true">
-                {item.icon}
-              </div>
+              <div className={`step-icon step-icon-${item.icon}`} aria-hidden="true" />
               <span className="step-number">{item.step}</span>
               <h3>{item.title}</h3>
               <p>{item.text}</p>
