@@ -1041,8 +1041,24 @@ export class AuthService {
     }
 
     async updateEmail(newEmail: string): Promise<void> {
-        const cleanEmail = newEmail.trim();
+        const cleanEmail = newEmail.trim().toLowerCase();
         if (!this._validateEmail(cleanEmail)) throw new Error("Email non valida.");
+
+        const { data: sessionData } = await this._withTimeout(
+            supabase.auth.getSession(),
+            'auth.getSession.beforeEmailUpdate',
+            3000
+        );
+        const currentEmail = sessionData.session?.user.email?.trim().toLowerCase() || '';
+
+        if (currentEmail && currentEmail === cleanEmail) {
+            throw new Error("Stai già usando questo indirizzo email.");
+        }
+
+        const emailState = await this.getEmailConfirmationState(cleanEmail);
+        if (emailState.exists) {
+            throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
+        }
 
         const { error } = await this._withTimeout(
             supabase.auth.updateUser(

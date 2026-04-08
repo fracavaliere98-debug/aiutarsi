@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Switch } from "react-native";
+import { Alert, View, Text, TextInput, TouchableOpacity, Switch } from "react-native";
 import { useRouter } from "expo-router";
 import { Lock, Mail, Shield, Eye, EyeOff, Save } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -35,8 +35,11 @@ export default function SecurityScreen() {
             // 1. Email Update
             if (loginEmail !== user?.email) {
                 await authService.updateEmail(loginEmail);
-                showToast("success", "Email aggiornata! Controlla la posta per confermare.");
-                // Note: If email confirmation is enabled, the user might be logged out or stay on old email until confirmed.
+                showToast("success", "Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
+                Alert.alert(
+                    "Controlla la nuova email",
+                    "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Il cambio sarà completato dopo la conferma."
+                );
             }
 
             // 2. Password Update
