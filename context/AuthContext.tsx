@@ -77,7 +77,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Use ref to track logout intent immediately and synchronously across closures
     const isLoggingOutRef = React.useRef(false);
     const usersRefreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-    const emailChangeSyncTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
     const refreshUsers = useCallback(async (role?: string) => {
         // Fetch only a small page of users initially or based on role
@@ -328,7 +327,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const subscription = AppState.addEventListener('change', handleAppStateChange);
 
         // REALTIME SUBSCRIPTION PER IL BAN ISTANTANEO
-        const profileSubscription = supabase.channel('public:profiles:is_banned')
+        const profileSubscription = supabase.channel(`public:profiles:${user.id}`)
             .on('postgres_changes', { 
                 event: 'UPDATE', 
                 schema: 'public', 
@@ -336,8 +335,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 filter: `id=eq.${user.id}` 
             }, async (payload) => {
                 if (payload.new) {
-                    console.log(`[AuthContext] Stato ban aggiornato tramite Realtime a: ${payload.new.is_banned}`);
-                    setUser(prev => prev ? { ...prev, is_banned: !!payload.new.is_banned, ban_reason: payload.new.ban_reason, ban_report_id: payload.new.ban_report_id } : null);
+                    console.log("[AuthContext] Profilo aggiornato tramite Realtime", {
+                        is_banned: payload.new.is_banned,
+                        email: payload.new.email,
+                        email_confirmed: payload.new.email_confirmed,
+                    });
+
+                    setUser(prev => prev ? {
+                        ...prev,
+                        is_banned: !!payload.new.is_banned,
+                        ban_reason: payload.new.ban_reason,
+                        ban_report_id: payload.new.ban_report_id,
+                        email: payload.new.email || prev.email,
+                        email_confirmed: payload.new.email_confirmed,
+                    } : null);
+
+                    const pendingEmail = await authService.getPendingEmailChange();
+                    if (
+                        pendingEmail
+                        && typeof payload.new.email === 'string'
+                        && payload.new.email.trim().toLowerCase() === pendingEmail.trim().toLowerCase()
+                    ) {
+                        try {
+                            const refreshedUser = await authService.getCurrentUser();
+                            if (refreshedUser) {
+                                setUser(refreshedUser);
+                            }
+                            await authService.clearPendingEmailChange();
+                            Alert.alert("Email aggiornata", "Il nuovo indirizzo email è stato confermato correttamente.");
+                        } catch (error) {
+                            console.warn("[AuthContext] Failed to refresh user after realtime email change", error);
+                        }
+                    }
                 }
             }).subscribe();
 
@@ -347,31 +376,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             profileSubscription.unsubscribe();
         };
     }, [user, syncBanStateFromProfile, syncPendingEmailChange]);
-
-    useEffect(() => {
-        if (!user) return;
-
-        let cancelled = false;
-
-        const start = async () => {
-            const pendingEmail = await authService.getPendingEmailChange();
-            if (!pendingEmail || cancelled) return;
-
-            emailChangeSyncTimerRef.current = setInterval(() => {
-                void syncPendingEmailChange(false);
-            }, 15000);
-        };
-
-        void start();
-
-        return () => {
-            cancelled = true;
-            if (emailChangeSyncTimerRef.current) {
-                clearInterval(emailChangeSyncTimerRef.current);
-                emailChangeSyncTimerRef.current = null;
-            }
-        };
-    }, [user, syncPendingEmailChange]);
 
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         // FORCE RESET LOGOUT GUARD
