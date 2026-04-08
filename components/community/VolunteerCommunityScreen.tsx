@@ -350,15 +350,6 @@ export function VolunteerCommunityScreen({
         </View>
     );
 
-    if (isLoading && posts.length === 0) {
-        return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={{ marginTop: 12, color: '#94a3b8', fontWeight: '600' }}>Caricamento community...</Text>
-            </View>
-        );
-    }
-
     return (
         <FlashList
             data={prioritizedPosts}
@@ -386,13 +377,20 @@ export function VolunteerCommunityScreen({
             ListHeaderComponent={listHeader}
             ListFooterComponent={listFooter}
             ListEmptyComponent={
-                <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
-                    <Text style={{ fontSize: 40 }}>🌱</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua community sta iniziando a muoversi</Text>
-                    <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
-                        Segui alcuni enti e torna qui per vedere storie, attività e aggiornamenti più vicini a te.
-                    </Text>
-                </View>
+                isLoading ? (
+                    <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
+                        <ActivityIndicator size="large" color={Colors.primary} />
+                        <Text style={{ fontSize: 14, color: '#94a3b8', fontWeight: '700' }}>Caricamento community...</Text>
+                    </View>
+                ) : (
+                    <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
+                        <Text style={{ fontSize: 40 }}>🌱</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua community sta iniziando a muoversi</Text>
+                        <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
+                            Segui alcuni enti e torna qui per vedere storie, attività e aggiornamenti più vicini a te.
+                        </Text>
+                    </View>
+                )
             }
         />
     );

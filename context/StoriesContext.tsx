@@ -23,6 +23,8 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const segmentKey = segments.join('/');
     const isQuietRoute = [
+        '(auth)',
+        'onboarding',
         '(volunteer)/settings',
         '(volunteer)/privacy',
         '(volunteer)/interests-skills',

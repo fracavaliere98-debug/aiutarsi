@@ -42,6 +42,8 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const initialFetchInFlightRef = React.useRef<Promise<void> | null>(null);
     const segmentKey = segments.join('/');
     const isQuietRoute = [
+        '(auth)',
+        'onboarding',
         '(volunteer)/settings',
         '(volunteer)/privacy',
         '(volunteer)/interests-skills',

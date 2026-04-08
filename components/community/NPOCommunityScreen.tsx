@@ -311,15 +311,6 @@ export function NPOCommunityScreen({
         </View>
     );
 
-    if (isLoading && posts.length === 0) {
-        return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={{ marginTop: 12, color: '#94a3b8', fontWeight: '600' }}>Caricamento community...</Text>
-            </View>
-        );
-    }
-
     return (
         <FlashList
             data={posts}
@@ -334,19 +325,26 @@ export function NPOCommunityScreen({
             ListHeaderComponent={listHeader}
             ListFooterComponent={listFooter}
             ListEmptyComponent={
-                <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
-                    <Text style={{ fontSize: 40 }}>📣</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua voce può aprire la community</Text>
-                    <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
-                        Pubblica il primo aggiornamento, collega una tua attività e rendi più chiaro perché vale la pena partecipare.
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push('/community/create-post' as any)}
-                        style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
-                    </TouchableOpacity>
-                </View>
+                isLoading ? (
+                    <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
+                        <ActivityIndicator size="large" color={Colors.primary} />
+                        <Text style={{ fontSize: 14, color: '#94a3b8', fontWeight: '700' }}>Caricamento community...</Text>
+                    </View>
+                ) : (
+                    <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
+                        <Text style={{ fontSize: 40 }}>📣</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua voce può aprire la community</Text>
+                        <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
+                            Pubblica il primo aggiornamento, collega una tua attività e rendi più chiaro perché vale la pena partecipare.
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => router.push('/community/create-post' as any)}
+                            style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
+                        </TouchableOpacity>
+                    </View>
+                )
             }
         />
     );
