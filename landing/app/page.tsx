@@ -61,7 +61,7 @@ export default function LandingPage() {
 
       <header className="topbar">
         <div className="brand-lockup">
-          <Image src="/logo-lungo.jpeg" alt="AiutarSì" width={300} height={110} className="brand-full" priority />
+          <Image src="/logo-lungo.png" alt="AiutarSì" width={300} height={98} className="brand-full" priority />
         </div>
 
         <nav className="topbar-links" aria-label="Navigazione">
