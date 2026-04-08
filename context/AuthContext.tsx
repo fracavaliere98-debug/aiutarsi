@@ -279,7 +279,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 console.log("[Heartbeat] App returned to active. Immediate status update...");
                 updateStatus();
                 try {
-                    await supabase.auth.refreshSession();
+                    const { data: refreshed } = await supabase.auth.refreshSession();
+                    if (refreshed.session?.access_token) {
+                        authService.setCachedAccessToken(refreshed.session.access_token);
+                    }
+                    const refreshedUser = await authService.getCurrentUser();
+                    if (refreshedUser) {
+                        setUser(refreshedUser);
+                    }
                     if (user?.id) {
                         await syncBanStateFromProfile(user.id);
                     }

@@ -38,7 +38,15 @@ export default function SecurityScreen() {
                 showToast("success", "Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
                 Alert.alert(
                     "Controlla la nuova email",
-                    "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Il cambio sarà completato dopo la conferma."
+                    "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Il cambio sarà completato dopo la conferma.",
+                    [
+                        {
+                            text: "OK",
+                            onPress: () => {
+                                setIsEditingEmail(false);
+                            },
+                        },
+                    ]
                 );
             }
 
@@ -71,7 +79,7 @@ export default function SecurityScreen() {
 
             if (loginEmail === user?.email && !newPassword) {
                 showToast("info", "Nessuna modifica rilevata.");
-            } else {
+            } else if (newPassword) {
                 router.back();
             }
 
