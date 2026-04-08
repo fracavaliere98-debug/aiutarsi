@@ -552,30 +552,75 @@ input {
   }
 
   .hero-visual {
-    justify-content: stretch;
+    justify-content: center;
   }
 
   .phone-cluster {
-    min-height: 620px;
+    min-height: 590px;
+    margin-left: 0;
   }
 
   .section-subtitle {
     white-space: normal;
   }
+
+  .cta-band {
+    max-width: none;
+  }
 }
 
 @media (max-width: 760px) {
   .page-shell {
-    padding: 18px;
+    padding: 16px 16px 28px;
   }
 
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
   }
 
   .topbar-links {
-    flex-wrap: wrap;
+    margin-left: auto;
+    flex-wrap: nowrap;
+  }
+
+  .pill-link {
+    min-height: 46px;
+    padding: 0 16px;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .hero-grid {
+    padding: 10px 0 24px;
+  }
+
+  .hero-copy h1 {
+    max-width: 10.5ch;
+    font-size: clamp(2.35rem, 11vw, 3.6rem);
+    line-height: 0.98;
+  }
+
+  .hero-text {
+    max-width: 32ch;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .hero-actions,
+  .cta-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .hero-actions .primary-cta,
+  .hero-actions .secondary-cta,
+  .cta-actions .primary-cta,
+  .cta-actions .secondary-cta {
+    width: 100%;
   }
 
   .site-footer {
@@ -589,27 +634,67 @@ input {
     grid-template-columns: 1fr;
   }
 
+  .section-heading {
+    margin-bottom: 14px;
+  }
+
+  .section-heading h2,
+  .cta-copy h2,
+  .contact-copy h2 {
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+    line-height: 1.04;
+  }
+
   .phone-cluster {
-    min-height: 650px;
+    min-height: 560px;
+    width: 100%;
   }
 
   .brand-full {
-    height: 46px;
+    height: 40px;
   }
 
   .phone-card {
-    width: calc(100% - 12px);
+    width: min(92%, 320px);
     transform: none;
     animation: none;
+    border-radius: 28px;
   }
 
   .phone-card-left {
     left: 0;
-    top: 0;
+    top: 14px;
   }
 
   .phone-card-right {
     right: 0;
-    top: 250px;
+    top: 190px;
+  }
+
+  .phone-card h3 {
+    font-size: 1.45rem;
+  }
+
+  .field-stack span,
+  .referral-box,
+  .mini-steps li,
+  .cta-bar {
+    border-radius: 16px;
+  }
+
+  .cta-band,
+  .contact-band {
+    gap: 18px;
+    margin-top: 28px;
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .contact-form {
+    gap: 10px;
+  }
+
+  .contact-helper {
+    font-size: 0.84rem;
   }
 }
