@@ -99,12 +99,15 @@ input {
 .brand-lockup {
   display: flex;
   align-items: center;
+  isolation: isolate;
 }
 
 .brand-full {
   width: auto;
   height: 52px;
   object-fit: contain;
+  mix-blend-mode: multiply;
+  filter: contrast(1.08) saturate(1.04);
 }
 
 .topbar-links {
@@ -132,10 +135,14 @@ input {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.42fr) minmax(380px, 0.9fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.48fr) minmax(360px, 0.96fr);
+  gap: 8px;
   align-items: center;
   padding: 26px 0 42px;
+}
+
+.hero-copy {
+  padding-right: 8px;
 }
 
 .eyebrow,
@@ -160,7 +167,7 @@ input {
 }
 
 .hero-copy h1 {
-  max-width: 13.4ch;
+  max-width: 14.2ch;
   font-size: clamp(2.05rem, 3.9vw, 3.5rem);
   line-height: 1.04;
 }
@@ -175,7 +182,7 @@ input {
 }
 
 .hero-text {
-  max-width: 54ch;
+  max-width: 58ch;
   margin: 14px 0 0;
   font-size: 0.98rem;
 }
@@ -213,14 +220,14 @@ input {
 
 .hero-visual {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .phone-cluster {
   position: relative;
   min-height: 620px;
-  width: min(100%, 520px);
-  margin-left: auto;
+  width: min(100%, 560px);
+  margin-left: 0;
 }
 
 .phone-card,
@@ -243,13 +250,13 @@ input {
 }
 
 .phone-card-left {
-  left: 0;
+  left: 18px;
   top: 42px;
   transform: rotate(-9deg);
 }
 
 .phone-card-right {
-  right: 6px;
+  right: 18px;
   top: 0;
   transform: rotate(8deg);
   animation-delay: 0.8s;
