@@ -90,10 +90,6 @@ export default function LandingPage() {
               Entra in waitlist
             </a>
           </div>
-
-          <div className="micro-copy">
-            Una sola app per attività, enti, aggiornamenti e relazioni utili sul territorio.
-          </div>
         </div>
 
         <div className="hero-visual">
@@ -188,31 +184,42 @@ export default function LandingPage() {
 
       <section className="contact-band" id="contatto">
         <div className="contact-copy">
-          <p className="eyebrow">Contatti</p>
-          <h2>Lasciaci la tua email e ti ricontattiamo.</h2>
+          <p className="eyebrow">Entra in waitlist</p>
+          <h2>Vuoi sapere quando AiutarSì sarà disponibile?</h2>
           <p>
-            Se vuoi ricevere aggiornamenti, disponibilità o informazioni sul progetto, scrivici qui.
+            Lasciaci la tua email. Ti scriveremo quando l&apos;app sarà disponibile o quando ci saranno novità importanti.
           </p>
         </div>
 
         <form className="contact-form" onSubmit={handleContact}>
           <label className="contact-label" htmlFor="contact-email">
-            Email
+            Il tuo indirizzo email
           </label>
           <input
             id="contact-email"
             type="email"
-            placeholder="nome@email.com"
+            placeholder="esempio@email.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="contact-input"
           />
           <button type="submit" className="primary-cta contact-submit">
-            Contattaci
+            Entra in waitlist
           </button>
-          <p className="contact-helper">Il form apre il tuo client mail verso aiutarsi.it@gmail.com.</p>
+          <p className="contact-helper">
+            Si aprirà la tua app email con un messaggio già pronto da inviare a `aiutarsi.it@gmail.com`.
+          </p>
         </form>
       </section>
+
+      <footer className="site-footer">
+        <a href="https://aiutarsi.app/privacy-policy" target="_blank" rel="noreferrer">
+          Privacy
+        </a>
+        <a href="mailto:aiutarsi.it@gmail.com?subject=AiutarSì%20-%20Contatti">
+          Contatti
+        </a>
+      </footer>
     </main>
   );
 }

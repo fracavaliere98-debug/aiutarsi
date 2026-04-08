@@ -77,7 +77,8 @@ input {
 .solution-section,
 .how-section,
 .cta-band,
-.contact-band {
+.contact-band,
+.site-footer {
   position: relative;
   z-index: 1;
   max-width: 1280px;
@@ -157,8 +158,8 @@ input {
 
 .hero-copy h1 {
   max-width: 10.5ch;
-  font-size: clamp(3rem, 5.9vw, 5.4rem);
-  line-height: 0.98;
+  font-size: clamp(2.5rem, 4.9vw, 4.4rem);
+  line-height: 1.02;
 }
 
 .hero-text,
@@ -206,13 +207,6 @@ input {
   border: 1px solid var(--line);
   background: rgba(91, 44, 160, 0.05);
   color: var(--accent);
-}
-
-.micro-copy {
-  margin-top: 14px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  max-width: 42ch;
 }
 
 .hero-visual {
@@ -483,6 +477,24 @@ input {
   font-size: 0.9rem;
 }
 
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 0 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.site-footer a {
+  transition: color 180ms ease;
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}
+
 @keyframes floatCard {
   0%,
   100% {
@@ -521,6 +533,12 @@ input {
 
   .topbar-links {
     flex-wrap: wrap;
+  }
+
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 18px;
   }
 
   .section-grid,
