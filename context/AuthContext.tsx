@@ -31,6 +31,7 @@ interface AuthContextType {
     updateEmail: (newEmail: string) => Promise<boolean>;
     updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
     resendSignupConfirmation: (email: string) => Promise<void>;
+    checkEmailConfirmationStatus: (email: string) => Promise<boolean>;
     requestPasswordReset: (email: string) => Promise<void>;
     completePasswordRecovery: (newPassword: string) => Promise<void>;
     getNPOFollowers: (npoId: string) => AppUser[];
@@ -58,6 +59,7 @@ const AuthContext = createContext<AuthContextType>({
     updateEmail: async () => false,
     updatePassword: async () => false,
     resendSignupConfirmation: async () => { },
+    checkEmailConfirmationStatus: async () => false,
     requestPasswordReset: async () => { },
     completePasswordRecovery: async () => { },
     getNPOFollowers: () => [],
@@ -604,6 +606,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
     }, []);
 
+    const checkEmailConfirmationStatus = useCallback(async (email: string): Promise<boolean> => {
+        const confirmed = await authService.checkEmailConfirmationStatus(email);
+        trackEvent("auth_confirmation_status_checked", {
+            emailDomain: email.split("@")[1] || "unknown",
+            confirmed,
+        });
+        return confirmed;
+    }, []);
+
     const requestPasswordReset = useCallback(async (email: string): Promise<void> => {
         await authService.requestPasswordReset(email);
         trackEvent("auth_password_reset_requested", {
@@ -650,9 +661,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         updateEmail,
         updatePassword,
         resendSignupConfirmation,
+        checkEmailConfirmationStatus,
         requestPasswordReset,
         completePasswordRecovery
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation, requestPasswordReset, completePasswordRecovery]);
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation, checkEmailConfirmationStatus, requestPasswordReset, completePasswordRecovery]);
 
     return (
         <AuthContext.Provider value={value}>

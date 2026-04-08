@@ -23,7 +23,7 @@ function getStringParam(value?: string | string[]) {
 export default function ConfirmEmailScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ email?: string | string[]; role?: string | string[] }>();
-    const { user, isLoaded, isLoading, resendSignupConfirmation } = useAuth();
+    const { user, isLoaded, isLoading, resendSignupConfirmation, checkEmailConfirmationStatus } = useAuth();
     const { showToast } = useToast();
     const [isChecking, setIsChecking] = useState(false);
     const [isResending, setIsResending] = useState(false);
@@ -55,22 +55,36 @@ export default function ConfirmEmailScreen() {
     };
 
     const handleAlreadyConfirmed = async () => {
-        if (isChecking) return;
+        if (isChecking || !email) return;
 
         try {
             setIsChecking(true);
+            const isConfirmed = await checkEmailConfirmationStatus(email);
+            if (isConfirmed) {
+                Alert.alert(
+                    "Email già confermata",
+                    "La tua email risulta già confermata. Ora puoi procedere al login.",
+                    [{ text: "Vai al login", onPress: () => router.replace("/login") }]
+                );
+                return;
+            }
+
+            await resendSignupConfirmation(email);
+            Alert.alert(
+                "Conferma non ancora rilevata",
+                "La tua email non risulta ancora confermata. Ti abbiamo inviato una nuova mail di conferma."
+            );
+
             const { data } = await supabase.auth.getSession();
             if (data.session?.user) {
                 router.replace("/");
                 return;
             }
-
+        } catch (error: any) {
             Alert.alert(
-                "Conferma non rilevata",
-                "Apri il link ricevuto via email su questo dispositivo. Appena la sessione viene attivata, entrerai automaticamente nell'app."
+                "Verifica non riuscita",
+                error?.message || "Non siamo riusciti a controllare lo stato della conferma. Riprova tra poco."
             );
-        } catch {
-            Alert.alert("Verifica non riuscita", "Non siamo riusciti a controllare lo stato della conferma. Riprova tra poco.");
         } finally {
             setIsChecking(false);
         }

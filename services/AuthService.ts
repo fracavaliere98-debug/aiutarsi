@@ -1063,6 +1063,21 @@ export class AuthService {
         console.log("[DEBUG] AuthService: resend signup confirmation accepted");
     }
 
+    async checkEmailConfirmationStatus(email: string): Promise<boolean> {
+        const cleanEmail = email.trim();
+        if (!cleanEmail) throw new Error("Email non disponibile.");
+
+        const { data, error } = await supabase.functions.invoke("auth-confirmation-status", {
+            body: { email: cleanEmail },
+        });
+
+        if (error) {
+            throw new Error(error.message || "Non siamo riusciti a verificare lo stato della conferma.");
+        }
+
+        return data?.confirmed === true;
+    }
+
     async requestPasswordReset(email: string): Promise<void> {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Inserisci la tua email.");
