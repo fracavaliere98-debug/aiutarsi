@@ -14,14 +14,14 @@ export class AuthService {
 
     private _getAuthEmailRedirectUrl(): string {
         if (this._isProductionSupabaseProject()) {
-            return "https://aiutarsi.app/auth/confirm";
+            return "https://aiutarsi.vercel.app/auth/confirm";
         }
         return 'aiutarsiapp://confirm-email';
     }
 
     private _getPasswordRecoveryRedirectUrl(): string {
         if (this._isProductionSupabaseProject()) {
-            return "https://aiutarsi.app/auth/reset-password";
+            return "https://aiutarsi.vercel.app/auth/reset-password";
         }
         return 'aiutarsiapp://reset-password';
     }
