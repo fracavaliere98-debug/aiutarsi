@@ -1055,9 +1055,20 @@ export class AuthService {
             throw new Error("Stai già usando questo indirizzo email.");
         }
 
-        const emailState = await this.getEmailConfirmationState(cleanEmail);
-        if (emailState.exists) {
-            throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
+        try {
+            const emailState = await this.getEmailConfirmationState(cleanEmail);
+            if (emailState.exists) {
+                throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
+            }
+        } catch (error: any) {
+            const message = this._formatErrorDetails(error).toLowerCase();
+            const isDuplicateError = message.includes("già utilizzato") || message.includes("already");
+
+            if (isDuplicateError) {
+                throw error;
+            }
+
+            console.warn("[DEBUG] AuthService: email availability pre-check failed, falling back to auth.updateUser", this._formatErrorDetails(error));
         }
 
         const { error } = await this._withTimeout(
@@ -1068,7 +1079,19 @@ export class AuthService {
             'auth.updateUser.email',
             10000
         );
-        if (error) throw new Error(error.message);
+        if (error) {
+            const message = (error.message || '').toLowerCase();
+            if (
+                message.includes('already registered')
+                || message.includes('already been registered')
+                || message.includes('already exists')
+                || message.includes('email address already in use')
+                || message.includes('email exists')
+            ) {
+                throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
+            }
+            throw new Error(error.message);
+        }
     }
 
     // Password update remains same (Auth only)
