@@ -1055,22 +1055,6 @@ export class AuthService {
             throw new Error("Stai già usando questo indirizzo email.");
         }
 
-        try {
-            const emailState = await this.getEmailConfirmationState(cleanEmail);
-            if (emailState.exists) {
-                throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
-            }
-        } catch (error: any) {
-            const message = this._formatErrorDetails(error).toLowerCase();
-            const isDuplicateError = message.includes("già utilizzato") || message.includes("already");
-
-            if (isDuplicateError) {
-                throw error;
-            }
-
-            console.warn("[DEBUG] AuthService: email availability pre-check failed, falling back to auth.updateUser", this._formatErrorDetails(error));
-        }
-
         const { error } = await this._withTimeout(
             supabase.auth.updateUser(
                 { email: cleanEmail },
