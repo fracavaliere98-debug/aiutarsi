@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { getBrowserSupabase, hasBrowserSupabaseConfig } from "../../../lib/supabase-browser";
+import { getAuthParamsFromLocation, humanizeAuthError } from "../../../lib/auth-url";
 
 type RecoveryState = "loading" | "ready" | "success" | "error";
 
@@ -24,16 +25,18 @@ export default function ResetPasswordPage() {
           throw new Error("Configurazione Supabase non disponibile sul sito.");
         }
         const supabase = getBrowserSupabase();
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get("code");
-        const tokenHash = params.get("token_hash");
-        const type = params.get("type") as EmailOtpType | null;
+        const { code, tokenHash, type, errorCode, errorDescription } = getAuthParamsFromLocation();
+        const otpType = type as EmailOtpType | null;
+
+        if (errorCode || errorDescription) {
+          throw new Error(humanizeAuthError(errorCode, errorDescription));
+        }
 
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
-        } else if (tokenHash && type) {
-          const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+        } else if (tokenHash && otpType) {
+          const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
           if (error) throw error;
         }
 
