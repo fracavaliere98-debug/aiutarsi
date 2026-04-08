@@ -421,8 +421,8 @@ export class AuthService {
                     }
                 }
                 const dbUser = this._mapProfileToUser(profile);
-                // Merge DB profile into user object, keeping the auth email but trusting the profile row for role.
-                Object.assign(user, dbUser, { email: user.email });
+                // Trust the public profile row as source of truth after sync triggers have run.
+                Object.assign(user, dbUser, { email: dbUser.email || user.email });
                 console.log("[DEBUG] AuthService: Login - Profile merged from DB");
             }
         } catch (e) {
@@ -766,9 +766,7 @@ export class AuthService {
             if (profile && !error) {
                 console.log("[DEBUG] AuthService: Loaded profile from DB");
                 user = this._mapProfileToUser(profile);
-
-                // Keep auth email in sync, but trust public.profiles as the source of truth for role.
-                user.email = session.user.email || user.email;
+                user.email = user.email || session.user.email || '';
 
                 if (!user.referral_code) {
                     const ensuredCode = await this.ensureReferralCodeExists(session.user.id);

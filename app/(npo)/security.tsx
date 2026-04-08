@@ -30,6 +30,10 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
     // 2FA State (Placeholder)
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
+    React.useEffect(() => {
+        setLoginEmail(user?.email || "");
+    }, [user?.email]);
+
     const handleSave = async () => {
         setIsLoading(true);
         try {
