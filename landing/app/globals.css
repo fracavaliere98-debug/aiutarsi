@@ -135,14 +135,14 @@ input {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.48fr) minmax(360px, 0.96fr);
-  gap: 8px;
+  grid-template-columns: minmax(0, 1.62fr) minmax(360px, 0.82fr);
+  gap: 0;
   align-items: center;
   padding: 26px 0 42px;
 }
 
 .hero-copy {
-  padding-right: 8px;
+  padding-right: 0;
 }
 
 .eyebrow,
@@ -167,7 +167,7 @@ input {
 }
 
 .hero-copy h1 {
-  max-width: 14.2ch;
+  max-width: 15.2ch;
   font-size: clamp(2.05rem, 3.9vw, 3.5rem);
   line-height: 1.04;
 }
@@ -182,7 +182,7 @@ input {
 }
 
 .hero-text {
-  max-width: 58ch;
+  max-width: 62ch;
   margin: 14px 0 0;
   font-size: 0.98rem;
 }
@@ -220,14 +220,14 @@ input {
 
 .hero-visual {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .phone-cluster {
   position: relative;
   min-height: 620px;
-  width: min(100%, 560px);
-  margin-left: 0;
+  width: min(100%, 540px);
+  margin-left: -52px;
 }
 
 .phone-card,
