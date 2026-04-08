@@ -406,6 +406,19 @@ export class AuthService {
                 .single();
 
             if (profile) {
+                if (!profile.full_name && user.full_name) {
+                    profile.full_name = user.full_name;
+                    try {
+                        await supabase
+                            .from('profiles')
+                            .update({ full_name: user.full_name, updated_at: new Date().toISOString() })
+                            .eq('id', user.id)
+                            .is('full_name', null);
+                        console.log("[DEBUG] AuthService: Login - Backfilled missing full_name from auth metadata");
+                    } catch (backfillError) {
+                        console.warn("Login full_name backfill failed", backfillError);
+                    }
+                }
                 const dbUser = this._mapProfileToUser(profile);
                 // Merge DB profile into user object, keeping the auth email but trusting the profile row for role.
                 Object.assign(user, dbUser, { email: user.email });
@@ -553,9 +566,17 @@ export class AuthService {
 
     // Helper: Map public profile to AppUser
     private _mapProfileToUser(profile: any): AppUser {
+        const derivedDisplayName =
+            profile.full_name ||
+            profile.npo_name ||
+            profile.company_name ||
+            profile.name ||
+            'Utente';
+
         return {
             ...profile, // Direct spread of schema-compliant fields including user_skills, user_interests, etc.
-            name: profile.full_name || profile.npo_name || 'Utente',
+            full_name: profile.full_name || null,
+            name: derivedDisplayName,
             avatar: profile.avatar_url,
             impactPoints: profile.impact_points || 0,
             npoName: profile.npo_name || profile.full_name,
@@ -1153,7 +1174,7 @@ export class AuthService {
         try {
             const { data: profile, error: fetchError } = await supabase
                 .from('profiles')
-                .select('id')
+                .select('id, full_name')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -1182,6 +1203,29 @@ export class AuthService {
                         console.error("[AuthService] Self-healing failed:", insertError.message);
                     } else {
                         console.log("[AuthService] Self-healing successful: Created missing profile");
+                    }
+                }
+            } else if (!profile.full_name) {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user && user.id === userId) {
+                    const metadata = user.user_metadata || {};
+                    const fallbackFullName = metadata.full_name || metadata.name || metadata.displayName || null;
+                    if (fallbackFullName) {
+                        const { error: patchError } = await supabase
+                            .from('profiles')
+                            .update({
+                                full_name: fallbackFullName,
+                                updated_at: new Date().toISOString(),
+                            })
+                            .eq('id', userId)
+                            .is('full_name', null);
+
+                        if (patchError) {
+                            console.error("[AuthService] Missing full_name backfill failed:", patchError.message);
+                        } else {
+                            console.log("[AuthService] Backfilled missing full_name from auth metadata");
+                        }
                     }
                 }
             }
