@@ -1148,9 +1148,13 @@ export class AuthService {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Email non disponibile.");
 
-        const { data, error } = await supabase.functions.invoke("auth-confirmation-status", {
-            body: { email: cleanEmail },
-        });
+        const { data, error } = await this._withTimeout(
+            supabase.functions.invoke("auth-confirmation-status", {
+                body: { email: cleanEmail },
+            }),
+            'functions.auth-confirmation-status',
+            3000
+        );
 
         if (error) {
             throw new Error(error.message || "Non siamo riusciti a verificare lo stato della conferma.");
