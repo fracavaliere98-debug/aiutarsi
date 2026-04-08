@@ -6,6 +6,12 @@ import { storageService } from './StorageService';
 import { getSupabaseProjectRef } from '../utils/runtimeConfig';
 import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
 
+export type EmailConfirmationState = {
+    exists: boolean;
+    confirmed: boolean;
+    role?: string | null;
+};
+
 export class AuthService {
     private _cachedAccessToken: string | null = null;
     private _isProductionSupabaseProject(): boolean {
@@ -368,6 +374,17 @@ export class AuthService {
         }
 
         if (error) {
+            if (error.message.includes("Invalid login credentials")) {
+                const confirmationState = await this.getEmailConfirmationState(cleanEmail);
+                if (confirmationState.exists && !confirmationState.confirmed) {
+                    const confirmationRequiredError = new Error("EMAIL_CONFIRMATION_REQUIRED");
+                    (confirmationRequiredError as any).code = "EMAIL_CONFIRMATION_REQUIRED";
+                    (confirmationRequiredError as any).email = cleanEmail;
+                    (confirmationRequiredError as any).role = confirmationState.role || undefined;
+                    throw confirmationRequiredError;
+                }
+            }
+
             const msg = error.message.includes("Invalid login credentials")
                 ? "Credenziali errate. Controlla email e password."
                 : error.message;
@@ -1063,7 +1080,7 @@ export class AuthService {
         console.log("[DEBUG] AuthService: resend signup confirmation accepted");
     }
 
-    async checkEmailConfirmationStatus(email: string): Promise<boolean> {
+    async getEmailConfirmationState(email: string): Promise<EmailConfirmationState> {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Email non disponibile.");
 
@@ -1075,7 +1092,16 @@ export class AuthService {
             throw new Error(error.message || "Non siamo riusciti a verificare lo stato della conferma.");
         }
 
-        return data?.confirmed === true;
+        return {
+            exists: data?.exists === true,
+            confirmed: data?.confirmed === true,
+            role: typeof data?.role === "string" ? data.role : null,
+        };
+    }
+
+    async checkEmailConfirmationStatus(email: string): Promise<boolean> {
+        const state = await this.getEmailConfirmationState(email);
+        return state.confirmed;
     }
 
     async requestPasswordReset(email: string): Promise<void> {

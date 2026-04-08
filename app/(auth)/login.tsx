@@ -32,6 +32,16 @@ export default function LoginScreen() {
             await login(email, password);
             router.replace("/");
         } catch (error: any) {
+            if (error?.code === "EMAIL_CONFIRMATION_REQUIRED") {
+                router.replace({
+                    pathname: "/confirm-email",
+                    params: {
+                        email: (error?.email || email).trim(),
+                        role: error?.role || "",
+                    },
+                });
+                return;
+            }
             Alert.alert("Errore di Accesso", error.message || "Login fallito. Riprova.");
         } finally {
             setIsLoading(false);

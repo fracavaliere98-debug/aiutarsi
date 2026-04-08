@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("email_confirmed")
+      .select("email_confirmed, role")
       .ilike("email", cleanEmail)
       .limit(1)
       .maybeSingle();
@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        exists: !!data,
         confirmed: data?.email_confirmed === true,
+        role: data?.role ?? null,
       }),
       {
         status: 200,
