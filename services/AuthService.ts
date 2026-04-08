@@ -14,6 +14,7 @@ export type EmailConfirmationState = {
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
+    private readonly PENDING_EMAIL_CHANGE_KEY = '@pending_email_change';
     private _isProductionSupabaseProject(): boolean {
         return getSupabaseProjectRef() === "ibyjkqowokxrlormkwzw";
     }
@@ -1075,6 +1076,29 @@ export class AuthService {
                 throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
             }
             throw new Error(error.message);
+        }
+
+        try {
+            await AsyncStorage.setItem(this.PENDING_EMAIL_CHANGE_KEY, cleanEmail);
+        } catch (storageError) {
+            console.warn("[DEBUG] AuthService: failed to persist pending email change", storageError);
+        }
+    }
+
+    async getPendingEmailChange(): Promise<string | null> {
+        try {
+            return await AsyncStorage.getItem(this.PENDING_EMAIL_CHANGE_KEY);
+        } catch (error) {
+            console.warn("[DEBUG] AuthService: failed reading pending email change", error);
+            return null;
+        }
+    }
+
+    async clearPendingEmailChange(): Promise<void> {
+        try {
+            await AsyncStorage.removeItem(this.PENDING_EMAIL_CHANGE_KEY);
+        } catch (error) {
+            console.warn("[DEBUG] AuthService: failed clearing pending email change", error);
         }
     }
 

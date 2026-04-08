@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { Alert, AppState, AppStateStatus } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { AppUser } from "../types";
@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Use ref to track logout intent immediately and synchronously across closures
     const isLoggingOutRef = React.useRef(false);
     const usersRefreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const emailChangeSyncTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
     const refreshUsers = useCallback(async (role?: string) => {
         // Fetch only a small page of users initially or based on role
@@ -117,6 +118,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.warn("[AuthContext] Failed to sync ban state from profile:", error);
         }
+    }, []);
+
+    const syncPendingEmailChange = useCallback(async (showSuccessFeedback = false): Promise<boolean> => {
+        const pendingEmail = await authService.getPendingEmailChange();
+        if (!pendingEmail) return false;
+
+        try {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            if (refreshed.session?.access_token) {
+                authService.setCachedAccessToken(refreshed.session.access_token);
+            }
+
+            const refreshedUser = await authService.getCurrentUser();
+            if (refreshedUser) {
+                setUser(refreshedUser);
+            }
+
+            if (refreshedUser?.email?.trim().toLowerCase() === pendingEmail.trim().toLowerCase()) {
+                await authService.clearPendingEmailChange();
+                if (showSuccessFeedback) {
+                    Alert.alert("Email aggiornata", "Il nuovo indirizzo email è stato confermato correttamente.");
+                }
+                return true;
+            }
+        } catch (error) {
+            console.warn("[AuthContext] Pending email change sync failed:", error);
+        }
+
+        return false;
     }, []);
 
     // Load users and session on mount
@@ -287,6 +317,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     if (refreshedUser) {
                         setUser(refreshedUser);
                     }
+                    await syncPendingEmailChange(true);
                     if (user?.id) {
                         await syncBanStateFromProfile(user.id);
                     }
@@ -315,7 +346,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             subscription.remove();
             profileSubscription.unsubscribe();
         };
-    }, [user, syncBanStateFromProfile]);
+    }, [user, syncBanStateFromProfile, syncPendingEmailChange]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        let cancelled = false;
+
+        const start = async () => {
+            const pendingEmail = await authService.getPendingEmailChange();
+            if (!pendingEmail || cancelled) return;
+
+            emailChangeSyncTimerRef.current = setInterval(() => {
+                void syncPendingEmailChange(false);
+            }, 15000);
+        };
+
+        void start();
+
+        return () => {
+            cancelled = true;
+            if (emailChangeSyncTimerRef.current) {
+                clearInterval(emailChangeSyncTimerRef.current);
+                emailChangeSyncTimerRef.current = null;
+            }
+        };
+    }, [user, syncPendingEmailChange]);
 
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         // FORCE RESET LOGOUT GUARD

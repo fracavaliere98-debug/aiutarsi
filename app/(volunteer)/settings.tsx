@@ -67,6 +67,7 @@ export default function VolunteerSettings() {
     const [showChangeEmail, setShowChangeEmail] = useState(false);
     const [showChangePassword, setShowChangePassword] = useState(false);
     const [newEmail, setNewEmail] = useState("");
+    const [emailUpdateNotice, setEmailUpdateNotice] = useState<string | null>(null);
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -82,6 +83,7 @@ export default function VolunteerSettings() {
         try {
             await updateEmail(newEmail);
             showToast('success', "Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
+            setEmailUpdateNotice("Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
             Alert.alert(
                 "Controlla la nuova email",
                 "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Il cambio sarà completato dopo la conferma.",
@@ -90,7 +92,6 @@ export default function VolunteerSettings() {
                         text: "OK",
                         onPress: () => {
                             setShowChangeEmail(false);
-                            setNewEmail("");
                         },
                     },
                 ]
@@ -806,6 +807,11 @@ export default function VolunteerSettings() {
                                     <Text className="text-secondary/60 text-xs mt-3 px-1 leading-5">
                                         Per motivi di sicurezza, riceverai un link di conferma al nuovo indirizzo. L&apos;email non verrà cambiata finché non confermerai il link.
                                     </Text>
+                                    {emailUpdateNotice ? (
+                                        <View className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+                                            <Text className="text-green-800 text-sm font-semibold">{emailUpdateNotice}</Text>
+                                        </View>
+                                    ) : null}
                                 </View>
                             </View>
                         </ScrollView>

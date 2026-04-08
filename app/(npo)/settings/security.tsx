@@ -19,6 +19,7 @@ export default function SecurityScreen() {
     // State
     const [loginEmail, setLoginEmail] = useState(user?.email || "");
     const [isEditingEmail, setIsEditingEmail] = useState(false);
+    const [emailUpdateNotice, setEmailUpdateNotice] = useState<string | null>(null);
 
     // Password State
     const [currentPassword, setCurrentPassword] = useState("");
@@ -36,6 +37,7 @@ export default function SecurityScreen() {
             if (loginEmail !== user?.email) {
                 await authService.updateEmail(loginEmail);
                 showToast("success", "Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
+                setEmailUpdateNotice("Ti abbiamo inviato un link di conferma al nuovo indirizzo email.");
                 Alert.alert(
                     "Controlla la nuova email",
                     "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Il cambio sarà completato dopo la conferma.",
@@ -157,6 +159,11 @@ export default function SecurityScreen() {
                     </TouchableOpacity>
                 </View>
             </SoftCard>
+            {emailUpdateNotice ? (
+                <View className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 mb-6">
+                    <Text className="text-green-800 text-sm font-semibold">{emailUpdateNotice}</Text>
+                </View>
+            ) : null}
 
             {/* Password */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PASSWORD</Text>
