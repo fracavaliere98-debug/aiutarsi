@@ -144,8 +144,8 @@ export default function OnboardingInterests() {
         const currentIdx = currentIndexRef.current;
         const interest = INTERESTS[currentIdx];
         if (!interest) return nextCard();
-        
-        const updated = [...likedInterestsRef.current, interest.label];
+
+        const updated = Array.from(new Set([...likedInterestsRef.current, interest.label]));
         setLikedInterests(updated);
         nextCard(updated);
     };

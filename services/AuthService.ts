@@ -858,8 +858,10 @@ export class AuthService {
             payload.updated_at = new Date().toISOString();
         }
 
-        const skillsToSync = (updates as any).skills || (updates as any).user_skills?.map((s: any) => s.skill);
-        const interestsToSync = (updates as any).interests || (updates as any).user_interests?.map((i: any) => i.interest);
+        const rawSkillsToSync = (updates as any).skills || (updates as any).user_skills?.map((s: any) => s.skill);
+        const rawInterestsToSync = (updates as any).interests || (updates as any).user_interests?.map((i: any) => i.interest);
+        const skillsToSync = rawSkillsToSync ? Array.from(new Set(rawSkillsToSync)) : rawSkillsToSync;
+        const interestsToSync = rawInterestsToSync ? Array.from(new Set(rawInterestsToSync)) : rawInterestsToSync;
 
         try {
             console.log("[DEBUG] AuthService: updateProfile payload prepared", payload);

@@ -76,8 +76,8 @@ export default function OnboardingProfile() {
     const finishOnboarding = async () => {
         console.log("[DEBUG] Onboarding Profile: Finishing...", params);
 
-        const interests = params.interests ? JSON.parse(params.interests as string) : [];
-        const skills = params.skills ? JSON.parse(params.skills as string) : [];
+        const interests = Array.from(new Set(params.interests ? JSON.parse(params.interests as string) : []));
+        const skills = Array.from(new Set(params.skills ? JSON.parse(params.skills as string) : []));
         const demographics = validateVolunteerDemographics({
             gender,
             birthDateInput,
