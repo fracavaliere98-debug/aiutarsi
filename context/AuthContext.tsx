@@ -576,8 +576,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const updateEmail = useCallback(async (newEmail: string): Promise<boolean> => {
         if (!user) return false;
         try {
-            const updatedUser = await authService.updateEmail(newEmail);
-            setUser(updatedUser);
+            await authService.updateEmail(newEmail);
             return true;
         } catch (error) {
             console.error("Update email failed:", error);

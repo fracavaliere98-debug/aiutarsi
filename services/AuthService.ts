@@ -1040,17 +1040,19 @@ export class AuthService {
         }
     }
 
-    async updateEmail(newEmail: string): Promise<AppUser> {
+    async updateEmail(newEmail: string): Promise<void> {
         const cleanEmail = newEmail.trim();
         if (!this._validateEmail(cleanEmail)) throw new Error("Email non valida.");
 
-        const { data, error } = await supabase.auth.updateUser({ email: cleanEmail });
+        const { error } = await this._withTimeout(
+            supabase.auth.updateUser(
+                { email: cleanEmail },
+                { emailRedirectTo: this._getAuthEmailRedirectUrl() }
+            ),
+            'auth.updateUser.email',
+            10000
+        );
         if (error) throw new Error(error.message);
-
-        // We also update the profile email field for consistency (optional but good)
-        await supabase.from('profiles').update({ email: cleanEmail }).eq('id', data.user!.id);
-
-        return (await this.getCurrentUser())!;
     }
 
     // Password update remains same (Auth only)

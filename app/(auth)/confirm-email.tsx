@@ -22,7 +22,7 @@ function getStringParam(value?: string | string[]) {
 
 export default function ConfirmEmailScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ email?: string | string[]; role?: string | string[] }>();
+    const params = useLocalSearchParams<{ email?: string | string[]; role?: string | string[]; type?: string | string[] }>();
     const { user, isLoaded, isLoading, resendSignupConfirmation, checkEmailConfirmationStatus } = useAuth();
     const { showToast } = useToast();
     const [isChecking, setIsChecking] = useState(false);
@@ -30,16 +30,23 @@ export default function ConfirmEmailScreen() {
 
     const email = getStringParam(params.email);
     const role = getStringParam(params.role);
+    const authType = getStringParam(params.type);
     const roleLabel = useMemo(() => getRoleLabel(role), [role]);
+    const isEmailChangeFlow = authType === "email_change" || authType === "email_change_current" || authType === "email_change_new";
 
     useEffect(() => {
-        if (!isLoaded || isLoading || !user) return;
+        if (!isLoaded || isLoading || !user || isEmailChangeFlow) return;
         router.replace("/");
-    }, [user, isLoaded, isLoading, router]);
+    }, [user, isLoaded, isLoading, router, isEmailChangeFlow]);
 
     const handleResend = async () => {
         if (!email || isResending) {
             showToast("error", "Email non disponibile per il reinvio.");
+            return;
+        }
+
+        if (isEmailChangeFlow) {
+            showToast("error", "Per richiedere una nuova mail di cambio indirizzo, ripeti l'operazione dalle impostazioni.");
             return;
         }
 
@@ -62,9 +69,19 @@ export default function ConfirmEmailScreen() {
             const isConfirmed = await checkEmailConfirmationStatus(email);
             if (isConfirmed) {
                 Alert.alert(
-                    "Email già confermata",
-                    "La tua email risulta già confermata. Ora puoi procedere al login.",
-                    [{ text: "Vai al login", onPress: () => router.replace("/login") }]
+                    isEmailChangeFlow ? "Email aggiornata" : "Email già confermata",
+                    isEmailChangeFlow
+                        ? "Il nuovo indirizzo email risulta già confermato. Ora puoi continuare a usare l'app."
+                        : "La tua email risulta già confermata. Ora puoi procedere al login.",
+                    [{ text: isEmailChangeFlow ? "Torna all'app" : "Vai al login", onPress: () => router.replace(isEmailChangeFlow ? "/" : "/login") }]
+                );
+                return;
+            }
+
+            if (isEmailChangeFlow) {
+                Alert.alert(
+                    "Cambio email non ancora completato",
+                    "Il nuovo indirizzo non risulta ancora confermato. Se il link non è più valido, richiedi di nuovo il cambio email dalle impostazioni."
                 );
                 return;
             }
@@ -92,9 +109,13 @@ export default function ConfirmEmailScreen() {
 
     return (
         <AuthShell
-            eyebrow={`${roleLabel} in attesa di conferma`}
-            title="Controlla la tua email."
-            subtitle="Ti abbiamo inviato un link di conferma. Aprilo su questo dispositivo e ti faremo entrare automaticamente nell'app."
+            eyebrow={isEmailChangeFlow ? "Cambio email" : `${roleLabel} in attesa di conferma`}
+            title={isEmailChangeFlow ? "Conferma il nuovo indirizzo email." : "Controlla la tua email."}
+            subtitle={
+                isEmailChangeFlow
+                    ? "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Aprilo su questo dispositivo per completare il cambio email."
+                    : "Ti abbiamo inviato un link di conferma. Aprilo su questo dispositivo e ti faremo entrare automaticamente nell'app."
+            }
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -105,15 +126,17 @@ export default function ConfirmEmailScreen() {
                     <View style={styles.iconWrap}>
                         <MailCheck size={28} color={Colors.primary} />
                     </View>
-                    <Text style={styles.cardTitle}>Quasi fatto</Text>
+                    <Text style={styles.cardTitle}>{isEmailChangeFlow ? "Ultimo passaggio" : "Quasi fatto"}</Text>
                     <Text style={styles.cardBody}>
                         Verifica la casella di posta di:
                     </Text>
                     <Text style={styles.email}>{email || "indirizzo email non disponibile"}</Text>
-                    <View style={styles.rolePill}>
-                        <ShieldCheck size={14} color={Colors.primary} />
-                        <Text style={styles.roleText}>Ruolo: {roleLabel}</Text>
-                    </View>
+                    {!isEmailChangeFlow ? (
+                        <View style={styles.rolePill}>
+                            <ShieldCheck size={14} color={Colors.primary} />
+                            <Text style={styles.roleText}>Ruolo: {roleLabel}</Text>
+                        </View>
+                    ) : null}
                 </View>
 
                 <View style={styles.actions}>
@@ -124,7 +147,7 @@ export default function ConfirmEmailScreen() {
                         className="rounded-[28px]"
                     />
                     <Button
-                        title={isChecking ? "Verifica..." : "Ho già confermato"}
+                        title={isChecking ? "Verifica..." : isEmailChangeFlow ? "Ho già cambiato email" : "Ho già confermato"}
                         onPress={handleAlreadyConfirmed}
                         isLoading={isChecking}
                         variant="outline"
@@ -133,7 +156,9 @@ export default function ConfirmEmailScreen() {
                 </View>
 
                 <Text style={styles.hint}>
-                    Appena apri il link di conferma e la sessione viene attivata, verrai reindirizzato automaticamente.
+                    {isEmailChangeFlow
+                        ? "Dopo il click sul link, il nuovo indirizzo verrà confermato. Se hai già completato il passaggio, puoi tornare alle impostazioni."
+                        : "Appena apri il link di conferma e la sessione viene attivata, verrai reindirizzato automaticamente."}
                 </Text>
             </ScrollView>
         </AuthShell>

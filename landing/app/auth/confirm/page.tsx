@@ -11,6 +11,7 @@ type ConfirmState = "loading" | "success" | "error";
 export default function ConfirmEmailPage() {
   const [status, setStatus] = useState<ConfirmState>("loading");
   const [message, setMessage] = useState("Stiamo verificando il link di conferma...");
+  const [flowType, setFlowType] = useState<"signup" | "email_change" | "generic">("generic");
 
   const hasConfig = useMemo(() => hasBrowserSupabaseConfig(), []);
 
@@ -25,6 +26,12 @@ export default function ConfirmEmailPage() {
         const supabase = getBrowserSupabase();
         const { code, tokenHash, type, errorCode, errorDescription } = getAuthParamsFromLocation();
         const otpType = type as EmailOtpType | null;
+        const normalizedType =
+          type === "signup" ? "signup" : type === "email_change" ? "email_change" : "generic";
+
+        if (active) {
+          setFlowType(normalizedType);
+        }
 
         if (errorCode || errorDescription) {
           throw new Error(humanizeAuthError(errorCode, errorDescription));
@@ -45,7 +52,11 @@ export default function ConfirmEmailPage() {
 
         if (!active) return;
         setStatus("success");
-        setMessage("Email confermata correttamente. Ora puoi aprire l'app ed effettuare l'accesso.");
+        setMessage(
+          normalizedType === "email_change"
+            ? "Indirizzo email aggiornato correttamente. Ora puoi continuare a usare l'app con il nuovo indirizzo."
+            : "Email confermata correttamente. Ora puoi aprire l'app ed effettuare l'accesso."
+        );
       } catch (error: any) {
         if (!active) return;
         setStatus("error");
@@ -63,8 +74,16 @@ export default function ConfirmEmailPage() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <p className="auth-eyebrow">Conferma email</p>
-        <h1>{status === "success" ? "Conferma completata" : status === "error" ? "Qualcosa non ha funzionato" : "Stiamo verificando il tuo account"}</h1>
+        <p className="auth-eyebrow">{flowType === "email_change" ? "Cambio email" : "Conferma email"}</p>
+        <h1>
+          {status === "success"
+            ? flowType === "email_change"
+              ? "Email aggiornata"
+              : "Conferma completata"
+            : status === "error"
+              ? "Qualcosa non ha funzionato"
+              : "Stiamo verificando il tuo account"}
+        </h1>
         <p className="auth-body">{message}</p>
 
         <div className="auth-actions">

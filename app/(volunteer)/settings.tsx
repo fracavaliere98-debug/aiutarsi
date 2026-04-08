@@ -81,7 +81,7 @@ export default function VolunteerSettings() {
         setIsUpdatingAuth(true);
         try {
             await updateEmail(newEmail);
-            showToast('success', 'Email aggiornata! Controlla la posta per la conferma.');
+            showToast('success', "Ti abbiamo inviato un link di conferma al nuovo indirizzo email. Il cambio sarà completato dopo la conferma.");
             setShowChangeEmail(false);
             setNewEmail("");
         } catch (error: any) {
