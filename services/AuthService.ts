@@ -1056,16 +1056,38 @@ export class AuthService {
             throw new Error("Stai già usando questo indirizzo email.");
         }
 
-        const { error } = await this._withTimeout(
-            supabase.auth.updateUser(
-                { email: cleanEmail },
-                { emailRedirectTo: this._getAuthEmailRedirectUrl() }
-            ),
-            'auth.updateUser.email',
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+            throw new Error("Sessione assente. Effettua di nuovo l'accesso.");
+        }
+
+        const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+        const redirectTo = this._getAuthEmailRedirectUrl();
+        const requestUrl = `${supabaseUrl}/auth/v1/user?${new URLSearchParams({ redirect_to: redirectTo }).toString()}`;
+
+        const response = await this._withTimeout(
+            fetch(requestUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: supabaseAnonKey,
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ email: cleanEmail }),
+            }),
+            'auth.updateUser.email.fetch',
             10000
         );
-        if (error) {
-            const message = (error.message || '').toLowerCase();
+
+        if (!response.ok) {
+            let rawMessage = 'Errore durante l’aggiornamento email.';
+            try {
+                const payload = await response.json();
+                rawMessage = payload?.msg || payload?.message || payload?.error_description || payload?.error || rawMessage;
+            } catch {}
+
+            const message = rawMessage.toLowerCase();
             if (
                 message.includes('already registered')
                 || message.includes('already been registered')
@@ -1075,7 +1097,7 @@ export class AuthService {
             ) {
                 throw new Error("Questo indirizzo email è già utilizzato. Usa un'altra email.");
             }
-            throw new Error(error.message);
+            throw new Error(rawMessage);
         }
 
         try {
