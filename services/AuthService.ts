@@ -8,12 +8,21 @@ import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/pa
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
+    private _isProductionSupabaseProject(): boolean {
+        return getSupabaseProjectRef() === "ibyjkqowokxrlormkwzw";
+    }
 
     private _getAuthEmailRedirectUrl(): string {
+        if (this._isProductionSupabaseProject()) {
+            return "https://aiutarsi.app/auth/confirm";
+        }
         return 'aiutarsiapp://confirm-email';
     }
 
     private _getPasswordRecoveryRedirectUrl(): string {
+        if (this._isProductionSupabaseProject()) {
+            return "https://aiutarsi.app/auth/reset-password";
+        }
         return 'aiutarsiapp://reset-password';
     }
 
