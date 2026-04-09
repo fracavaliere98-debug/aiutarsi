@@ -1126,11 +1126,7 @@ export class AuthService {
     async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
         if (!this._validatePassword(newPassword)) throw new Error(getPasswordRequirementsText());
 
-        const { data: sessionData } = await this._withTimeout(
-            supabase.auth.getSession(),
-            'auth.getSession.beforePasswordUpdate',
-            3000
-        );
+        const { data: sessionData } = await supabase.auth.getSession();
         const email = sessionData.session?.user.email?.trim().toLowerCase();
         const accessToken = sessionData.session?.access_token;
         if (!email || !accessToken) {
@@ -1140,39 +1136,31 @@ export class AuthService {
         const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
         const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-        const verifyResponse = await this._withTimeout(
-            fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: supabaseAnonKey,
-                },
-                body: JSON.stringify({
-                    email,
-                    password: oldPassword,
-                }),
+        const verifyResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: supabaseAnonKey,
+            },
+            body: JSON.stringify({
+                email,
+                password: oldPassword,
             }),
-            'auth.verifyCurrentPassword.fetch',
-            10000
-        );
+        });
 
         if (!verifyResponse.ok) {
             throw new Error("Password attuale non corretta.");
         }
 
-        const updateResponse = await this._withTimeout(
-            fetch(`${supabaseUrl}/auth/v1/user`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: supabaseAnonKey,
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ password: newPassword }),
-            }),
-            'auth.updateUser.password.fetch',
-            10000
-        );
+        const updateResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
 
         if (!updateResponse.ok) {
             let rawMessage = 'Errore aggiornamento password.';
@@ -1182,15 +1170,6 @@ export class AuthService {
             } catch {}
 
             throw new Error(rawMessage);
-        }
-
-        try {
-            const { data: refreshed } = await supabase.auth.refreshSession();
-            if (refreshed.session?.access_token) {
-                this.setCachedAccessToken(refreshed.session.access_token);
-            }
-        } catch (error) {
-            console.warn("[DEBUG] AuthService: refreshSession after password update failed", error);
         }
     }
 
