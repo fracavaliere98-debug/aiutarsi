@@ -341,6 +341,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         email_confirmed: payload.new.email_confirmed,
                     });
 
+                    const pendingEmail = await authService.getPendingEmailChange();
+                    const normalizedPendingEmail = pendingEmail?.trim().toLowerCase();
+                    const normalizedPayloadEmail = typeof payload.new.email === 'string'
+                        ? payload.new.email.trim().toLowerCase()
+                        : null;
+                    const emailChangeConfirmed = !!normalizedPendingEmail
+                        && !!normalizedPayloadEmail
+                        && normalizedPayloadEmail === normalizedPendingEmail;
+
                     setUser(prev => prev ? {
                         ...prev,
                         is_banned: !!payload.new.is_banned,
@@ -350,21 +359,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         email_confirmed: payload.new.email_confirmed,
                     } : null);
 
-                    const pendingEmail = await authService.getPendingEmailChange();
-                    if (
-                        pendingEmail
-                        && typeof payload.new.email === 'string'
-                        && payload.new.email.trim().toLowerCase() === pendingEmail.trim().toLowerCase()
-                    ) {
+                    if (emailChangeConfirmed) {
                         try {
+                            const { data: refreshed } = await supabase.auth.refreshSession();
+                            if (refreshed.session?.access_token) {
+                                authService.setCachedAccessToken(refreshed.session.access_token);
+                            }
+
                             const refreshedUser = await authService.getCurrentUser();
                             if (refreshedUser) {
                                 setUser(refreshedUser);
                             }
+
                             await authService.clearPendingEmailChange();
                             Alert.alert("Email aggiornata", "Il nuovo indirizzo email è stato confermato correttamente.");
                         } catch (error) {
-                            console.warn("[AuthContext] Failed to refresh user after realtime email change", error);
+                            console.warn("[AuthContext] Failed to refresh session after realtime email change", error);
                         }
                     }
                 }
