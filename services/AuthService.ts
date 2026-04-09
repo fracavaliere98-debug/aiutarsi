@@ -161,12 +161,12 @@ export class AuthService {
 
         if (skills !== undefined) {
             merged.skills = skills;
-            merged.user_skills = skills.map((skill) => ({ skill }));
+            merged.user_skills = skills.map((skill) => ({ id: '', skill, user_id: null }));
         }
 
         if (interests !== undefined) {
             merged.interests = interests;
-            merged.user_interests = interests.map((interest) => ({ interest }));
+            merged.user_interests = interests.map((interest) => ({ id: '', interest, user_id: null }));
         }
 
         merged.updated_at = new Date().toISOString();
@@ -339,16 +339,6 @@ export class AuthService {
         }
         if (!password) {
             throw new Error("Inserisci la password.");
-        }
-
-        // RESET: Ensure clean slate before attempting login
-        // Sometimes the client SDK thinks it has a session even if invalid.
-        try {
-            // Force local scope signout to clear internal state without network dependency
-            await supabase.auth.signOut({ scope: 'local' });
-            console.log("[DEBUG] AuthService: Pre-login local cleanup done");
-        } catch (e) {
-            console.warn("Pre-login cleanup warning:", e);
         }
 
         // Create a timeout promise with cleanup

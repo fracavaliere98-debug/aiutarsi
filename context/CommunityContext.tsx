@@ -40,6 +40,8 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const initialFetchInFlightRef = React.useRef<Promise<void> | null>(null);
+    const segmentKeyRef = React.useRef(segments.join('/'));
+    React.useEffect(() => { segmentKeyRef.current = segments.join('/'); });
     const segmentKey = segments.join('/');
     const isQuietRoute = [
         '(auth)',
@@ -160,7 +162,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                 }
 
                 const { data, error } = await withTimeout(
-                    query,
+                    Promise.resolve(query) as Promise<{ data: any; error: any }>,
                     'community.feed',
                     8000
                 );
@@ -202,7 +204,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         }
 
         return fetchPromise;
-    }, [buildPostsQuery, formatCommunityError, getBlockedAuthorIds, isQuietRoute, segmentKey, user?.id]);
+    }, [buildPostsQuery, formatCommunityError, getBlockedAuthorIds, isQuietRoute, user?.id]);
 
     const fetchPostsForActivity = useCallback(async (activityId: string) => {
         if (!activityId) return [];
@@ -388,6 +390,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     // Realtime subscription for new posts
     useEffect(() => {
         if (isQuietRoute) return;
+        let realtimeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
         const channel = supabase
             .channel('community_feed')
             .on('postgres_changes', {
@@ -395,11 +398,18 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
                 schema: 'public',
                 table: 'community_posts',
             }, () => {
-                fetchFeed(); // Reload on new post
+                // Debounce: avoid multiple rapid re-fetches if posts arrive in bursts
+                if (realtimeDebounceTimer) clearTimeout(realtimeDebounceTimer);
+                realtimeDebounceTimer = setTimeout(() => {
+                    fetchFeed();
+                }, 2000);
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => {
+            if (realtimeDebounceTimer) clearTimeout(realtimeDebounceTimer);
+            supabase.removeChannel(channel);
+        };
     }, [fetchFeed, isQuietRoute]);
 
     return (

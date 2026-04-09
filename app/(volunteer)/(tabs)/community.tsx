@@ -6,6 +6,7 @@ import { useCommunity } from '../../../context/CommunityContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useActivities } from '../../../context/ActivityContext';
 import { useStories } from '../../../context/StoriesContext';
+import { useSmartMatch } from '../../../context/SmartMatchContext';
 import { Story } from '../../../types/stories';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
@@ -57,6 +58,7 @@ export default function CommunityScreen() {
     const { user } = useAuth();
     const { posts, isLoading, fetchFeed } = useCommunity();
     const { activities, loadData: refreshActivities } = useActivities();
+    const { allMatches } = useSmartMatch();
     const { fetchStories } = useStories();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -66,28 +68,30 @@ export default function CommunityScreen() {
     const isNPO = user?.role === 'NPO';
     const [gemmaSummary, setGemmaSummary] = useState('');
 
-    const suggestedActivities = useMemo(
-        () =>
-            activities
-                .filter((activity) => !user?.id || !activity.iscritti.includes(user.id))
-                .filter((activity) => activity.status === 'APERTA')
-                .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0))
-                .slice(0, 5),
-        [activities, user?.id]
-    );
+    // Single source of truth: use SmartMatch scores (already adjusted for preferences)
+    // so the % shown here always matches the "Consigliato per te" carousel.
+    const suggestedActivities = useMemo(() => {
+        const enrolledIds = new Set(user?.id
+            ? activities.filter(a => a.iscritti.includes(user.id!)).map(a => a.id)
+            : []
+        );
+        return allMatches
+            .filter(m => !enrolledIds.has(m.id))
+            .filter(m => m.activity?.status === 'APERTA')
+            .slice(0, 5)
+            .map(m => ({
+                ...m.activity!,
+                matchPercentage: m.score,
+            }));
+    }, [allMatches, activities, user?.id]);
 
     useEffect(() => {
         if (isNPO) return;
 
         let cancelled = false;
-        const topMatches = suggestedActivities
-            .filter((activity) => (activity.matchPercentage || 0) > 0)
-            .slice(0, 3)
-            .map((activity) => ({
-                activity,
-                score: activity.matchPercentage || 0,
-                reasons: [],
-            }));
+        const topMatches = allMatches
+            .filter(m => m.score > 0)
+            .slice(0, 3);
 
         if (topMatches.length === 0) {
             setGemmaSummary('');

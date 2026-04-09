@@ -373,7 +373,7 @@ export function SmartMatchProvider({ children }: { children: React.ReactNode }) 
             setIsLoading(false);
             isFetchingRef.current = false;
         }
-    }, [isQuietRoute, segmentKey, user]);
+    }, [isQuietRoute, user?.id, user?.role, user?.profile_completed, user?.locationCoords?.lat, user?.locationCoords?.lng, user?.skills, user?.interests, user?.bio, user?.followedNPOs]);
 
     // Invalidate cache and refetch on refresh
     const refresh = useCallback(async () => {
