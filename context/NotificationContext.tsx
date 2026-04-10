@@ -41,6 +41,8 @@ const NOTIFICATION_SELECT_FIELDS = [
     'message',
     'read',
     'related_activity_id',
+    'related_application_id',
+    'related_npo_id',
     'related_conversation_id',
     'created_at',
     'match_score',
@@ -73,20 +75,23 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             case 'CHAT_MESSAGE':
                 return notif.conversationId ? `/messages/${notif.conversationId}` : '/messages';
             case 'APPLICATION_RECEIVED':
-                return '/(npo)/(tabs)/volunteers';
+                return '/(npo)/volunteers?tab=CANDIDATURE';
             case 'VOLUNTEER_ENROLLED':
             case 'SKILL_MATCH':
             case 'ACTIVITY_UPDATE':
             case 'ACTIVITY_REMINDER':
             case 'REVIEW_REMINDER':
             case 'FOLLOWED_NPO_ACTIVITY':
-            case 'APPLICATION_APPROVED':
-            case 'APPLICATION_REJECTED':
                 return notif.activityId
                     ? `/activity/${notif.activityId}`
                     : user?.role === 'NPO'
                         ? '/(npo)/(tabs)/community'
                         : '/(volunteer)/(tabs)/community';
+            case 'APPLICATION_APPROVED':
+            case 'APPLICATION_REJECTED':
+                if (notif.activityId) return `/activity/${notif.activityId}`;
+                if (notif.npoId) return `/npo-profile/${notif.npoId}`;
+                return '/(volunteer)/notifications';
             case 'BADGE_UNLOCKED':
             case 'GAMIFICATION_REMIND':
                 return user?.role === 'NPO'
@@ -100,6 +105,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 return notif.activityId ? `/activity/${notif.activityId}` : '/(npo)/report';
             case 'FOLLOWED_NPO_POST':
             case 'FOLLOWED_NPO_STORY':
+                if (notif.npoId) return `/npo-profile/${notif.npoId}`;
                 return user?.role === 'NPO'
                     ? '/(npo)/(tabs)/community'
                     : '/(volunteer)/(tabs)/community';
@@ -150,6 +156,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                     message: n.message,
                     read: n.read,
                     activityId: n.related_activity_id,
+                    applicationId: n.related_application_id,
+                    npoId: n.related_npo_id,
                     conversationId: n.related_conversation_id,
                     timestamp: n.created_at,
                     matchScore: n.match_score
@@ -191,6 +199,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                         message: n.message,
                         read: n.read,
                         activityId: n.related_activity_id,
+                        applicationId: n.related_application_id,
+                        npoId: n.related_npo_id,
                         conversationId: n.related_conversation_id,
                         timestamp: n.created_at,
                         matchScore: n.match_score
@@ -248,6 +258,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 title: notification.title,
                 message: notification.message,
                 related_activity_id: notification.activityId,
+                related_application_id: notification.applicationId,
+                related_npo_id: notification.npoId,
                 related_conversation_id: notification.conversationId,
                 match_score: notification.matchScore,
                 read: false

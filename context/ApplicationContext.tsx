@@ -77,6 +77,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
                 title: "Nuova Candidatura! 📋",
                 message: `${user.name} si è candidato come volontario`,
                 applicationId: newApplication.id,
+                npoId,
             }).catch((error) => {
                 console.warn("[DEBUG] ApplicationContext: addNotification after applyToNPO failed", error);
             });
@@ -97,6 +98,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
                 type: "APPLICATION_APPROVED",
                 title: "Candidatura Approvata! 🎉",
                 message: `${app.npoName} ha approvato la tua candidatura`,
+                applicationId,
                 npoId: app.npoId,
             });
             return true;
@@ -116,6 +118,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
                 type: "APPLICATION_REJECTED",
                 title: "Candidatura Rifiutata",
                 message: `${app.npoName} ha rifiutato la tua candidatura`,
+                applicationId,
                 npoId: app.npoId,
             });
             return true;

@@ -4,6 +4,8 @@ export type TriggerPayload = {
     title?: string;
     message?: string;
     related_activity_id?: string | null;
+    related_application_id?: string | null;
+    related_npo_id?: string | null;
     related_conversation_id?: string | null;
     type?: string;
   };
@@ -18,6 +20,8 @@ export function normalizeNotificationRequestBody(payload: Record<string, unknown
       data: {
         type: payload.record.type,
         activityId: payload.record.related_activity_id ?? undefined,
+        applicationId: payload.record.related_application_id ?? undefined,
+        npoId: payload.record.related_npo_id ?? undefined,
         conversationId: payload.record.related_conversation_id ?? undefined,
       },
     };

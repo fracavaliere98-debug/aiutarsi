@@ -28,6 +28,7 @@ type DispatchNotificationPayload = {
     title: string;
     message: string;
     activityId?: string;
+    applicationId?: string;
     npoId?: string;
     conversationId?: string;
     data?: Record<string, unknown>;
@@ -40,6 +41,8 @@ export async function dispatchNotification(payload: DispatchNotificationPayload)
         title: payload.title,
         message: payload.message,
         related_activity_id: payload.activityId || null,
+        related_application_id: payload.applicationId || null,
+        related_npo_id: payload.npoId || null,
         related_conversation_id: payload.conversationId || null,
         read: false,
     };

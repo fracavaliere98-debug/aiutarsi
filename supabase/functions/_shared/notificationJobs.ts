@@ -5,6 +5,8 @@ export type NotificationJob = {
   title: string;
   message: string;
   related_activity_id?: string | null;
+  related_application_id?: string | null;
+  related_npo_id?: string | null;
   related_conversation_id?: string | null;
   payload?: Record<string, unknown> | null;
   dedupe_key: string;
@@ -367,6 +369,8 @@ export async function processDueJobs(supabase: any, now: Date, limit: number) {
         title: job.title,
         message: job.message,
         related_activity_id: job.related_activity_id || null,
+        related_application_id: job.related_application_id || null,
+        related_npo_id: job.related_npo_id || (job.payload?.npoId as string | undefined) || null,
         related_conversation_id: job.related_conversation_id || null,
         read: false,
       });
