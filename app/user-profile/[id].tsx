@@ -12,24 +12,44 @@ import { AppUser } from "../../types";
 export default function UserProfileRedirect() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const { users, getUserById } = useAuth();
+    const { users, fetchUserById } = useAuth();
 
     const [targetUser, setTargetUser] = useState<AppUser | null | undefined>(undefined); // undefined = loading
 
     useEffect(() => {
-        if (!id) { setTargetUser(null); return; }
+        let isActive = true;
 
-        // Try in-memory cache first
-        const cached = users.find(u => u.id === id);
-        if (cached) {
-            setTargetUser(cached);
-            return;
-        }
+        const loadTargetUser = async () => {
+            if (!id) {
+                if (isActive) setTargetUser(null);
+                return;
+            }
 
-        // Fallback: look up by ID via auth context
-        const found = getUserById?.(id);
-        setTargetUser(found || null);
-    }, [id, users, getUserById]);
+            // Try in-memory cache first
+            const cached = users.find(u => u.id === id);
+            if (cached) {
+                if (isActive) setTargetUser(cached);
+                return;
+            }
+
+            try {
+                const found = await fetchUserById(id);
+                if (isActive) {
+                    setTargetUser(found || null);
+                }
+            } catch {
+                if (isActive) {
+                    setTargetUser(null);
+                }
+            }
+        };
+
+        void loadTargetUser();
+
+        return () => {
+            isActive = false;
+        };
+    }, [id, users, fetchUserById]);
 
     useEffect(() => {
         if (targetUser === null) {

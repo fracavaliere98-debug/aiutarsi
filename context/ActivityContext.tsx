@@ -212,7 +212,14 @@ export function ActivityProviderInner({ children }: { children: React.ReactNode 
             // Optimistic update
             queryClient.setQueryData(['activities_raw'], (old: AppActivity[]) => old ? old.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a) : old);
             setPageRawActivities(prev => prev.map(a => a.id === activityId ? { ...a, iscritti: a.iscritti.filter(id => id !== user!.id) } : a));
-            addNotification({ userId: user!.id, type: "INFO", title: "Iscrizione annullata", message: "La tua iscrizione è stata annullata con successo.", activityId });
+            const currentActivity = rawActivities.find(a => a.id === activityId);
+            addNotification({
+                userId: user!.id,
+                type: "INFO",
+                title: "Iscrizione annullata",
+                message: `La tua iscrizione a "${currentActivity?.title || 'questa attività'}" è stata annullata con successo.`,
+                activityId
+            });
             return true;
         },
         onSuccess: () => {
