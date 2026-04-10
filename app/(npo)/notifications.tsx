@@ -12,7 +12,7 @@ import { useToast } from "../../context/ToastContext";
 
 export default function NPONotificationsScreen() {
     const { user } = useAuth();
-    const { notifications, markAllAsRead, openNotification } = useNotifications();
+    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotifications();
     const router = useRouter();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
@@ -68,8 +68,12 @@ export default function NPONotificationsScreen() {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        showToast('success', 'Notifiche aggiornate!');
+        try {
+            await refreshNotifications();
+            showToast('success', 'Notifiche aggiornate!');
+        } catch {
+            showToast('error', 'Non siamo riusciti ad aggiornare le notifiche.');
+        }
         setRefreshing(false);
     };
 

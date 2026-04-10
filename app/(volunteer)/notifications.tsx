@@ -11,7 +11,7 @@ import { useState } from "react";
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const { notifications, markAllAsRead, openNotification } = useNotifications();
+    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotifications();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -61,8 +61,12 @@ export default function NotificationsScreen() {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        showToast('success', 'Notifiche aggiornate!');
+        try {
+            await refreshNotifications();
+            showToast('success', 'Notifiche aggiornate!');
+        } catch {
+            showToast('error', 'Non siamo riusciti ad aggiornare le notifiche.');
+        }
         setRefreshing(false);
     };
 
