@@ -3,7 +3,7 @@ import { supabase } from '../utils/supabase';
 import { profileRest } from '../utils/profileRest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
-import { getSupabaseProjectRef } from '../utils/runtimeConfig';
+import { getAuthScheme, getSupabaseProjectRef, isPreviewRuntime } from '../utils/runtimeConfig';
 import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
 
 export type EmailConfirmationState = {
@@ -23,12 +23,18 @@ export class AuthService {
         if (this._isProductionSupabaseProject()) {
             return "https://aiutarsi.vercel.app/auth/confirm";
         }
+        if (isPreviewRuntime()) {
+            return `${getAuthScheme()}://confirm-email`;
+        }
         return 'aiutarsiapp://confirm-email';
     }
 
     private _getPasswordRecoveryRedirectUrl(): string {
         if (this._isProductionSupabaseProject()) {
             return "https://aiutarsi.vercel.app/auth/reset-password";
+        }
+        if (isPreviewRuntime()) {
+            return `${getAuthScheme()}://reset-password`;
         }
         return 'aiutarsiapp://reset-password';
     }

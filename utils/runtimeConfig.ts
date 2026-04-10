@@ -23,6 +23,11 @@ export function getSupabaseProjectRef() {
 }
 
 export function getRuntimeEnvironment() {
+    const expoExtra = Constants.expoConfig?.extra as { appEnv?: string } | undefined;
+    if (expoExtra?.appEnv) {
+        return expoExtra.appEnv;
+    }
+
     if (process.env.EXPO_PUBLIC_APP_ENV) {
         return process.env.EXPO_PUBLIC_APP_ENV;
     }
@@ -36,6 +41,15 @@ export function getRuntimeEnvironment() {
 
 export function isProductionRuntime() {
     return getRuntimeEnvironment() === "production";
+}
+
+export function isPreviewRuntime() {
+    return getRuntimeEnvironment() === "preview";
+}
+
+export function getAuthScheme() {
+    const expoExtra = Constants.expoConfig?.extra as { authScheme?: string } | undefined;
+    return expoExtra?.authScheme || "aiutarsiapp";
 }
 
 export function isCorporateEnabled() {
