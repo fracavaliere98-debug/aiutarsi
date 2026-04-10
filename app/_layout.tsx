@@ -21,7 +21,6 @@ import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, StyleSheet } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
-import { useMarketingCaptureShortcut } from "../hooks/useMarketingCaptureShortcut";
 import BannedScreen from "../components/BannedScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { STACK_TRANSITIONS } from "../constants/motion";
@@ -71,7 +70,6 @@ function RootLayoutNav() {
 
   // Register for push notifications and keep last_seen_at updated
   usePushNotifications();
-  useMarketingCaptureShortcut();
 
   // Join segments to avoid reference mismatch loops
   const routeSegments = segments as string[];
@@ -234,7 +232,6 @@ function RootLayoutNav() {
           <Stack.Screen name="community/create-post" options={STACK_TRANSITIONS.modal} />
           <Stack.Screen name="help-center" options={STACK_TRANSITIONS.modal} />
           <Stack.Screen name="terms" options={STACK_TRANSITIONS.push} />
-          <Stack.Screen name="dev/marketing-capture" options={STACK_TRANSITIONS.push} />
         </Stack>
       </KeyboardAvoidingView>
 
