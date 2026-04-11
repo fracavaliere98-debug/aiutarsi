@@ -22,6 +22,17 @@ import {
 } from "../../utils/profileDemographics";
 import { trackError, trackEvent } from "../../utils/monitoring";
 
+function parseStringArrayParam(value: string | string[] | undefined): string[] {
+    if (!value) return [];
+
+    try {
+        const parsed = JSON.parse(Array.isArray(value) ? value[0] : value);
+        return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    } catch {
+        return [];
+    }
+}
+
 export default function OnboardingProfile() {
     const router = useRouter();
     const { updateUserProfile, logout, user } = useAuth();
@@ -76,8 +87,8 @@ export default function OnboardingProfile() {
     const finishOnboarding = async () => {
         console.log("[DEBUG] Onboarding Profile: Finishing...", params);
 
-        const interests = Array.from(new Set(params.interests ? JSON.parse(params.interests as string) : []));
-        const skills = Array.from(new Set(params.skills ? JSON.parse(params.skills as string) : []));
+        const interests = Array.from(new Set(parseStringArrayParam(params.interests)));
+        const skills = Array.from(new Set(parseStringArrayParam(params.skills)));
         const demographics = validateVolunteerDemographics({
             gender,
             birthDateInput,

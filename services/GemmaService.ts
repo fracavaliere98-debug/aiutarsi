@@ -88,8 +88,8 @@ class GemmaService {
       summary: top
         ? `Partirei da ${top}: qui vedo il punto di contatto piu forte con quello che ti interessa adesso.`
         : "Partirei da queste: qui sento piu vicinanza con quello che ti interessa adesso.",
-      reasons: matches.map((match) => ({
-        activityId: match.activity.id,
+      reasons: matches.filter((match) => !!match.activity).map((match) => ({
+        activityId: match.activity!.id,
         reason: this.buildSmartMatchReason(match),
       })),
     };

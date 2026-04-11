@@ -77,6 +77,7 @@ export default function ResetPasswordScreen() {
             eyebrow="Recupero account"
             title="Imposta una nuova password."
             subtitle="Apri il link ricevuto via email su questo dispositivo, poi scegli la nuova password."
+            backAction={() => router.back()}
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}

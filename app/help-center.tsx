@@ -186,7 +186,7 @@ const GemmaFloatingButton = ({ onPress }: { onPress: () => void }) => {
             -1,
             false
         );
-    }, []);
+    }, [scale]);
 
     const animStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],

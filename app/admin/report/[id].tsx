@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { 
-  ChevronLeft, ShieldAlert, User, ShieldCheck, 
-  MessageCircle, Clock, CheckCircle2, AlertTriangle, 
-  EyeOff, Bot, Trash2, Ban
+  ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
 } from 'lucide-react-native';
 import { useNotifications } from '../../../context/NotificationContext';
 
@@ -42,7 +40,7 @@ export default function AdminReportDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const router = useRouter();
 
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -69,11 +67,11 @@ export default function AdminReportDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchDetails();
-  }, [id]);
+    void fetchDetails();
+  }, [fetchDetails]);
 
   const handleAction = async (action: 'dismissed' | 'warned' | 'resolved' | 'banned', reason: string) => {
     if (actionLoading) return;

@@ -91,7 +91,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, type, message, action, onDism
                 useNativeDriver: true,
             }),
         ]).start();
-    }, []);
+    }, [opacityAnim, slideAnim]);
 
     const handleDismiss = () => {
         Animated.parallel([

@@ -1,6 +1,6 @@
 import {
     View, Text, TouchableOpacity, Platform, Modal,
-    ScrollView, TextInput, Image, ActivityIndicator, KeyboardAvoidingView
+    ScrollView, TextInput, Image, ActivityIndicator
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { PageHeader } from "../../../components/PageHeader";
@@ -9,14 +9,11 @@ import { ScreenWrapper } from "../../../components/ScreenWrapper";
 import { UserAvatar } from "../../../components/UserAvatar";
 import {
     ArrowRight, Search, X, MapPin, Target, Calendar, Plus, Minus,
-    Clock, Users, Globe, BookOpen, Dog, Palette, Heart, Code,
-    MessageSquare, Lightbulb, PenTool, BarChart, HardHat, Camera,
-    ChevronDown, CheckCircle2, Zap, TreePine, Bell, LayoutList
+    Clock, Users, ChevronDown, CheckCircle2, Zap, LayoutList
 } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { OldActivity, AppActivity } from "../../../types";
-import { useNotifications } from "../../../context/NotificationContext";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { activityService } from "../../../services/ActivityService";
@@ -53,110 +50,6 @@ const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
 const getCategoryIcon = (category: string) => {
     const interest = INTERESTS.find(i => i.label === category || i.id === category.toLowerCase()) || { icon: MapPin };
     return interest.icon;
-};
-
-// ─── Conditional MapView ──────────────────────────────────────────────────────
-let MapView: any;
-let Marker: any;
-let PROVIDER_DEFAULT: any;
-let Circle: any;
-let UrlTile: any;
-
-/*
-if (Platform.OS !== 'web') {
-    try {
-        const MapModule = require("react-native-maps");
-        MapView = MapModule.default || MapModule;
-        Marker = MapModule.Marker;
-        Circle = MapModule.Circle;
-        UrlTile = MapModule.UrlTile;
-        PROVIDER_DEFAULT = MapModule.PROVIDER_DEFAULT;
-    } catch (e) {
-        console.warn("Native MapView could not be loaded");
-    }
-}
-*/
-
-// ─── Local Marker Component (to handle stable state) ──────────────────────────
-const ActivityMarker = ({ activity, isSelected, isEnrolled, markerColor, CatIcon, onPress, MarkerComp }: any) => {
-    const [tracksView, setTracksView] = useState(true);
-
-    useEffect(() => {
-        setTracksView(true);
-        const timer = setTimeout(() => {
-            // Only stop tracking if NOT selected, to keep selection animations/states active
-            if (!isSelected) setTracksView(false);
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [isSelected]);
-
-    return (
-        <MarkerComp
-            key={activity.id}
-            coordinate={{
-                latitude: activity.location?.coords?.lat ?? 0,
-                longitude: activity.location?.coords?.lng ?? 0
-            }}
-            onPress={onPress}
-            anchor={{ x: 0.5, y: 0.9 }}
-            tracksViewChanges={tracksView}
-        >
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                {isSelected && (
-                    <View style={{
-                        position: 'absolute',
-                        width: 50, height: 50,
-                        borderRadius: 25,
-                        backgroundColor: `${markerColor}30`,
-                        borderWidth: 2, borderColor: markerColor,
-                        transform: [{ scale: 1.2 }],
-                        zIndex: -1
-                    }} />
-                )}
-
-                <View style={{
-                    width: isSelected ? 42 : 36,
-                    height: isSelected ? 42 : 36,
-                    backgroundColor: markerColor,
-                    borderRadius: 12,
-                    alignItems: 'center', justifyContent: 'center',
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3, shadowRadius: 5, elevation: 8,
-                    borderWidth: 2, borderColor: 'white',
-                    transform: [{ scale: isSelected ? 1.1 : 1 }],
-                }}>
-                    <CatIcon size={isSelected ? 20 : 18} color="white" strokeWidth={2.5} />
-                </View>
-
-                {/* Pin Tip */}
-                <View style={{
-                    width: 0, height: 0,
-                    borderLeftWidth: 6, borderLeftColor: 'transparent',
-                    borderRightWidth: 6, borderRightColor: 'transparent',
-                    borderTopWidth: 8, borderTopColor: 'white',
-                    marginTop: -1, zIndex: 5
-                }} />
-                <View style={{
-                    width: 0, height: 0,
-                    borderLeftWidth: 4, borderLeftColor: 'transparent',
-                    borderRightWidth: 4, borderRightColor: 'transparent',
-                    borderTopWidth: 6, borderTopColor: markerColor,
-                    marginTop: -7, zIndex: 6
-                }} />
-
-                {activity.isUrgent && !isSelected && (
-                    <View style={{
-                        position: 'absolute', top: -8, right: -8,
-                        backgroundColor: Colors.accent,
-                        borderRadius: 99, padding: 3,
-                        borderWidth: 1.5, borderColor: 'white'
-                    }}>
-                        <Zap size={10} color="white" strokeWidth={3} />
-                    </View>
-                )}
-            </View>
-        </MarkerComp>
-    );
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -386,7 +279,6 @@ export default function VolunteerMap() {
     const router = useRouter();
     const params = useLocalSearchParams<{ focusLat?: string; focusLng?: string; focusActivityId?: string }>();
     const { user } = useAuth();
-    const { unreadCount } = useNotifications();
     const mapRef = useRef<any>(null);
 
     // Location & search center
@@ -429,8 +321,8 @@ export default function VolunteerMap() {
                     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
                     if (isMounted) setLocation(loc);
                 }
-            } catch (e) {
-                console.warn('Location error:', e);
+            } catch (error) {
+                console.warn('Location error:', error);
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -464,8 +356,6 @@ export default function VolunteerMap() {
     // If user searched a place use that, else fall back to device location
     const centerLat = searchCenter?.lat ?? location?.coords.latitude ?? 45.4642;
     const centerLng = searchCenter?.lng ?? location?.coords.longitude ?? 9.1900;
-    const centerLabel = searchCenter?.label ?? "Posizione attuale";
-
     // ── Activities via useQuery (keyed on center + radius) ───────────────────
     // Placed AFTER centerLat/centerLng/filters are declared so TypeScript is happy.
     // Automatically re-fetches when center or radius changes. staleTime: 60s.
@@ -509,17 +399,6 @@ export default function VolunteerMap() {
     }, [activities, filters]);
 
     // ── Filter helpers ──────────────────────────────────────────────────────
-    const activeFilterCount = useMemo(() => {
-        let c = 0;
-        if (filters.interests.length > 0) c++;
-        if (filters.skills.length > 0) c++;
-        if (filters.onlyAvailable) c++;
-        if (filters.onlyUrgent) c++;
-        if (filters.dateFrom) c++;
-        if (filters.radiusKm !== DEFAULT_FILTERS.radiusKm) c++;
-        return c;
-    }, [filters]);
-
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => {
         // Updating filters updates the queryKey, which auto-triggers a re-fetch.
@@ -639,7 +518,6 @@ export default function VolunteerMap() {
 
         /* We build the marker data explicitly for injection into WebView */
         const mapMarkers = (filteredActivities || []).map(act => {
-            const isSelected = selectedActivity === act.id;
             const isEnrolled = user?.id ? (act.iscritti || []).includes(user.id) : false;
             const markerColor = act.isUrgent ? Colors.accent : isEnrolled ? '#22c55e' : Colors.primary;
             return {
@@ -768,7 +646,7 @@ export default function VolunteerMap() {
                             } else if (data.type === 'MAP_CLICK') {
                                 setSelectedActivity(null);
                             }
-                        } catch (e) { }
+                        } catch { }
                     }}
                     scrollEnabled={false}
                     bounces={false}
@@ -783,9 +661,6 @@ export default function VolunteerMap() {
     // ───────────────────────────────────────────────────────────────────────
     // OVERLAY HEIGHT for the header control box
     // We'll compute a rough height for the rounded-box overlay
-    const HEADER_TOP = Platform.OS === 'ios' ? 54 : 34;
-
-
     return (
         <ScreenWrapper bg="bg-f6f6f8" withPadding={false} edges={["top"]}>
             <PageHeader

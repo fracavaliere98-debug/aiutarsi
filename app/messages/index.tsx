@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, RefreshControl, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Clipboard from 'expo-clipboard';
-import { Search, Edit, ArrowLeft, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, Animated } from 'react-native';
+import { Search, Edit, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useChat } from '../../context/ChatContext';
-import { useRouter, Stack, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import ChatService from '../../services/ChatService';
@@ -115,7 +113,6 @@ export default function MessagesListScreen() {
     const [showNpoPicker, setShowNpoPicker] = useState(false);
     const [myNpos, setMyNpos] = useState<any[]>([]);
     const [loadingNpos, setLoadingNpos] = useState(false);
-    const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [localConversations, setLocalConversations] = useState<any[]>([]);
     const undoTimeoutRef = useRef<any>(null);
@@ -228,7 +225,7 @@ export default function MessagesListScreen() {
         if (!showNpoPicker) {
             panY.setValue(0);
         }
-    }, [showNpoPicker]);
+    }, [panY, showNpoPicker]);
 
     const fetchMyNpos = async () => {
         setLoadingNpos(true);
@@ -389,8 +386,6 @@ export default function MessagesListScreen() {
                             const lastMessageSenderId = conv.last_message_sender_id;
 
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
-                            const isUnread = (item.unread_count || 0) > 0;
-
                             // Determine title and avatar
                             const activityData = conv.activities;
                             const activityTitle = Array.isArray(activityData) ? activityData[0]?.title : activityData?.title;

@@ -1,14 +1,14 @@
 import React from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useVideoPlayer, VideoSource, VideoView } from "expo-video";
+import { useVideoPlayer, VideoSource, VideoView, type VideoContentFit } from "expo-video";
 
 interface BrandedLoadingVideoProps {
     source: VideoSource;
     style?: ViewStyle;
     overlayOpacity?: number;
     showOverlay?: boolean;
-    contentFit?: "contain" | "cover" | "fill" | "none" | "scale-down";
+    contentFit?: VideoContentFit;
     startAtSeconds?: number;
 }
 

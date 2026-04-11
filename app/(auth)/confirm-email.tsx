@@ -116,6 +116,7 @@ export default function ConfirmEmailScreen() {
                     ? "Ti abbiamo inviato un link di conferma al nuovo indirizzo. Aprilo su questo dispositivo per completare il cambio email."
                     : "Ti abbiamo inviato un link di conferma. Aprilo su questo dispositivo e ti faremo entrare automaticamente nell'app."
             }
+            backAction={() => router.back()}
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}

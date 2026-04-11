@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, Dimensions, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Share } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -7,15 +7,11 @@ import Animated, {
     withSequence,
     withTiming,
     withDelay,
-    interpolate,
-    Extrapolate,
     runOnJS
 } from 'react-native-reanimated';
 import { Award, Star, Share2, X } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 import { useGamification } from '../context/GamificationContext';
-
-const { width, height } = Dimensions.get('window');
 
 export const LevelUpOverlay = () => {
     const { levelUpData, dismissLevelUp } = useGamification();
@@ -52,7 +48,7 @@ export const LevelUpOverlay = () => {
                 )
             );
         }
-    }, [levelUpData]);
+    }, [badgeRotate, levelUpData, opacity, scale, starScale]);
 
     const handleDismiss = () => {
         opacity.value = withTiming(0, { duration: 200 }, () => {

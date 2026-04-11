@@ -114,7 +114,7 @@ export default function BlockedUsersScreen() {
             <SoftCard className="flex-row items-center justify-between p-4 mb-3 mx-1">
                 <View className="flex-row items-center flex-1">
                     <UserAvatar 
-                        avatarUrl={item.profile?.avatar_url} 
+                        avatarUrl={item.profile?.avatar_url ?? undefined} 
                         name={displayName}
                         size={48} 
                     />

@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { 
-  ChevronLeft, Building2, User, ShieldCheck, 
-  Clock, FileText, CheckCircle2, XCircle, 
+  ChevronLeft, Building2, User, ShieldCheck, FileText, XCircle, 
   MapPin, Globe, Mail, Info, ExternalLink, Phone
 } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -37,7 +36,7 @@ export default function AdminVerificationDetail() {
   const [rejectionNotes, setRejectionNotes] = useState('');
   const router = useRouter();
 
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('verification_requests')
@@ -55,11 +54,11 @@ export default function AdminVerificationDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchDetails();
-  }, [id]);
+    void fetchDetails();
+  }, [fetchDetails]);
 
   const handleAction = async (action: 'approved' | 'rejected') => {
     if (actionLoading) return;
