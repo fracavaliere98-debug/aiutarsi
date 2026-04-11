@@ -95,6 +95,66 @@ Un dominio si considera migrato quando:
 - il dominio espone query hooks e mutation hooks coerenti
 - i flussi principali sono stati verificati in `preview`
 
+## Principi operativi per i domini
+
+### Dato canonico fuori dal Context
+
+Il Context non puo possedere dati canonici backend del dominio.
+
+Per `activities`, questo significa in modo esplicito:
+
+- `ActivityContext` non possiede la lista canonica delle activity
+- `ActivityContext` non possiede il detail canonico di una activity
+- `ActivityContext` non possiede i participants canonici
+- `ActivityContext` non possiede pagination items canonici
+
+Se il Context resta temporaneamente, puo fare solo orchestrazione non canonica:
+
+- trigger UI globali
+- side effects coordinati
+- compat layer temporaneo dei consumer
+
+Ma non puo diventare una seconda cache del dominio.
+
+### Detail query come fonte primaria
+
+Le schermate dettaglio devono avere una regola netta:
+
+- il detail usa sempre una query dedicata come fonte primaria
+- eventuale dato proveniente dalla lista puo essere usato solo come `initialData` o `placeholderData`
+- il dato lista non puo restare una seconda source of truth del detail
+
+Per `activities`, questo vale in particolare per:
+
+- `app/activity/[id].tsx`
+
+Quindi:
+
+- `useActivityDetailQuery(activityId)` deve essere la fonte primaria del dettaglio
+- eventuale dato gia presente nella lista puo solo migliorare il first paint
+- non puo decidere da solo il valore canonico mostrato dalla schermata
+
+### Mutations: una sola scrittura canonica
+
+Le mutazioni non possono aggiornare sia Query sia Context come doppia scrittura canonica.
+
+Regola:
+
+- default = mutation server-side + invalidation query
+- patch manuale della cache solo se davvero giustificata
+- Context non riceve scritture canoniche dalla mutation
+
+Quindi non sono ammessi pattern del tipo:
+
+- mutation che aggiorna React Query
+- e in parallelo `setState` canonico nel Context
+
+Se serve stato locale ottimistico, deve essere:
+
+- esplicito
+- limitato
+- separato dal dato canonico
+
 ## Fase 1: Notifications
 
 ### Obiettivo
@@ -121,6 +181,56 @@ Spostare la gestione canonica delle notifiche da `NotificationContext` a React Q
 - tutte le query usano query keys centralizzate del dominio
 - `AsyncStorage` non contiene notifiche canoniche
 - badge, lista e dettaglio risultano coerenti
+
+### Vincolo temporaneo sul NotificationContext
+
+Finche esiste, `NotificationContext` e un bridge temporaneo di UI/orchestration.
+
+- non puo contenere stato canonico delle notifiche
+- i dati arrivano solo da React Query
+- non puo reintrodurre cache locale duplicata
+- puo restare solo per:
+  - foreground toast
+  - routing al tap
+  - bridge Expo push response
+  - compatibilita temporanea dei consumer
+
+Quando i consumer saranno migrati ai query/mutation hooks del dominio, `NotificationContext` andra rimosso.
+
+## Preparazione dominio: Activities
+
+### Obiettivo architetturale
+
+- `activities list` in Query
+- `activity detail` in Query
+- `activity participants` in Query o derivati dalla query detail/list coerente
+- `activity applications` in Query
+- `reviews` e `volunteer reviews` in Query
+- paginazione canonica gestita da Query, non dal Context
+
+### Regole specifiche
+
+- `app/activity/[id].tsx` usa `useActivityDetailQuery(activityId)` come fonte primaria
+- il dato proveniente dalla lista puo essere solo `initialData` o `placeholderData`
+- `ActivityContext` non puo mantenere fallback locali come fonte primaria del detail
+- le mutazioni `create/update/delete/enroll/unenroll/apply/review` non possono scrivere sia su Query sia su Context
+- `EventEmitter` e listener equivalenti devono invalidare query, non riscrivere cache canonica nel Context
+
+### Done criteria: Activities
+
+- nessuna lista activity canonica in Context
+- nessun detail activity canonico in Context
+- nessun participants state canonico in Context
+- nessun pagination items state canonico in Context
+- `useActivityDetailQuery(activityId)` e la fonte primaria del dettaglio
+- create/update/delete/enroll/unenroll/apply/review usano mutation hooks del dominio
+- invalidation coerente di:
+  - activities list
+  - activity detail
+  - activity applications
+  - reviews
+  - volunteer reviews
+- nessuna schermata legge una seconda source of truth del detail
 
 ### Checklist di verifica: Notifications
 
@@ -149,7 +259,192 @@ Per ogni dominio:
 4. verificare il dominio in `preview`
 5. passare al dominio successivo solo dopo validazione
 
+## Playbook riusabile per ogni dominio
+
+Questo playbook va riutilizzato per `activities`, `applications`, `community`, `smart match`, `gamification`, `chat` e ogni dominio futuro. Il metodo deve restare stabile; cambia solo la mappa specifica del dominio.
+
+### Step 1: freeze del Context
+
+Se il dominio ha ancora un Context:
+
+- dichiararlo esplicitamente come `compatibility bridge temporaneo`
+- vietare nuovo stato canonico
+- vietare nuova paginazione canonica
+- vietare nuove business mutations nel Context
+- consentire solo:
+  - orchestration strettamente necessaria
+  - derived/UI state strettamente necessario
+  - bridge temporaneo dei consumer legacy
+
+Obiettivo:
+
+- impedire che il Context ricresca mentre il refactor e in corso
+
+### Step 2: classificazione consumer per pattern
+
+Prima di migrare i file, classificare i consumer per cluster di comportamento.
+
+Cluster standard:
+
+- Gruppo A: leggono solo liste canoniche
+- Gruppo B: leggono derived values / aggregazioni
+- Gruppo C: leggono lista + filtri + paginazione
+- Gruppo D: usano helper del Context per convenienza
+- Gruppo E: entry point critici o detail screens
+
+Obiettivo:
+
+- migrare per pattern coerenti, non in ordine casuale file-per-file
+
+### Step 3: dominio Query completo
+
+Per ogni dominio creare:
+
+- `keys.ts`
+- `queries.ts`
+- `mutations.ts`
+- `selectors.ts` se servono aggregazioni condivise
+- `hooks.ts` solo se serve comporre piu hook
+
+Regole:
+
+- query keys centralizzate
+- invalidation coerente
+- una sola source of truth per i dati canonici
+
+### Step 4: entry point critici
+
+I detail screen o entry point critici vanno migrati presto.
+
+Regola:
+
+- il detail usa sempre una query primaria dedicata
+- eventuale dato da lista puo essere solo `initialData` o `placeholderData`
+
+### Step 5: mutazioni
+
+Le mutazioni vanno spostate su mutation hooks del dominio.
+
+Regola:
+
+- niente doppia scrittura canonica Query + Context
+- default = invalidation
+- patch manuale solo se documentata e necessaria
+
+### Step 6: paginazione
+
+Se il dominio ha paginazione legacy in Context o in stato locale non canonico, questa e la priorita architetturale successiva.
+
+Done criteria dello step paginazione:
+
+- nessun `items/page/hasMore/isLoadingMore/offset` canonico nel Context
+- tutte le schermate lista usano lo stesso meccanismo di paging
+- nessun merge manuale di pagine nel Context
+
+### Step 7: cluster residui
+
+Migrare i cluster residui in questo ordine:
+
+1. Gruppo C: lista + filtri + paginazione
+2. Gruppo A: liste semplici
+3. Gruppo B: aggregazioni / selector
+4. Gruppo D: helper convenience
+
+### Step 8: verifiche runtime
+
+Non basta `lint` e `tsc`.
+
+Checklist runtime standard per ogni dominio:
+
+- lettura:
+  - lista da ogni entry point
+  - detail da lista
+  - detail da accesso diretto / deep link se applicabile
+  - coerenza tra card e detail
+- mutazioni:
+  - create / edit / delete se applicabili
+  - azioni principali del dominio
+- sincronizzazione:
+  - invalidation dopo mutation
+  - coerenza lista/detail dopo mutation
+  - background/foreground
+  - resume app
+  - pull-to-refresh se presente
+- paginazione:
+  - load more
+  - refresh + paginazione
+  - filtri + paginazione
+  - nessun duplicato
+  - nessun salto record
+- ruoli:
+  - tutti i ruoli che consumano il dominio
+
+### Step 9: target finale del Context
+
+Per ogni dominio chiedersi esplicitamente:
+
+- il Context puo sparire del tutto?
+
+Target preferito:
+
+- rimuovere il Context
+
+Target accettabile solo temporaneo:
+
+- bridge minimo, senza dati canonici
+
 ## Note
 
 - La migrazione SDK 55 e separata e non va mischiata con questo refactor.
 - Finche il refactor per domini e in corso, `preview` deve restare su SDK 54.
+
+## Cluster attuali: Activities
+
+### Gruppo A — leggono solo liste canoniche
+
+- `app/(corporate)/catalog.tsx`
+- `app/community/create-post.tsx`
+
+### Gruppo B — leggono derived values / aggregazioni
+
+- `app/(npo)/reviews.tsx`
+- `app/(npo)/volunteer-profile/[id].tsx`
+- `app/(volunteer)/my-reviews.tsx`
+- `app/npo-profile/[id].tsx`
+
+### Gruppo C — leggono lista + filtri + paginazione
+
+- `app/(volunteer)/(tabs)/calendar.tsx`
+- `app/(volunteer)/(tabs)/community.tsx`
+- `app/(volunteer)/(tabs)/search.tsx`
+
+### Gruppo D — usano helper del Context per convenienza
+
+- `app/(volunteer)/settings.tsx`
+
+### Gruppo E — entry point critici o detail screens
+
+Gia migrati o quasi migrati:
+
+- `app/activity/[id].tsx`
+- `app/(npo)/create-activity.tsx`
+- `app/(npo)/edit-activity/[id].tsx`
+- `app/(volunteer)/review-application.tsx`
+- `app/feedback/[id].tsx`
+- `app/(npo)/review-volunteers/[id].tsx`
+- `app/(npo)/(tabs)/volunteers.tsx`
+- `app/(volunteer)/(tabs)/index.tsx`
+- `app/(volunteer)/(tabs)/profile.tsx`
+- `app/(volunteer)/report.tsx`
+- `app/(npo)/(tabs)/index.tsx`
+- `app/(npo)/(tabs)/projects.tsx`
+- `app/(npo)/report.tsx`
+- `hooks/useNPOInsights.ts`
+
+### Priorita operativa corrente per Activities
+
+1. congelare ufficialmente `ActivityContext`
+2. rimuovere la paginazione legacy dal Context
+3. migrare il Gruppo C
+4. migrare Gruppo A e Gruppo B
+5. lasciare Gruppo D per ultimo o eliminarne direttamente il bisogno
