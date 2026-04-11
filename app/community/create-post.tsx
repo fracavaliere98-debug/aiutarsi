@@ -10,10 +10,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../constants/Colors';
 import { useCommunity } from '../../context/CommunityContext';
 import { useStories } from '../../context/StoriesContext';
-import { useActivities } from '../../context/ActivityContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
+import { useActivitiesDomain } from '../../hooks/activities/selectors';
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images
@@ -34,7 +34,7 @@ export default function CreatePostScreen() {
     const { user } = useAuth();
     const { posts, createPost, updatePost } = useCommunity();
     const { createStory } = useStories();
-    const { activities } = useActivities();
+    const { activities } = useActivitiesDomain(user);
     const { showToast } = useToast();
     const isVolunteer = user?.role === 'VOLUNTEER';
 

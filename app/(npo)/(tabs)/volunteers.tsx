@@ -13,27 +13,24 @@ import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { Colors } from "../../../constants/Colors";
-import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { useNotifications } from "../../../context/NotificationContext";
+import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
+import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
 
 export default function VolunteersScreen() {
     const { user, getNPOFollowers, getUserById } = useAuth();
     const { getNPOApplications, approveApplication, rejectApplication } = useApplications();
-    const {
-        error,
-        loadData,
-        activityApplications,
-        activities,
-        approveActivityApplication,
-        rejectActivityApplication
-    } = useActivities();
     const { showToast } = useToast();
     const { addNotification } = useNotifications();
     const params = useLocalSearchParams();
     const router = useRouter();
+    const { data: activities = [], isError: activitiesError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
+    const { data: activityApplications = [], refetch: refetchActivityApplications } = useActivityApplicationsQuery(user?.id, !!user && user.role === "NPO");
+    const approveActivityApplicationMutation = useApproveActivityApplicationMutation();
+    const rejectActivityApplicationMutation = useRejectActivityApplicationMutation();
 
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -133,7 +130,8 @@ export default function VolunteersScreen() {
 
         let success = false;
         if ((app as any).isActivity) {
-            success = await approveActivityApplication((app as any).activityId, app.volunteerId);
+            await approveActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
+            success = true;
         } else {
             success = await approveApplication(applicationId);
         }
@@ -149,7 +147,8 @@ export default function VolunteersScreen() {
 
         let success = false;
         if ((app as any).isActivity) {
-            success = await rejectActivityApplication((app as any).activityId, app.volunteerId);
+            await rejectActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
+            success = true;
         } else {
             success = await rejectApplication(applicationId);
         }
@@ -192,13 +191,13 @@ export default function VolunteersScreen() {
     // However, the segmented control usually is always visible.
     // Let's keep it visible so user can switch and see empty states per tab.
 
-    if (error) {
+    if (activitiesError) {
         return (
             <View className="flex-1 bg-white">
                 <ErrorState
                     title="Errore applicazioni"
                     description="Impossibile caricare l'elenco dei volontari."
-                    onRetry={loadData}
+                    onRetry={() => Promise.all([refetchActivities(), refetchActivityApplications()]).then(() => undefined)}
                 />
             </View>
         );

@@ -17,14 +17,14 @@ import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { ActivityCard } from "../../../components/ActivityCard";
-import { useActivities } from "../../../context/ActivityContext";
 import { useAuth } from "../../../context/AuthContext";
 import { Colors } from "../../../constants/Colors";
+import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 import { supabase } from "../../../utils/supabase";
 
 export default function NPOProfileScreen() {
     const { user, getNPOFollowers, fetchUserById, setUser } = useAuth();
-    const { activities, reviews, loadData } = useActivities();
+    const { activities, reviews, loadData } = useActivitiesDomain(user);
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [refreshing, setRefreshing] = useState(false);
@@ -152,10 +152,10 @@ export default function NPOProfileScreen() {
                         size={100}
                         fontSize={36}
                         name={user?.npoName || user?.name}
-                        avatarUrl={user?.avatar || user?.avatar_url}
+                        avatarUrl={user?.avatar || user?.avatar_url || undefined}
                         role="NPO"
                         isVerified={!!(user?.isVerified || user?.is_verified)}
-                        verificationStatus={user?.verification_status}
+                        verificationStatus={user?.verification_status ?? undefined}
                     />
                 </View>
 

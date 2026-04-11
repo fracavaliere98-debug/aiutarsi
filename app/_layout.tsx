@@ -4,7 +4,6 @@ import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-f
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
-import { ActivityProvider } from "../context/ActivityContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { ApplicationProvider } from "../context/ApplicationContext";
 import { GamificationProvider } from "../context/GamificationContext";
@@ -291,22 +290,20 @@ function RootLayout() {
             <ToastProvider>
               <GamificationProvider>
                 <NotificationProvider>
-                  <ActivityProvider>
-                    <SmartMatchProvider>
-                      <ApplicationProvider>
-                        <ChatProvider>
-                          <CommunityProvider>
-                            <StoriesProvider>
-                              <StatusBar style="dark" />
-                              <RootLayoutNav />
-                              <ToastContainer />
-                              <LevelUpOverlay />
-                            </StoriesProvider>
-                          </CommunityProvider>
-                        </ChatProvider>
-                      </ApplicationProvider>
-                    </SmartMatchProvider>
-                  </ActivityProvider>
+                  <SmartMatchProvider>
+                    <ApplicationProvider>
+                      <ChatProvider>
+                        <CommunityProvider>
+                          <StoriesProvider>
+                            <StatusBar style="dark" />
+                            <RootLayoutNav />
+                            <ToastContainer />
+                            <LevelUpOverlay />
+                          </StoriesProvider>
+                        </CommunityProvider>
+                      </ChatProvider>
+                    </ApplicationProvider>
+                  </SmartMatchProvider>
                 </NotificationProvider>
               </GamificationProvider>
             </ToastProvider>

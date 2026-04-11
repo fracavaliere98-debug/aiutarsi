@@ -684,7 +684,7 @@ export class ActivityService {
         await profileRest.submitActivityApplication({
                 activity_id: appData.activityId,
                 user_id: appData.volunteerId,
-                status: appData.status || 'PENDING',
+                status: 'PENDING',
                 message: appData.message
             },
             accessToken
@@ -693,6 +693,7 @@ export class ActivityService {
 
         return {
             ...appData,
+            status: 'PENDING',
             id: `${appData.activityId}_${appData.volunteerId}`
         };
     }

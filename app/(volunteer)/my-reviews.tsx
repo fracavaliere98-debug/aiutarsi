@@ -2,17 +2,21 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StandardLayout } from '../../components/StandardLayout';
-import { useActivities } from '../../context/ActivityContext';
 import { useAuth } from '../../context/AuthContext';
 import { Colors } from '../../constants/Colors';
 import { Star, Calendar, Building2 } from 'lucide-react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { UserAvatar } from '../../components/UserAvatar';
+import { useActivitiesDomain } from '../../hooks/activities/selectors';
+import { useVolunteerReviewsQuery } from '../../hooks/activities/queries';
 
 export default function MyReviewsScreen() {
     const router = useRouter();
-    const { volunteerReviews, activities } = useActivities();
-    const { user, users } = useAuth();
+    const auth = useAuth();
+    const user = auth.user;
+    const users = auth.users;
+    const { activities } = useActivitiesDomain(user);
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
 
     const myReviews = useMemo(() => {
         if (!user) return [];

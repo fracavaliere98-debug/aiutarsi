@@ -1,13 +1,13 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Share } from "react-native";
-import { useActivities } from "../../context/ActivityContext";
 import { Search, Share2, Sparkles, Filter, MapPin, Building2 } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useState } from "react";
+import { useActivitiesDomain } from "../../hooks/activities/selectors";
 
 export default function CorporateCatalog() {
-    const { activities } = useActivities();
+    const { activities } = useActivitiesDomain(undefined);
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredActivities = activities.filter(a =>

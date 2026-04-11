@@ -1,11 +1,13 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { useActivities } from "../../../context/ActivityContext";
 import { Colors } from "../../../constants/Colors";
 import { Calendar, Users, Send, Clock, Trash2, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
+import { useAuth } from "../../../context/AuthContext";
+import { useActivitiesListQuery, useActivityDetailQuery } from "../../../hooks/activities/queries";
+import { useDeleteActivityMutation, useUpdateActivityMutation } from "../../../hooks/activities/mutations";
 
 import * as ImagePicker from 'expo-image-picker';
 import { SKILLS } from "../../../constants/Skills";
@@ -15,8 +17,13 @@ import { requestMediaLibraryPermission } from "../../../utils/permissions";
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { activities, updateActivity, deleteActivity } = useActivities();
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
+    const { data: activity } = useActivityDetailQuery(activityId);
+    const { data: activities = [] } = useActivitiesListQuery(user?.id);
+    const updateActivityMutation = useUpdateActivityMutation();
+    const deleteActivityMutation = useDeleteActivityMutation();
 
     const [formData, setFormData] = useState({
         title: "",
@@ -36,7 +43,6 @@ export default function EditActivityScreen() {
     });
 
     useEffect(() => {
-        const activity = activities.find((a: any) => a.id === id);
         if (activity) {
             setFormData({
                 title: activity.title,
@@ -56,7 +62,7 @@ export default function EditActivityScreen() {
             });
             setLoading(false);
         }
-    }, [id, activities]);
+    }, [activity]);
 
     const pickImage = async () => {
         const granted = await requestMediaLibraryPermission({
@@ -96,7 +102,6 @@ export default function EditActivityScreen() {
         const end = new Date(endISO);
 
         // Allow editing activities that already started, but don't let them move to the past if they are future
-        const activity = activities.find(a => a.id === id);
         const wasInFuture = activity ? new Date(activity.dateTime) > now : true;
 
         if (wasInFuture && start < now) {
@@ -111,28 +116,35 @@ export default function EditActivityScreen() {
             return;
         }
 
-        const success = await updateActivity(id as string, {
-            title: formData.title,
-            category: formData.category,
-            location: {
-                coords: { lat: 45.464, lng: 9.190 },
-                address: formData.address
-            },
-            slots: parseInt(formData.slots),
-            description: formData.description,
-            dateTime: startISO,
-            endDateTime: endISO,
-            skills: formData.skills,
-            isUrgent: formData.isUrgent,
-            imageUrl: formData.imageUrl,
-            recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,
-        });
+        if (!activity) {
+            setLoading(false);
+            return;
+        }
 
-        setLoading(false);
-
-        if (success) {
+        try {
+            await updateActivityMutation.mutateAsync({
+                ...activity,
+                title: formData.title,
+                category: formData.category,
+                location: {
+                    coords: { lat: formData.lat, lng: formData.lng },
+                    address: formData.address
+                },
+                slots: parseInt(formData.slots, 10),
+                description: formData.description,
+                dateTime: startISO,
+                endDateTime: endISO,
+                skills: formData.skills,
+                isUrgent: formData.isUrgent,
+                imageUrl: formData.imageUrl,
+                recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,
+            });
+            setLoading(false);
             Alert.alert("Successo", "Attività aggiornata con successo! I volontari iscritti riceveranno una notifica.");
             router.back();
+        } catch {
+            setLoading(false);
+            Alert.alert("Errore", "Non sono riuscita ad aggiornare l'attività. Riprova.");
         }
     };
 
@@ -146,9 +158,11 @@ export default function EditActivityScreen() {
                     text: "Elimina",
                     style: "destructive",
                     onPress: async () => {
-                        const success = await deleteActivity(id as string);
-                        if (success) {
+                        try {
+                            await deleteActivityMutation.mutateAsync(activityId);
                             router.back();
+                        } catch {
+                            Alert.alert("Errore", "Non sono riuscita a eliminare l'attività. Riprova.");
                         }
                     }
                 }

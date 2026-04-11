@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-
 import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
-import { useActivities } from "../../../context/ActivityContext";
 import { Sparkles, Star, Users, Plus } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { StatCard } from "../../../components/StatCard";
@@ -16,11 +15,12 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
 import { InsightCarousel } from "../../../components/InsightCarousel";
 import { reportService } from "../../../services/ReportService";
+import { useActivitiesDomain, useNPORating } from "../../../hooks/activities/selectors";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
     const router = useRouter();
-    const { activities, getNPORating, loadData } = useActivities();
+    const { activities, activityApplications, loadData } = useActivitiesDomain(user);
     const { getNPOApplications, refreshApplications } = useApplications();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -43,7 +43,7 @@ export default function NPODashboard() {
         (a.status === 'APERTA' || a.status === 'IN_CORSO') &&
         new Date(a.endDateTime) > now
     ).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
-    const npoRating = getNPORating(user?.id || "");
+    const npoRating = useNPORating(user?.id);
 
     // Calculate followers (volunteers following the NPO)
     const followers = getNPOFollowers(user?.id || "");
@@ -51,8 +51,6 @@ export default function NPODashboard() {
 
     // Sincronizzazione "Iscrizioni" con numero reale di volontari approvati (APPROVED)
     const allNpoApps = getNPOApplications(user?.id || "");
-    const { activityApplications } = useActivities();
-
     const approvedNpoApps = allNpoApps.filter(a => a.status === "APPROVED");
     const approvedActivityApps = activityApplications.filter(a => a.status === "APPROVED");
 

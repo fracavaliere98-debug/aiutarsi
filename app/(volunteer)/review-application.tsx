@@ -4,20 +4,21 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2 } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
-import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { Colors } from "../../constants/Colors";
+import { useActivityDetailQuery } from "../../hooks/activities/queries";
+import { useEnrollInActivityMutation } from "../../hooks/activities/mutations";
 
 export default function ReviewApplication() {
     const router = useRouter();
     const { activityId, npoId, type } = useLocalSearchParams<{ activityId: string, npoId: string, type: "ACTIVITY" | "NPO" }>();
     const { user, users } = useAuth();
-    const { activities, enrollInActivity } = useActivities();
+    const enrollInActivityMutation = useEnrollInActivityMutation(user?.id);
     const { applyToNPO } = useApplications();
 
     // 1. Resolve Data based on Type
     const isActivity = type !== "NPO"; // Default to activity for backward compatibility
-    const activity = isActivity ? activities.find(a => a.id === activityId) : null;
+    const { data: activity } = useActivityDetailQuery(isActivity ? activityId : undefined);
     const npoUser = !isActivity ? users.find(u => u.id === npoId) : null;
 
     // State
@@ -48,7 +49,8 @@ export default function ReviewApplication() {
 
             if (isActivity && activity) {
                 // IMMEDIATE Enrollment for OldActivity
-                success = await enrollInActivity(activity.id, notes, phoneNumber);
+                await enrollInActivityMutation.mutateAsync({ activityId: activity.id, message: notes, phone: phoneNumber });
+                success = true;
             } else if (npoUser) {
                 // Apply to NPO
                 console.log("[DEBUG] ReviewApplication: applyToNPO start", { npoId: npoUser.id });

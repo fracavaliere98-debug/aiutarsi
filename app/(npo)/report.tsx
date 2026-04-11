@@ -6,15 +6,15 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
 import { Colors } from "../../constants/Colors";
-import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useAuth } from "../../context/AuthContext";
 import { reportService, type NPOReportSummary } from "../../services/ReportService";
+import { useActivitiesDomain } from "../../hooks/activities/selectors";
 
 export default function NPOReportScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { activities, activityApplications, loadData } = useActivities();
+    const { activities, activityApplications, loadData } = useActivitiesDomain(user);
     const { applications, refreshApplications } = useApplications();
     const [refreshing, setRefreshing] = useState(false);
     const [summary, setSummary] = useState<NPOReportSummary | null>(null);

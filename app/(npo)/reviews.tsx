@@ -1,16 +1,16 @@
 import { View, Text } from "react-native";
 import { StandardLayout } from "../../components/StandardLayout";
-import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { Star, Calendar } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { EmptyState } from "../../components/EmptyState";
 import { useRouter } from "expo-router";
 import { UserAvatar } from "../../components/UserAvatar";
+import { useActivitiesDomain } from "../../hooks/activities/selectors";
 
 export default function NPOReviewsScreen() {
     const { user, getUserById } = useAuth();
-    const { reviews, activities } = useActivities();
+    const { reviews, activities } = useActivitiesDomain(user);
     const router = useRouter();
 
     // Filtriamo le recensioni che appartengono ad attività create da questa NPO

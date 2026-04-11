@@ -5,10 +5,10 @@ import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "../context/AuthContext";
 
-import { OldActivity, ExtendedActivity } from "../types";
+import { AppActivity, OldActivity } from "../types";
 
 interface ActivityCardProps {
-    activity: OldActivity | ExtendedActivity;
+    activity: OldActivity | AppActivity;
     onPress?: () => void;
     style?: StyleProp<ViewStyle>;
 }
@@ -20,36 +20,20 @@ const OVERLAP = 5;
 export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
     const { users, user } = useAuth();
 
-    // Helper to safely extract properties from either OldActivity or ExtendedActivity
     const status = activity.status;
-    const npoId = 'npoId' in activity ? activity.npoId : activity.npo_id;
-
-    const rawStartDate = 'dateTime' in activity ? activity.dateTime : activity.date_start;
-    const rawEndDate = 'endDateTime' in activity ? activity.endDateTime : activity.date_end;
-    const activityDate = new Date(rawStartDate);
+    const npoId = activity.npoId;
+    const activityDate = new Date(activity.dateTime);
     const month = activityDate.toLocaleDateString("it-IT", { month: "short" }).toUpperCase();
     const day = activityDate.getDate();
-    const time = activityDate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-    const endTime = new Date(rawEndDate).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    const time = new Date(activity.dateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    const endTime = new Date(activity.endDateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
-    // Location extraction
-    let address = "Indirizzo ND";
-    if ('location' in activity && activity.location?.address) {
-        address = activity.location.address;
-    } else if ('location_address' in activity && activity.location_address) {
-        address = activity.location_address;
-    } else if ('location' in activity && typeof activity.location === 'string') {
-        address = activity.location;
-    }
+    const address = activity.location?.address || "Indirizzo ND";
     const city = address.split(',')[1]?.trim() || address.split(',')[0]?.trim() || "Città ND";
 
-    // NPO Name extraction
-    let npoName = "NPO";
-    if ('npoName' in activity && activity.npoName) {
-        npoName = activity.npoName;
-    } else if ('profiles' in activity && activity.profiles) {
-        npoName = activity.profiles.npo_name || activity.profiles.full_name || "NPO";
-    }
+    const npoName = activity.npoName || ('profiles' in activity && activity.profiles
+        ? activity.profiles.npo_name || activity.profiles.full_name || "NPO"
+        : "NPO");
 
     const statusProps = (() => {
         switch (status) {
@@ -66,12 +50,11 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
         }
     })();
 
-    // Participants extraction
     let iscritti: string[] = [];
     if ('iscritti' in activity && activity.iscritti) {
         iscritti = activity.iscritti;
     } else if ('activity_participants' in activity && activity.activity_participants) {
-        iscritti = activity.activity_participants.map(p => p.user_id);
+        iscritti = activity.activity_participants.map((p: { user_id: string }) => p.user_id);
     }
 
     const visibleAvatars = iscritti.slice(0, MAX_AVATARS);

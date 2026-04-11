@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
@@ -15,12 +14,15 @@ import { SKILLS } from "../../constants/Skills";
 import { ACTIVITY_CATEGORIES } from "../../constants/Interests";
 import { gemmaService } from "../../services/GemmaService";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
+import { useCreateActivityMutation } from "../../hooks/activities/mutations";
+import { useActivitiesListQuery } from "../../hooks/activities/queries";
 
 export default function CreateActivityScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { user } = useAuth();
-    const { createActivity, activities } = useActivities();
+    const { data: activities = [] } = useActivitiesListQuery(user?.id);
+    const createActivityMutation = useCreateActivityMutation();
     const [formData, setFormData] = useState({
         title: "",
         category: "Sociale",
@@ -202,25 +204,36 @@ export default function CreateActivityScreen() {
             return;
         }
 
-        const success = await createActivity({
-            title: formData.title,
-            category: formData.category,
-            location: {
-                coords: { lat: formData.lat, lng: formData.lng },
-                address: formData.address
-            },
-            slots: parseInt(formData.slots),
-            description: formData.description,
-            dateTime: startISO,
-            endDateTime: endISO,
-            skills: formData.skills,
-            isUrgent: formData.isUrgent,
-            imageUrl: formData.imageUrl,
-            recurrence: formData.recurrence === 'NONE' ? undefined : (formData.recurrence as any),
-        });
+        if (!user || user.role !== "NPO") {
+            showToast('error', 'Profilo ente non valido per creare attività.');
+            return;
+        }
 
-        if (success) {
+        try {
+            await createActivityMutation.mutateAsync({
+                npoId: user.id,
+                npoName: user.npoName || "Ente Solidale",
+                title: formData.title,
+                category: formData.category,
+                location: {
+                    coords: { lat: formData.lat, lng: formData.lng },
+                    address: formData.address
+                },
+                slots: parseInt(formData.slots, 10),
+                description: formData.description,
+                dateTime: startISO,
+                endDateTime: endISO,
+                skills: formData.skills,
+                status: "APERTA",
+                iscritti: [],
+                matchPercentage: 0,
+                isUrgent: formData.isUrgent,
+                imageUrl: formData.imageUrl,
+                recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,
+            });
             router.replace("/(npo)" as any);
+        } catch {
+            showToast('error', 'Non sono riuscita a creare l’attività. Riprova.');
         }
     };
 

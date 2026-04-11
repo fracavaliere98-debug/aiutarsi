@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-
 import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-react-native";
 import { Colors } from "../../../constants/Colors";
 import { ActivityCard } from "../../../components/ActivityCard";
-import { useActivities } from "../../../context/ActivityContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -14,11 +13,14 @@ import { useState, useMemo, useCallback } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
 import { useSmartMatch } from "../../../context/SmartMatchContext";
+import { useActivitiesDomain, useUserReviews, useVolunteerStats } from "../../../hooks/activities/selectors";
 
 export default function VolunteerDashboard() {
     const router = useRouter();
     const { user } = useAuth();
-    const { activities, userReviews, volunteerStats, error, loadData } = useActivities();
+    const { activities, error, loadData } = useActivitiesDomain(user);
+    const userReviews = useUserReviews(user?.id);
+    const volunteerStats = useVolunteerStats(user);
     const { refresh: refreshSmartMatch } = useSmartMatch();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);

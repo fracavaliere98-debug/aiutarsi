@@ -1,16 +1,18 @@
 import { Share } from "react-native";
 import React from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { useGamification } from "../../../context/GamificationContext";
 import { useRouter } from "expo-router";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
+import { useActivityReviewsQuery } from "../../../hooks/activities/queries";
+import { useVolunteerStats } from "../../../hooks/activities/selectors";
 
 export default function VolunteerProfile() {
     const { user, users, fetchUserById } = useAuth();
-    const { volunteerStats, reviews } = useActivities();
+    const volunteerStats = useVolunteerStats(user);
+    const { data: reviews = [] } = useActivityReviewsQuery();
     const { state, levelProgress, nextLevelXP, currentLevelXP } = useGamification();
     const router = useRouter();
     const [affiliatedNPOs, setAffiliatedNPOs] = React.useState<AppUser[]>([]);

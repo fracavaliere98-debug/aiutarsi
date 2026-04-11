@@ -2,20 +2,20 @@ import { View, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useActivities } from "../../../context/ActivityContext";
 import { useApplications } from "../../../context/ApplicationContext";
 import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } from "../../../context/GamificationContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
 import ChatService from "../../../services/ChatService";
 import ReportModal from "../../../components/ReportModal";
+import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { fetchUserById, user: currentUser } = useAuth();
     const { getVolunteerApplications } = useApplications();
-    const { activities, reviews } = useActivities();
+    const { activities, reviews } = useActivitiesDomain(undefined);
 
     const [user, setUser] = useState<AppUser | null>(null);
     const [affiliatedNPOs, setAffiliatedNPOs] = useState<AppUser[]>([]);

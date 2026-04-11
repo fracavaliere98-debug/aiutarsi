@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Zap } from 'lucide-react-native';
 import { OldActivity } from '../types';

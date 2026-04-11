@@ -13,8 +13,6 @@ import Constants from 'expo-constants';
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { UserAvatar } from "../../components/UserAvatar";
-
-import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
@@ -39,7 +37,6 @@ export default function VolunteerSettings() {
     const insets = useSafeAreaInsets();
     const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion, updateEmail, updatePassword } = useAuth();
     const { showToast } = useToast();
-    const { resetData } = useActivities();
     const { resetApplications } = useApplications();
     const router = useRouter();
 
@@ -498,10 +495,9 @@ export default function VolunteerSettings() {
                         label="Resetta Dati App (Debug)"
                         color={Colors.secondary}
                         onPress={async () => {
-                            await resetData();
                             await resetUsers();
                             await resetApplications();
-                            alert("Dati Utenti, Attività e OldCandidature resettati con successo!");
+                            alert("Dati Utenti e Candidature resettati con successo!");
                         }}
                         last
                     />

@@ -1,21 +1,23 @@
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Colors } from "../../constants/Colors";
 import { ArrowLeft, Star, Heart, Send, Sparkles, CheckCircle2 } from "lucide-react-native";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
+import { useActivityDetailQuery } from "../../hooks/activities/queries";
+import { useSubmitReviewMutation } from "../../hooks/activities/mutations";
 
 export default function FeedbackScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth();
     const { showToast } = useToast();
-    const { activities, submitReview } = useActivities();
+    const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
+    const { data: activity } = useActivityDetailQuery(activityId);
+    const submitReviewMutation = useSubmitReviewMutation();
 
-    const activity = activities.find(a => a.id === id);
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
     const [selectedFeelings, setSelectedFeelings] = useState<string[]>([]);
@@ -27,7 +29,7 @@ export default function FeedbackScreen() {
             showToast("error", "Solo i volontari possono inviare feedback alle attività.");
             router.replace("/");
         }
-    }, [user]);
+    }, [router, showToast, user]);
 
     const feelings = ["Ispirato", "Utile", "Motivato", "Soddisfatto", "Sfidato"];
 
@@ -45,21 +47,27 @@ export default function FeedbackScreen() {
             return;
         }
 
-        const success = await submitReview({
-            activityId: id as string,
-            npoId: activity?.npoId || "",
-            stars: rating,
-            comment,
-            feelings: selectedFeelings
-        });
+        if (!activity || !user) {
+            showToast('error', 'Attività non disponibile per la recensione.');
+            return;
+        }
 
-        if (success) {
+        try {
+            await submitReviewMutation.mutateAsync({
+                activityId,
+                npoId: activity.npoId,
+                volunteerId: user.id,
+                stars: rating,
+                comment,
+                feelings: selectedFeelings,
+                date: new Date().toISOString(),
+            });
             showToast('success', '⭐ Recensione inviata con successo!');
             setSubmitted(true);
             setTimeout(() => {
                 router.replace("/(volunteer)" as any);
             }, 2000);
-        } else {
+        } catch {
             showToast('error', 'Errore durante l\'invio della recensione');
         }
     };

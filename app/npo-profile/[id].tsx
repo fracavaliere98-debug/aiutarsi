@@ -3,29 +3,28 @@ import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useNPOFollow } from "../../hooks/useNPOFollow";
-import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import { supabase } from "../../utils/supabase";
-import { ArrowLeft, Share2, Heart, Star, Users, Calendar, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle, MoreVertical } from "lucide-react-native";
+import { Share2, Heart, Star, Users, Clock, ChevronRight, MapPin, Globe, Mail, Phone, CheckCircle2, MessageCircle, AlertTriangle, MoreVertical } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { UserAvatar } from "../../components/UserAvatar";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
-import { BadgePill } from "../../components/BadgePill";
 import { ActivityCard } from "../../components/ActivityCard";
 import { Colors } from "../../constants/Colors";
 import ChatService from "../../services/ChatService";
 import ReportModal from "../../components/ReportModal";
+import { useActivitiesDomain } from "../../hooks/activities/selectors";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user, usersDB: users, fetchUserById } = useAuth();
     const { followNPO, unfollowNPO, isFollowingNPO, isProcessing } = useNPOFollow();
-    const { activities, reviews } = useActivities();
-    const { applyToNPO, hasAppliedToNPO } = useApplications();
+    const { activities, reviews } = useActivitiesDomain(undefined);
+    const { hasAppliedToNPO } = useApplications();
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [showReportModal, setShowReportModal] = useState(false);
@@ -600,7 +599,3 @@ export default function NPOProfileScreen() {
         </StandardLayout>
     );
 }
-
-const styles = {
-    // Helper if needed for specific overrides not covered by tailwind
-};

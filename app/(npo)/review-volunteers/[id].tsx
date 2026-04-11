@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StandardLayout } from '../../../components/StandardLayout';
-import { useActivities } from '../../../context/ActivityContext';
 import { useAuth } from '../../../context/AuthContext';
 import { Colors } from '../../../constants/Colors';
 import { UserAvatar } from '../../../components/UserAvatar';
@@ -10,6 +9,8 @@ import { Star, CheckCircle2, XCircle, Loader2 } from 'lucide-react-native';
 import { useToast } from '../../../context/ToastContext';
 import { EmptyState } from '../../../components/EmptyState';
 import { AppUser } from '../../../types';
+import { useActivityDetailQuery, useVolunteerReviewsQuery } from '../../../hooks/activities/queries';
+import { useSubmitVolunteerReviewsMutation } from '../../../hooks/activities/mutations';
 
 type VolunteerReviewDraft = {
     volunteerId: string;
@@ -22,12 +23,13 @@ type VolunteerReviewDraft = {
 export default function ReviewVolunteersScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { activities, volunteerReviews, submitVolunteerReviews } = useActivities();
     const { fetchUserById } = useAuth();
     const { showToast } = useToast();
 
     const activityId = typeof id === "string" ? id : id?.[0] || "";
-    const activity = useMemo(() => activities.find(a => a.id === activityId), [activities, activityId]);
+    const { data: activity } = useActivityDetailQuery(activityId);
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
+    const submitVolunteerReviewsMutation = useSubmitVolunteerReviewsMutation();
 
     const [drafts, setDrafts] = useState<Record<string, VolunteerReviewDraft>>({});
     const [volunteers, setVolunteers] = useState<AppUser[]>([]);
@@ -114,7 +116,7 @@ export default function ReviewVolunteersScreen() {
 
         setIsSubmitting(true);
         try {
-            await submitVolunteerReviews(reviewsToSave);
+            await submitVolunteerReviewsMutation.mutateAsync(reviewsToSave);
             showToast("success", "Valutazioni salvate con successo!");
 
             // Re-check how many left to process

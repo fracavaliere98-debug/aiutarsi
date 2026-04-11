@@ -2,11 +2,11 @@ import React, { useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useActivities } from "../../context/ActivityContext";
 import { Award, Clock, Target, Star, Info, X } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { StatCard } from "../StatCard";
 import { SheetModal } from "../SheetModal";
+import { useVolunteerReviewsQuery } from "../../hooks/activities/queries";
 
 const XP_LEVELS = [
     { level: 1, name: "Novizio", minXP: 0, nextXP: 110, description: "Stai muovendo i primi passi nella community." },
@@ -53,7 +53,7 @@ export function ProfileStats({
     isOwnProfile
 }: ProfileStatsProps) {
     const router = useRouter();
-    const { volunteerReviews } = useActivities();
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
     const insets = useSafeAreaInsets();
     const [showXpInfo, setShowXpInfo] = useState(false);
 

@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
 import { useCommunity } from '../../../context/CommunityContext';
 import { useAuth } from '../../../context/AuthContext';
-import { useActivities } from '../../../context/ActivityContext';
 import { useStories } from '../../../context/StoriesContext';
 import { useSmartMatch } from '../../../context/SmartMatchContext';
 import { Story } from '../../../types/stories';
@@ -15,6 +14,7 @@ import { VolunteerCommunityScreen } from '../../../components/community/Voluntee
 import { NPOCommunityScreen } from '../../../components/community/NPOCommunityScreen';
 import { CommunityStoryViewer } from '../../../components/community/CommunityStoryViewer';
 import { gemmaService } from '../../../services/GemmaService';
+import { useActivitiesDomain } from '../../../hooks/activities/selectors';
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {
@@ -57,7 +57,7 @@ function DeletionBanner() {
 export default function CommunityScreen() {
     const { user } = useAuth();
     const { posts, isLoading, fetchFeed } = useCommunity();
-    const { activities, loadData: refreshActivities } = useActivities();
+    const { activities, loadData: refreshActivities } = useActivitiesDomain(user);
     const { allMatches } = useSmartMatch();
     const { fetchStories } = useStories();
     const [refreshing, setRefreshing] = useState(false);
@@ -111,7 +111,7 @@ export default function CommunityScreen() {
         return () => {
             cancelled = true;
         };
-    }, [isNPO, suggestedActivities]);
+    }, [allMatches, isNPO]);
 
     const onRefresh = useCallback(async () => {
         if (refreshLockRef.current) return;

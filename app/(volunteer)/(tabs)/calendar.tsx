@@ -6,13 +6,13 @@ import { Calendar as CalendarIcon, List } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { VolunteerHeaderActions } from "../../../components/VolunteerHeaderActions";
 import { SoftCard } from "../../../components/SoftCard";
-import { useActivities } from "../../../context/ActivityContext";
 import { AppActivity } from "../../../types";
 import { useState, useMemo, useEffect } from "react";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarGrid } from "../../../components/CalendarGrid";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { ErrorState } from "../../../components/ErrorState";
+import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 
 type ViewMode = "list" | "calendar";
 type FilterMode = "upcoming" | "completed";
@@ -20,7 +20,7 @@ type FilterMode = "upcoming" | "completed";
 export default function VolunteerCalendar() {
     const { user } = useAuth();
     const router = useRouter();
-    const { activities, error, loadData } = useActivities();
+    const { activities, error, loadData } = useActivitiesDomain(user);
     const { showToast } = useToast();
 
 

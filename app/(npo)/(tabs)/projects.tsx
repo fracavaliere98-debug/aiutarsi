@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, RefreshControl, TextInput } from "react-native";
 
 import { useAuth } from "../../../context/AuthContext";
-import { useActivities } from "../../../context/ActivityContext";
 import { List, Calendar as CalendarIcon, Search } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { EmptyState } from "../../../components/EmptyState";
@@ -13,12 +12,13 @@ import { useToast } from "../../../context/ToastContext";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { ErrorState } from "../../../components/ErrorState";
 import { ActivityCard } from "../../../components/ActivityCard";
+import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 
 type ViewMode = "list" | "calendar";
 
 export default function NPOCalendarScreen() {
     const { user } = useAuth();
-    const { activities, error, loadData } = useActivities();
+    const { activities, error, loadData } = useActivitiesDomain(user);
     const router = useRouter();
     const { showToast } = useToast();
 

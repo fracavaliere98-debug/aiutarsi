@@ -6,15 +6,16 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
 import { Colors } from "../../constants/Colors";
-import { useActivities } from "../../context/ActivityContext";
 import { useApplications } from "../../context/ApplicationContext";
 import { useAuth } from "../../context/AuthContext";
 import { volunteerReportService, type VolunteerReportSummary } from "../../services/VolunteerReportService";
+import { useActivitiesDomain, useUserReviews } from "../../hooks/activities/selectors";
 
 export default function VolunteerReportScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { activities, userReviews, loadData } = useActivities();
+    const { activities, loadData } = useActivitiesDomain(user);
+    const userReviews = useUserReviews(user?.id);
     const { getVolunteerApplications, refreshApplications } = useApplications();
     const [summary, setSummary] = useState<VolunteerReportSummary | null>(null);
     const [refreshing, setRefreshing] = useState(false);

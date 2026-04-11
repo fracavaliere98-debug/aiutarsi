@@ -4,13 +4,11 @@ import {
     Share, Platform, Dimensions, ActivityIndicator, Linking
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
-import { useActivities } from "../../context/ActivityContext";
 import { useAuth } from "../../context/AuthContext";
 import { useCommunity } from "../../context/CommunityContext";
 import { useGamification } from "../../context/GamificationContext";
 import { useToast } from "../../context/ToastContext";
-import { activityService } from "../../services/ActivityService";
-import { AppActivity, AppUser } from "../../types";
+import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
 import { CommunityPost } from "../../types/community";
 import {
@@ -25,6 +23,9 @@ import { supabase } from "../../utils/supabase";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CommunityCompactPostCard } from "../../components/community/CommunityCompactPostCard";
 import { addEventToDeviceCalendar } from "../../utils/calendar";
+import { useActivityDetailQuery, useVolunteerReviewsQuery } from "../../hooks/activities/queries";
+import { useUnenrollFromActivityMutation } from "../../hooks/activities/mutations";
+import { useActivitiesDomain } from "../../hooks/activities/selectors";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
@@ -69,31 +70,23 @@ export default function ActivityDetail() {
     const router = useRouter();
     const { user, users, fetchUserById } = useAuth();
     const { fetchPostsForActivity } = useCommunity();
-    const {
-        activities, reviews, unenrollFromActivity, error, loadData,
-        volunteerReviews
-    } = useActivities();
+    const { activities, reviews, error, loadData } = useActivitiesDomain(user);
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
     const { handleActivityShare } = useGamification();
     const { showToast } = useToast();
+    const unenrollFromActivityMutation = useUnenrollFromActivityMutation(user?.id);
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
-
-    const [fetchedActivity, setFetchedActivity] = useState<AppActivity | null>(null);
-    const [fetchLoading, setFetchLoading] = useState(false);
+    const {
+        data: activity,
+        isLoading: isActivityLoading,
+        refetch: refetchActivity,
+    } = useActivityDetailQuery(activityId, {
+        initialData: activityFromContext ?? null,
+    });
     const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
     const [relatedPosts, setRelatedPosts] = useState<CommunityPost[]>([]);
-
-    useEffect(() => {
-        if (!activityFromContext && activityId) {
-            setFetchLoading(true);
-            activityService.getActivityById(activityId)
-                .then(act => { setFetchedActivity(act); setFetchLoading(false); })
-                .catch(() => setFetchLoading(false));
-        }
-    }, [activityId, activityFromContext]);
-
-    const activity = activityFromContext ?? fetchedActivity;
 
     useEffect(() => {
         let cancelled = false;
@@ -255,8 +248,8 @@ export default function ActivityDetail() {
     }, [activity, isEnrolled, npoUser?.name, npoUser?.npoName, showToast, user?.role]);
 
     // ─── Guards ──────────────────────────────────────────────────────────────
-    if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={loadData} />;
-    if (fetchLoading) return (
+    if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={() => Promise.all([loadData(), refetchActivity()]).then(() => undefined)} />;
+    if (isActivityLoading) return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
             <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -807,7 +800,7 @@ export default function ActivityDetail() {
                                 onPress={async () => {
                                     const prev = localIscrittiOverride;
                                     setLocalIscrittiOverride(c => (c ?? activity.iscritti).filter(i => i !== user?.id));
-                                    try { await unenrollFromActivity(activity.id); }
+                                    try { await unenrollFromActivityMutation.mutateAsync(activity.id); }
                                     catch { setLocalIscrittiOverride(prev); }
                                 }}
                                 style={{
