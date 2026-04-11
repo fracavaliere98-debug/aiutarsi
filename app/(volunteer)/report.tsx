@@ -6,21 +6,20 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
 import { Colors } from "../../constants/Colors";
-import { useApplications } from "../../context/ApplicationContext";
 import { useAuth } from "../../context/AuthContext";
 import { volunteerReportService, type VolunteerReportSummary } from "../../services/VolunteerReportService";
 import { useActivitiesDomain, useUserReviews } from "../../hooks/activities/selectors";
+import { useApplicationsDomain, useVolunteerApplications } from "../../hooks/applications/selectors";
 
 export default function VolunteerReportScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { activities, loadData } = useActivitiesDomain(user);
     const userReviews = useUserReviews(user?.id);
-    const { getVolunteerApplications, refreshApplications } = useApplications();
+    const applications = useVolunteerApplications(user, user?.id);
+    const { refreshApplications } = useApplicationsDomain(user);
     const [summary, setSummary] = useState<VolunteerReportSummary | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-
-    const applications = getVolunteerApplications(user?.id || "");
 
     useEffect(() => {
         let cancelled = false;

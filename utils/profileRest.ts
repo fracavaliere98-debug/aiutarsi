@@ -476,12 +476,12 @@ export const profileRest = {
     payload: { npo_id: string; volunteer_id: string; message?: string | null; status?: string },
     accessToken?: string
   ) => {
-    return request(
+    return request<any[]>(
       "POST",
-      `/rest/v1/applications`,
+      `/rest/v1/applications?select=id,npo_id,volunteer_id,message,status,created_at,reviewed_at,volunteer:volunteer_id(full_name,avatar_url,user_skills(skill)),npo:npo_id(npo_name,full_name,avatar_url)`,
       payload,
       accessToken,
-      { Prefer: "return=minimal" }
+      { Prefer: "return=representation" }
     );
   },
   listApplicationsForNPO: async (npoId: string, accessToken?: string) => {

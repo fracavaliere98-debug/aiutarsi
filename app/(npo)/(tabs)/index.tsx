@@ -9,19 +9,20 @@ import { ActivityCard } from "../../../components/ActivityCard";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { EmptyState } from "../../../components/EmptyState";
 
-import { useApplications } from "../../../context/ApplicationContext";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useNPOInsights } from "../../../hooks/useNPOInsights";
 import { InsightCarousel } from "../../../components/InsightCarousel";
 import { reportService } from "../../../services/ReportService";
 import { useActivitiesDomain, useNPORating } from "../../../hooks/activities/selectors";
+import { useApplicationsDomain, useNPOApplications } from "../../../hooks/applications/selectors";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
     const router = useRouter();
     const { activities, activityApplications, loadData } = useActivitiesDomain(user);
-    const { getNPOApplications, refreshApplications } = useApplications();
+    const { refreshApplications } = useApplicationsDomain(user);
+    const allNpoApps = useNPOApplications(user, user?.id);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { insights, dismissInsight } = useNPOInsights();
@@ -50,7 +51,6 @@ export default function NPODashboard() {
     const followerCount = followers.length;
 
     // Sincronizzazione "Iscrizioni" con numero reale di volontari approvati (APPROVED)
-    const allNpoApps = getNPOApplications(user?.id || "");
     const approvedNpoApps = allNpoApps.filter(a => a.status === "APPROVED");
     const approvedActivityApps = activityApplications.filter(a => a.status === "APPROVED");
 

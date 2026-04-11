@@ -5,7 +5,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
-import { ApplicationProvider } from "../context/ApplicationContext";
 import { GamificationProvider } from "../context/GamificationContext";
 import { ToastProvider } from "../context/ToastContext";
 import { SmartMatchProvider } from "../context/SmartMatchContext";
@@ -291,18 +290,16 @@ function RootLayout() {
               <GamificationProvider>
                 <NotificationProvider>
                   <SmartMatchProvider>
-                    <ApplicationProvider>
-                      <ChatProvider>
-                        <CommunityProvider>
-                          <StoriesProvider>
-                            <StatusBar style="dark" />
-                            <RootLayoutNav />
-                            <ToastContainer />
-                            <LevelUpOverlay />
-                          </StoriesProvider>
-                        </CommunityProvider>
-                      </ChatProvider>
-                    </ApplicationProvider>
+                    <ChatProvider>
+                      <CommunityProvider>
+                        <StoriesProvider>
+                          <StatusBar style="dark" />
+                          <RootLayoutNav />
+                          <ToastContainer />
+                          <LevelUpOverlay />
+                        </StoriesProvider>
+                      </CommunityProvider>
+                    </ChatProvider>
                   </SmartMatchProvider>
                 </NotificationProvider>
               </GamificationProvider>

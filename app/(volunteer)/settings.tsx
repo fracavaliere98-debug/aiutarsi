@@ -13,7 +13,6 @@ import Constants from 'expo-constants';
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { UserAvatar } from "../../components/UserAvatar";
-import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../utils/permissions";
 import { storageService } from "../../services/StorageService";
@@ -27,6 +26,7 @@ import {
     validateVolunteerDemographics,
     getAdultMaxDate,
 } from "../../utils/profileDemographics";
+import { useResetApplicationsQueryState } from "../../hooks/applications/mutations";
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images
@@ -37,7 +37,7 @@ export default function VolunteerSettings() {
     const insets = useSafeAreaInsets();
     const { user, logout, updateUserProfile, resetUsers, isLoading: isAuthLoading, requestAccountDeletion, updateEmail, updatePassword } = useAuth();
     const { showToast } = useToast();
-    const { resetApplications } = useApplications();
+    const resetApplicationsMutation = useResetApplicationsQueryState(user);
     const router = useRouter();
 
     const appVersion = Constants.expoConfig?.version || "1.0.0";
@@ -496,7 +496,7 @@ export default function VolunteerSettings() {
                         color={Colors.secondary}
                         onPress={async () => {
                             await resetUsers();
-                            await resetApplications();
+                            await resetApplicationsMutation.mutateAsync();
                             alert("Dati Utenti e Candidature resettati con successo!");
                         }}
                         last

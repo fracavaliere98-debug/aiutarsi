@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useApplications } from "../context/ApplicationContext";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 import { gemmaService } from "../services/GemmaService";
 import { useActivitiesDomain } from "./activities/selectors";
+import { useNPOApplications } from "./applications/selectors";
 
 export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE' | 'OVERVIEW';
 
@@ -21,7 +21,7 @@ export interface NPOInsight {
 export const useNPOInsights = () => {
     const { user, getNPOFollowers } = useAuth();
     const { activities, activityApplications } = useActivitiesDomain(user);
-    const { applications: npoApplications } = useApplications();
+    const npoApplications = useNPOApplications(user, user?.id);
     const router = useRouter();
 
     const [mutedIds, setMutedIds] = useState<string[]>([]);

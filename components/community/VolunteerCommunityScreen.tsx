@@ -11,8 +11,8 @@ import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
 import { GemmaAvatar } from '../GemmaAvatar';
 import { useAuth } from '../../context/AuthContext';
-import { useApplications } from '../../context/ApplicationContext';
 import { supabase } from '../../utils/supabase';
+import { useVolunteerApplications } from '../../hooks/applications/selectors';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
@@ -47,7 +47,7 @@ export function VolunteerCommunityScreen({
 }: VolunteerCommunityScreenProps) {
     const router = useRouter();
     const { user } = useAuth();
-    const { getVolunteerApplications } = useApplications();
+    const volunteerApplications = useVolunteerApplications(user, user?.id);
 
     const followedNpoIds = useMemo(
         () => (user?.followedNPOs || []).filter(Boolean),
@@ -56,11 +56,11 @@ export function VolunteerCommunityScreen({
     const [sharedVolunteerAuthorIds, setSharedVolunteerAuthorIds] = useState<string[]>([]);
     const affiliatedNpoIds = useMemo(
         () =>
-            getVolunteerApplications(user?.id || '')
+            volunteerApplications
                 .filter((application) => application.status === 'APPROVED')
                 .map((application) => application.npoId)
                 .filter(Boolean),
-        [getVolunteerApplications, user?.id]
+        [volunteerApplications]
     );
     const suggestedNpoIds = useMemo(
         () => Array.from(new Set(suggestedActivities.map((activity) => activity.npoId).filter(Boolean))).slice(0, 12),

@@ -11,9 +11,9 @@ import { AppActivity } from '../../types';
 import { Story } from '../../types/stories';
 import { CommunityPostDraftResult, gemmaService } from '../../services/GemmaService';
 import { useAuth } from '../../context/AuthContext';
-import { useApplications } from '../../context/ApplicationContext';
 import { CommunityHero } from './CommunityHero';
 import { CommunityCompactPostCard } from './CommunityCompactPostCard';
+import { useNPOApplications } from '../../hooks/applications/selectors';
 
 interface NPOCommunityScreenProps {
     posts: CommunityPost[];
@@ -38,7 +38,7 @@ export function NPOCommunityScreen({
 }: NPOCommunityScreenProps) {
     const router = useRouter();
     const { user, getNPOFollowers } = useAuth();
-    const { applications } = useApplications();
+    const applications = useNPOApplications(user, user?.id);
     const [draftLoadingId, setDraftLoadingId] = useState<string | null>(null);
     const [showHero, setShowHero] = useState(true);
 

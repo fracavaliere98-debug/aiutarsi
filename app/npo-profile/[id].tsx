@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useNPOFollow } from "../../hooks/useNPOFollow";
-import { useApplications } from "../../context/ApplicationContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import { supabase } from "../../utils/supabase";
@@ -17,14 +16,16 @@ import { Colors } from "../../constants/Colors";
 import ChatService from "../../services/ChatService";
 import ReportModal from "../../components/ReportModal";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
+import { useHasAppliedToNPO } from "../../hooks/applications/selectors";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
+    const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const router = useRouter();
     const { user, usersDB: users, fetchUserById } = useAuth();
     const { followNPO, unfollowNPO, isFollowingNPO, isProcessing } = useNPOFollow();
     const { activities, reviews } = useActivitiesDomain(undefined);
-    const { hasAppliedToNPO } = useApplications();
+    const hasAppliedToCurrentNPO = useHasAppliedToNPO(user, npoId);
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [showReportModal, setShowReportModal] = useState(false);
@@ -33,8 +34,6 @@ export default function NPOProfileScreen() {
     const [isFetching, setIsFetching] = useState(false);
 
     // Get NPO data
-    const npoId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
-    
     // Fetch the exact NPO profile on demand when it is missing from the lightweight cache.
     useEffect(() => {
         const existing = users.find(u => u.id === npoId && u.role === "NPO");
@@ -302,7 +301,7 @@ export default function NPOProfileScreen() {
             </View>
 
             {/* Become Volunteer Callout */}
-            {user?.role === "VOLUNTEER" && !hasAppliedToNPO(user.id, npoId) && (
+            {user?.role === "VOLUNTEER" && !hasAppliedToCurrentNPO && (
                 <SoftCard className="p-4 mb-6 bg-primary" onPress={handleApply}>
                     <View className="flex-row items-center justify-between">
                         <View className="flex-1 mr-4">
@@ -319,7 +318,7 @@ export default function NPOProfileScreen() {
             )}
 
             {/* Already Applied Badge */}
-            {user?.role === "VOLUNTEER" && hasAppliedToNPO(user.id, npoId) && (
+            {user?.role === "VOLUNTEER" && hasAppliedToCurrentNPO && (
                 <View className="bg-green-50 p-4 rounded-xl border border-green-100 flex-row items-center justify-center gap-2 mb-6">
                     <CheckCircle2 size={18} color="#15803d" />
                     <Text className="text-green-800 font-bold text-sm">Candidatura inviata con successo</Text>

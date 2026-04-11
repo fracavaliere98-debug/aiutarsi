@@ -7,11 +7,11 @@ import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
 import { UserAvatar } from "../../../components/UserAvatar";
-import { useApplications } from "../../../context/ApplicationContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { Colors } from "../../../constants/Colors";
 import { reportIssue } from "../../../utils/monitoring";
+import { useNPOApplications } from "../../../hooks/applications/selectors";
 
 const SectionHeader = ({ title }: { title: string }) => (
     <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-1">
@@ -68,12 +68,11 @@ const MenuItem = ({
 
 export default function NPOSettingsScreen() {
     const { user, logout, isLoading: isAuthLoading, requestAccountDeletion } = useAuth();
-    const { getNPOApplications } = useApplications();
     const { showToast } = useToast();
     const router = useRouter();
     const appVersion = Constants.expoConfig?.version || "1.0.0";
 
-    const applications = getNPOApplications(user?.id || "");
+    const applications = useNPOApplications(user, user?.id);
     const teamCount = applications.filter((a) => a.status === "APPROVED").length;
 
     return (

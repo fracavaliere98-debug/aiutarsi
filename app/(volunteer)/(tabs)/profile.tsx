@@ -1,13 +1,13 @@
 import { Share } from "react-native";
 import React from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useApplications } from "../../../context/ApplicationContext";
 import { useGamification } from "../../../context/GamificationContext";
 import { useRouter } from "expo-router";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
 import { useActivityReviewsQuery } from "../../../hooks/activities/queries";
 import { useVolunteerStats } from "../../../hooks/activities/selectors";
+import { useVolunteerApplications } from "../../../hooks/applications/selectors";
 
 export default function VolunteerProfile() {
     const { user, users, fetchUserById } = useAuth();
@@ -22,8 +22,7 @@ export default function VolunteerProfile() {
     const xpNeededForLevel = nextLevelXP - currentLevelXP;
 
     // Get NPO lists
-    const { getVolunteerApplications } = useApplications();
-    const myApplications = getVolunteerApplications(user?.id || "");
+    const myApplications = useVolunteerApplications(user, user?.id);
 
     const pendingApplications = React.useMemo(
         () => myApplications.filter((app) => app.status === "PENDING"),

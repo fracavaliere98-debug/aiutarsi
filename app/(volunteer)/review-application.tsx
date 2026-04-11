@@ -4,17 +4,17 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2 } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
-import { useApplications } from "../../context/ApplicationContext";
 import { Colors } from "../../constants/Colors";
 import { useActivityDetailQuery } from "../../hooks/activities/queries";
 import { useEnrollInActivityMutation } from "../../hooks/activities/mutations";
+import { useApplyToNPOMutation } from "../../hooks/applications/mutations";
 
 export default function ReviewApplication() {
     const router = useRouter();
     const { activityId, npoId, type } = useLocalSearchParams<{ activityId: string, npoId: string, type: "ACTIVITY" | "NPO" }>();
     const { user, users } = useAuth();
     const enrollInActivityMutation = useEnrollInActivityMutation(user?.id);
-    const { applyToNPO } = useApplications();
+    const applyToNPOMutation = useApplyToNPOMutation(user);
 
     // 1. Resolve Data based on Type
     const isActivity = type !== "NPO"; // Default to activity for backward compatibility
@@ -54,7 +54,8 @@ export default function ReviewApplication() {
             } else if (npoUser) {
                 // Apply to NPO
                 console.log("[DEBUG] ReviewApplication: applyToNPO start", { npoId: npoUser.id });
-                success = await applyToNPO(npoUser.id, npoUser.npoName || "NPO", notes);
+                await applyToNPOMutation.mutateAsync({ npoId: npoUser.id, npoName: npoUser.npoName || "NPO", message: notes });
+                success = true;
                 console.log("[DEBUG] ReviewApplication: applyToNPO resolved", { success, npoId: npoUser.id });
             }
 

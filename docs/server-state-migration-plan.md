@@ -297,14 +297,14 @@ Per ogni dominio:
 4. verificare il dominio in `preview`
 5. passare al dominio successivo solo dopo validazione
 
-## Prossimo dominio: Applications
+## Dominio corrente: Applications
 
-`applications` e il prossimo dominio dopo `notifications` e `activities`.
+`applications` e il dominio attualmente pronto per la validazione in `preview`.
 
 Motivo:
 
-- ha ancora un bridge attivo in `ApplicationContext`
-- i consumer usano soprattutto helper di convenienza
+- aveva un bridge attivo in `ApplicationContext`
+- i consumer usavano soprattutto helper di convenienza
 - gli stati canonici sono chiari:
   - `PENDING`
   - `APPROVED`
@@ -330,20 +330,26 @@ Motivo:
 - `queries.ts`
 - `mutations.ts`
 - `selectors.ts`
-- niente `ApplicationContext` come source of truth
+- niente `ApplicationContext`
 
-### Principali consumer da migrare
+### Cluster consumer principali
 
-- [app/(npo)/(tabs)/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/index.tsx)
-- [app/(npo)/(tabs)/volunteers.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/volunteers.tsx)
-- [app/(npo)/report.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/report.tsx)
-- [app/(npo)/settings/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/settings/index.tsx)
-- [app/(npo)/volunteer-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/volunteer-profile/[id].tsx)
-- [app/(volunteer)/(tabs)/profile.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/(tabs)/profile.tsx)
-- [app/(volunteer)/report.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/report.tsx)
-- [app/(volunteer)/review-application.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/review-application.tsx)
-- [app/npo-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/npo-profile/[id].tsx)
-- [hooks/useNPOInsights.ts](/Users/francescocavaliere/aiutarsi/hooks/useNPOInsights.ts)
+- Gruppo A: liste e dashboard NPO
+  - [app/(npo)/(tabs)/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/index.tsx)
+  - [app/(npo)/(tabs)/volunteers.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/volunteers.tsx)
+  - [app/(npo)/report.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/report.tsx)
+  - [app/(npo)/settings/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/settings/index.tsx)
+- Gruppo B: profili e affiliazioni
+  - [app/(npo)/volunteer-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/volunteer-profile/[id].tsx)
+  - [app/(volunteer)/(tabs)/profile.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/(tabs)/profile.tsx)
+  - [app/npo-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/npo-profile/[id].tsx)
+- Gruppo C: mutation entry points
+  - [app/(volunteer)/review-application.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/review-application.tsx)
+  - [app/(npo)/(tabs)/volunteers.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/volunteers.tsx)
+- Gruppo D: derived insights e community
+  - [hooks/useNPOInsights.ts](/Users/francescocavaliere/aiutarsi/hooks/useNPOInsights.ts)
+  - [components/community/NPOCommunityScreen.tsx](/Users/francescocavaliere/aiutarsi/components/community/NPOCommunityScreen.tsx)
+  - [components/community/VolunteerCommunityScreen.tsx](/Users/francescocavaliere/aiutarsi/components/community/VolunteerCommunityScreen.tsx)
 
 ### Done criteria: Applications
 
@@ -355,6 +361,19 @@ Motivo:
 - `lint` e `tsc` verdi
 - smoke staging del dominio verde
 - verifica runtime `preview` verde
+
+### Stato: Applications = Architetturalmente pronto
+
+Il dominio `applications` e considerato architetturalmente pronto quando risultano veri tutti questi punti:
+
+- nessun consumer di `ApplicationContext`
+- nessun provider legacy `ApplicationProvider`
+- nessuna lista canonica candidature fuori da Query
+- selector `useNPOApplications`, `useVolunteerApplications` e `useHasAppliedToNPO` usati al posto degli helper del bridge
+- mutazioni `apply/approve/reject` passano solo dai mutation hook dedicati
+- `lint` e `tsc` verdi
+- smoke staging `application-refactor-smoke` verde
+- verifica runtime `preview` da completare
 
 ### Checklist di verifica: Applications
 

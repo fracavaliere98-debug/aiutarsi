@@ -13,16 +13,19 @@ import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { Colors } from "../../../constants/Colors";
-import { useApplications } from "../../../context/ApplicationContext";
 import { useNotifications } from "../../../context/NotificationContext";
 import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
 import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
+import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
+import { useNPOApplications } from "../../../hooks/applications/selectors";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
 
 export default function VolunteersScreen() {
     const { user, getNPOFollowers, getUserById } = useAuth();
-    const { getNPOApplications, approveApplication, rejectApplication } = useApplications();
+    const npoApplications = useNPOApplications(user, user?.id);
+    const approveApplicationMutation = useApproveApplicationMutation(user);
+    const rejectApplicationMutation = useRejectApplicationMutation(user);
     const { showToast } = useToast();
     const { addNotification } = useNotifications();
     const params = useLocalSearchParams();
@@ -77,9 +80,8 @@ export default function VolunteersScreen() {
     }, [activityApplications, activities, user]);
 
     const allApplications = useMemo(() => {
-        const npoApps = getNPOApplications(user?.id || "");
-        return [...npoApps, ...formattedActivityApps];
-    }, [getNPOApplications, user, formattedActivityApps]);
+        return [...npoApplications, ...formattedActivityApps];
+    }, [npoApplications, formattedActivityApps]);
 
     // Sort by date descending (newest first)
     const pendingApplications = allApplications
@@ -133,7 +135,7 @@ export default function VolunteersScreen() {
             await approveActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
             success = true;
         } else {
-            success = await approveApplication(applicationId);
+            success = await approveApplicationMutation.mutateAsync(app as any);
         }
 
         if (success) {
@@ -150,7 +152,7 @@ export default function VolunteersScreen() {
             await rejectActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
             success = true;
         } else {
-            success = await rejectApplication(applicationId);
+            success = await rejectApplicationMutation.mutateAsync(app as any);
         }
 
         if (success) {

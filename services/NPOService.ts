@@ -147,7 +147,7 @@ export class NPOService {
 
     async submitApplication(applicationData: Omit<OldApplication, 'id'>): Promise<OldApplication> {
         const accessToken = await this._getAccessToken();
-        await profileRest.submitApplication({
+        const rows = await profileRest.submitApplication({
                 npo_id: applicationData.npoId,
                 volunteer_id: applicationData.volunteerId,
                 message: applicationData.message,
@@ -156,6 +156,11 @@ export class NPOService {
             accessToken
         );
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
+
+        const created = rows?.[0];
+        if (created) {
+            return this._mapDbAppToLocalApp(created);
+        }
 
         return {
             id: `${applicationData.npoId}_${applicationData.volunteerId}_${Date.now()}`,
