@@ -158,6 +158,7 @@ export class NPOService {
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
 
         return {
+            id: `${applicationData.npoId}_${applicationData.volunteerId}_${Date.now()}`,
             ...applicationData,
             appliedDate: applicationData.appliedDate || new Date().toISOString(),
             status: 'PENDING',

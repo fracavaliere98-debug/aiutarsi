@@ -33,14 +33,14 @@ async function verifyIdMigration() {
 
     // 3. Test Registration
     console.log("Testing Registration...");
-    const newUser = await authService.register({
+    const registration = await authService.register({
         email: "new_vol@test.com",
         password: "password",
         name: "New Volunteer",
         role: "VOLUNTEER"
     } as any);
-    console.log("New User ID:", newUser.id);
-    console.log("New ID starts with vol_:", newUser.id.startsWith('vol_'));
+    console.log("New User ID:", registration.user.id);
+    console.log("New ID starts with vol_:", registration.user.id.startsWith('vol_'));
 
     // 4. Test Activity Creation
     const newAct = await activityService.createActivity({

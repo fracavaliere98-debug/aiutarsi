@@ -15,7 +15,7 @@ interface AuthContextType {
     usersDB: AppUser[]; 
     login: (email: string, password: string) => Promise<boolean>;
     register: (userData: Partial<AppUser>) => Promise<{ ok: boolean; requiresEmailConfirmation: boolean }>;
-    logout: () => void;
+    logout: () => Promise<void>;
     isLoaded: boolean;
     isLoading: boolean;
     isLoggingOut: boolean;
@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextType>({
     usersDB: [],
     login: async () => false,
     register: async () => ({ ok: false, requiresEmailConfirmation: false }),
-    logout: () => { },
+    logout: async () => { },
     isLoaded: false,
     isLoading: false,
     isLoggingOut: false,
@@ -98,6 +98,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             void refreshUsers();
         }, delayMs);
     }, [refreshUsers]);
+
+    const resetState = useCallback(async () => {
+        try {
+            console.log("[DEBUG] AuthContext: Force clearing all storage");
+            const keys = await AsyncStorage.getAllKeys();
+            const supabaseProjectRef = getSupabaseProjectRef();
+            const authKeys = keys.filter((key) => (
+                key.includes('supabase')
+                || (supabaseProjectRef ? key.includes(supabaseProjectRef) : false)
+                || key === 'auth_user'
+            ));
+            if (authKeys.length > 0) {
+                await AsyncStorage.multiRemove(authKeys);
+            }
+        } catch (e) {
+            console.error("[DEBUG] AuthContext: failed to clear AsyncStorage", e);
+        }
+
+        setUser(null);
+        console.log("[DEBUG] AuthContext: resetState completed, user null");
+    }, []);
+
+    const logout = useCallback(async () => {
+        console.log("[DEBUG] AuthContext: logout process started");
+
+        isLoggingOutRef.current = true;
+        setIsLoggingOut(true);
+        setIsLoading(true);
+
+        try {
+            console.log("[DEBUG] AuthContext: Performing local SDK signOut");
+            try {
+                await Promise.race([
+                    supabase.auth.signOut({ scope: 'local' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Local SignOut Timeout")), 500))
+                ]);
+            } catch (e: any) {
+                console.warn("[DEBUG] Local SDK SignOut skipped/timed out:", e.message);
+            }
+
+            authService.logout();
+            setUser(null);
+            await resetState();
+
+            console.log("[DEBUG] AuthContext: logout logic sequence completed");
+        } catch (error) {
+            console.error("[DEBUG] AuthContext: Critical logout error:", error);
+            trackError(error, {
+                source: "auth_logout",
+            }, {
+                source: "auth_logout",
+                priority: "normal",
+                classification: "warning_functional",
+                issueName: "auth_logout_failed",
+            });
+        } finally {
+            setTimeout(() => {
+                setIsLoading(false);
+                setIsLoggingOut(false);
+                isLoggingOutRef.current = false;
+                console.log("[DEBUG] AuthContext: Logout flags cleared, app stable.");
+            }, 800);
+        }
+    }, [resetState]);
 
     const syncBanStateFromProfile = useCallback(async (profileId: string) => {
         try {
@@ -522,81 +586,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             throw error;
         }
     }, [user, refreshUsers]);
-
-    const resetState = useCallback(async () => {
-        try {
-            console.log("[DEBUG] AuthContext: Force clearing all storage");
-            const keys = await AsyncStorage.getAllKeys();
-            const supabaseProjectRef = getSupabaseProjectRef();
-            const authKeys = keys.filter((key) => (
-                key.includes('supabase')
-                || (supabaseProjectRef ? key.includes(supabaseProjectRef) : false)
-                || key === 'auth_user'
-            ));
-            if (authKeys.length > 0) {
-                await AsyncStorage.multiRemove(authKeys);
-            }
-        } catch (e) {
-            console.error("[DEBUG] AuthContext: failed to clear AsyncStorage", e);
-        }
-
-        setUser(null);
-        console.log("[DEBUG] AuthContext: resetState completed, user null");
-    }, []);
-
-    const logout = useCallback(async () => {
-        console.log("[DEBUG] AuthContext: logout process started");
-
-        // 1. STATO DI EMERGENZA (Sincrono e Immediato)
-        isLoggingOutRef.current = true;
-        setIsLoggingOut(true);
-        setIsLoading(true);
-
-        try {
-            // 2. LOGOUT LOCALE (SDK) + BACKGROUND GLOBAL
-            // Usiamo un timeout rapido (500ms) anche per il logout locale nel caso l'SDK sia bloccato.
-            console.log("[DEBUG] AuthContext: Performing local SDK signOut");
-            try {
-                await Promise.race([
-                    supabase.auth.signOut({ scope: 'local' }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Local SignOut Timeout")), 500))
-                ]);
-            } catch (e: any) {
-                console.warn("[DEBUG] Local SDK SignOut skipped/timed out:", e.message);
-            }
-
-            // Lanciamo la pulizia globale e dello storage in background
-            authService.logout();
-
-            // 3. AZZERA STATO UI ISTANTANEAMENTE
-            // Questo comando smonta le rotte protette.
-            setUser(null);
-
-            // 4. RESET STORAGE AGGIUNTIVO
-            await resetState();
-
-            console.log("[DEBUG] AuthContext: logout logic sequence completed");
-
-        } catch (error) {
-            console.error("[DEBUG] AuthContext: Critical logout error:", error);
-            trackError(error, {
-                source: "auth_logout",
-            }, {
-                source: "auth_logout",
-                priority: "normal",
-                classification: "warning_functional",
-                issueName: "auth_logout_failed",
-            });
-        } finally {
-            // Rilasciamo i flag dopo 800ms: tempo sufficiente per il redirect
-            setTimeout(() => {
-                setIsLoading(false);
-                setIsLoggingOut(false);
-                isLoggingOutRef.current = false;
-                console.log("[DEBUG] AuthContext: Logout flags cleared, app stable.");
-            }, 800);
-        }
-    }, [resetState]);
 
     const getNPOFollowers = useCallback((npoId: string): AppUser[] => {
         return usersDB.filter(u =>

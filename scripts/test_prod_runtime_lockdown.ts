@@ -11,6 +11,11 @@ function assert(condition: unknown, message: string) {
   }
 }
 
+function requireEnv(value: string | undefined, key: string): string {
+  assert(value, `${key} is required`);
+  return value as string;
+}
+
 async function probe(baseUrl: string, anonKey: string, item: Probe) {
   const response = await fetch(`${baseUrl}${item.path}`, {
     method: item.method ?? "GET",
@@ -30,8 +35,8 @@ async function run() {
   const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-  assert(baseUrl, "EXPO_PUBLIC_SUPABASE_URL is required");
-  assert(anonKey, "EXPO_PUBLIC_SUPABASE_ANON_KEY is required");
+  const checkedBaseUrl = requireEnv(baseUrl, "EXPO_PUBLIC_SUPABASE_URL");
+  const checkedAnonKey = requireEnv(anonKey, "EXPO_PUBLIC_SUPABASE_ANON_KEY");
 
   const probes: Probe[] = [
     {
@@ -63,7 +68,7 @@ async function run() {
   ];
 
   for (const item of probes) {
-    const result = await probe(baseUrl, anonKey, item);
+    const result = await probe(checkedBaseUrl, checkedAnonKey, item);
     assert(
       result.status >= 400,
       `${item.name} is still publicly reachable (status ${result.status}, body: ${result.text})`,

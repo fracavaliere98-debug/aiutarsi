@@ -88,8 +88,8 @@ async function run() {
             { id: 'p1', created_at: withinWeek },
             { id: 'p2', created_at: outsideWeek },
         ],
-        storyRows: [
-            { id: 's1', created_at: withinWeek },
+        storyMetricRows: [
+            { metric_date: withinWeek.slice(0, 10), stories_count: 1 },
         ],
         reactionRows: [
             { user_id: 'u1', created_at: withinWeek },
