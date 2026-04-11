@@ -36,6 +36,9 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
+  // Transitional bridge only:
+  // canonical notification data must live in React Query, never in this Context.
+  // Keep this provider limited to UI orchestration until final removal.
   const { user } = useAuth();
   const segments = useSegments();
   const { showToast } = useToast();
