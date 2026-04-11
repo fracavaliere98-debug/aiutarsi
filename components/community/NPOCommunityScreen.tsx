@@ -250,7 +250,6 @@ export function NPOCommunityScreen({
                         horizontal
                         data={myOpenActivities}
                         keyExtractor={(item) => item.id}
-                        estimatedItemSize={220}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ paddingHorizontal: 16 }}
                         renderItem={({ item }) => (
@@ -316,7 +315,6 @@ export function NPOCommunityScreen({
             data={posts}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <CommunityPostCard post={item} />}
-            estimatedItemSize={320}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             onEndReached={onLoadMore}

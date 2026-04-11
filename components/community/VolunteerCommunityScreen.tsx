@@ -303,7 +303,6 @@ export function VolunteerCommunityScreen({
                         horizontal
                         data={suggestedActivities}
                         keyExtractor={(item) => item.id}
-                        estimatedItemSize={220}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ paddingHorizontal: 16 }}
                         renderItem={({ item }) => (
@@ -368,7 +367,6 @@ export function VolunteerCommunityScreen({
                     }
                 />
             )}
-            estimatedItemSize={320}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
             onEndReached={onLoadMore}
