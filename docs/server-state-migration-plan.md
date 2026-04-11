@@ -95,6 +95,27 @@ Un dominio si considera migrato quando:
 - il dominio espone query hooks e mutation hooks coerenti
 - i flussi principali sono stati verificati in `preview`
 
+## Dominio reference: Activities
+
+`activities` e il dominio di riferimento per i refactor successivi.
+
+Il pattern da riusare e:
+
+- query keys centralizzate
+- query hooks di dominio
+- mutation hooks di dominio
+- selector hooks per dati derivati condivisi
+- adapter paginato sottile senza stato proprio
+- nessun context bridge legacy
+
+In pratica:
+
+- source of truth canonica = React Query
+- `useActivities` resta solo un adapter paginato su `useInfiniteQuery`
+- il dettaglio usa sempre `useActivityDetailQuery(activityId)` come fonte primaria
+- le mutazioni passano solo da hook dedicati e invalidano le query corrette
+- nessun Context possiede piu dati activity canonici
+
 ## Principi operativi per i domini
 
 ### Dato canonico fuori dal Context
@@ -232,6 +253,23 @@ Quando i consumer saranno migrati ai query/mutation hooks del dominio, `Notifica
   - volunteer reviews
 - nessuna schermata legge una seconda source of truth del detail
 
+### Stato: Activities = Done
+
+Il dominio `activities` e considerato chiuso quando risultano veri tutti questi punti:
+
+- nessun consumer di `ActivityContext`
+- nessun provider legacy `ActivityProvider`
+- nessuna lista canonica fuori da Query
+- paginazione solo via `useActivities`
+- mutazioni solo via hook dedicati
+- `lint` e `tsc` verdi
+- smoke staging `activity-refactor-smoke` verde
+- verifica runtime `preview` verde
+
+Nota:
+
+- finche la verifica runtime manuale in `preview` non e conclusa, il dominio e architetturalmente chiuso ma in attesa di validazione finale
+
 ### Checklist di verifica: Notifications
 
 - login
@@ -258,6 +296,78 @@ Per ogni dominio:
 3. pubblicare un OTA `preview` dedicato
 4. verificare il dominio in `preview`
 5. passare al dominio successivo solo dopo validazione
+
+## Prossimo dominio: Applications
+
+`applications` e il prossimo dominio dopo `notifications` e `activities`.
+
+Motivo:
+
+- ha ancora un bridge attivo in `ApplicationContext`
+- i consumer usano soprattutto helper di convenienza
+- gli stati canonici sono chiari:
+  - `PENDING`
+  - `APPROVED`
+  - `REJECTED`
+- il dominio e abbastanza isolato da poter essere migrato senza toccare subito feed/chat
+
+### Obiettivo architetturale
+
+- lista candidature in Query
+- selector per:
+  - candidature volunteer
+  - candidature NPO
+  - `hasAppliedToNPO`
+- mutazioni dedicate per:
+  - apply to NPO
+  - approve
+  - reject
+- nessun dato canonico applicazioni in Context
+
+### Pattern target
+
+- `applicationKeys`
+- `queries.ts`
+- `mutations.ts`
+- `selectors.ts`
+- niente `ApplicationContext` come source of truth
+
+### Principali consumer da migrare
+
+- [app/(npo)/(tabs)/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/index.tsx)
+- [app/(npo)/(tabs)/volunteers.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/(tabs)/volunteers.tsx)
+- [app/(npo)/report.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/report.tsx)
+- [app/(npo)/settings/index.tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/settings/index.tsx)
+- [app/(npo)/volunteer-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/volunteer-profile/[id].tsx)
+- [app/(volunteer)/(tabs)/profile.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/(tabs)/profile.tsx)
+- [app/(volunteer)/report.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/report.tsx)
+- [app/(volunteer)/review-application.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/review-application.tsx)
+- [app/npo-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/npo-profile/[id].tsx)
+- [hooks/useNPOInsights.ts](/Users/francescocavaliere/aiutarsi/hooks/useNPOInsights.ts)
+
+### Done criteria: Applications
+
+- nessun consumer legge applicazioni canoniche da `ApplicationContext`
+- nessun helper canonico tipo `getVolunteerApplications` o `getNPOApplications` resta nel bridge
+- `hasAppliedToNPO` diventa selector puro basato su Query
+- mutazioni `apply/approve/reject` usano solo hook dedicati
+- nessuna doppia scrittura Query + Context
+- `lint` e `tsc` verdi
+- smoke staging del dominio verde
+- verifica runtime `preview` verde
+
+### Checklist di verifica: Applications
+
+- lista candidature volunteer coerente
+- lista candidature NPO coerente
+- `hasAppliedToNPO` coerente tra card, profilo ente e detail
+- `apply to NPO`
+- `approve`
+- `reject`
+- coerenza tra dashboard NPO, tab volontari, profilo volunteer e report
+- foreground/background
+- resume app
+- assenza di drift tra query hooks e selector hooks
 
 ## Playbook riusabile per ogni dominio
 
