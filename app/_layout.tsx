@@ -9,7 +9,6 @@ import { GamificationProvider } from "../context/GamificationContext";
 import { ToastProvider } from "../context/ToastContext";
 import { SmartMatchProvider } from "../context/SmartMatchContext";
 import { ChatProvider } from "../context/ChatContext";
-import { CommunityProvider } from "../context/CommunityContext";
 import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
@@ -291,14 +290,12 @@ function RootLayout() {
                 <NotificationProvider>
                   <SmartMatchProvider>
                     <ChatProvider>
-                      <CommunityProvider>
-                        <StoriesProvider>
-                          <StatusBar style="dark" />
-                          <RootLayoutNav />
-                          <ToastContainer />
-                          <LevelUpOverlay />
-                        </StoriesProvider>
-                      </CommunityProvider>
+                      <StoriesProvider>
+                        <StatusBar style="dark" />
+                        <RootLayoutNav />
+                        <ToastContainer />
+                        <LevelUpOverlay />
+                      </StoriesProvider>
                     </ChatProvider>
                   </SmartMatchProvider>
                 </NotificationProvider>

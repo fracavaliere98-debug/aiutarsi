@@ -388,6 +388,98 @@ Il dominio `applications` e considerato architetturalmente pronto quando risulta
 - resume app
 - assenza di drift tra query hooks e selector hooks
 
+## Stato: Community = Architetturalmente pronto
+
+`community` e stato migrato mantenendo `stories` come dominio separato.
+
+Stato attuale:
+
+- nessun `CommunityContext` residuo
+- nessun `CommunityProvider` nel layout
+- source of truth canonica in React Query
+- dataset espliciti:
+  - `communityKeys.feed(...)`
+  - `communityKeys.activityPosts(activityId)`
+  - `communityKeys.post(postId)`
+- realtime via invalidation query
+- nessun optimistic update canonico per le reactions nel primo pass
+
+### Perimetro del refactor
+
+Dentro questo pass:
+
+- `community_posts`
+- feed principale
+- feed activity-linked
+- create post
+- edit post
+- delete post
+- report post
+- reactions
+- post detail singolo
+
+Fuori da questo pass:
+
+- `stories`
+- story viewer
+- create/delete story
+
+### Regole specifiche
+
+- il dominio deve avere dataset espliciti:
+  - `communityKeys.feed(...)`
+  - `communityKeys.activityPosts(activityId)`
+  - `communityKeys.post(postId)`
+- il post singolo non puo essere letto cercandolo nel feed come fonte primaria
+- `selectors.ts` contiene solo trasformazioni pure e leggere
+- la composizione screen-specifica va in view hooks dedicati
+- nel primo pass `toggleReaction` usa mutation + invalidation
+- nel primo pass non si usa optimistic update canonico sul feed
+
+### Cluster consumer principali
+
+- Gruppo A: feed/list consumers
+  - [app/(volunteer)/(tabs)/community.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/(tabs)/community.tsx)
+  - [components/community/NPOCommunityScreen.tsx](/Users/francescocavaliere/aiutarsi/components/community/NPOCommunityScreen.tsx)
+  - [components/community/VolunteerCommunityScreen.tsx](/Users/francescocavaliere/aiutarsi/components/community/VolunteerCommunityScreen.tsx)
+- Gruppo B: mutation entry points
+  - [app/community/create-post.tsx](/Users/francescocavaliere/aiutarsi/app/community/create-post.tsx)
+  - [components/CommunityPostCard.tsx](/Users/francescocavaliere/aiutarsi/components/CommunityPostCard.tsx)
+- Gruppo C: activity-linked reads
+  - [app/activity/[id].tsx](/Users/francescocavaliere/aiutarsi/app/activity/[id].tsx)
+- Gruppo D: boundaries da lasciare fuori per ora
+  - [context/StoriesContext.tsx](/Users/francescocavaliere/aiutarsi/context/StoriesContext.tsx)
+  - [components/community/CommunityStoryViewer.tsx](/Users/francescocavaliere/aiutarsi/components/community/CommunityStoryViewer.tsx)
+
+### Done criteria: Community
+
+- nessun consumer legge post canonici da un bridge legacy
+- nessun `CommunityContext`
+- nessun `CommunityProvider`
+- feed, activity posts e post detail hanno query dedicate
+- `create/edit/delete/report/reaction` usano mutation hook dedicati
+- nessuna doppia scrittura Query + bridge locale
+- realtime invalida query, non aggiorna stato canonico locale
+- `selectors.ts` resta leggero, senza diventare service layer
+- `lint` e `tsc` verdi
+- smoke staging del dominio verde
+- verifica runtime `preview` verde
+
+### Checklist di verifica: Community
+
+- feed principale coerente
+- post detail coerente con feed
+- post detail activity-linked coerente
+- create post
+- edit post
+- delete post
+- report post
+- toggle reaction
+- refresh feed
+- foreground/background
+- resume app
+- assenza di drift tra feed query, post detail query e activity post query
+
 ## Playbook riusabile per ogni dominio
 
 Questo playbook va riutilizzato per `activities`, `applications`, `community`, `smart match`, `gamification`, `chat` e ogni dominio futuro. Il metodo deve restare stabile; cambia solo la mappa specifica del dominio.

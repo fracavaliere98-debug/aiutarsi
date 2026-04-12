@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
-import { useCommunity } from '../../../context/CommunityContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useStories } from '../../../context/StoriesContext';
 import { useSmartMatch } from '../../../context/SmartMatchContext';
@@ -15,6 +14,8 @@ import { NPOCommunityScreen } from '../../../components/community/NPOCommunitySc
 import { CommunityStoryViewer } from '../../../components/community/CommunityStoryViewer';
 import { gemmaService } from '../../../services/GemmaService';
 import { useActivitiesDomain } from '../../../hooks/activities/selectors';
+import { useCommunityFeedView } from '../../../hooks/community/useCommunityFeedView';
+import { useCommunityRealtime } from '../../../hooks/community/realtime';
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {
@@ -56,17 +57,24 @@ function DeletionBanner() {
 // ── Main Community Screen ─────────────────────────────────────────────────────
 export default function CommunityScreen() {
     const { user } = useAuth();
-    const { posts, isLoading, fetchFeed } = useCommunity();
+    const {
+        posts,
+        isLoading,
+        isLoadingMore,
+        refreshFeed,
+        loadMoreFeed,
+    } = useCommunityFeedView(user?.id, !!user);
     const { activities, loadData: refreshActivities } = useActivitiesDomain(user);
     const { allMatches } = useSmartMatch();
     const { fetchStories } = useStories();
     const [refreshing, setRefreshing] = useState(false);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [storyViewer, setStoryViewer] = useState<{ stories: Story[], index: number } | null>(null);
     const refreshLockRef = React.useRef(false);
 
     const isNPO = user?.role === 'NPO';
     const [gemmaSummary, setGemmaSummary] = useState('');
+
+    useCommunityRealtime(!!user);
 
     // Single source of truth: use SmartMatch scores (already adjusted for preferences)
     // so the % shown here always matches the "Consigliato per te" carousel.
@@ -119,7 +127,7 @@ export default function CommunityScreen() {
         try {
             const startedAt = Date.now();
             setRefreshing(true);
-            await fetchFeed();
+            await refreshFeed();
             await fetchStories();
             await refreshActivities();
             const elapsed = Date.now() - startedAt;
@@ -130,15 +138,12 @@ export default function CommunityScreen() {
             setRefreshing(false);
             refreshLockRef.current = false;
         }
-    }, [fetchFeed, fetchStories, refreshActivities]);
+    }, [fetchStories, refreshActivities, refreshFeed]);
 
     const onLoadMore = useCallback(async () => {
         if (isLoadingMore || posts.length === 0) return;
-        setIsLoadingMore(true);
-        const oldestPost = posts[posts.length - 1];
-        await fetchFeed(oldestPost.created_at || undefined);
-        setIsLoadingMore(false);
-    }, [isLoadingMore, posts, fetchFeed]);
+        await loadMoreFeed();
+    }, [isLoadingMore, loadMoreFeed, posts.length]);
 
     const rightElement = isNPO ? <NPOHeaderActions showAddPost={true} /> : <VolunteerHeaderActions showAddPost={true} />;
 

@@ -6,10 +6,19 @@ import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community'
 import { Colors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
-import { useCommunity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNPOFollow } from '../hooks/useNPOFollow';
+import {
+    getCommunityAuthorName,
+    getCommunityPostImageUrls,
+    getCommunityReactionSnapshot,
+} from '../hooks/community/selectors';
+import {
+    useDeleteCommunityPostMutation,
+    useReportCommunityPostMutation,
+    useToggleCommunityReactionMutation,
+} from '../hooks/community/mutations';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -21,9 +30,11 @@ interface CommunityPostCardProps {
 export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPostCardProps) => {
     const router = useRouter();
     const { user } = useAuth();
-    const { toggleReaction, deletePost, reportPost } = useCommunity();
     const { showToast } = useToast();
     const { followNPO, isFollowingNPO, isProcessingNPO } = useNPOFollow();
+    const deletePostMutation = useDeleteCommunityPostMutation(user);
+    const reportPostMutation = useReportCommunityPostMutation(user);
+    const toggleReactionMutation = useToggleCommunityReactionMutation(user);
 
     const handleMenuPress = () => {
         if (!user) return;
@@ -37,7 +48,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                 {
                     text: 'Elimina', style: 'destructive', onPress: async () => {
                         try {
-                            await deletePost(post.id);
+                            await deletePostMutation.mutateAsync(post.id);
                             showToast('success', 'Post eliminato con successo');
                         } catch {
                             showToast('error', 'Errore durante l\'eliminazione del post');
@@ -49,7 +60,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
         } else {
             const handleReport = async (reason: string) => {
                 try {
-                    await reportPost(post.id, reason);
+                    await reportPostMutation.mutateAsync({ postId: post.id, reason });
                     showToast('success', 'Segnalazione inviata! Grazie per il tuo feedback.');
                 } catch {
                     showToast('error', 'Impossibile inviare la segnalazione. Riprova più tardi.');
@@ -64,20 +75,8 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
         }
     };
 
-    // Count reactions per type
-    const reactionCounts: Record<ReactionType, number> = { heart: 0, clap: 0, muscle: 0, tree: 0 };
-    const userReactions = new Set<ReactionType>();
-    for (const r of (post.reactions || [])) {
-        if (r.reaction) {
-            const rType = r.reaction as ReactionType;
-            if (reactionCounts[rType] !== undefined) {
-                reactionCounts[rType]++;
-                if (r.user_id === user?.id) userReactions.add(rType);
-            }
-        }
-    }
-
-    const authorName = post.author?.npo_name || post.author?.full_name || 'NPO';
+    const { reactionCounts, userReactions } = getCommunityReactionSnapshot(post, user?.id);
+    const authorName = getCommunityAuthorName(post);
     const isNpoAuthor = post.author?.role === 'NPO';
     const isLocallyFollowed = isNpoAuthor && !!post.author_id && isFollowingNPO(post.author_id);
     const effectiveRelation = npoRelation || (isLocallyFollowed ? 'followed' : null);
@@ -97,9 +96,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
 
     const scrollX = useRef(new Animated.Value(0)).current;
 
-    const imageUrls = post.images_urls && post.images_urls.length > 0
-        ? post.images_urls
-        : (post.image_url ? [post.image_url] : []);
+    const imageUrls = getCommunityPostImageUrls(post);
 
     return (
         <View style={{
@@ -296,7 +293,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                     return (
                         <TouchableOpacity
                             key={type}
-                            onPress={() => toggleReaction(post.id, type)}
+                            onPress={() => { void toggleReactionMutation.mutateAsync({ postId: post.id, reaction: type }); }}
                             activeOpacity={0.75}
                             style={{
                                 flexDirection: 'row', alignItems: 'center', gap: 4,

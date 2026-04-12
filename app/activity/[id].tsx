@@ -5,12 +5,10 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
-import { useCommunity } from "../../context/CommunityContext";
 import { useGamification } from "../../context/GamificationContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
-import { CommunityPost } from "../../types/community";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
     RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare, AlertTriangle
@@ -26,6 +24,8 @@ import { addEventToDeviceCalendar } from "../../utils/calendar";
 import { useActivityDetailQuery, useVolunteerReviewsQuery } from "../../hooks/activities/queries";
 import { useUnenrollFromActivityMutation } from "../../hooks/activities/mutations";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
+import { useCommunityActivityPostsQuery } from "../../hooks/community/queries";
+import { useCommunityRealtime } from "../../hooks/community/realtime";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
@@ -69,7 +69,6 @@ export default function ActivityDetail() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { user, users, fetchUserById } = useAuth();
-    const { fetchPostsForActivity } = useCommunity();
     const { activities, reviews, error, loadData } = useActivitiesDomain(user);
     const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
     const { handleActivityShare } = useGamification();
@@ -86,26 +85,8 @@ export default function ActivityDetail() {
         initialData: activityFromContext ?? null,
     });
     const [localIscrittiOverride, setLocalIscrittiOverride] = useState<string[] | null>(null);
-    const [relatedPosts, setRelatedPosts] = useState<CommunityPost[]>([]);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        if (!activity?.id) {
-            setRelatedPosts([]);
-            return;
-        }
-
-        fetchPostsForActivity(activity.id).then((posts) => {
-            if (!cancelled) {
-                setRelatedPosts(posts);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [activity?.id, fetchPostsForActivity]);
+    useCommunityRealtime(!!activityId);
+    const { data: relatedPosts = [] } = useCommunityActivityPostsQuery(activity?.id, user?.id, !!activity?.id);
 
     useEffect(() => {
         const currentActivityId = activity?.id;

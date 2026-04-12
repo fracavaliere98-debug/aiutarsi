@@ -7,13 +7,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Image as ImageIcon, X, Link2, Zap } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useQueryClient } from '@tanstack/react-query';
 import { Colors } from '../../constants/Colors';
-import { useCommunity } from '../../context/CommunityContext';
 import { useStories } from '../../context/StoriesContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
 import { useActivitiesDomain } from '../../hooks/activities/selectors';
+import {
+    getCommunityPostFromFeedCache,
+    useCommunityPostQuery,
+} from '../../hooks/community/queries';
+import {
+    useCreateCommunityPostMutation,
+    useUpdateCommunityPostMutation,
+} from '../../hooks/community/mutations';
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images
@@ -32,11 +40,23 @@ export default function CreatePostScreen() {
     const isStoryMode = mode === 'story';
     const isEditMode = mode === 'edit';
     const { user } = useAuth();
-    const { posts, createPost, updatePost } = useCommunity();
     const { createStory } = useStories();
     const { activities } = useActivitiesDomain(user);
     const { showToast } = useToast();
     const isVolunteer = user?.role === 'VOLUNTEER';
+    const queryClient = useQueryClient();
+    const createPostMutation = useCreateCommunityPostMutation(user);
+    const updatePostMutation = useUpdateCommunityPostMutation(user);
+    const cachedPost = isEditMode && postId
+        ? getCommunityPostFromFeedCache(queryClient, user?.id, postId)
+        : undefined;
+    const postQuery = useCommunityPostQuery(postId, {
+        enabled: isEditMode && !!postId,
+        initialData: cachedPost ?? undefined,
+        userId: user?.id,
+    });
+    const editPost = postQuery.data;
+    const hasInitializedEditStateRef = React.useRef(false);
 
     const [caption, setCaption] = useState('');
     const [imageUris, setImageUris] = useState<string[]>([]);
@@ -46,15 +66,20 @@ export default function CreatePostScreen() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     React.useEffect(() => {
-        if (isEditMode && postId) {
-            const post = posts.find(p => p.id === postId);
-            if (post) {
-                setCaption(post.caption || '');
-                setExistingImages(post.images_urls || (post.image_url ? [post.image_url] : []));
-                setLinkedActivityId(post.linked_activity_id || undefined);
-            }
+        if (!isEditMode || !postId) {
+            hasInitializedEditStateRef.current = false;
+            return;
         }
-    }, [isEditMode, postId, posts]);
+
+        if (!editPost || hasInitializedEditStateRef.current) {
+            return;
+        }
+
+        setCaption(editPost.caption || '');
+        setExistingImages(editPost.images_urls || (editPost.image_url ? [editPost.image_url] : []));
+        setLinkedActivityId(editPost.linked_activity_id || undefined);
+        hasInitializedEditStateRef.current = true;
+    }, [editPost, isEditMode, postId]);
 
     React.useEffect(() => {
         if (isEditMode) return;
@@ -130,10 +155,20 @@ export default function CreatePostScreen() {
                 await createStory(imageUris[0], caption.trim() || undefined, linkedActivityId);
                 showToast('success', 'Storia pubblicata! Sparirà tra 24h ✨');
             } else if (isEditMode && postId) {
-                await updatePost(postId, caption.trim(), imageUris, existingImages, linkedActivityId);
+                await updatePostMutation.mutateAsync({
+                    postId,
+                    caption: caption.trim(),
+                    newLocalUris: imageUris,
+                    retainedExistingUrls: existingImages,
+                    linkedActivityId,
+                });
                 showToast('success', 'Post aggiornato con successo! 🎉');
             } else {
-                await createPost(caption.trim(), imageUris, linkedActivityId);
+                await createPostMutation.mutateAsync({
+                    caption: caption.trim(),
+                    imageUris,
+                    linkedActivityId,
+                });
                 showToast('success', 'Post pubblicato nella Community! 🎉');
             }
             router.back();
@@ -144,6 +179,14 @@ export default function CreatePostScreen() {
             setIsSubmitting(false);
         }
     };
+
+    if (isEditMode && postId && postQuery.isLoading && !editPost) {
+        return (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
