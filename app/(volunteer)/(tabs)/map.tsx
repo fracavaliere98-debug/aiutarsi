@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
 import { requestForegroundLocationPermission } from "../../../utils/permissions";
 import { INTERESTS } from "../../../constants/Interests";
+import { getLegacyActivityMatchSnapshot } from "../../../utils/smartMatchLegacy";
 
 import { SKILLS } from "../../../constants/Skills";
 
@@ -1061,9 +1062,9 @@ export default function VolunteerMap() {
                                             <CategoryIcon size={12} color={Colors.primary} />
                                             <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.category}</Text>
                                         </View>
-                                        {typeof activity.matchPercentage === 'number' && activity.matchPercentage > 0 && (
+                                        {getLegacyActivityMatchSnapshot(activity) > 0 && (
                                             <View style={{ backgroundColor: `${Colors.primary}15`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
-                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.matchPercentage}% Match</Text>
+                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{getLegacyActivityMatchSnapshot(activity)}% Match</Text>
                                             </View>
                                         )}
                                         {dist && (

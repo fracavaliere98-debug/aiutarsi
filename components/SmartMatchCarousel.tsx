@@ -8,10 +8,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Flame, RefreshCw } from 'lucide-react-native';
-import { useSmartMatch } from '../context/SmartMatchContext';
 import { Colors } from '../constants/Colors';
 import { OldSmartMatchResult } from '../types';
 import { GemmaAvatar } from './GemmaAvatar';
+import { useAuth } from '../context/AuthContext';
+import { useSmartMatchView } from '../hooks/smart-match/useSmartMatchView';
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -40,9 +41,22 @@ function SkeletonCard() {
     );
 }
 
-function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number }) {
+function MatchCard({
+    match,
+    index,
+    onSave,
+    onHide,
+    onLike,
+    onSeen,
+}: {
+    match: OldSmartMatchResult;
+    index: number;
+    onSave: (match: OldSmartMatchResult) => Promise<unknown>;
+    onHide: (match: OldSmartMatchResult) => Promise<unknown>;
+    onLike: (match: OldSmartMatchResult) => Promise<unknown>;
+    onSeen: (match: OldSmartMatchResult) => Promise<unknown>;
+}) {
     const router = useRouter();
-    const { saveMatch, hideMatch, likeMatch, markMatchSeen } = useSmartMatch();
     const activity = match.activity;
     if (!activity) return null;
 
@@ -60,7 +74,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
 
     const isTopMatch = index === 0 || match.confidence === 'top';
     const onOpen = async () => {
-        await markMatchSeen(match);
+        await onSeen(match);
         router.push(`/activity/${activity.id}` as any);
     };
 
@@ -218,7 +232,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 <TouchableOpacity
                     onPress={(event) => {
                         event.stopPropagation();
-                        likeMatch(match);
+                        onLike(match);
                     }}
                     style={{
                         flexDirection: 'row',
@@ -236,7 +250,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 <TouchableOpacity
                     onPress={(event) => {
                         event.stopPropagation();
-                        saveMatch(match);
+                        onSave(match);
                     }}
                     style={{
                         flexDirection: 'row',
@@ -254,7 +268,7 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
                 <TouchableOpacity
                     onPress={(event) => {
                         event.stopPropagation();
-                        hideMatch(match);
+                        onHide(match);
                     }}
                     style={{
                         flexDirection: 'row',
@@ -275,7 +289,8 @@ function MatchCard({ match, index }: { match: OldSmartMatchResult; index: number
 }
 
 export function SmartMatchCarousel() {
-    const { matches, isLoading, error, refresh, lastUpdated, resetHiddenMatches } = useSmartMatch();
+    const { user } = useAuth();
+    const { matches, isLoading, error, refresh, lastUpdated, resetHiddenMatches, saveMatch, hideMatch, likeMatch, markMatchSeen } = useSmartMatchView(user);
     const router = useRouter();
     const [activeIndex, setActiveIndex] = React.useState(0);
 
@@ -317,7 +332,7 @@ export function SmartMatchCarousel() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 {lastUpdated && (
-                    <TouchableOpacity onPress={refresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <TouchableOpacity onPress={() => void refresh()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <RefreshCw size={16} color={Colors.accent} strokeWidth={2.2} />
                     </TouchableOpacity>
                 )}
@@ -413,7 +428,7 @@ export function SmartMatchCarousel() {
             <View style={{ marginBottom: 32 }}>
                 {Header}
                 <TouchableOpacity
-                    onPress={refresh}
+                    onPress={() => void refresh()}
                     style={{
                         backgroundColor: '#fff8f8',
                         borderRadius: 16,
@@ -458,7 +473,7 @@ export function SmartMatchCarousel() {
                     <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>
                         Aggiorna il tuo profilo con bio e interessi per ricevere match personalizzati.
                     </Text>
-                    <TouchableOpacity onPress={resetHiddenMatches} style={{ marginTop: 10 }}>
+                    <TouchableOpacity onPress={() => void resetHiddenMatches()} style={{ marginTop: 10 }}>
                         <Text style={{ fontSize: 12, color: Colors.accent, fontWeight: '700' }}>
                             Ripristina attività nascoste
                         </Text>
@@ -484,7 +499,15 @@ export function SmartMatchCarousel() {
                 contentContainerStyle={{ paddingHorizontal: 24 }}
             >
                 {displayedMatches.map((match, i) => (
-                    <MatchCard key={match.id} match={match} index={i} />
+                    <MatchCard
+                        key={match.id}
+                        match={match}
+                        index={i}
+                        onSave={saveMatch}
+                        onHide={hideMatch}
+                        onLike={likeMatch}
+                        onSeen={markMatchSeen}
+                    />
                 ))}
             </ScrollView>
             {/* Dot indicators */}

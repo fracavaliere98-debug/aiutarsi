@@ -95,6 +95,67 @@ Un dominio si considera migrato quando:
 - il dominio espone query hooks e mutation hooks coerenti
 - i flussi principali sono stati verificati in `preview`
 
+## Preparazione dominio: Smart Match
+
+### Decisione semantica
+
+Per `smart match`, il primo obiettivo non e tecnico ma semantico:
+
+- il dominio `smart match` e la source of truth canonica del ranking e del `match score`
+- ranking, sorting, recommendations e decisioning usano solo il match canonico di `smart match`
+- `activities` puo esporre solo uno snapshot legacy/UI del match score
+- lo snapshot UI non puo essere usato per logica di prodotto
+
+In pratica:
+
+- `match.score` = dato canonico
+- `activity.matchPercentage` = snapshot legacy/UI, non canonico
+
+### Regola temporanea su `activity.matchPercentage`
+
+Finche esiste:
+
+- va trattato come snapshot legacy/UI
+- non puo essere usato come base di ranking, sorting o recommendations
+- deve essere segnalato nel codice come valore legacy o snapshot, non come score canonico
+
+Obiettivo:
+
+- evitare che un campo activity-side apparentemente innocuo torni a essere riusato come verita del dominio
+
+### Boundary locale accettato
+
+`SmartMatchPreferencesService` resta nel perimetro corretto del dominio se continua a gestire solo:
+
+- preferenze locali persistenti lato device
+- dismissals
+- filtri locali
+- stato UI persistente locale
+
+Non puo contenere:
+
+- entita backend canoniche
+- ranking canonico
+- match score canonico
+
+### Dataset canonici minimi
+
+Il dominio `smart match` deve esporre almeno:
+
+- `smartMatchKeys.matches(...)`
+- `smartMatchKeys.matchActivity(activityId, userId)` oppure lookup equivalente canonico
+- eventuali dataset dedicati a `saved` o `hidden` solo se diventano viste di dominio reali
+
+### Entry point critico
+
+`app/(volunteer)/(tabs)/search.tsx` e l'entry point critico del dominio.
+
+Regola:
+
+- `search.tsx` deve leggere il match score da una sola fonte
+- nessun fallback permanente tra `activities` e `smart match`
+- eventuali fallback transitori vanno marcati come legacy e rimossi durante il refactor del dominio
+
 ## Dominio reference: Activities
 
 `activities` e il dominio di riferimento per i refactor successivi.
@@ -295,7 +356,14 @@ Per ogni dominio:
 2. eseguire il refactor su `main`
 3. pubblicare un OTA `preview` dedicato
 4. verificare il dominio in `preview`
-5. passare al dominio successivo solo dopo validazione
+5. eseguire smoke e verifiche disponibili finche il dominio ha tutti i done criteria soddisfatti in `staging/preview`
+6. rilasciare lo stesso dominio anche in `production`, mantenendo `prod` allineata a `staging`
+7. passare al dominio successivo solo dopo validazione `preview` e promozione `production`
+
+Regola operativa:
+
+- per ogni dominio, quando `staging/preview` ha tutti i done criteria chiusi e tutti i test disponibili sono verdi, il dominio va promosso anche in `production`
+- `production` deve restare una fotocopia architetturale di `staging` per tutti i domini gia certificati
 
 ## Dominio corrente: Applications
 
@@ -388,7 +456,7 @@ Il dominio `applications` e considerato architetturalmente pronto quando risulta
 - resume app
 - assenza di drift tra query hooks e selector hooks
 
-## Stato: Community = Architetturalmente pronto
+## Stato: Community = Done
 
 `community` e stato migrato mantenendo `stories` come dominio separato.
 
@@ -464,6 +532,73 @@ Fuori da questo pass:
 - `lint` e `tsc` verdi
 - smoke staging del dominio verde
 - verifica runtime `preview` verde
+
+### Stato finale: Community = Done
+
+Il dominio `community` e considerato chiuso quando risultano veri tutti questi punti:
+
+- `feed`, `activityPosts(activityId)` e `post(postId)` sono dataset canonici espliciti
+- nessun bridge legacy resta nel dominio
+- `create-post.tsx` usa `useCommunityPostQuery(postId)` come fonte primaria in edit mode
+- `activity/[id].tsx` usa `useCommunityActivityPostsQuery(activityId, userId)`
+- le mutazioni `create/edit/delete/report/reaction` passano solo dai mutation hook dedicati
+- realtime invalida Query senza scrivere stato canonico locale
+- `stories` restano fuori scope come dominio separato
+- `lint` e `tsc` verdi
+- smoke staging `community-refactor-smoke` verde
+- OTA `preview` pubblicato per validazione manuale
+
+## Preparazione operativa: Smart Match
+
+### Freeze del Context
+
+Finche esiste, `SmartMatchContext` e un compatibility bridge temporaneo.
+
+- non puo introdurre nuovo stato canonico
+- non puo introdurre nuove business mutations
+- non puo reintrodurre ranking o sorting activity-side come fonte primaria
+- puo restare solo come bridge temporaneo finche il dominio Query non sostituisce i consumer
+
+### Cluster consumer principali
+
+- Gruppo A: liste e ranking principali
+  - `components/SmartMatchCarousel.tsx`
+  - `app/(volunteer)/smart-match.tsx`
+
+- Gruppo B: entry point critico ranking/filter
+  - `app/(volunteer)/(tabs)/search.tsx`
+
+- Gruppo C: consumer che visualizzano snapshot UI del match
+  - `app/(volunteer)/(tabs)/community.tsx`
+  - `components/community/VolunteerCommunityScreen.tsx`
+  - `app/(volunteer)/(tabs)/map.tsx`
+
+- Gruppo D: boundary locale consentito
+  - `services/SmartMatchPreferencesService.ts`
+
+### Pattern target
+
+- `smartMatchKeys`
+- `queries.ts`
+- `mutations.ts`
+- `selectors.ts` solo per trasformazioni pure e leggere
+- eventuali view hooks per schermate specifiche
+- niente fallback permanente tra `activities` e `smart match`
+
+### Done criteria: Smart Match
+
+- `smart match` e la sola source of truth canonica del ranking e del `match score`
+- nessuna schermata usa `activity.matchPercentage` per ranking, sorting o recommendations
+- `search.tsx` legge il match score da una sola fonte canonica
+- `SmartMatchContext` non contiene piu stato canonico oppure viene rimosso del tutto
+- `like`, `hide`, `save`, `seen` passano da mutation hooks dedicati
+- `SmartMatchPreferencesService` resta limitato a preferenze locali persistenti
+- smoke staging del dominio verde
+- verifica runtime `preview` verde
+
+Nota di perimetro:
+
+- [services/ReportService.ts](/Users/francescocavaliere/aiutarsi/services/ReportService.ts) resta fuori scope, perche appartiene al boundary moderazione/report e non al dominio community feed
 
 ### Checklist di verifica: Community
 

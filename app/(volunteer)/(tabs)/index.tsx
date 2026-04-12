@@ -12,8 +12,8 @@ import { useToast } from "../../../context/ToastContext";
 import { useState, useMemo, useCallback } from "react";
 import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
-import { useSmartMatch } from "../../../context/SmartMatchContext";
 import { useActivitiesDomain, useUserReviews, useVolunteerStats } from "../../../hooks/activities/selectors";
+import { useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
 
 export default function VolunteerDashboard() {
     const router = useRouter();
@@ -21,7 +21,7 @@ export default function VolunteerDashboard() {
     const { activities, error, loadData } = useActivitiesDomain(user);
     const userReviews = useUserReviews(user?.id);
     const volunteerStats = useVolunteerStats(user);
-    const { refresh: refreshSmartMatch } = useSmartMatch();
+    const { refresh: refreshSmartMatch } = useSmartMatchView(user);
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 

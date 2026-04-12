@@ -3,12 +3,14 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bookmark, ChevronLeft, EyeOff, Heart, MapPin, Sparkles } from 'lucide-react-native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
-import { useSmartMatch } from '../../context/SmartMatchContext';
 import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
+import { useSmartMatchView } from '../../hooks/smart-match/useSmartMatchView';
 
 export default function SmartMatchScreen() {
     const router = useRouter();
-    const { matches, isLoading, refresh, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches } = useSmartMatch();
+    const { user } = useAuth();
+    const { matches, isLoading, refresh, saveMatch, hideMatch, likeMatch, markMatchSeen, resetHiddenMatches } = useSmartMatchView(user);
     const [showSavedOnly, setShowSavedOnly] = React.useState(false);
 
     const visibleMatches = React.useMemo(
@@ -23,7 +25,7 @@ export default function SmartMatchScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' }}>
                         <ChevronLeft size={20} color={Colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={refresh}>
+                    <TouchableOpacity onPress={() => void refresh()}>
                         <Text style={{ color: Colors.accent, fontWeight: '700', fontSize: 13 }}>Aggiorna</Text>
                     </TouchableOpacity>
                 </View>
@@ -54,7 +56,7 @@ export default function SmartMatchScreen() {
                             Attività salvate
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={resetHiddenMatches} style={{ backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
+                    <TouchableOpacity onPress={() => void resetHiddenMatches()} style={{ backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
                         <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '700' }}>Ripristina nascosti</Text>
                     </TouchableOpacity>
                 </View>

@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
+import { getLegacyActivityMatchSnapshot } from '../../utils/smartMatchLegacy';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
@@ -336,7 +337,7 @@ export function VolunteerCommunityScreen({
                                     <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
                                         {getCityLabel(item.location?.address)}
                                         {' · '}
-                                        {item.matchPercentage || 0}% match
+                                        {getLegacyActivityMatchSnapshot(item)}% match
                                     </Text>
                                 </View>
                             </TouchableOpacity>

@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { GamificationProvider } from "../context/GamificationContext";
 import { ToastProvider } from "../context/ToastContext";
-import { SmartMatchProvider } from "../context/SmartMatchContext";
 import { ChatProvider } from "../context/ChatContext";
 import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
@@ -288,16 +287,14 @@ function RootLayout() {
             <ToastProvider>
               <GamificationProvider>
                 <NotificationProvider>
-                  <SmartMatchProvider>
-                    <ChatProvider>
-                      <StoriesProvider>
-                        <StatusBar style="dark" />
-                        <RootLayoutNav />
-                        <ToastContainer />
-                        <LevelUpOverlay />
-                      </StoriesProvider>
-                    </ChatProvider>
-                  </SmartMatchProvider>
+                  <ChatProvider>
+                    <StoriesProvider>
+                      <StatusBar style="dark" />
+                      <RootLayoutNav />
+                      <ToastContainer />
+                      <LevelUpOverlay />
+                    </StoriesProvider>
+                  </ChatProvider>
                 </NotificationProvider>
               </GamificationProvider>
             </ToastProvider>

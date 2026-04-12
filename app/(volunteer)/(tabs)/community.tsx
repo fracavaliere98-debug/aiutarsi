@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
 import { useAuth } from '../../../context/AuthContext';
 import { useStories } from '../../../context/StoriesContext';
-import { useSmartMatch } from '../../../context/SmartMatchContext';
+import { withLegacyActivityMatchSnapshot } from '../../../utils/smartMatchLegacy';
 import { Story } from '../../../types/stories';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
@@ -16,6 +16,7 @@ import { gemmaService } from '../../../services/GemmaService';
 import { useActivitiesDomain } from '../../../hooks/activities/selectors';
 import { useCommunityFeedView } from '../../../hooks/community/useCommunityFeedView';
 import { useCommunityRealtime } from '../../../hooks/community/realtime';
+import { useSmartMatchView } from '../../../hooks/smart-match/useSmartMatchView';
 
 // ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {
@@ -65,7 +66,7 @@ export default function CommunityScreen() {
         loadMoreFeed,
     } = useCommunityFeedView(user?.id, !!user);
     const { activities, loadData: refreshActivities } = useActivitiesDomain(user);
-    const { allMatches } = useSmartMatch();
+    const { allMatches } = useSmartMatchView(user);
     const { fetchStories } = useStories();
     const [refreshing, setRefreshing] = useState(false);
     const [storyViewer, setStoryViewer] = useState<{ stories: Story[], index: number } | null>(null);
@@ -87,10 +88,7 @@ export default function CommunityScreen() {
             .filter(m => !enrolledIds.has(m.id))
             .filter(m => m.activity?.status === 'APERTA')
             .slice(0, 5)
-            .map(m => ({
-                ...m.activity!,
-                matchPercentage: m.score,
-            }));
+            .map(m => withLegacyActivityMatchSnapshot(m.activity!, m.score));
     }, [allMatches, activities, user?.id]);
 
     useEffect(() => {

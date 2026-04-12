@@ -21,8 +21,8 @@ import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
 import { useAuth } from "../../../context/AuthContext";
-import { useSmartMatch } from "../../../context/SmartMatchContext";
 import { INTERESTS } from "../../../constants/Interests";
+import { useSmartMatchActivityScoresView, useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
 
@@ -245,7 +245,7 @@ export default function SearchScreen() {
     const router = useRouter();
     const { showToast } = useToast();
     const { user } = useAuth();
-    const { matches, allMatches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatch();
+    const { matches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatchView(user);
 
     // Search state
     const [searchText, setSearchText] = useState("");
@@ -353,23 +353,26 @@ export default function SearchScreen() {
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
     const applyFilters = () => { setFilters(pendingFilters); setIsFilterModalVisible(false); };
 
-    const visibleMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
-    const smartMatchMap = useMemo(() => new Map(allMatches.map((match) => [match.id, match])), [allMatches]);
     // Base order remains chronological; top AI matches are lifted above it.
     const sortedActivities = useMemo(
         () => [...paginatedActivities].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
         [paginatedActivities]
     );
+    const { scoreMap: smartMatchMap } = useSmartMatchActivityScoresView(user, sortedActivities, {
+        enabled: sortedActivities.length > 0,
+    });
+    const visibleMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
     const topMatchActivities = useMemo(() => {
         return sortedActivities
             .filter((activity) => {
                 const match = smartMatchMap.get(activity.id);
-                const score = typeof match?.score === 'number' ? match.score : (activity.matchPercentage ?? 0);
+                const score = typeof match?.score === 'number' ? match.score : 0;
                 return match?.confidence === 'top' || score >= 75;
             })
             .sort((a, b) => {
                 const scoreDiff =
-                    ((smartMatchMap.get(b.id)?.score ?? b.matchPercentage ?? 0) - (smartMatchMap.get(a.id)?.score ?? a.matchPercentage ?? 0));
+                    ((smartMatchMap.get(b.id)?.score ?? 0) -
+                        (smartMatchMap.get(a.id)?.score ?? 0));
                 if (scoreDiff !== 0) return scoreDiff;
                 return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
             })
@@ -403,7 +406,7 @@ export default function SearchScreen() {
         const catColors = getCategoryColors(item.category);
         const aiMatch = smartMatchMap.get(item.id);
         const visibleAiMatch = visibleMatchMap.get(item.id);
-        const displayScore = typeof aiMatch?.score === 'number' ? aiMatch.score : (item.matchPercentage ?? 0);
+        const displayScore = typeof aiMatch?.score === 'number' ? aiMatch.score : 0;
         const displayBadge = aiMatch?.confidenceLabel || 'Gemma';
         const aiChips = aiMatch?.chips?.slice(0, 3) || [];
         const isTopGemma = aiMatch?.confidence === 'top';
