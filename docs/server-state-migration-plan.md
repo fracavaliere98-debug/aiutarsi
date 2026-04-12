@@ -110,6 +110,7 @@ In pratica:
 
 - `match.score` = dato canonico
 - `activity.matchPercentage` = snapshot legacy/UI, non canonico
+- `get_activities_with_match` = server match input, non score finale del dominio
 
 ### Regola temporanea su `activity.matchPercentage`
 
@@ -145,6 +146,11 @@ Il dominio `smart match` deve esporre almeno:
 - `smartMatchKeys.matches(...)`
 - `smartMatchKeys.matchActivity(activityId, userId)` oppure lookup equivalente canonico
 - eventuali dataset dedicati a `saved` o `hidden` solo se diventano viste di dominio reali
+
+Regola aggiuntiva:
+
+- il dataset canonico deve poter esistere anche senza `Gemma reasons`
+- `reason` e `summary` sono enrichment UX, non dipendenze strutturali del ranking
 
 ### Entry point critico
 
@@ -595,6 +601,20 @@ Finche esiste, `SmartMatchContext` e un compatibility bridge temporaneo.
 - `SmartMatchPreferencesService` resta limitato a preferenze locali persistenti
 - smoke staging del dominio verde
 - verifica runtime `preview` verde
+
+### Stato
+
+`smart match` e da considerare `done` a livello architetturale.
+
+Chiusure ottenute:
+
+- nessun Context bridge legacy
+- source of truth canonica in React Query
+- `activity + user` score lookup esplicito nel dominio
+- `search.tsx` non risolve piu il match score da solo
+- `activity.matchPercentage` resta solo compatibilita temporanea UI
+- smoke staging verde
+- OTA `preview` pubblicato per validazione manuale
 
 Nota di perimetro:
 

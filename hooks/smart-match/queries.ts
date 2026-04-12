@@ -69,7 +69,9 @@ async function fetchSmartMatches(user: AppUser): Promise<SmartMatchQueryData> {
         );
     }
 
-    const mappedMatchesBase: OldSmartMatchResult[] = candidateActivities
+    // Server-side RPC gives us an input score per activity.
+    // The canonical smart match score is produced by this domain after rerank.
+    const serverInputMatches: OldSmartMatchResult[] = candidateActivities
         .filter((activity) => !activity.iscritti.includes(user.id))
         .map((activity) => ({
             id: activity.id,
@@ -78,33 +80,35 @@ async function fetchSmartMatches(user: AppUser): Promise<SmartMatchQueryData> {
             activity: activity as any,
         }));
 
-    const gemmaEnrichedMatches = mappedMatchesBase.length > 0
-        ? await gemmaService.getSmartMatchReasons(mappedMatchesBase)
+    // Gemma reasons are optional enrichment for explanation UX.
+    // They must not block or define the canonical ranking dataset.
+    const enrichedInputMatches = serverInputMatches.length > 0
+        ? await gemmaService.getSmartMatchReasons(serverInputMatches)
             .then((result) => {
                 const reasonsMap = new Map(result.reasons.map((item: any) => [item.activityId, item.reason]));
-                return mappedMatchesBase.map((match) => ({
+                return serverInputMatches.map((match) => ({
                     ...match,
                     reason: reasonsMap.get(match.id) || 'Attività in linea con il tuo profilo attuale.',
                 }));
             })
             .catch(() => {
-                return mappedMatchesBase.map((match) => ({
+                return serverInputMatches.map((match) => ({
                     ...match,
                     reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`,
                 }));
             })
-        : mappedMatchesBase;
+        : serverInputMatches;
 
-    const allMatches = rerankSmartMatches(gemmaEnrichedMatches, user, prefs, relations, {
+    const allMatches = rerankSmartMatches(enrichedInputMatches, user, prefs, relations, {
         ignoreHidden: true,
     });
 
-    let matches = rerankSmartMatches(gemmaEnrichedMatches, user, prefs, relations, {
+    let matches = rerankSmartMatches(enrichedInputMatches, user, prefs, relations, {
         excludeEnrolledUserId: user.id,
     });
 
-    if (!matches.length && gemmaEnrichedMatches.length > 0 && prefs.hiddenActivityIds.length > 0) {
-        matches = rerankSmartMatches(gemmaEnrichedMatches, user, {
+    if (!matches.length && enrichedInputMatches.length > 0 && prefs.hiddenActivityIds.length > 0) {
+        matches = rerankSmartMatches(enrichedInputMatches, user, {
             ...prefs,
             hiddenActivityIds: [],
         }, relations, {
@@ -139,14 +143,16 @@ async function fetchSmartMatchActivityScores(
         ),
     };
 
-    const baseMatches: OldSmartMatchResult[] = activities.map((activity) => ({
+    // This lookup turns activity-side snapshots into an explicit smart match dataset
+    // for the current user. The result is canonical for activity+user score lookup.
+    const serverInputMatches: OldSmartMatchResult[] = activities.map((activity) => ({
         id: activity.id,
         score: getLegacyActivityMatchSnapshot(activity),
         reason: `Match ${Math.round(getLegacyActivityMatchSnapshot(activity))}% in linea con il tuo profilo.`,
         activity: activity as any,
     }));
 
-    const ordered = rerankSmartMatches(baseMatches, user, prefs, relations, {
+    const ordered = rerankSmartMatches(serverInputMatches, user, prefs, relations, {
         ignoreHidden: true,
     });
 
