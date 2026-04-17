@@ -2,11 +2,14 @@ import { useMemo } from "react";
 import { AppUser } from "../../types";
 import { useApplicationsQuery } from "./queries";
 
+const EMPTY_APPLICATIONS: any[] = [];
+
 export function useApplicationsDomain(user?: AppUser | null) {
     const query = useApplicationsQuery(user);
+    const applications = query.data ?? EMPTY_APPLICATIONS;
 
     return {
-        applications: query.data ?? [],
+        applications,
         refreshApplications: async () => {
             await query.refetch();
         },

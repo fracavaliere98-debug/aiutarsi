@@ -1,11 +1,13 @@
 import { useCallback, useMemo } from "react";
 import { useCommunityFeedQuery } from "./queries";
 
+const EMPTY_POSTS: any[] = [];
+
 export function useCommunityFeedView(userId?: string, enabled = true) {
     const query = useCommunityFeedQuery(userId, enabled);
 
     const posts = useMemo(
-        () => query.data?.pages.flatMap((page) => page.posts) ?? [],
+        () => query.data?.pages.flatMap((page) => page.posts) ?? EMPTY_POSTS,
         [query.data]
     );
 

@@ -6,6 +6,10 @@ import {
     useActivityReviewsQuery,
 } from "./queries";
 
+const EMPTY_ACTIVITIES: AppActivity[] = [];
+const EMPTY_REVIEWS: OldReview[] = [];
+const EMPTY_ACTIVITY_APPLICATIONS: any[] = [];
+
 export interface VolunteerStats {
     totalHours: number;
     completedMissions: number;
@@ -14,10 +18,10 @@ export interface VolunteerStats {
 }
 
 export function useActivitiesDomain(user?: AppUser | null) {
-    const { data: activities = [], isError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
-    const { data: reviews = [], refetch: refetchReviews } = useActivityReviewsQuery();
+    const { data: activities = EMPTY_ACTIVITIES, isError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
+    const { data: reviews = EMPTY_REVIEWS, refetch: refetchReviews } = useActivityReviewsQuery();
     const {
-        data: activityApplications = [],
+        data: activityApplications = EMPTY_ACTIVITY_APPLICATIONS,
         refetch: refetchActivityApplications,
     } = useActivityApplicationsQuery(user?.id, !!user && user.role === "NPO");
 
@@ -65,7 +69,7 @@ export function useVolunteerStats(user?: AppUser | null): VolunteerStats {
 }
 
 export function useUserReviews(userId?: string) {
-    const { data: reviews = [] } = useActivityReviewsQuery();
+    const { data: reviews = EMPTY_REVIEWS } = useActivityReviewsQuery();
 
     return useMemo(
         () => (userId ? reviews.filter((review) => review.volunteerId === userId) : []),
@@ -74,7 +78,7 @@ export function useUserReviews(userId?: string) {
 }
 
 export function useNPORating(npoId?: string) {
-    const { data: reviews = [] } = useActivityReviewsQuery();
+    const { data: reviews = EMPTY_REVIEWS } = useActivityReviewsQuery();
 
     return useMemo(() => {
         if (!npoId) return 0;

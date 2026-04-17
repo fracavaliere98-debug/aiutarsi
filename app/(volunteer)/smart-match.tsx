@@ -125,7 +125,7 @@ export default function SmartMatchScreen() {
 
                                 {!!match.chips?.length && (
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                                        {match.chips.map((chip) => (
+                                        {match.chips.map((chip: string) => (
                                             <View key={chip} style={{ backgroundColor: '#f3f4f6', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 }}>
                                                 <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '700' }}>{chip}</Text>
                                             </View>

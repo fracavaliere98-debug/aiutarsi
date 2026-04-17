@@ -9,6 +9,9 @@ import {
     useSaveSmartMatchMutation,
 } from './mutations';
 
+const EMPTY_MATCHES: any[] = [];
+const EMPTY_SCORE_LOOKUP: Record<string, never> = {};
+
 export function useSmartMatchView(user?: AppUser | null, options?: { enabled?: boolean }) {
     const query = useSmartMatchesQuery(user, options);
     const saveMutation = useSaveSmartMatchMutation(user?.id);
@@ -18,8 +21,8 @@ export function useSmartMatchView(user?: AppUser | null, options?: { enabled?: b
     const resetMutation = useResetHiddenSmartMatchesMutation(user?.id);
 
     return {
-        matches: query.data?.matches ?? [],
-        allMatches: query.data?.allMatches ?? [],
+        matches: query.data?.matches ?? EMPTY_MATCHES,
+        allMatches: query.data?.allMatches ?? EMPTY_MATCHES,
         isLoading: query.isLoading || query.isFetching,
         error: query.error ? 'Impossibile caricare i suggerimenti. Riprova tra poco.' : null,
         lastUpdated: query.data?.lastUpdated ? new Date(query.data.lastUpdated) : null,
@@ -40,13 +43,13 @@ export function useSmartMatchActivityScoresView(
     const query = useSmartMatchActivityScoresQuery(user, activities, options);
 
     const scoreMap = useMemo(
-        () => new Map(Object.entries(query.data?.byActivityId ?? {})),
+        () => new Map(Object.entries(query.data?.byActivityId ?? EMPTY_SCORE_LOOKUP)),
         [query.data?.byActivityId]
     );
 
     return {
         scoreMap,
-        orderedMatches: query.data?.ordered ?? [],
+        orderedMatches: query.data?.ordered ?? EMPTY_MATCHES,
         isLoading: query.isLoading || query.isFetching,
         refetch: query.refetch,
     };

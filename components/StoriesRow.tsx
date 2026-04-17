@@ -28,22 +28,39 @@ export function StoriesRow({
 }: StoriesRowProps) {
     const { stories } = useStories();
     const [sharedVolunteerAuthorIds, setSharedVolunteerAuthorIds] = useState<string[]>([]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const loadSharedVolunteerAuthors = async () => {
-            const volunteerAuthorIds = Array.from(
+    const volunteerStoryAuthorIdsKey = useMemo(
+        () =>
+            Array.from(
                 new Set(
                     stories
                         .filter((story) => story.author?.role === 'VOLUNTEER' && story.author_id)
                         .map((story) => story.author_id)
                         .filter(Boolean) as string[]
                 )
-            );
+            )
+                .sort()
+                .join(','),
+        [stories]
+    );
+    const sharedNpoIdsKey = useMemo(
+        () => [...(sharedNpoIds || [])].sort().join(','),
+        [sharedNpoIds]
+    );
+    const stableSharedNpoIds = useMemo(
+        () => (sharedNpoIdsKey ? sharedNpoIdsKey.split(',') : []),
+        [sharedNpoIdsKey]
+    );
 
-            if (!sharedNpoIds?.length || !volunteerAuthorIds.length) {
-                if (isMounted) setSharedVolunteerAuthorIds([]);
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadSharedVolunteerAuthors = async () => {
+            const volunteerAuthorIds = volunteerStoryAuthorIdsKey ? volunteerStoryAuthorIdsKey.split(',') : [];
+
+            if (!stableSharedNpoIds.length || !volunteerAuthorIds.length) {
+                if (isMounted) {
+                    setSharedVolunteerAuthorIds((prev) => (prev.length === 0 ? prev : []));
+                }
                 return;
             }
 
@@ -51,19 +68,25 @@ export function StoriesRow({
                 .from('applications')
                 .select('volunteer_id,npo_id')
                 .in('volunteer_id', volunteerAuthorIds)
-                .in('npo_id', sharedNpoIds)
+                .in('npo_id', stableSharedNpoIds)
                 .eq('status', 'APPROVED');
 
             if (error) {
                 console.error('StoriesRow shared volunteer lookup error:', error);
-                if (isMounted) setSharedVolunteerAuthorIds([]);
+                if (isMounted) {
+                    setSharedVolunteerAuthorIds((prev) => (prev.length === 0 ? prev : []));
+                }
                 return;
             }
 
             if (isMounted) {
-                setSharedVolunteerAuthorIds(
-                    Array.from(new Set((data || []).map((row: any) => row.volunteer_id).filter(Boolean)))
-                );
+                const nextIds = Array.from(new Set((data || []).map((row: any) => row.volunteer_id).filter(Boolean))).sort();
+                setSharedVolunteerAuthorIds((prev) => {
+                    if (prev.length === nextIds.length && prev.every((value, index) => value === nextIds[index])) {
+                        return prev;
+                    }
+                    return nextIds;
+                });
             }
         };
 
@@ -71,7 +94,7 @@ export function StoriesRow({
         return () => {
             isMounted = false;
         };
-    }, [sharedNpoIds, stories]);
+    }, [stableSharedNpoIds, volunteerStoryAuthorIdsKey]);
 
     // Group stories by author
     const { authorGroups, flatOrderedStories } = useMemo(() => {

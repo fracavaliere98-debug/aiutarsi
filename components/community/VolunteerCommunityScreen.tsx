@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -71,21 +71,39 @@ export function VolunteerCommunityScreen({
         () => Array.from(new Set([...followedNpoIds, ...affiliatedNpoIds, ...suggestedNpoIds])),
         [followedNpoIds, affiliatedNpoIds, suggestedNpoIds]
     );
-    useEffect(() => {
-        let isMounted = true;
-
-        const loadSharedVolunteerAuthors = async () => {
-            const volunteerAuthorIds = Array.from(
+    const volunteerPostAuthorIdsKey = useMemo(
+        () =>
+            Array.from(
                 new Set(
                     posts
                         .filter((post) => post.author?.role === 'VOLUNTEER' && post.author_id)
                         .map((post) => post.author_id)
                         .filter(Boolean) as string[]
                 )
-            );
+            )
+                .sort()
+                .join(','),
+        [posts]
+    );
+    const affiliatedNpoIdsKey = useMemo(
+        () => [...affiliatedNpoIds].sort().join(','),
+        [affiliatedNpoIds]
+    );
+    const stableAffiliatedNpoIds = useMemo(
+        () => (affiliatedNpoIdsKey ? affiliatedNpoIdsKey.split(',') : []),
+        [affiliatedNpoIdsKey]
+    );
 
-            if (!affiliatedNpoIds.length || !volunteerAuthorIds.length) {
-                if (isMounted) setSharedVolunteerAuthorIds([]);
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadSharedVolunteerAuthors = async () => {
+            const volunteerAuthorIds = volunteerPostAuthorIdsKey ? volunteerPostAuthorIdsKey.split(',') : [];
+
+            if (!stableAffiliatedNpoIds.length || !volunteerAuthorIds.length) {
+                if (isMounted) {
+                    setSharedVolunteerAuthorIds((prev) => (prev.length === 0 ? prev : []));
+                }
                 return;
             }
 
@@ -93,19 +111,25 @@ export function VolunteerCommunityScreen({
                 .from('applications')
                 .select('volunteer_id,npo_id')
                 .in('volunteer_id', volunteerAuthorIds)
-                .in('npo_id', affiliatedNpoIds)
+                .in('npo_id', stableAffiliatedNpoIds)
                 .eq('status', 'APPROVED');
 
             if (error) {
                 console.error('VolunteerCommunityScreen shared volunteer lookup error:', error);
-                if (isMounted) setSharedVolunteerAuthorIds([]);
+                if (isMounted) {
+                    setSharedVolunteerAuthorIds((prev) => (prev.length === 0 ? prev : []));
+                }
                 return;
             }
 
             if (isMounted) {
-                setSharedVolunteerAuthorIds(
-                    Array.from(new Set((data || []).map((row: any) => row.volunteer_id).filter(Boolean)))
-                );
+                const nextIds = Array.from(new Set((data || []).map((row: any) => row.volunteer_id).filter(Boolean))).sort();
+                setSharedVolunteerAuthorIds((prev) => {
+                    if (prev.length === nextIds.length && prev.every((value, index) => value === nextIds[index])) {
+                        return prev;
+                    }
+                    return nextIds;
+                });
             }
         };
 
@@ -113,7 +137,7 @@ export function VolunteerCommunityScreen({
         return () => {
             isMounted = false;
         };
-    }, [affiliatedNpoIds, posts]);
+    }, [stableAffiliatedNpoIds, volunteerPostAuthorIdsKey]);
     const prioritizedPosts = useMemo(() => {
         const followedSet = new Set(followedNpoIds);
         const affiliatedSet = new Set(affiliatedNpoIds);
@@ -160,7 +184,22 @@ export function VolunteerCommunityScreen({
 
     const gemmaTarget = suggestedActivities[0];
 
-    const listHeader = (
+    const renderPostItem = useCallback(({ item }: { item: CommunityPost }) => (
+        <CommunityPostCard
+            post={item}
+            npoRelation={
+                item.author?.role !== 'NPO' || !item.author_id
+                    ? null
+                    : affiliatedNpoIds.includes(item.author_id)
+                        ? 'affiliated'
+                        : followedNpoIds.includes(item.author_id)
+                            ? 'followed'
+                            : null
+            }
+        />
+    ), [affiliatedNpoIds, followedNpoIds]);
+
+    const listHeader = useMemo(() => (
         <View>
             <View
                 style={{
@@ -286,9 +325,55 @@ export function VolunteerCommunityScreen({
                 </View>
             </View>
         </View>
-    );
+    ), [
+        affiliatedNpoIds,
+        allowedStoryNpoIds,
+        followedNpoIds,
+        gemmaSummary,
+        gemmaTarget,
+        onStoryPress,
+        router,
+        weekendActivity,
+    ]);
 
-    const listFooter = (
+    const renderSuggestedActivity = useCallback(({ item }: { item: AppActivity }) => (
+        <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => router.push(`/activity/${item.id}` as any)}
+            style={{
+                width: 250,
+                marginRight: 12,
+                backgroundColor: 'white',
+                borderRadius: 22,
+                borderWidth: 1,
+                borderColor: '#e2e8f0',
+                overflow: 'hidden',
+            }}
+        >
+            <View style={{ height: 120, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
+                {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} />
+                ) : (
+                    <Text style={{ fontSize: 26 }}>🌿</Text>
+                )}
+            </View>
+            <View style={{ padding: 14 }}>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: Colors.primary }} numberOfLines={2}>
+                    {item.title}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#7c3aed', marginTop: 4 }}>
+                    {item.npoName}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
+                    {getCityLabel(item.location?.address)}
+                    {' · '}
+                    {getLegacyActivityMatchSnapshot(item)}% match
+                </Text>
+            </View>
+        </TouchableOpacity>
+    ), [router]);
+
+    const listFooter = useMemo(() => (
         <View style={{ paddingBottom: 100 }}>
             {suggestedActivities.length > 0 ? (
                 <View style={{ marginTop: 10 }}>
@@ -306,68 +391,20 @@ export function VolunteerCommunityScreen({
                         keyExtractor={(item) => item.id}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ paddingHorizontal: 16 }}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                activeOpacity={0.88}
-                                onPress={() => router.push(`/activity/${item.id}` as any)}
-                                style={{
-                                    width: 250,
-                                    marginRight: 12,
-                                    backgroundColor: 'white',
-                                    borderRadius: 22,
-                                    borderWidth: 1,
-                                    borderColor: '#e2e8f0',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <View style={{ height: 120, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-                                    {item.imageUrl ? (
-                                        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} />
-                                    ) : (
-                                        <Text style={{ fontSize: 26 }}>🌿</Text>
-                                    )}
-                                </View>
-                                <View style={{ padding: 14 }}>
-                                    <Text style={{ fontSize: 15, fontWeight: '900', color: Colors.primary }} numberOfLines={2}>
-                                        {item.title}
-                                    </Text>
-                                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#7c3aed', marginTop: 4 }}>
-                                        {item.npoName}
-                                    </Text>
-                                    <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
-                                        {getCityLabel(item.location?.address)}
-                                        {' · '}
-                                        {getLegacyActivityMatchSnapshot(item)}% match
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        )}
+                        renderItem={renderSuggestedActivity}
                     />
                 </View>
             ) : null}
 
             {isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
         </View>
-    );
+    ), [isLoadingMore, renderSuggestedActivity, suggestedActivities]);
 
     return (
         <FlashList
             data={prioritizedPosts}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-                <CommunityPostCard
-                    post={item}
-                    npoRelation={
-                        item.author?.role !== 'NPO' || !item.author_id
-                            ? null
-                            : affiliatedNpoIds.includes(item.author_id)
-                                ? 'affiliated'
-                                : followedNpoIds.includes(item.author_id)
-                                    ? 'followed'
-                                    : null
-                    }
-                />
-            )}
+            renderItem={renderPostItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
             onEndReached={onLoadMore}
