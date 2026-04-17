@@ -1450,3 +1450,46 @@ Regole forti della fase detail:
 - smoke staging del dominio verde
 - verifica runtime `preview` verde
 - promozione `production` completata
+
+### Runtime checklist: Chat
+
+Questa checklist va eseguita in due livelli.
+
+#### Livello 1: automatico / backend prima della preview
+
+Da chiudere prima della `preview`:
+
+- `lint` verde
+- `tsc --noEmit` verde
+- smoke staging `chat-refactor-smoke` verde:
+  - inbox, unread count, conversation metadata e timeline allineati
+  - mark-as-read aggiorna lo stato canonico senza fonte parallela
+  - mute state visibile in conversation metadata
+- nessun import residuo di `ChatContext`
+- nessun path core che legge inbox/unread dal Context
+
+#### Livello 2: manuale mirato in preview
+
+Da eseguire dopo pubblicazione OTA `preview`:
+
+- inbox coerente dopo cold start
+- unread badge coerente su header volunteer e NPO
+- ricerca inbox stabile senza jitter visibile
+- apertura detail con metadata corretti
+- timeline messaggi stabile con paginazione backward
+- invio messaggio:
+  - pending visibile
+  - conferma corretta nel dataset canonico
+  - nessuna seconda timeline mista
+- retry messaggio fallito coerente
+- delete con undo coerente
+- mute/unmute coerente dopo refresh
+- participants modal coerente
+- typing / presence non bloccano o sporcano la timeline
+- start chat da profilo NPO e da profilo volunteer coerente
+- nessun fallback legacy visibile in condizioni normali
+
+Regola:
+
+- se il Livello 1 non e tutto verde, non si pubblica `preview`
+- se il Livello 2 trova regressioni del contract canonico, il dominio non passa a `production`
