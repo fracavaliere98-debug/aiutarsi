@@ -11,10 +11,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Award, Star, Share2, X } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
-import { useGamification } from '../context/GamificationContext';
+import { useAuth } from '../context/AuthContext';
+import { useGamificationLevelUp } from '../hooks/gamification/useGamificationLevelUp';
 
 export const LevelUpOverlay = () => {
-    const { levelUpData, dismissLevelUp } = useGamification();
+    const { user } = useAuth();
+    const { levelUpData, dismissLevelUp } = useGamificationLevelUp(user);
 
     // Animation Values
     const scale = useSharedValue(0);

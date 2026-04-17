@@ -10,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 import { volunteerReportService, type VolunteerReportSummary } from "../../services/VolunteerReportService";
 import { useActivitiesDomain, useUserReviews } from "../../hooks/activities/selectors";
 import { useApplicationsDomain, useVolunteerApplications } from "../../hooks/applications/selectors";
+import { useGamificationView } from "../../hooks/gamification/selectors";
 
 export default function VolunteerReportScreen() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function VolunteerReportScreen() {
     const userReviews = useUserReviews(user?.id);
     const applications = useVolunteerApplications(user, user?.id);
     const { refreshApplications } = useApplicationsDomain(user);
+    const { state: gamificationState, refetch: refetchGamification } = useGamificationView(user);
     const [summary, setSummary] = useState<VolunteerReportSummary | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -27,6 +29,7 @@ export default function VolunteerReportScreen() {
             if (!user) return;
             const next = await volunteerReportService.getVolunteerReportSummary({
                 user,
+                gamificationState,
                 activities,
                 applications,
                 reviews: userReviews,
@@ -37,12 +40,12 @@ export default function VolunteerReportScreen() {
         return () => {
             cancelled = true;
         };
-    }, [activities, applications, user, userReviews]);
+    }, [activities, applications, gamificationState, user, userReviews]);
 
     const onRefresh = async () => {
         setRefreshing(true);
         try {
-            await Promise.all([loadData(), refreshApplications()]);
+            await Promise.all([loadData(), refreshApplications(), refetchGamification()]);
         } finally {
             setRefreshing(false);
         }

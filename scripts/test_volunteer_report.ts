@@ -1,4 +1,5 @@
 import { computeVolunteerReportSummary } from "../services/VolunteerReportService";
+import type { GamificationState } from "../hooks/gamification/types";
 
 async function run() {
     const now = new Date();
@@ -8,6 +9,21 @@ async function run() {
     const upcomingSoon = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString();
     const twoHoursBeforeWeek = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
     const twoHoursBeforeOutsideMonth = new Date(new Date(outsideMonth).getTime() - 2 * 60 * 60 * 1000).toISOString();
+    const gamificationState: GamificationState = {
+        totalXP: 520,
+        level: 3,
+        badges: [],
+        completedActivitiesCount: 2,
+        processedActivityIds: [],
+        sharedActivities: [],
+        enrolledNPOs: [],
+        claimedMilestones: [],
+        followedNPOsHistory: [],
+        totalHours: 4,
+        completedCategories: [],
+        completionDates: [],
+        reviewedNpoIds: [],
+    };
 
     const summary = computeVolunteerReportSummary({
         user: {
@@ -18,6 +34,7 @@ async function run() {
             impactPoints: 520,
             impact_points: 520,
         } as any,
+        gamificationState,
         activities: [
             {
                 id: "a1",

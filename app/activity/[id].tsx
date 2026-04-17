@@ -5,7 +5,6 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
-import { useGamification } from "../../context/GamificationContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import { Colors } from "../../constants/Colors";
@@ -26,6 +25,7 @@ import { useUnenrollFromActivityMutation } from "../../hooks/activities/mutation
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useCommunityActivityPostsQuery } from "../../hooks/community/queries";
 import { useCommunityRealtime } from "../../hooks/community/realtime";
+import { useRecordActivityShareMutation } from "../../hooks/gamification/mutations";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
 
@@ -71,9 +71,9 @@ export default function ActivityDetail() {
     const { user, users, fetchUserById } = useAuth();
     const { activities, reviews, error, loadData } = useActivitiesDomain(user);
     const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
-    const { handleActivityShare } = useGamification();
     const { showToast } = useToast();
     const unenrollFromActivityMutation = useUnenrollFromActivityMutation(user?.id);
+    const recordActivityShareMutation = useRecordActivityShareMutation(user?.id);
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const activityFromContext = activities.find(a => a.id === activityId);
@@ -168,7 +168,7 @@ export default function ActivityDetail() {
             await Share.share({
                 message: `👐 ${activity.title}\nPartecipa a questa attività su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://activity/${activity.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${activity.id}`,
             });
-            handleActivityShare(activity.id);
+            await recordActivityShareMutation.mutateAsync(activity.id);
         } catch (error) {
             console.error("Error sharing activity:", error);
         }

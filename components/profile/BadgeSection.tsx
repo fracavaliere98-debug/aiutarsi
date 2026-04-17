@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetModal } from "../SheetModal";
 import { Info, X, Clock, Award, Star, CheckCircle2 } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
-import { useGamification } from "../../context/GamificationContext";
+import { GamificationState } from "../../hooks/gamification/types";
 
 interface Badge {
     id: string;
@@ -17,6 +17,7 @@ interface Badge {
 
 interface BadgeSectionProps {
     badges: Badge[];
+    gamificationState: GamificationState;
 }
 
 const ALL_BADGES = [
@@ -55,8 +56,7 @@ const ProgressBar = ({ progress, label, color = Colors.accent }: { progress: num
     );
 };
 
-export function BadgeSection({ badges }: BadgeSectionProps) {
-    const { state } = useGamification();
+export function BadgeSection({ badges, gamificationState: state }: BadgeSectionProps) {
     const insets = useSafeAreaInsets();
     const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);

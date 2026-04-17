@@ -1,25 +1,22 @@
 import { Share } from "react-native";
 import React from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useGamification } from "../../../context/GamificationContext";
 import { useRouter } from "expo-router";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
 import { useActivityReviewsQuery } from "../../../hooks/activities/queries";
 import { useVolunteerStats } from "../../../hooks/activities/selectors";
 import { useVolunteerApplications } from "../../../hooks/applications/selectors";
+import { useGamificationView } from "../../../hooks/gamification/selectors";
 
 export default function VolunteerProfile() {
     const { user, users, fetchUserById } = useAuth();
     const volunteerStats = useVolunteerStats(user);
     const { data: reviews = [] } = useActivityReviewsQuery();
-    const { state, levelProgress, nextLevelXP, currentLevelXP } = useGamification();
+    const { state, levelProgress, levelName, xpInLevel, xpNeededForLevel } = useGamificationView(user);
     const router = useRouter();
     const [affiliatedNPOs, setAffiliatedNPOs] = React.useState<AppUser[]>([]);
     const [followedNPOs, setFollowedNPOs] = React.useState<AppUser[]>([]);
-
-    const xpInLevel = state.totalXP - currentLevelXP;
-    const xpNeededForLevel = nextLevelXP - currentLevelXP;
 
     // Get NPO lists
     const myApplications = useVolunteerApplications(user, user?.id);
@@ -118,6 +115,7 @@ export default function VolunteerProfile() {
             levelProgress={levelProgress}
             xpInLevel={xpInLevel}
             xpNeededForLevel={xpNeededForLevel}
+            levelName={levelName}
             isOwnProfile={true}
             onSettingsPress={() => router.push("/(volunteer)/settings" as any)}
             onSharePress={handleShare}

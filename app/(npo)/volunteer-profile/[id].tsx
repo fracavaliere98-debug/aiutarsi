@@ -2,13 +2,13 @@ import { View, ActivityIndicator, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { getUserGamificationState, getXPForNextLevel, getXPForCurrentLevel } from "../../../context/GamificationContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
 import ChatService from "../../../services/ChatService";
 import ReportModal from "../../../components/ReportModal";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 import { useVolunteerApplications } from "../../../hooks/applications/selectors";
+import { useGamificationView } from "../../../hooks/gamification/selectors";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
@@ -19,22 +19,17 @@ export default function NPOVolunteerProfile() {
     const [user, setUser] = useState<AppUser | null>(null);
     const [affiliatedNPOs, setAffiliatedNPOs] = useState<AppUser[]>([]);
     const [followedNPOs, setFollowedNPOs] = useState<AppUser[]>([]);
-    const [gamificationState, setGamificationState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showReportModal, setShowReportModal] = useState(false);
+    const { state: gamificationState, levelProgress, xpInLevel, xpNeededForLevel, levelName } = useGamificationView(user);
 
     useEffect(() => {
         const loadData = async () => {
             if (typeof id !== 'string') return;
 
             try {
-                // 1. Get user profile data
                 const userData = await fetchUserById(id);
                 setUser(userData || null);
-
-                // 2. Get Gamification Data
-                const gamiData = await getUserGamificationState(id);
-                setGamificationState(gamiData);
             } catch (e) {
                 console.error("Error loading volunteer profile", e);
             } finally {
@@ -91,12 +86,27 @@ export default function NPOVolunteerProfile() {
         );
     }
 
-    if (!user || !gamificationState) {
+    if (!user) {
         return (
             <View className="flex-1 items-center justify-center bg-white relative">
                 <VolunteerProfileView
                     user={{ name: "Utente non trovato" } as any}
-                    gamificationState={{ level: 0, totalXP: 0, badges: [] }}
+                    gamificationState={{
+                        level: 0,
+                        totalXP: 0,
+                        badges: [],
+                        completedActivitiesCount: 0,
+                        processedActivityIds: [],
+                        sharedActivities: [],
+                        enrolledNPOs: [],
+                        claimedMilestones: [],
+                        followedNPOsHistory: [],
+                        totalHours: 0,
+                        completedCategories: [],
+                        completionDates: [],
+                        reviewedNpoIds: [],
+                    }}
+                    levelName="Novizio"
                     stats={{ totalHours: 0, completedMissions: 0, rating: 0 }}
                     levelProgress={0}
                     xpInLevel={0}
@@ -108,12 +118,6 @@ export default function NPOVolunteerProfile() {
             </View>
         );
     }
-
-    const currentLevelXP = getXPForCurrentLevel(gamificationState.level);
-    const nextLevelXP = getXPForNextLevel(gamificationState.level);
-    const xpInLevel = gamificationState.totalXP - currentLevelXP;
-    const xpNeededForLevel = nextLevelXP - currentLevelXP;
-    const levelProgress = Math.min(100, Math.max(0, (xpInLevel / xpNeededForLevel) * 100));
 
     // 3. Calculate Real Stats for this volunteer
     const volunteerStats = {
@@ -189,6 +193,7 @@ export default function NPOVolunteerProfile() {
             <VolunteerProfileView
                 user={user as any}
                 gamificationState={gamificationState}
+                levelName={levelName}
                 stats={enrichedStats}
                 levelProgress={levelProgress}
                 xpInLevel={xpInLevel}

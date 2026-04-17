@@ -1676,7 +1676,7 @@ DECLARE
 BEGIN
     SELECT * INTO v_state FROM gamification_state WHERE user_id = auth.uid();
     
-    IF v_state.shared_activity_ids @> ARRAY[p_activity_id::text] THEN
+    IF v_state.shared_activity_ids @> ARRAY[p_activity_id]::uuid[] THEN
         RETURN; 
     END IF;
 
@@ -1687,7 +1687,7 @@ BEGIN
     END IF;
 
     UPDATE gamification_state 
-    SET shared_activity_ids = array_append(shared_activity_ids, p_activity_id::text)
+    SET shared_activity_ids = array_append(shared_activity_ids, p_activity_id)
     WHERE user_id = auth.uid();
 
     PERFORM award_gamification_xp(auth.uid(), 10, v_badge);
@@ -4727,4 +4727,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- historical migration chain is not replayable from zero.
 -- Existing environments that already have this schema must mark this
 -- migration as applied without executing it.
-

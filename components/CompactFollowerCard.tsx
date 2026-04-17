@@ -4,9 +4,8 @@ import { OldUser } from "../types";
 import { Colors } from "../constants/Colors";
 import { Mail } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
-import { useState, useEffect } from "react";
-import { getUserGamificationState } from "../context/GamificationContext";
 import { useRouter } from "expo-router";
+import { useGamificationStateQuery } from "../hooks/gamification/queries";
 
 interface CompactFollowerCardProps {
     volunteer: OldUser;
@@ -14,14 +13,9 @@ interface CompactFollowerCardProps {
 }
 
 export function CompactFollowerCard({ volunteer, onInvite }: CompactFollowerCardProps) {
-    const [level, setLevel] = useState<number | null>(null);
     const router = useRouter();
-
-    useEffect(() => {
-        getUserGamificationState(volunteer.id).then(state => {
-            setLevel(state.level);
-        });
-    }, [volunteer.id]);
+    const { data: gamificationState } = useGamificationStateQuery({ id: volunteer.id } as any);
+    const level = gamificationState?.level ?? null;
 
     // Show top 2 skills
     const displaySkills = volunteer.skills.slice(0, 2);

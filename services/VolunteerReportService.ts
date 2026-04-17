@@ -1,4 +1,6 @@
 import { AppActivity, AppUser, OldApplication, OldReview } from '../types';
+import { GamificationState } from '../hooks/gamification/types';
+import { getLevelName } from '../hooks/gamification/logic';
 
 export type VolunteerReportSummary = {
     totalXP: number;
@@ -37,34 +39,6 @@ function startOfMonth() {
     return start.toISOString();
 }
 
-function getLevelFromXP(totalXP: number) {
-    if (totalXP < 110) return 1;
-    if (totalXP < 450) return 2;
-    if (totalXP < 1000) return 3;
-    if (totalXP < 2000) return 4;
-    if (totalXP < 3500) return 5;
-    if (totalXP < 5500) return 6;
-    if (totalXP < 8000) return 7;
-    if (totalXP < 11000) return 8;
-    if (totalXP < 15000) return 9;
-    return 10 + Math.floor((totalXP - 15000) / 5000);
-}
-
-function getLevelName(level: number) {
-    switch (level) {
-        case 1: return 'Novizio';
-        case 2: return 'Apprendista';
-        case 3: return 'Sociale';
-        case 4: return 'Attivo';
-        case 5: return 'Esperto';
-        case 6: return 'Mentore';
-        case 7: return 'Pilastro';
-        case 8: return 'Ambasciatore';
-        case 9: return 'Leader';
-        default: return 'Leggenda';
-    }
-}
-
 function getDurationHours(activity: AppActivity) {
     const start = new Date(activity.dateTime).getTime();
     const end = new Date(activity.endDateTime || activity.dateTime).getTime();
@@ -74,6 +48,7 @@ function getDurationHours(activity: AppActivity) {
 
 export function computeVolunteerReportSummary(params: {
     user: AppUser;
+    gamificationState: GamificationState;
     activities: AppActivity[];
     applications: OldApplication[];
     reviews: OldReview[];
@@ -82,8 +57,8 @@ export function computeVolunteerReportSummary(params: {
     const weekStart = startOfWeek();
     const monthStart = startOfMonth();
     const nowIso = new Date().toISOString();
-    const totalXP = params.user.xp ?? params.user.impactPoints ?? params.user.impact_points ?? 0;
-    const level = getLevelFromXP(totalXP);
+    const totalXP = params.gamificationState.totalXP;
+    const level = params.gamificationState.level;
 
     const myActivities = params.activities.filter((activity) => activity.iscritti.includes(params.user.id));
     const completedActivities = myActivities.filter((activity) => activity.status === 'COMPLETATA');
@@ -145,6 +120,7 @@ export function computeVolunteerReportSummary(params: {
 export class VolunteerReportService {
     async getVolunteerReportSummary(params: {
         user: AppUser;
+        gamificationState: GamificationState;
         activities: AppActivity[];
         applications: OldApplication[];
         reviews: OldReview[];

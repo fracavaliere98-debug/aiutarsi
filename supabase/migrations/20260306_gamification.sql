@@ -194,7 +194,7 @@ BEGIN
     SELECT * INTO v_state FROM gamification_state WHERE user_id = auth.uid();
     
     -- Prevent duplicate share rewards for same activity
-    IF v_state.shared_activity_ids @> ARRAY[p_activity_id::text] THEN
+    IF v_state.shared_activity_ids @> ARRAY[p_activity_id]::uuid[] THEN
         RETURN; 
     END IF;
 
@@ -205,7 +205,7 @@ BEGIN
     END IF;
 
     UPDATE gamification_state 
-    SET shared_activity_ids = array_append(shared_activity_ids, p_activity_id::text)
+    SET shared_activity_ids = array_append(shared_activity_ids, p_activity_id)
     WHERE user_id = auth.uid();
 
     PERFORM award_gamification_xp(auth.uid(), 10, v_badge);

@@ -12,23 +12,7 @@ import { ApplicationSection } from "./profile/ApplicationSection";
 import { NPOAffiliationSection } from "./profile/NPOAffiliationSection";
 import { SkillInterestSection } from "./profile/SkillInterestSection";
 import { AccountDeletionAlert } from "./AccountDeletionAlert";
-
-// Prop Types
-interface Badge {
-    id: string;
-    name: string;
-    icon: string;
-    description: string;
-    dateEarned: string;
-    color: string;
-}
-
-interface GamificationState {
-    totalXP: number;
-    level: number;
-    levelName?: string;
-    badges: Badge[];
-}
+import { GamificationState as CanonicalGamificationState } from "../hooks/gamification/types";
 
 interface VolunteerStats {
     totalHours: number;
@@ -38,7 +22,8 @@ interface VolunteerStats {
 
 interface VolunteerProfileViewProps {
     user: AppUser | null;
-    gamificationState: GamificationState;
+    gamificationState: CanonicalGamificationState;
+    levelName?: string;
     stats: VolunteerStats;
     levelProgress: number;
     xpInLevel: number;
@@ -60,6 +45,7 @@ interface VolunteerProfileViewProps {
 export function VolunteerProfileView({
     user,
     gamificationState,
+    levelName,
     stats,
     levelProgress,
     xpInLevel,
@@ -143,7 +129,7 @@ export function VolunteerProfileView({
                     {/* 2. Stats & Level Section */}
                     <ProfileStats
                         level={gamificationState.level}
-                        levelName={gamificationState.levelName}
+                        levelName={levelName}
                         totalXP={gamificationState.totalXP}
                         xpInLevel={xpInLevel}
                         xpNeededForLevel={xpNeededForLevel}
@@ -164,7 +150,7 @@ export function VolunteerProfileView({
                     />
 
                     {/* 4. Badges Section */}
-                    <BadgeSection badges={gamificationState.badges} />
+                    <BadgeSection badges={gamificationState.badges} gamificationState={gamificationState} />
 
                     {/* 5. NPO Applications (Own profile only) */}
                     {isOwnProfile && <ApplicationSection applications={npoApplications} />}

@@ -518,6 +518,281 @@ Fuori da questo pass:
   - [components/community/VolunteerCommunityScreen.tsx](/Users/francescocavaliere/aiutarsi/components/community/VolunteerCommunityScreen.tsx)
 - Gruppo B: mutation entry points
   - [app/community/create-post.tsx](/Users/francescocavaliere/aiutarsi/app/community/create-post.tsx)
+
+## Preparazione dominio: Gamification
+
+Per `gamification`, la semantica canonica va fissata prima del refactor tecnico.
+
+Il rischio principale del dominio oggi non e il Context in se, ma la doppia lettura tra:
+
+- `gamification_state`
+- snapshot profile-side come `profiles.impact_points`, `user.xp`, `user.badges`
+
+Se questa ambiguita non viene chiusa a monte, il refactor rischia di spostare il problema senza eliminarlo.
+
+### Canonical semantics
+
+Questa sezione e bloccante prima di:
+
+- freeze del Context
+- creazione del dominio Query
+- migrazione dei consumer
+- smoke staging del dominio
+
+### Canonical dataset contract
+
+`gamification_state` e l'unico dataset canonico letto dai consumer del dominio.
+
+Regole:
+
+- ogni altro campo profile-side e solo snapshot di compatibilita
+- i selector canonici accettano solo input dal dataset canonico
+- nessun selector canonico puo accettare sia `gamification_state` sia `AppUser`
+- nessun componente core puo leggere direttamente snapshot legacy per decidere XP, livello, badge o progressi canonici
+
+#### Source of truth canonica
+
+La source of truth canonica del dominio `gamification` e:
+
+- `public.gamification_state`
+
+Il dominio deve leggere da li tutti i dati canonici di:
+
+- XP
+- livello
+- badge
+- progress counters persistiti
+- milestone history
+- threshold o stati persistiti gia materializzati lato DB
+
+#### Campi canonici del dominio
+
+I campi canonici del dominio sono:
+
+- `xp`
+- `level`
+- `badges`
+- `completed_activities_count`
+- `processed_activity_ids`
+- `shared_activity_ids`
+- `enrolled_npo_ids`
+- `claimed_milestones`
+- `followed_npos_history`
+- `total_hours`
+- `completed_categories`
+- `completion_dates`
+- `reviewed_npo_ids`
+
+Derived view fields ammessi:
+
+- `levelName` se derivato da `level`
+- `levelProgress`
+- `xpInLevel`
+- `xpNeededForLevel`
+
+Questi campi non sono canonici come persistenza, ma possono essere una view derivata canonica del dominio se calcolati in selector puri a partire da `gamification_state`.
+
+Quindi:
+
+- non sono source of truth persistita
+- ma sono output corretti e canonici del dominio verso la UI
+
+#### Snapshot legacy / non canonici
+
+Questi campi non sono canonici per il dominio:
+
+- `profiles.impact_points`
+- `AppUser.xp`
+- `AppUser.impactPoints`
+- `AppUser.badges`
+
+Sono ammessi solo come:
+
+- snapshot legacy/UI
+- compatibilita temporanea
+- safety net transitoria
+
+Non possono essere usati per:
+
+- ranking di livello
+- badge progress
+- progress bar
+- report canonici
+- decisioni di prodotto
+
+#### Fallback policy
+
+Regola netta:
+
+- fallback legacy consentiti solo come temporary safety net
+- vietati nei selector canonici
+- vietati nei componenti core del dominio
+- ammessi solo in adapter transitori esplicitamente marcati come legacy
+
+Ogni fallback legacy deve avere:
+
+- owner
+- perimetro esplicito
+- target di rimozione nel piano
+
+In particolare:
+
+- `profiles.impact_points`, `user.xp` e `user.badges` non possono apparire nei selector canonici del dominio
+- non possono guidare `ProfileStats`, `BadgeSection`, `VolunteerProfile` o report canonici
+- se servono in transizione, vanno incapsulati in un adapter legacy nominato come tale
+
+### Obiettivo architetturale
+
+- server state canonico in React Query
+- selectors/view hooks per progress e badge view
+- mutation hook dedicato per `record_activity_share`
+- nessun dato canonico di gamification nel Context
+- eventuale UI state del level-up separato dal server state canonico
+
+### Pattern target
+
+- `gamificationKeys`
+- `queries.ts`
+- `mutations.ts`
+- `selectors.ts`
+- eventuale `useGamificationView.ts`
+
+Il Context:
+
+- non puo possedere `xp`, `level`, `badges` o contatori canonici
+- non puo piu fare fetch canonica del dominio
+- non puo piu fare refetch del dominio
+- non puo guidare invalidation business del dominio
+- puo al massimo sopravvivere solo come bridge UI temporaneo per il level-up modal
+- se il modal viene isolato bene, `GamificationContext` deve sparire del tutto
+
+### Cluster consumer principali
+
+- Gruppo A: core state readers
+  - [app/(volunteer)/(tabs)/profile.tsx](/Users/francescocavaliere/aiutarsi/app/(volunteer)/(tabs)/profile.tsx)
+  - [components/profile/BadgeSection.tsx](/Users/francescocavaliere/aiutarsi/components/profile/BadgeSection.tsx)
+  - [components/profile/ProfileStats.tsx](/Users/francescocavaliere/aiutarsi/components/profile/ProfileStats.tsx)
+  - [components/VolunteerProfileView.tsx](/Users/francescocavaliere/aiutarsi/components/VolunteerProfileView.tsx)
+- Gruppo B: UI-only transient consumer
+  - [components/LevelUpOverlay.tsx](/Users/francescocavaliere/aiutarsi/components/LevelUpOverlay.tsx)
+- Gruppo C: business action entry point
+  - [app/activity/[id].tsx](/Users/francescocavaliere/aiutarsi/app/activity/[id].tsx)
+- Gruppo D: legacy snapshot readers outside the domain
+  - [services/VolunteerReportService.ts](/Users/francescocavaliere/aiutarsi/services/VolunteerReportService.ts)
+  - punti di shaping in [services/AuthService.ts](/Users/francescocavaliere/aiutarsi/services/AuthService.ts)
+
+### Gap e bug potenziali
+
+1. Doppia fonte di verita per XP e livello
+
+- `gamification_state` e canonico
+- ma profile snapshot e `AppUser` espongono ancora campi simili
+- rischio di drift tra profile, report e badge progress
+
+2. Fallback troppo comodi
+
+- il fallback profile-side puo restare nel codice molto piu del dovuto
+- se entra nei selector canonici, il dominio torna ambiguo
+
+3. Context ibrido data + UI
+
+- oggi `GamificationContext` mischia fetch canonica e `levelUpData`
+- rischio: tenerlo vivo per comodita anche quando il server state e gia uscito
+
+4. Progresso badge ricostruito client-side
+
+- [components/profile/BadgeSection.tsx](/Users/francescocavaliere/aiutarsi/components/profile/BadgeSection.tsx) ricalcola parti del progresso
+- va chiarito cosa e canonico nel DB e cosa e solo derivazione UI
+
+5. Mutation business nel Context
+
+- `handleActivityShare` oggi vive nel Context
+- deve diventare mutation hook con invalidation standard
+
+6. Legacy snapshot sparsi
+
+- il legacy profile-side va confinato in pochi adapter espliciti
+- non deve restare distribuito tra componenti, services e selector
+
+### Ordine di implementazione
+
+1. scrivere e fissare `Canonical semantics`
+2. freeze di `GamificationContext`
+3. creare il dominio Query `gamification`
+4. migrare i reader core:
+   - `VolunteerProfile`
+   - `BadgeSection`
+   - `ProfileStats`
+5. migrare `record_activity_share` a mutation hook
+6. isolare il level-up modal come UI orchestration separata
+7. eliminare o ridurre al minimo `GamificationContext`
+8. introdurre adapter legacy espliciti e confinati, ad esempio:
+   - `getLegacyImpactPointsSnapshot(...)`
+   - eventuale shaping profile-side marcato legacy
+9. ripulire i legacy snapshot readers fuori dominio
+9. smoke staging del dominio
+10. OTA `preview`
+11. promozione `production` dopo tutti i bollini verdi
+
+### Done criteria: Gamification
+
+- `gamification_state` e l'unica source of truth canonica per il dominio
+- nessun selector canonico legge `profiles.impact_points`, `user.xp` o `user.badges`
+- `GamificationContext` non possiede piu server state canonico
+- `record_activity_share` passa da mutation hook dedicato
+- `BadgeSection`, `ProfileStats` e `VolunteerProfile` leggono dal dominio Query
+- `LevelUpOverlay` usa solo stato UI transitorio
+- fallback legacy, se presenti, sono confinati in adapter transitori marcati
+- nessun componente core importa direttamente `GamificationContext`
+- nessun componente core legge `AppUser.xp`, `AppUser.badges` o `profiles.impact_points`
+- nessun file fuori dagli adapter legacy usa snapshot profile-side per ranking, gating o reporting canonico
+- `lint` e `tsc` verdi
+- smoke staging del dominio verde
+- verifica runtime `preview` verde
+- promozione `production` completata
+
+### Runtime checklist: Gamification
+
+Questa checklist va eseguita in due livelli.
+
+#### Livello 1: automatico
+
+Da chiudere prima della `preview`:
+
+- smoke staging del dominio:
+  - `state_consistency`
+  - `share_invalidation`
+- contratto locale anti-regressione:
+  - nessun componente core importa `GamificationContext`
+  - nessun componente core legge `AppUser.xp`, `AppUser.badges`, `profiles.impact_points`
+  - il report volunteer usa `gamification_state` come input canonico
+  - i derived view fields (`levelName`, `levelProgress`, `xpInLevel`, `xpNeededForLevel`) derivano solo dal dataset canonico
+- `lint`
+- `tsc`
+
+Questi check devono coprire in automatico:
+
+- profile volunteer mostra XP/level coerenti a livello di contratto dati
+- badge section usa il dataset canonico anche dopo refetch/cold data reload
+- profile stats e report non ricadono sugli snapshot legacy dopo login/logout
+- activity share invalida e aggiorna lo stato gamification canonico
+- nessuna regressione di codice sulle schermate che dipendevano dal Context
+- nessun fallback legacy visibile nel codice dei consumer core in condizioni normali
+
+#### Livello 2: manuale mirato in preview
+
+Resta da verificare manualmente solo cio che non e affidabile senza emulator/UI automation:
+
+- profile volunteer mostra XP/level coerenti visivamente
+- badge section coerente dopo cold refresh reale dell'app
+- profile stats coerenti dopo login/logout reale
+- level-up overlay appare una sola volta quando atteso
+- nessun fallback legacy visibile all'utente in condizioni normali
+
+Regola:
+
+- se il Livello 1 non e tutto verde, non si pubblica `preview`
+- se il Livello 2 non e verde, non si promuove in `production`
   - [components/CommunityPostCard.tsx](/Users/francescocavaliere/aiutarsi/components/CommunityPostCard.tsx)
 - Gruppo C: activity-linked reads
   - [app/activity/[id].tsx](/Users/francescocavaliere/aiutarsi/app/activity/[id].tsx)
