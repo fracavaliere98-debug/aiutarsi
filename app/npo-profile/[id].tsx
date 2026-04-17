@@ -13,10 +13,10 @@ import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
 import { ActivityCard } from "../../components/ActivityCard";
 import { Colors } from "../../constants/Colors";
-import ChatService from "../../services/ChatService";
 import ReportModal from "../../components/ReportModal";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useHasAppliedToNPO } from "../../hooks/applications/selectors";
+import { useStartPrivateConversationMutation } from "../../hooks/chat/mutations";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
@@ -27,6 +27,7 @@ export default function NPOProfileScreen() {
     const { activities, reviews } = useActivitiesDomain(undefined);
     const hasAppliedToCurrentNPO = useHasAppliedToNPO(user, npoId);
     const { showToast } = useToast();
+    const startPrivateConversationMutation = useStartPrivateConversationMutation(user?.id);
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
     const [showReportModal, setShowReportModal] = useState(false);
     const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -127,7 +128,7 @@ export default function NPOProfileScreen() {
     const handleMessageNPO = async () => {
         if (!user || user.role !== "VOLUNTEER") return;
         try {
-            const convId = await ChatService.startPrivateConversation(user.id, npoId);
+            const convId = await startPrivateConversationMutation.mutateAsync(npoId);
             router.push({
                 pathname: `/messages/${convId}` as any,
                 params: {

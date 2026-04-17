@@ -1099,3 +1099,354 @@ Gia migrati o quasi migrati:
 3. migrare il Gruppo C
 4. migrare Gruppo A e Gruppo B
 5. lasciare Gruppo D per ultimo o eliminarne direttamente il bisogno
+
+## Recap architetturale canonico
+
+Questa e la mappa canonica del path del server state per i domini gia migrati.
+
+Vale per:
+
+- `activities`
+- `applications`
+- `community`
+- `smart match`
+- `gamification`
+
+Con una precisazione:
+
+- `notifications` ha gia React Query come source of truth, ma [NotificationContext.tsx](/Users/francescocavaliere/aiutarsi/context/NotificationContext.tsx) esiste ancora come orchestration bridge temporaneo
+
+Regole:
+
+- la UI non legge il backend direttamente
+- la UI legge solo tramite canonical domain hooks
+- le mutation vivono nei domini, non fuori dai domini
+- i legacy adapters non sono un secondo canale standard
+- il Context non e piu nel path del server state dei domini gia migrati
+
+```mermaid
+flowchart LR
+  A["Supabase / RPC / Tables"] --> B["React Query cache"]
+
+  B --> QN["notifications queries"]
+  B --> QA["activities queries"]
+  B --> QAP["applications queries"]
+  B --> QC["community queries"]
+  B --> QSM["smart match queries"]
+  B --> QG["gamification queries"]
+
+  QN --> SN["notifications selectors / view hooks"]
+  QA --> SA["activities selectors / view hooks"]
+  QAP --> SAP["applications selectors / view hooks"]
+  QC --> SC["community selectors / view hooks"]
+  QSM --> SSM["smart match selectors / view hooks"]
+  QG --> SG["gamification selectors / view hooks"]
+
+  SN --> UI["Screens / components"]
+  SA --> UI
+  SAP --> UI
+  SC --> UI
+  SSM --> UI
+  SG --> UI
+
+  MN["notifications mutations"] --> A
+  MA["activities mutations"] --> A
+  MAP["applications mutations"] --> A
+  MC["community mutations"] --> A
+  MSM["smart match mutations"] --> A
+  MG["gamification mutations"] --> A
+
+  MN --> I["invalidateQueries(...)"]
+  MA --> I
+  MAP --> I
+  MC --> I
+  MSM --> I
+  MG --> I
+
+  I --> B
+
+  L["Legacy adapters (temporary only)"] -. compatibility only .-> UI
+  X["Context not in server-state path"] -. architectural rule .-> UI
+```
+
+Nota:
+
+- il diagramma descrive il path canonico del server state
+- non e un diagramma 1:1 di ogni singolo file del repo
+- i legacy adapters restano eccezioni temporanee di compatibilita
+
+## Prossimo dominio: Chat
+
+`chat` e il prossimo dominio da affrontare.
+
+### Fase 0: Canonical semantics
+
+Questa fase e bloccante prima del refactor tecnico.
+
+#### Source of truth canonica
+
+Per `chat`, la source of truth canonica deve coprire:
+
+- conversazioni / inbox
+- unread count
+- inbox ordering
+- `conversation(conversationId)` come metadata:
+  - participants summary
+  - title
+  - mute
+  - status
+  - last activity / last preview gia persistiti nel boundary corretto
+- `messages(conversationId, pageCursor)` come timeline canonica paginata
+- members / participants, se il dominio chat li possiede davvero
+
+#### Non canonici / UI-only
+
+Questi stati non appartengono al dataset canonico:
+
+- typing state
+- transient optimistic pending messages
+- composer draft
+- upload progress
+- presence online/offline istantanea
+- menu state
+- selection state
+- scroll anchors
+
+#### Regole
+
+- `unreadCount` non puo essere derivato in parallelo da piu fonti
+- inbox ordering non puo vivere in Context + screen + service insieme
+- messages list non puo avere doppia ownership tra Context e query cache
+- realtime non puo essere duplicato su inbox e detail senza contract chiaro
+- l'ottimismo locale deve vivere solo nel mutation path, non sparso nella screen
+- pending messages vivono solo nel mutation/UI layer
+- quando un messaggio viene confermato entra nel dataset canonico `messages`
+- la screen non mantiene una seconda timeline mista
+- retry e failed state sono una vista sul mutation state, non una seconda source of truth
+
+### Lettura architetturale attuale
+
+Oggi `chat` e ancora in una fase ibrida:
+
+- [context/ChatContext.tsx](/Users/francescocavaliere/aiutarsi/context/ChatContext.tsx) possiede:
+  - `conversations`
+  - `unreadCount`
+  - `refreshConversations`
+  - `markAsRead`
+  - `updateConversationPreview`
+- esiste anche un hook Query separato in [hooks/useChat.ts](/Users/francescocavaliere/aiutarsi/hooks/useChat.ts)
+- le schermate principali usano ancora il Context:
+  - [app/messages/index.tsx](/Users/francescocavaliere/aiutarsi/app/messages/index.tsx)
+  - [app/messages/[id].tsx](/Users/francescocavaliere/aiutarsi/app/messages/[id].tsx)
+- [services/ChatService.ts](/Users/francescocavaliere/aiutarsi/services/ChatService.ts) concentra:
+  - inbox
+  - detail metadata
+  - paginazione messaggi
+  - send
+  - delete
+  - mark read
+  - leave
+  - availability per start chat
+  - block/unblock
+
+Quindi oggi `chat` ha ancora:
+
+- Context come data path reale
+- Query hook parziale non canonico
+- service layer molto carico
+- realtime sparso tra Context e screen detail
+
+### Nodi architetturali da chiudere prima
+
+Per `chat`, i nodi importanti sono questi:
+
+1. Inbox canonica
+
+- una sola source of truth per conversation list e unread count
+
+2. Conversation detail canonico
+
+- metadata conversazione
+- messaggi paginati
+- typing/presence separati dal dataset canonico
+
+3. Semantica di unread / mark as read
+
+- oggi il Context aggiorna badge e unread count
+- va portato nel dominio con invalidation coerente
+
+4. Realtime unificato
+
+- niente subscription duplicate tra Context e screen
+- il realtime deve invalidare o patchare il dataset canonico, non due cache diverse
+
+### Canonical datasets proposti
+
+I dataset canonici minimi del dominio `chat` dovrebbero essere:
+
+- `chatKeys.inbox(userId)`
+- `chatKeys.unreadCount(userId)`
+- `chatKeys.conversation(conversationId)`
+- `chatKeys.messages(conversationId, pageCursor)`
+- `chatKeys.conversationMembers(conversationId)` se i membri oggi vengono ricostruiti troppo lato screen
+- `chatKeys.availableEntities(userId, role)`
+- `chatKeys.attachments(conversationId)` solo se l'attachment flow avra una vista autonoma
+
+Presence e typing non sono dataset canonici persistiti:
+
+- possono vivere in hook UI/realtime separati
+- non devono contaminare il dataset dei messaggi
+- `chatKeys.typing(conversationId)` non va introdotto se typing resta realtime/UI effimero
+
+### Cluster consumer
+
+- Gruppo A: inbox / unread consumers
+  - [app/messages/index.tsx](/Users/francescocavaliere/aiutarsi/app/messages/index.tsx)
+  - [components/VolunteerHeaderActions.tsx](/Users/francescocavaliere/aiutarsi/components/VolunteerHeaderActions.tsx)
+  - [components/NPOHeaderActions.tsx](/Users/francescocavaliere/aiutarsi/components/NPOHeaderActions.tsx)
+- Gruppo B: detail conversation consumers
+  - [app/messages/[id].tsx](/Users/francescocavaliere/aiutarsi/app/messages/[id].tsx)
+  - [components/ChatBubble.tsx](/Users/francescocavaliere/aiutarsi/components/ChatBubble.tsx)
+- Gruppo C: chat entry points
+  - [app/npo-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/npo-profile/[id].tsx)
+  - [app/(npo)/volunteer-profile/[id].tsx](/Users/francescocavaliere/aiutarsi/app/(npo)/volunteer-profile/[id].tsx)
+- Gruppo D: boundary laterali
+  - block/unblock
+  - moderation
+  - report modal
+
+### Gap e bug potenziali
+
+1. Doppia fonte inbox
+
+- `ChatContext` e `useConversations` convivono
+- rischio di drift su badge, preview e unread count
+
+2. Realtime duplicato
+
+- inbox list ha subscription in Context
+- detail screen ha subscription dedicata ai messaggi
+- rischio di refetch ridondanti e preview incoerenti
+
+3. Ottimismo locale molto sparso
+
+- send, delete, undo delete, preview update, markAsRead
+- rischio di stato intermedio incoerente se non c'e un dominio canonico
+
+4. `ChatService` troppo carico
+
+- oggi e insieme query layer, mutation layer e orchestration layer
+- va alleggerito dietro hook di dominio piu chiari
+
+5. UX detail fragile
+
+- polling metadata ogni 30s
+- typing e presence appesi alla screen
+- potenziale jitter su header online/offline e su refresh
+
+### Miglioramenti UI / UX / funzionali
+
+Oltre al refactor architetturale, `chat` ha spazio per migliorare anche lato prodotto.
+
+UI:
+
+- migliorare la gerarchia visiva dell'inbox:
+  - stato unread piu netto
+  - gruppi vs privati piu distinguibili
+  - preview attachment / system messages piu leggibile
+- ripulire il menu della detail chat:
+  - mute
+  - participants
+  - report / block
+  - separazione piu chiara tra azioni neutre e distruttive
+
+UX:
+
+- ridurre il jitter dell'header online/offline
+- rendere piu affidabile il retry dei messaggi falliti
+- evitare refetch completi dell'inbox su ogni evento non necessario
+- rendere piu chiaro lo stato di chat appena avviata senza messaggi
+
+Funzionalita:
+
+- attachment flow reale oltre al placeholder `📎 file.name`
+- mute persistente e non solo UI-local
+- read receipts / delivered state esplicitamente fuori scope del primo pass, salvo bisogno prodotto reale
+- system messages piu tipizzati:
+  - chat avviata
+  - partecipante aggiunto
+  - utente bloccato / uscito
+
+### Piano di implementazione
+
+1. Fissare `Canonical semantics` del dominio
+
+- inbox, unread count, conversation metadata, messages
+- presence e typing fuori dal dataset canonico
+
+2. Freeze di [context/ChatContext.tsx](/Users/francescocavaliere/aiutarsi/context/ChatContext.tsx)
+
+- nessun nuovo server state
+- nessuna nuova fetch/refetch canonica
+- nessuna nuova business invalidation guidata dal Context
+
+3. Creare il dominio Query `chat`
+
+- `hooks/chat/keys.ts`
+- `hooks/chat/queries.ts`
+- `hooks/chat/mutations.ts`
+- `hooks/chat/selectors.ts`
+- `hooks/chat/useChatInboxView.ts`
+- `hooks/chat/useConversationView.ts`
+- eventuale `realtime.ts`
+
+Regola:
+
+- evitare un mega-hook che ricrei il Context sotto altro nome
+- `useChatInboxView(userId)` e `useConversationView(conversationId, userId)` devono restare distinti
+
+4. Migrare prima inbox e unread count
+
+- [app/messages/index.tsx](/Users/francescocavaliere/aiutarsi/app/messages/index.tsx)
+- [components/VolunteerHeaderActions.tsx](/Users/francescocavaliere/aiutarsi/components/VolunteerHeaderActions.tsx)
+- [components/NPOHeaderActions.tsx](/Users/francescocavaliere/aiutarsi/components/NPOHeaderActions.tsx)
+
+5. Migrare detail conversation
+
+- metadata query
+- messages query paginata
+- send / delete / mark read come mutations
+- realtime unificato
+
+Regole forti della fase detail:
+
+- i messages hanno una sola fonte canonica
+- il realtime deve fare patch o invalidation mirata, non rifetch totale continuo
+- l'ottimismo locale sta solo nel mutation path, non sparso nella screen
+
+6. Separare presence / typing in hook UI dedicati
+
+- niente presenza dentro il dataset dei messaggi
+
+7. Ridurre o eliminare `ChatContext`
+
+- target ideale: rimozione completa
+- target accettabile temporaneo: bridge minimo solo se serve davvero
+
+8. Poi chiudere smoke, `preview`, `production`
+
+### Done criteria: Chat
+
+- una sola source of truth per inbox e unread count
+- una sola source of truth per conversation metadata e messages
+- una sola source of truth per inbox ordering
+- `ChatContext` non e piu nel path del server state
+- realtime inbox e detail non duplicano la cache
+- i messages non hanno doppia ownership tra Context e query cache
+- `useChatInboxView` e `useConversationView` sono i punti canonici di accesso UI
+- `ChatService` non e piu il punto di accesso diretto della UI
+- inbox, detail e header badges leggono dal dominio Query
+- `lint` e `tsc` verdi
+- smoke staging del dominio verde
+- verifica runtime `preview` verde
+- promozione `production` completata

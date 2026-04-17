@@ -4,11 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
-import ChatService from "../../../services/ChatService";
 import ReportModal from "../../../components/ReportModal";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 import { useVolunteerApplications } from "../../../hooks/applications/selectors";
 import { useGamificationView } from "../../../hooks/gamification/selectors";
+import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
@@ -22,6 +22,7 @@ export default function NPOVolunteerProfile() {
     const [loading, setLoading] = useState(true);
     const [showReportModal, setShowReportModal] = useState(false);
     const { state: gamificationState, levelProgress, xpInLevel, xpNeededForLevel, levelName } = useGamificationView(user);
+    const startPrivateConversationMutation = useStartPrivateConversationMutation(currentUser?.id);
 
     useEffect(() => {
         const loadData = async () => {
@@ -162,7 +163,7 @@ export default function NPOVolunteerProfile() {
     const handleMessageVolunteer = async () => {
         if (!user) return;
         try {
-            const convId = await ChatService.startPrivateConversation(currentUser?.id || '', user.id);
+            const convId = await startPrivateConversationMutation.mutateAsync(user.id);
             router.push({
                 pathname: `/messages/${convId}` as any,
                 params: {

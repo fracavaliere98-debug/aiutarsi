@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Image, ActivityIndicator, PanResponder, Animated as RNAnimated, Animated } from 'react-native';
 import { Search, Edit, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
-import { useChat } from '../../context/ChatContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import ChatService from '../../services/ChatService';
 import { useToast } from '../../context/ToastContext';
+import { useAvailableChatEntitiesQuery } from '../../hooks/chat/queries';
+import { useChatInboxView } from '../../hooks/chat/useChatInboxView';
+import { useHideConversationMutation, useStartGroupConversationMutation, useStartPrivateConversationMutation } from '../../hooks/chat/mutations';
 
 import { StandardLayout } from '../../components/StandardLayout';
 
@@ -106,19 +107,23 @@ function SwipeableConversationItem({ children, onDelete }: { children: React.Rea
 
 export default function MessagesListScreen() {
     const router = useRouter();
-    const { conversations, refreshConversations } = useChat();
     const { user } = useAuth();
+    const { conversations, refreshInbox: refreshConversations, isRefreshing } = useChatInboxView(user?.id);
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'Tutti' | 'Gruppi Attività' | 'Privati'>('Tutti');
     const [showNpoPicker, setShowNpoPicker] = useState(false);
-    const [myNpos, setMyNpos] = useState<any[]>([]);
-    const [loadingNpos, setLoadingNpos] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [localConversations, setLocalConversations] = useState<any[]>([]);
     const undoTimeoutRef = useRef<any>(null);
     const pendingDeleteRef = useRef<{ convId: string; userId: string } | null>(null);
     const isUndoActiveRef = useRef(false);
     const panY = useRef(new RNAnimated.Value(0)).current;
+    const hideConversationMutation = useHideConversationMutation(user?.id);
+    const startPrivateConversationMutation = useStartPrivateConversationMutation(user?.id);
+    const startGroupConversationMutation = useStartGroupConversationMutation(user?.id);
+    const availableEntitiesQuery = useAvailableChatEntitiesQuery(user?.id, user?.role, showNpoPicker);
+    const myNpos = availableEntitiesQuery.data ?? [];
+    const loadingNpos = availableEntitiesQuery.isLoading || availableEntitiesQuery.isFetching;
 
     const panResponder = React.useRef(
         PanResponder.create({
@@ -189,7 +194,7 @@ export default function MessagesListScreen() {
             isUndoActiveRef.current = false;
             if (!pending) return;
             try {
-                await ChatService.leaveConversation(pending.convId, pending.userId);
+                await hideConversationMutation.mutateAsync(pending.convId);
                 pendingDeleteRef.current = null;
                 refreshConversations();
             } catch (e) {
@@ -197,7 +202,7 @@ export default function MessagesListScreen() {
                 refreshConversations(); // Restore on error
             }
         }, 5000);
-    }, [user?.id, showToast, refreshConversations]);
+    }, [hideConversationMutation, user?.id, showToast, refreshConversations]);
 
     // Force commit deletion when user leaves the screen
     useFocusEffect(
@@ -212,13 +217,13 @@ export default function MessagesListScreen() {
             return () => {
                 if (pendingDeleteRef.current) {
                     const pending = pendingDeleteRef.current;
-                    ChatService.leaveConversation(pending.convId, pending.userId).catch(console.error);
+                    hideConversationMutation.mutate(pending.convId);
                     pendingDeleteRef.current = null;
                     isUndoActiveRef.current = false;
                     clearTimeout(undoTimeoutRef.current);
                 }
             };
-        }, [])
+        }, [hideConversationMutation])
     );
 
     useEffect(() => {
@@ -227,36 +232,13 @@ export default function MessagesListScreen() {
         }
     }, [panY, showNpoPicker]);
 
-    const fetchMyNpos = async () => {
-        setLoadingNpos(true);
-        try {
-            if (user?.role === 'NPO') {
-                const { volunteers, groups } = await ChatService.getAvailableEntitiesForNPO(user.id);
-                // Combine them for the list
-                const combined = [
-                    ...groups.map((g: any) => ({ ...g, isGroup: true })),
-                    ...volunteers.map((v: any) => ({ ...v, isGroup: false }))
-                ];
-                setMyNpos(combined);
-            } else {
-                // Fetch NPOs where user is a participant or following
-                const { data } = await ChatService.getAvailableNpos(user?.id || '');
-                if (data) setMyNpos(data.map((n: any) => ({ ...n, isGroup: false })));
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoadingNpos(false);
-        }
-    };
-
     const handleStartChat = async (entity: any) => {
         try {
             let convId;
             if (entity.isGroup) {
-                convId = await ChatService.startGroupConversation(entity.id, entity.name, user?.id);
+                convId = await startGroupConversationMutation.mutateAsync({ activityId: entity.id, title: entity.name });
             } else {
-                convId = await ChatService.startPrivateConversation(user?.id || '', entity.id);
+                convId = await startPrivateConversationMutation.mutateAsync(entity.id);
             }
             setShowNpoPicker(false);
             router.push(`/messages/${convId}` as any);
@@ -335,7 +317,7 @@ export default function MessagesListScreen() {
                     <TouchableOpacity
                         onPress={() => {
                             setShowNpoPicker(true);
-                            fetchMyNpos();
+                            void availableEntitiesQuery.refetch();
                         }}
                         style={{ backgroundColor: Colors.accent }} // Pink/Magenta color from photo
                         className="w-12 h-12 rounded-full items-center justify-center shadow-sm"
@@ -374,7 +356,7 @@ export default function MessagesListScreen() {
                         data={filteredConversations}
                         keyExtractor={(item) => item.conversation_id}
                         onRefresh={refreshConversations}
-                        refreshing={false}
+                        refreshing={isRefreshing}
                         renderItem={({ item }) => {
                             const conv = item.conversations;
                             if (!conv) return null;

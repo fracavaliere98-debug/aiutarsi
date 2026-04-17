@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { ToastProvider } from "../context/ToastContext";
-import { ChatProvider } from "../context/ChatContext";
 import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
@@ -285,14 +284,12 @@ function RootLayout() {
           <AuthProvider>
             <ToastProvider>
               <NotificationProvider>
-                <ChatProvider>
-                  <StoriesProvider>
-                    <StatusBar style="dark" />
-                    <RootLayoutNav />
-                    <ToastContainer />
-                    <LevelUpOverlay />
-                  </StoriesProvider>
-                </ChatProvider>
+                <StoriesProvider>
+                  <StatusBar style="dark" />
+                  <RootLayoutNav />
+                  <ToastContainer />
+                  <LevelUpOverlay />
+                </StoriesProvider>
               </NotificationProvider>
             </ToastProvider>
           </AuthProvider>
