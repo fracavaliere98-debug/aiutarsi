@@ -21,26 +21,14 @@ export function useChatInboxRealtime(userId?: string, enabled = true) {
       }, 500);
     };
 
-    const messagesChannel = supabase
-      .channel(`chat-inbox-messages-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, scheduleInvalidation)
-      .subscribe();
-
     const participantsChannel = supabase
       .channel(`chat-inbox-participants-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "conversation_participants", filter: `user_id=eq.${userId}` }, scheduleInvalidation)
       .subscribe();
 
-    const conversationsChannel = supabase
-      .channel(`chat-inbox-conversations-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, scheduleInvalidation)
-      .subscribe();
-
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      supabase.removeChannel(messagesChannel);
       supabase.removeChannel(participantsChannel);
-      supabase.removeChannel(conversationsChannel);
     };
   }, [enabled, queryClient, userId]);
 }

@@ -12,6 +12,28 @@ import { useHideConversationMutation, useStartGroupConversationMutation, useStar
 
 import { StandardLayout } from '../../components/StandardLayout';
 
+function areConversationSnapshotsEqual(previous: any[], next: any[]) {
+    if (previous.length !== next.length) return false;
+
+    return previous.every((prevConversation: any, index: number) => {
+        const nextConversation = next[index];
+        if (!nextConversation) return false;
+
+        const prevMeta = prevConversation?.conversations;
+        const nextMeta = nextConversation?.conversations;
+
+        return (
+            prevConversation?.conversation_id === nextConversation?.conversation_id &&
+            prevConversation?.unread_count === nextConversation?.unread_count &&
+            prevConversation?.inbox_visible_at === nextConversation?.inbox_visible_at &&
+            prevConversation?.inbox_title === nextConversation?.inbox_title &&
+            prevMeta?.last_message_at === nextMeta?.last_message_at &&
+            prevMeta?.last_message_content === nextMeta?.last_message_content &&
+            prevMeta?.last_message_sender_id === nextMeta?.last_message_sender_id
+        );
+    });
+}
+
 const formatRelativeDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -157,7 +179,10 @@ export default function MessagesListScreen() {
         // Skip overwrite while undo window is active — otherwise Annulla would immediately
         // be undone by the conversation list refresh that follows refreshConversations().
         if (!isUndoActiveRef.current) {
-            setLocalConversations(conversations || []);
+            const nextConversations = conversations || [];
+            setLocalConversations((previous) => (
+                areConversationSnapshotsEqual(previous, nextConversations) ? previous : nextConversations
+            ));
         }
     }, [conversations]);
 

@@ -98,21 +98,18 @@ export function NotificationsFeed({
 
   return (
     <View>
-      <SoftCard className="mb-4 p-4 rounded-[28px] bg-white border border-primary/5">
+      <SoftCard className="mb-4 px-4 py-3 rounded-[24px] bg-white border border-primary/5">
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-4">
             <Text className="text-[11px] font-black tracking-[2px] uppercase text-secondary/50">
               Centro Notifiche
             </Text>
-            <Text className="mt-1 text-lg font-black text-primary">
+            <Text className="mt-1 text-base font-black text-primary">
               {unreadCount > 0 ? `${unreadCount} nuove da controllare` : "Tutto aggiornato"}
             </Text>
-            <Text className="mt-1 text-sm leading-5 text-secondary/75">
-              Una sola lista, ordinata e leggibile, con i segnali davvero utili.
-            </Text>
           </View>
-          <View className="h-14 min-w-[56px] rounded-2xl bg-accent/10 items-center justify-center px-3">
-            <Text className="text-accent text-2xl font-black">{unreadCount}</Text>
+          <View className="h-11 min-w-[44px] rounded-2xl bg-accent/10 items-center justify-center px-3">
+            <Text className="text-accent text-xl font-black">{unreadCount}</Text>
           </View>
         </View>
       </SoftCard>
@@ -157,26 +154,20 @@ export function NotificationsFeed({
                         {notification.message}
                       </Text>
 
-                      <View className="mt-3 flex-row items-center justify-between">
-                        <View className="flex-row items-center gap-2">
-                          {!notification.read && (
-                            <>
-                              <View className="h-2.5 w-2.5 rounded-full bg-accent" />
-                              <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-accent">
-                                Nuova
-                              </Text>
-                            </>
-                          )}
-                          {notification.read && (
-                            <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-secondary/45">
-                              Letta
+                      <View className="mt-3 flex-row items-center justify-end">
+                        {!notification.read && (
+                          <View className="flex-row items-center gap-2">
+                            <View className="h-2.5 w-2.5 rounded-full bg-accent" />
+                            <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-accent">
+                              Non letta
                             </Text>
-                          )}
-                        </View>
-
-                        <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-primary/60">
-                          Apri
-                        </Text>
+                          </View>
+                        )}
+                        {notification.read && (
+                          <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-secondary/45">
+                            Letta
+                          </Text>
+                        )}
                       </View>
                     </View>
                   </View>
