@@ -24,7 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarPicker } from "../../../components/CalendarPicker";
 import { requestForegroundLocationPermission } from "../../../utils/permissions";
 import { INTERESTS } from "../../../constants/Interests";
-import { getLegacyActivityMatchSnapshot } from "../../../utils/smartMatchLegacy";
+import { useSmartMatchActivityScoresView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
 
@@ -398,6 +398,7 @@ export default function VolunteerMap() {
             return true;
         });
     }, [activities, filters]);
+    const { scoreMap: activityScoreMap } = useSmartMatchActivityScoresView(user, filteredActivities as AppActivity[]);
 
     // ── Filter helpers ──────────────────────────────────────────────────────
     const openFilters = () => { setPendingFilters(filters); setIsFilterModalVisible(true); };
@@ -1025,6 +1026,7 @@ export default function VolunteerMap() {
                     const activity = filteredActivities.find(a => a.id === selectedActivity);
                     if (!activity) return null;
                     const dist = formatDistance((activity as any).distanceMeters);
+                    const activityMatchScore = Math.round(activityScoreMap.get(activity.id)?.score ?? 0);
                     const CategoryIcon = getCategoryIcon(activity.category);
                     return (
                         <Animated.View
@@ -1062,9 +1064,9 @@ export default function VolunteerMap() {
                                             <CategoryIcon size={12} color={Colors.primary} />
                                             <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.category}</Text>
                                         </View>
-                                        {getLegacyActivityMatchSnapshot(activity) > 0 && (
+                                        {activityMatchScore > 0 && (
                                             <View style={{ backgroundColor: `${Colors.primary}15`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
-                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{getLegacyActivityMatchSnapshot(activity)}% Match</Text>
+                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activityMatchScore}% Match</Text>
                                             </View>
                                         )}
                                         {dist && (

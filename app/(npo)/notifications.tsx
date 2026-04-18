@@ -1,6 +1,6 @@
 import { TouchableOpacity, RefreshControl, Text } from "react-native";
 import { useAuth } from "../../context/AuthContext";
-import { useNotifications } from "../../context/NotificationContext";
+import { useNotificationsDomain } from "../../hooks/notifications/useNotificationsDomain";
 import { StandardLayout } from "../../components/StandardLayout";
 import { CheckCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
@@ -11,7 +11,7 @@ import { NotificationsFeed } from "../../components/notifications/NotificationsF
 
 export default function NPONotificationsScreen() {
     const { user } = useAuth();
-    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotifications();
+    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotificationsDomain();
     const router = useRouter();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);

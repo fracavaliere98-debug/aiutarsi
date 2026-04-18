@@ -4,7 +4,6 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
-import { getLegacyActivityMatchSnapshot } from '../../utils/smartMatchLegacy';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
@@ -14,6 +13,7 @@ import { GemmaAvatar } from '../GemmaAvatar';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { useVolunteerApplications } from '../../hooks/applications/selectors';
+import { useSmartMatchActivityScoresView } from '../../hooks/smart-match/useSmartMatchView';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
@@ -49,6 +49,7 @@ export function VolunteerCommunityScreen({
     const router = useRouter();
     const { user } = useAuth();
     const volunteerApplications = useVolunteerApplications(user, user?.id);
+    const { scoreMap: suggestedScoreMap } = useSmartMatchActivityScoresView(user, suggestedActivities);
 
     const followedNpoIds = useMemo(
         () => (user?.followedNPOs || []).filter(Boolean),
@@ -336,7 +337,10 @@ export function VolunteerCommunityScreen({
         weekendActivity,
     ]);
 
-    const renderSuggestedActivity = useCallback(({ item }: { item: AppActivity }) => (
+    const renderSuggestedActivity = useCallback(({ item }: { item: AppActivity }) => {
+        const activityScore = Math.round(suggestedScoreMap.get(item.id)?.score ?? 0);
+
+        return (
         <TouchableOpacity
             activeOpacity={0.88}
             onPress={() => router.push(`/activity/${item.id}` as any)}
@@ -367,11 +371,12 @@ export function VolunteerCommunityScreen({
                 <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
                     {getCityLabel(item.location?.address)}
                     {' · '}
-                    {getLegacyActivityMatchSnapshot(item)}% match
+                    {activityScore}% match
                 </Text>
             </View>
         </TouchableOpacity>
-    ), [router]);
+        );
+    }, [router, suggestedScoreMap]);
 
     const listFooter = useMemo(() => (
         <View style={{ paddingBottom: 100 }}>

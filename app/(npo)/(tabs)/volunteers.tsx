@@ -13,7 +13,7 @@ import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { Colors } from "../../../constants/Colors";
-import { useNotifications } from "../../../context/NotificationContext";
+import { useNotificationsDomain } from "../../../hooks/notifications/useNotificationsDomain";
 import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
 import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
@@ -27,7 +27,7 @@ export default function VolunteersScreen() {
     const approveApplicationMutation = useApproveApplicationMutation(user);
     const rejectApplicationMutation = useRejectApplicationMutation(user);
     const { showToast } = useToast();
-    const { addNotification } = useNotifications();
+    const { addNotification } = useNotificationsDomain();
     const params = useLocalSearchParams();
     const router = useRouter();
     const { data: activities = [], isError: activitiesError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);

@@ -9,7 +9,7 @@ import {
   MapPin, Globe, Mail, Info, ExternalLink, Phone
 } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useNotifications } from '../../../context/NotificationContext';
+import { useNotificationsDomain } from '../../../hooks/notifications/useNotificationsDomain';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -28,7 +28,7 @@ const formatDate = (dateString: string, includeYear = false) => {
 export default function AdminVerificationDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useNotificationsDomain();
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);

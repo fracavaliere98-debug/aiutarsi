@@ -30,7 +30,7 @@ export function ConversationListItem({
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
-            className="flex-row items-center py-4 px-5 border-b border-gray-100 bg-white"
+            className={`flex-row items-center py-4 px-5 border-b border-gray-100 ${unreadCount > 0 ? 'bg-primary/5' : 'bg-white'}`}
         >
             <View className="relative mr-4">
                 <View className={`rounded-full p-0.5 ${unreadCount > 0 ? 'border-2 border-primary/20' : 'border border-transparent'}`}>
@@ -67,6 +67,11 @@ export function ConversationListItem({
                         {lastMessage || "Nessun messaggio"}
                     </Text>
                 </View>
+                {unreadCount > 0 ? (
+                    <Text className="mt-1 text-[11px] font-black uppercase tracking-[1.4px] text-primary">
+                        Nuovi messaggi
+                    </Text>
+                ) : null}
             </View>
 
             {unreadCount > 0 && (

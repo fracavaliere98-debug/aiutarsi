@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { MessageSquare, Bell } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { UserAvatar } from "./UserAvatar";
-import { useNotifications } from "../context/NotificationContext";
+import { useNotificationsDomain } from "../hooks/notifications/useNotificationsDomain";
 import { useAuth } from "../context/AuthContext";
 import { useChatInboxView } from "../hooks/chat/useChatInboxView";
 
@@ -12,7 +12,7 @@ import { Layout } from "../utils/layout";
 export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const router = useRouter();
     const { user } = useAuth();
-    const { unreadCount: notifUnreadCount } = useNotifications();
+    const { unreadCount: notifUnreadCount } = useNotificationsDomain();
     const { unreadCount: chatUnreadCount } = useChatInboxView(user?.id);
 
     const avatarSize = Layout.isTablet ? 52 : 44;

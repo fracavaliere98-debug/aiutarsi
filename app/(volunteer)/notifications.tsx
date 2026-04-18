@@ -3,14 +3,14 @@ import { CheckCircle } from "lucide-react-native";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
-import { useNotifications } from "../../context/NotificationContext";
+import { useNotificationsDomain } from "../../hooks/notifications/useNotificationsDomain";
 import { useToast } from "../../context/ToastContext";
 import { useState } from "react";
 import { NotificationsFeed } from "../../components/notifications/NotificationsFeed";
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotifications();
+    const { notifications, markAllAsRead, openNotification, refreshNotifications } = useNotificationsDomain();
     const { showToast } = useToast();
     const [refreshing, setRefreshing] = useState(false);
 

@@ -7,7 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { 
   ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
 } from 'lucide-react-native';
-import { useNotifications } from '../../../context/NotificationContext';
+import { useNotificationsDomain } from '../../../hooks/notifications/useNotificationsDomain';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -33,7 +33,7 @@ interface AuditLog {
 export default function AdminReportDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useNotificationsDomain();
   const [report, setReport] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);

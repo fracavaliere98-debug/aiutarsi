@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Bell, MessageCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { UserAvatar } from './UserAvatar';
-import { useNotifications } from '../context/NotificationContext';
+import { useNotificationsDomain } from '../hooks/notifications/useNotificationsDomain';
 import { useAuth } from '../context/AuthContext';
 import { useChatInboxView } from '../hooks/chat/useChatInboxView';
 import { Layout } from '../utils/layout';
@@ -12,7 +12,7 @@ export const VolunteerHeaderActions = ({ showAddPost }: { showAddPost?: boolean 
     const router = useRouter();
     const { user } = useAuth();
     const { unreadCount: chatUnreadCount } = useChatInboxView(user?.id);
-    const { unreadCount: notificationsUnreadCount } = useNotifications();
+    const { unreadCount: notificationsUnreadCount } = useNotificationsDomain();
 
     const avatarSize = Layout.isTablet ? 52 : 44;
     const iconSize = avatarSize > 44 ? 22 : 20;

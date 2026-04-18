@@ -4,11 +4,11 @@ import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-f
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
-import { NotificationProvider } from "../context/NotificationContext";
 import { ToastProvider } from "../context/ToastContext";
 import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
+import { NotificationsRuntimeBridge } from "../components/notifications/NotificationsRuntimeBridge";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
@@ -283,14 +283,13 @@ function RootLayout() {
         <ErrorBoundary>
           <AuthProvider>
             <ToastProvider>
-              <NotificationProvider>
-                <StoriesProvider>
-                  <StatusBar style="dark" />
-                  <RootLayoutNav />
-                  <ToastContainer />
-                  <LevelUpOverlay />
-                </StoriesProvider>
-              </NotificationProvider>
+              <NotificationsRuntimeBridge />
+              <StoriesProvider>
+                <StatusBar style="dark" />
+                <RootLayoutNav />
+                <ToastContainer />
+                <LevelUpOverlay />
+              </StoriesProvider>
             </ToastProvider>
           </AuthProvider>
         </ErrorBoundary>
