@@ -23,6 +23,7 @@ export function useAddNotificationMutation() {
         related_npo_id: notification.npoId,
         related_conversation_id: notification.conversationId,
         match_score: notification.matchScore,
+        payload: notification.payload ?? {},
         read: false,
       };
 

@@ -1,5 +1,6 @@
 export type AppNotificationType =
   | "ACTIVITY_UPDATE"
+  | "ACTIVITY_COMPLETED"
   | "SUCCESS"
   | "INFO"
   | "URGENT"
@@ -33,4 +34,5 @@ export interface AppNotification {
   read: boolean;
   userId: string;
   matchScore?: number;
+  payload?: Record<string, unknown>;
 }

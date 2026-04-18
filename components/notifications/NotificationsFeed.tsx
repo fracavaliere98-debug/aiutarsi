@@ -23,6 +23,8 @@ function getNotificationIcon(type: string, title?: string) {
   switch (type) {
     case "ACTIVITY_UPDATE":
       return { Icon: AlertCircle, color: Colors.accent };
+    case "ACTIVITY_COMPLETED":
+      return { Icon: CheckCircle, color: "#22c55e" };
     case "ACTIVITY_REMINDER":
       return { Icon: CalendarClock, color: Colors.primary };
     case "REVIEW_REMINDER":

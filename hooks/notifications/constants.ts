@@ -13,4 +13,5 @@ export const NOTIFICATION_SELECT_FIELDS = [
   "related_conversation_id",
   "created_at",
   "match_score",
+  "payload",
 ].join(",");

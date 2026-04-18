@@ -372,6 +372,7 @@ export async function processDueJobs(supabase: any, now: Date, limit: number) {
         related_application_id: job.related_application_id || null,
         related_npo_id: job.related_npo_id || (job.payload?.npoId as string | undefined) || null,
         related_conversation_id: job.related_conversation_id || null,
+        payload: job.payload || {},
         read: false,
       });
 

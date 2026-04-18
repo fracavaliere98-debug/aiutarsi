@@ -21,19 +21,6 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     return (
         <View className="flex-row items-center gap-2.5 h-full" style={{ marginTop: 5 }}>
             <TouchableOpacity
-                onPress={() => router.push("/messages" as any)}
-                className="bg-white/10 rounded-2xl active:scale-90 relative items-center justify-center"
-                style={{ width: avatarSize, height: avatarSize }}
-            >
-                <MessageSquare color="white" size={iconSize} />
-                {chatUnreadCount > 0 && (
-                    <View className="absolute -top-1 -right-1 bg-pink-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
-                        <Text className="text-white text-[10px] font-black">{chatUnreadCount}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
                 onPress={() => router.push("/(npo)/notifications" as any)}
                 className="relative bg-white/10 rounded-2xl active:scale-90 items-center justify-center"
                 style={{ width: avatarSize, height: avatarSize }}
@@ -42,6 +29,19 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
                 {notifUnreadCount > 0 && (
                     <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
                         <Text className="text-white text-[10px] font-black">{notifUnreadCount}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={() => router.push("/messages" as any)}
+                className="bg-white/10 rounded-2xl active:scale-90 relative items-center justify-center"
+                style={{ width: avatarSize, height: avatarSize }}
+            >
+                <MessageSquare color="white" size={iconSize} />
+                {chatUnreadCount > 0 && (
+                    <View className="absolute -top-1 -right-1 bg-pink-500 w-5 h-5 rounded-full items-center justify-center border-2 border-primary">
+                        <Text className="text-white text-[10px] font-black">{chatUnreadCount}</Text>
                     </View>
                 )}
             </TouchableOpacity>

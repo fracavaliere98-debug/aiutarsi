@@ -62,7 +62,10 @@ export function useNotificationsDomain() {
 
   const openNotification = useCallback(
     async (
-      notification: Pick<AppNotification, "id" | "type" | "activityId" | "applicationId" | "npoId" | "conversationId">
+      notification: Pick<
+        AppNotification,
+        "id" | "type" | "title" | "message" | "activityId" | "applicationId" | "npoId" | "conversationId" | "payload"
+      >
     ) => {
       if (notification.id) {
         try {

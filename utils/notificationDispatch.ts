@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 
 type AppPushType =
     | 'ACTIVITY_UPDATE'
+    | 'ACTIVITY_COMPLETED'
     | 'SUCCESS'
     | 'INFO'
     | 'URGENT'
@@ -44,6 +45,7 @@ export async function dispatchNotification(payload: DispatchNotificationPayload)
         related_application_id: payload.applicationId || null,
         related_npo_id: payload.npoId || null,
         related_conversation_id: payload.conversationId || null,
+        payload: payload.data || {},
         read: false,
     };
 
