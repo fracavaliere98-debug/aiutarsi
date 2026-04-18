@@ -136,6 +136,7 @@ export default function MessagesListScreen() {
     const [showNpoPicker, setShowNpoPicker] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [localConversations, setLocalConversations] = useState<any[]>([]);
+    const [isPullRefreshing, setIsPullRefreshing] = useState(false);
     const undoTimeoutRef = useRef<any>(null);
     const pendingDeleteRef = useRef<{ convId: string; userId: string } | null>(null);
     const isUndoActiveRef = useRef(false);
@@ -186,6 +187,15 @@ export default function MessagesListScreen() {
         }
     }, [conversations]);
 
+    const refreshInboxManually = useCallback(async () => {
+        setIsPullRefreshing(true);
+        try {
+            await refreshConversations();
+        } finally {
+            setIsPullRefreshing(false);
+        }
+    }, [refreshConversations]);
+
     // Delete a conversation with 5s undo window
     const handleDeleteConversation = useCallback((convId: string) => {
         if (!user?.id) return;
@@ -232,7 +242,7 @@ export default function MessagesListScreen() {
     // Force commit deletion when user leaves the screen
     useFocusEffect(
         useCallback(() => {
-            refreshConversations();
+            void refreshConversations();
             return undefined;
         }, [refreshConversations])
     );
@@ -380,8 +390,8 @@ export default function MessagesListScreen() {
                     <FlatList
                         data={filteredConversations}
                         keyExtractor={(item) => item.conversation_id}
-                        onRefresh={refreshConversations}
-                        refreshing={isRefreshing}
+                        onRefresh={refreshInboxManually}
+                        refreshing={isPullRefreshing || isRefreshing}
                         renderItem={({ item }) => {
                             const conv = item.conversations;
                             if (!conv) return null;
