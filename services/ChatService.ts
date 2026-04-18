@@ -405,6 +405,15 @@ class ChatService {
 
     /** Block a user. Inserts into blocked_users. */
     async blockUser(blockerId: string, targetId: string) {
+        const { data: existing, error: existingError } = await supabase
+            .from('blocked_users')
+            .select('blocked_id')
+            .eq('blocker_id', blockerId)
+            .eq('blocked_id', targetId)
+            .maybeSingle();
+        if (existingError) throw existingError;
+        if (existing?.blocked_id) return;
+
         const { error } = await supabase
             .from('blocked_users')
             .insert({ blocker_id: blockerId, blocked_id: targetId });

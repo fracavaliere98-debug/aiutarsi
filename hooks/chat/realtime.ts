@@ -53,32 +53,47 @@ export function useConversationRealtime(conversationId?: string, userId?: string
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const scheduleInvalidation = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        void Promise.all([
-          queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
-          queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) }),
-          queryClient.invalidateQueries({ queryKey: chatKeys.conversationMembers(conversationId) }),
-          queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
-          queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
-        ]);
-      }, 300);
-    };
-
     const messagesChannel = supabase
       .channel(`chat-conversation-messages-${conversationId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, scheduleInvalidation)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          void Promise.all([
+            queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
+          ]);
+        }, 300);
+      })
       .subscribe();
 
     const participantsChannel = supabase
       .channel(`chat-conversation-participants-${conversationId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_participants", filter: `conversation_id=eq.${conversationId}` }, scheduleInvalidation)
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_participants", filter: `conversation_id=eq.${conversationId}` }, () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          void Promise.all([
+            queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.conversationMembers(conversationId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
+          ]);
+        }, 300);
+      })
       .subscribe();
 
     const conversationsChannel = supabase
       .channel(`chat-conversation-${conversationId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations", filter: `id=eq.${conversationId}` }, scheduleInvalidation)
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations", filter: `id=eq.${conversationId}` }, () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          void Promise.all([
+            queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
+            queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
+          ]);
+        }, 300);
+      })
       .subscribe();
 
     return () => {

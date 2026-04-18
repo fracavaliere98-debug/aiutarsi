@@ -74,6 +74,7 @@ export default function ChatDetailScreen() {
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<string[]>([]);
+  const lastReadMessageIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<any>(null);
   const presenceChannelRef = useRef<any>(null);
   const deleteTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -123,9 +124,28 @@ export default function ChatDetailScreen() {
   useEffect(() => {
     if (!conversationId || !user?.id) return;
     const latestMessage = canonicalMessages[0];
+    const ownParticipant = participants.find((participant: any) => participant.user_id === user.id);
     if (!latestMessage || latestMessage.sender_id === user.id) return;
-    markAsReadMutation.mutate(conversationId);
-  }, [canonicalMessages, conversationId, markAsReadMutation, user?.id]);
+
+    const lastReadAt = ownParticipant?.last_read_at ? new Date(ownParticipant.last_read_at).getTime() : 0;
+    const latestMessageAt = new Date(latestMessage.created_at).getTime();
+    const alreadyRead = lastReadAt >= latestMessageAt;
+    const alreadyAttempted = lastReadMessageIdRef.current === latestMessage.id;
+
+    if (alreadyRead) {
+      lastReadMessageIdRef.current = latestMessage.id;
+      return;
+    }
+
+    if (alreadyAttempted || markAsReadMutation.isPending) return;
+
+    lastReadMessageIdRef.current = latestMessage.id;
+    markAsReadMutation.mutate(conversationId, {
+      onError: () => {
+        lastReadMessageIdRef.current = null;
+      },
+    });
+  }, [canonicalMessages, conversationId, markAsReadMutation, participants, user?.id]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -390,7 +410,26 @@ export default function ChatDetailScreen() {
                   showToast('success', 'Utente sbloccato');
                 },
               });
-            } catch {
+            } catch (error) {
+              const { data: blockedRows, error: blockedRowsError } = await supabase
+                .from('blocked_users')
+                .select('blocked_id')
+                .eq('blocker_id', user.id)
+                .eq('blocked_id', targetId);
+
+              if (!blockedRowsError && (blockedRows || []).some((row: any) => row.blocked_id === targetId)) {
+                setShowMenu(false);
+                showToast('info', 'Utente bloccato', 8000, {
+                  label: 'Annulla',
+                  onPress: async () => {
+                    await unblockUserMutation.mutateAsync(targetId);
+                    showToast('success', 'Utente sbloccato');
+                  },
+                });
+                return;
+              }
+
+              console.error('Error blocking user:', error);
               showToast('error', 'Errore durante il blocco. Riprova.');
             }
           },
