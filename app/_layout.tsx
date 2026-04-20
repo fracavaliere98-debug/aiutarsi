@@ -5,7 +5,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ToastProvider } from "../context/ToastContext";
-import { StoriesProvider } from "../context/StoriesContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { NotificationsRuntimeBridge } from "../components/notifications/NotificationsRuntimeBridge";
@@ -284,12 +283,10 @@ function RootLayout() {
           <AuthProvider>
             <ToastProvider>
               <NotificationsRuntimeBridge />
-              <StoriesProvider>
-                <StatusBar style="dark" />
-                <RootLayoutNav />
-                <ToastContainer />
-                <LevelUpOverlay />
-              </StoriesProvider>
+              <StatusBar style="dark" />
+              <RootLayoutNav />
+              <ToastContainer />
+              <LevelUpOverlay />
             </ToastProvider>
           </AuthProvider>
         </ErrorBoundary>

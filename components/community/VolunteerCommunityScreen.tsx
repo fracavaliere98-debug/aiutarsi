@@ -8,24 +8,26 @@ import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
-import { Story } from '../../types/stories';
 import { GemmaAvatar } from '../GemmaAvatar';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { useVolunteerApplications } from '../../hooks/applications/selectors';
 import { useSmartMatchActivityScoresView } from '../../hooks/smart-match/useSmartMatchView';
+import { StoryAuthorGroup } from '../../hooks/stories/types';
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
     activities: AppActivity[];
     suggestedActivities: AppActivity[];
     gemmaSummary?: string;
+    storyGroups: StoryAuthorGroup[];
+    storiesLoading?: boolean;
     isLoading: boolean;
     isLoadingMore: boolean;
     refreshing: boolean;
     onRefresh: () => void;
     onLoadMore: () => void;
-    onStoryPress: (stories: Story[], index: number) => void;
+    onStoryPress: (groupIndex: number) => void;
 }
 
 function getCityLabel(address?: string | null) {
@@ -39,6 +41,8 @@ export function VolunteerCommunityScreen({
     activities,
     suggestedActivities,
     gemmaSummary,
+    storyGroups,
+    storiesLoading,
     isLoading,
     isLoadingMore,
     refreshing,
@@ -63,14 +67,6 @@ export function VolunteerCommunityScreen({
                 .map((application) => application.npoId)
                 .filter(Boolean),
         [volunteerApplications]
-    );
-    const suggestedNpoIds = useMemo(
-        () => Array.from(new Set(suggestedActivities.map((activity) => activity.npoId).filter(Boolean))).slice(0, 12),
-        [suggestedActivities]
-    );
-    const allowedStoryNpoIds = useMemo(
-        () => Array.from(new Set([...followedNpoIds, ...affiliatedNpoIds, ...suggestedNpoIds])),
-        [followedNpoIds, affiliatedNpoIds, suggestedNpoIds]
     );
     const volunteerPostAuthorIdsKey = useMemo(
         () =>
@@ -244,10 +240,8 @@ export function VolunteerCommunityScreen({
                 allowAddStory={true}
                 onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)}
                 onStoryPress={onStoryPress}
-                allowedAuthorIds={allowedStoryNpoIds}
-                followedAuthorIds={followedNpoIds}
-                affiliatedAuthorIds={affiliatedNpoIds}
-                sharedNpoIds={affiliatedNpoIds}
+                authorGroups={storyGroups}
+                isLoading={storiesLoading}
             />
 
             {weekendActivity ? (
@@ -327,13 +321,12 @@ export function VolunteerCommunityScreen({
             </View>
         </View>
     ), [
-        affiliatedNpoIds,
-        allowedStoryNpoIds,
-        followedNpoIds,
         gemmaSummary,
         gemmaTarget,
         onStoryPress,
         router,
+        storiesLoading,
+        storyGroups,
         weekendActivity,
     ]);
 

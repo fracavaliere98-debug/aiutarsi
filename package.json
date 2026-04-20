@@ -13,6 +13,7 @@
     "generate:credentials": "node ./scripts/generate-credentials.js",
     "lint": "expo lint",
     "test:notifications-routing": "npx -y tsx scripts/test_notification_routing.ts",
+    "test:stories-contract": "npx -y tsx scripts/test_stories_contract.ts",
     "test:services": "npx -y tsx scripts/test_services.ts",
     "test:match": "npx -y tsx scripts/test_smart_match.ts",
     "test:gamification-contract": "npx -y tsx scripts/test_gamification_contract.ts",

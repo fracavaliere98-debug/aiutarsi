@@ -8,27 +8,31 @@ import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
 import { AppActivity } from '../../types';
-import { Story } from '../../types/stories';
 import { CommunityPostDraftResult, gemmaService } from '../../services/GemmaService';
 import { useAuth } from '../../context/AuthContext';
 import { CommunityHero } from './CommunityHero';
 import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 import { useNPOApplications } from '../../hooks/applications/selectors';
+import { StoryAuthorGroup } from '../../hooks/stories/types';
 
 interface NPOCommunityScreenProps {
     posts: CommunityPost[];
     activities: AppActivity[];
+    storyGroups: StoryAuthorGroup[];
+    storiesLoading?: boolean;
     isLoading: boolean;
     isLoadingMore: boolean;
     refreshing: boolean;
     onRefresh: () => void;
     onLoadMore: () => void;
-    onStoryPress: (stories: Story[], index: number) => void;
+    onStoryPress: (groupIndex: number) => void;
 }
 
 export function NPOCommunityScreen({
     posts,
     activities,
+    storyGroups,
+    storiesLoading,
     isLoading,
     isLoadingMore,
     refreshing,
@@ -165,7 +169,13 @@ export function NPOCommunityScreen({
                 />
             ) : null}
 
-            <StoriesRow allowAddStory={true} onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)} onStoryPress={onStoryPress} />
+            <StoriesRow
+                allowAddStory={true}
+                onAddStory={() => router.push({ pathname: '/community/create-post', params: { mode: 'story' } } as any)}
+                onStoryPress={onStoryPress}
+                authorGroups={storyGroups}
+                isLoading={storiesLoading}
+            />
 
             {npoVoices.length > 0 ? (
                 <View

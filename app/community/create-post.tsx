@@ -9,11 +9,11 @@ import { ArrowLeft, Image as ImageIcon, X, Link2, Zap } from 'lucide-react-nativ
 import * as ImagePicker from 'expo-image-picker';
 import { useQueryClient } from '@tanstack/react-query';
 import { Colors } from '../../constants/Colors';
-import { useStories } from '../../context/StoriesContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
 import { useActivitiesDomain } from '../../hooks/activities/selectors';
+import { useCreateStoryMutation } from '../../hooks/stories/mutations';
 import {
     getCommunityPostFromFeedCache,
     useCommunityPostQuery,
@@ -40,13 +40,13 @@ export default function CreatePostScreen() {
     const isStoryMode = mode === 'story';
     const isEditMode = mode === 'edit';
     const { user } = useAuth();
-    const { createStory } = useStories();
     const { activities } = useActivitiesDomain(user);
     const { showToast } = useToast();
     const isVolunteer = user?.role === 'VOLUNTEER';
     const queryClient = useQueryClient();
     const createPostMutation = useCreateCommunityPostMutation(user);
     const updatePostMutation = useUpdateCommunityPostMutation(user);
+    const createStoryMutation = useCreateStoryMutation(user);
     const cachedPost = isEditMode && postId
         ? getCommunityPostFromFeedCache(queryClient, user?.id, postId)
         : undefined;
@@ -152,7 +152,11 @@ export default function CreatePostScreen() {
         setIsSubmitting(true);
         try {
             if (isStoryMode) {
-                await createStory(imageUris[0], caption.trim() || undefined, linkedActivityId);
+                await createStoryMutation.mutateAsync({
+                    imageUri: imageUris[0],
+                    caption: caption.trim() || undefined,
+                    linkedActivityId,
+                });
                 showToast('success', 'Storia pubblicata! Sparirà tra 24h ✨');
             } else if (isEditMode && postId) {
                 await updatePostMutation.mutateAsync({

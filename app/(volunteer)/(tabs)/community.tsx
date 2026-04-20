@@ -3,9 +3,7 @@ import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
 import { useAuth } from '../../../context/AuthContext';
-import { useStories } from '../../../context/StoriesContext';
 import { withLegacyActivityMatchSnapshot } from '../../../utils/smartMatchLegacy';
-import { Story } from '../../../types/stories';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
 import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActions';
@@ -17,8 +15,10 @@ import { useActivitiesDomain } from '../../../hooks/activities/selectors';
 import { useCommunityFeedView } from '../../../hooks/community/useCommunityFeedView';
 import { useCommunityRealtime } from '../../../hooks/community/realtime';
 import { useSmartMatchView } from '../../../hooks/smart-match/useSmartMatchView';
+import { useStoriesFeedView } from '../../../hooks/stories/useStoriesFeedView';
+import { useStoriesRealtime } from '../../../hooks/stories/realtime';
+import { useStoryViewerView } from '../../../hooks/stories/useStoryViewerView';
 
-// ── Deletion Request Banner ──────────────────────────────────────────────────
 function DeletionBanner() {
     const { user } = useAuth();
     const router = useRouter();
@@ -55,7 +55,6 @@ function DeletionBanner() {
     );
 }
 
-// ── Main Community Screen ─────────────────────────────────────────────────────
 export default function CommunityScreen() {
     const { user } = useAuth();
     const {
@@ -67,28 +66,26 @@ export default function CommunityScreen() {
     } = useCommunityFeedView(user?.id, !!user);
     const { activities, loadData: refreshActivities } = useActivitiesDomain(user);
     const { allMatches } = useSmartMatchView(user);
-    const { fetchStories } = useStories();
     const [refreshing, setRefreshing] = useState(false);
-    const [storyViewer, setStoryViewer] = useState<{ stories: Story[], index: number } | null>(null);
     const refreshLockRef = React.useRef(false);
+    const { viewer, openViewer, closeViewer, advanceViewer, rewindViewer } = useStoryViewerView(user?.id);
 
     const isNPO = user?.role === 'NPO';
     const [gemmaSummary, setGemmaSummary] = useState('');
 
     useCommunityRealtime(!!user);
+    useStoriesRealtime(!!user);
 
-    // Single source of truth: use SmartMatch scores (already adjusted for preferences)
-    // so the % shown here always matches the "Consigliato per te" carousel.
     const suggestedActivities = useMemo(() => {
         const enrolledIds = new Set(user?.id
-            ? activities.filter(a => a.iscritti.includes(user.id!)).map(a => a.id)
+            ? activities.filter((activity) => activity.iscritti.includes(user.id!)).map((activity) => activity.id)
             : []
         );
         return allMatches
-            .filter(m => !enrolledIds.has(m.id))
-            .filter(m => m.activity?.status === 'APERTA')
+            .filter((match) => !enrolledIds.has(match.id))
+            .filter((match) => match.activity?.status === 'APERTA')
             .slice(0, 5)
-            .map(m => withLegacyActivityMatchSnapshot(m.activity!, m.score));
+            .map((match) => withLegacyActivityMatchSnapshot(match.activity!, match.score));
     }, [allMatches, activities, user?.id]);
 
     useEffect(() => {
@@ -96,7 +93,7 @@ export default function CommunityScreen() {
 
         let cancelled = false;
         const topMatches = allMatches
-            .filter(m => m.score > 0)
+            .filter((match) => match.score > 0)
             .slice(0, 3);
 
         if (topMatches.length === 0) {
@@ -119,6 +116,44 @@ export default function CommunityScreen() {
         };
     }, [allMatches, isNPO]);
 
+    const followedNpoIds = useMemo(
+        () => (user?.followedNPOs || []).filter(Boolean),
+        [user?.followedNPOs]
+    );
+    const approvedNpoIds = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    activities
+                        .filter((activity) => user?.id ? activity.iscritti.includes(user.id) : false)
+                        .map((activity) => activity.npoId)
+                        .filter(Boolean)
+                )
+            ),
+        [activities, user?.id]
+    );
+    const suggestedNpoIds = useMemo(
+        () => Array.from(new Set(suggestedActivities.map((activity) => activity.npoId).filter(Boolean))).slice(0, 12),
+        [suggestedActivities]
+    );
+    const allowedStoryNpoIds = useMemo(
+        () => Array.from(new Set([...followedNpoIds, ...approvedNpoIds, ...suggestedNpoIds])),
+        [approvedNpoIds, followedNpoIds, suggestedNpoIds]
+    );
+
+    const volunteerStoriesView = useStoriesFeedView({
+        userId: user?.id,
+        allowedAuthorIds: allowedStoryNpoIds,
+        followedAuthorIds: followedNpoIds,
+        affiliatedAuthorIds: approvedNpoIds,
+        sharedNpoIds: approvedNpoIds,
+        enabled: !!user && !isNPO,
+    });
+    const npoStoriesView = useStoriesFeedView({
+        userId: user?.id,
+        enabled: !!user && isNPO,
+    });
+
     const onRefresh = useCallback(async () => {
         if (refreshLockRef.current) return;
         refreshLockRef.current = true;
@@ -126,7 +161,7 @@ export default function CommunityScreen() {
             const startedAt = Date.now();
             setRefreshing(true);
             await refreshFeed();
-            await fetchStories();
+            await (isNPO ? npoStoriesView.refreshStories() : volunteerStoriesView.refreshStories());
             await refreshActivities();
             const elapsed = Date.now() - startedAt;
             if (elapsed < 650) {
@@ -136,7 +171,7 @@ export default function CommunityScreen() {
             setRefreshing(false);
             refreshLockRef.current = false;
         }
-    }, [fetchStories, refreshActivities, refreshFeed]);
+    }, [isNPO, npoStoriesView, refreshActivities, refreshFeed, volunteerStoriesView]);
 
     const onLoadMore = useCallback(async () => {
         if (isLoadingMore || posts.length === 0) return;
@@ -161,12 +196,14 @@ export default function CommunityScreen() {
                 <NPOCommunityScreen
                     posts={posts}
                     activities={activities.filter((activity) => activity.npoId === user?.id)}
+                    storyGroups={npoStoriesView.authorGroups}
+                    storiesLoading={npoStoriesView.isLoading}
                     isLoading={isLoading}
                     isLoadingMore={isLoadingMore}
                     refreshing={refreshing}
                     onRefresh={onRefresh}
                     onLoadMore={onLoadMore}
-                    onStoryPress={(stories, index) => setStoryViewer({ stories, index })}
+                    onStoryPress={(groupIndex) => openViewer(npoStoriesView.authorGroups, groupIndex)}
                 />
             ) : (
                 <VolunteerCommunityScreen
@@ -174,19 +211,22 @@ export default function CommunityScreen() {
                     activities={activities}
                     suggestedActivities={suggestedActivities}
                     gemmaSummary={gemmaSummary}
+                    storyGroups={volunteerStoriesView.authorGroups}
+                    storiesLoading={volunteerStoriesView.isLoading}
                     isLoading={isLoading}
                     isLoadingMore={isLoadingMore}
                     refreshing={refreshing}
                     onRefresh={onRefresh}
                     onLoadMore={onLoadMore}
-                    onStoryPress={(stories, index) => setStoryViewer({ stories, index })}
+                    onStoryPress={(groupIndex) => openViewer(volunteerStoriesView.authorGroups, groupIndex)}
                 />
             )}
 
             <CommunityStoryViewer
-                viewer={storyViewer}
-                onClose={() => setStoryViewer(null)}
-                onChange={setStoryViewer}
+                viewer={viewer}
+                onClose={closeViewer}
+                onAdvance={advanceViewer}
+                onRewind={rewindViewer}
             />
         </StandardLayout>
     );
