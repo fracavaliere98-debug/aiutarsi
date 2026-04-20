@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { storiesKeys } from "./keys";
-import { useStoriesFeedQuery, useSharedVolunteerAuthorIdsQuery, useStoryViewerStateQuery } from "./queries";
+import { useStoriesFeedQuery, useSharedVolunteerAuthorIdsQuery, useStoryViewsStateQuery } from "./queries";
 import { buildStoryGroups } from "./selectors";
 
 type StoriesFeedViewOptions = {
@@ -23,14 +23,14 @@ export function useStoriesFeedView({
 }: StoriesFeedViewOptions) {
   const queryClient = useQueryClient();
   const feedQuery = useStoriesFeedQuery(enabled);
-  const viewerStateQuery = useStoryViewerStateQuery(userId, enabled);
+  const viewsStateQuery = useStoryViewsStateQuery(userId, enabled);
   const sharedVolunteerAuthorIdsQuery = useSharedVolunteerAuthorIdsQuery(feedQuery.data || [], sharedNpoIds, enabled);
 
   const authorGroups = useMemo(
     () =>
       buildStoryGroups({
         stories: feedQuery.data || [],
-        viewerState: viewerStateQuery.data,
+        viewsState: viewsStateQuery.data,
         allowedAuthorIds,
         followedAuthorIds,
         affiliatedAuthorIds,
@@ -38,7 +38,7 @@ export function useStoriesFeedView({
       }),
     [
       feedQuery.data,
-      viewerStateQuery.data,
+      viewsStateQuery.data,
       allowedAuthorIds,
       followedAuthorIds,
       affiliatedAuthorIds,
@@ -53,7 +53,9 @@ export function useStoriesFeedView({
   return {
     stories: feedQuery.data || [],
     authorGroups,
-    isLoading: feedQuery.isLoading || viewerStateQuery.isLoading,
+    viewsState: viewsStateQuery.data,
+    serverViewedStoryIds: viewsStateQuery.data?.serverViewedStoryIds || [],
+    isLoading: feedQuery.isLoading || viewsStateQuery.isLoading,
     isRefreshing: feedQuery.isFetching,
     refreshStories,
   };

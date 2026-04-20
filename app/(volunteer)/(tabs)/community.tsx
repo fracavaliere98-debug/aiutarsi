@@ -68,7 +68,6 @@ export default function CommunityScreen() {
     const { allMatches } = useSmartMatchView(user);
     const [refreshing, setRefreshing] = useState(false);
     const refreshLockRef = React.useRef(false);
-    const { viewer, openViewer, closeViewer, advanceViewer, rewindViewer } = useStoryViewerView(user?.id);
 
     const isNPO = user?.role === 'NPO';
     const [gemmaSummary, setGemmaSummary] = useState('');
@@ -153,6 +152,10 @@ export default function CommunityScreen() {
         userId: user?.id,
         enabled: !!user && isNPO,
     });
+    const { viewer, openViewer, closeViewer, advanceViewer, rewindViewer } = useStoryViewerView(
+        user?.id,
+        isNPO ? npoStoriesView.serverViewedStoryIds : volunteerStoriesView.serverViewedStoryIds
+    );
 
     const onRefresh = useCallback(async () => {
         if (refreshLockRef.current) return;

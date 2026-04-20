@@ -55,7 +55,11 @@ function run() {
 
   const groups = buildStoryGroups({
     stories,
-    viewerState: { viewedStoryIds: ["npo-seen"] },
+    viewsState: {
+      localViewedStoryIds: [],
+      serverViewedStoryIds: ["npo-seen"],
+      seenStoryIds: ["npo-seen"],
+    },
     allowedAuthorIds: ["npo-1", "npo-2"],
     followedAuthorIds: ["npo-2"],
     affiliatedAuthorIds: ["npo-1"],

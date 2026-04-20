@@ -4,13 +4,13 @@ import { supabase } from "../../utils/supabase";
 import { storageService } from "../../services/StorageService";
 import { AppUser } from "../../types";
 import { storiesKeys } from "./keys";
-import { loadStoryViewerState, saveStoryViewerState } from "./storage";
-import { StoryViewerState } from "./types";
+import { appendLocalViewedStory } from "./viewState";
+import { loadStoryLocalViewBridge, saveStoryLocalViewBridge } from "./storage";
 
 async function invalidateStoriesQueries(queryClient: ReturnType<typeof useQueryClient>, userId?: string) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: storiesKeys.all }),
-    queryClient.invalidateQueries({ queryKey: storiesKeys.viewerState(userId) }),
+    queryClient.invalidateQueries({ queryKey: storiesKeys.views(userId) }),
   ]);
 }
 
@@ -85,16 +85,32 @@ export function useMarkStoryViewedMutation(userId?: string) {
     mutationFn: async (storyId: string) => {
       if (!userId) return;
 
-      const current = await loadStoryViewerState(userId);
-      const next: StoryViewerState = {
-        viewedStoryIds: Array.from(new Set([...current.viewedStoryIds, storyId])),
-      };
-      await saveStoryViewerState(userId, next);
-      return next;
+      const { error } = await supabase
+        .from("story_views")
+        .upsert({
+          story_id: storyId,
+          viewer_user_id: userId,
+          viewed_at: new Date().toISOString(),
+        }, {
+          onConflict: "story_id,viewer_user_id",
+          ignoreDuplicates: false,
+        });
+
+      if (error) throw error;
+      return storyId;
     },
-    onSuccess: (nextState) => {
-      if (!userId || !nextState) return;
-      queryClient.setQueryData(storiesKeys.viewerState(userId), nextState);
+    onMutate: async (storyId) => {
+      if (!userId) return;
+
+      const current = await loadStoryLocalViewBridge(userId);
+      const next = appendLocalViewedStory(current, storyId);
+      await saveStoryLocalViewBridge(userId, next);
+      queryClient.setQueryData(storiesKeys.localViews(userId), next);
+      return { storyId };
+    },
+    onSuccess: async () => {
+      if (!userId) return;
+      await queryClient.invalidateQueries({ queryKey: storiesKeys.views(userId) });
     },
   });
 }

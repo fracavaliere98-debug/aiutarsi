@@ -1,9 +1,9 @@
 import { Story } from "../../types/stories";
-import { StoryAuthorGroup, StoryViewerState } from "./types";
+import { StoryAuthorGroup, StoryViewsState } from "./types";
 
 type BuildStoryGroupsParams = {
   stories: Story[];
-  viewerState?: StoryViewerState;
+  viewsState?: StoryViewsState;
   allowedAuthorIds?: string[];
   followedAuthorIds?: string[];
   affiliatedAuthorIds?: string[];
@@ -26,13 +26,13 @@ function getAuthorShortName(story: Story) {
 
 export function buildStoryGroups({
   stories,
-  viewerState,
+  viewsState,
   allowedAuthorIds,
   followedAuthorIds,
   affiliatedAuthorIds,
   sharedVolunteerAuthorIds,
 }: BuildStoryGroupsParams): StoryAuthorGroup[] {
-  const viewedSet = new Set(viewerState?.viewedStoryIds || []);
+  const viewedSet = new Set(viewsState?.seenStoryIds || []);
   const allowedSet = allowedAuthorIds?.length ? new Set(allowedAuthorIds) : null;
   const followedSet = new Set(followedAuthorIds || []);
   const affiliatedSet = new Set(affiliatedAuthorIds || []);

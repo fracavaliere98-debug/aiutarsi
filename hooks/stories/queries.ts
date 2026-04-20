@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../utils/supabase";
 import { Story } from "../../types/stories";
 import { storiesKeys } from "./keys";
-import { loadStoryViewerState } from "./storage";
-import { StoryViewerState } from "./types";
+import { loadStoryLocalViewBridge, saveStoryLocalViewBridge } from "./storage";
+import { StoryLocalViewBridge } from "./types";
+import { buildStoryViewsState, reconcileLocalViewedBridge } from "./viewState";
 
 const STORIES_SELECT = `
   *,
@@ -31,6 +32,16 @@ async function fetchStoriesFeed() {
   return (data as Story[]) || [];
 }
 
+async function fetchStoryViews(userId: string) {
+  const { data, error } = await supabase
+    .from("story_views")
+    .select("story_id")
+    .eq("viewer_user_id", userId);
+
+  if (error) throw error;
+  return Array.from(new Set((data || []).map((row: any) => row.story_id).filter(Boolean)));
+}
+
 async function fetchSharedVolunteerAuthorIds(sharedNpoIds: string[], volunteerAuthorIds: string[]) {
   if (!sharedNpoIds.length || !volunteerAuthorIds.length) return [];
 
@@ -55,13 +66,52 @@ export function useStoriesFeedQuery(enabled = true) {
   });
 }
 
-export function useStoryViewerStateQuery(userId?: string, enabled = true) {
-  return useQuery<StoryViewerState>({
-    queryKey: storiesKeys.viewerState(userId),
-    queryFn: () => loadStoryViewerState(userId),
+export function useStoryViewsQuery(userId?: string, enabled = true) {
+  return useQuery({
+    queryKey: storiesKeys.views(userId),
+    queryFn: () => fetchStoryViews(userId!),
+    enabled: enabled && !!userId,
+    staleTime: 30_000,
+  });
+}
+
+export function useStoryLocalViewBridgeQuery(userId?: string, enabled = true) {
+  return useQuery<StoryLocalViewBridge>({
+    queryKey: storiesKeys.localViews(userId),
+    queryFn: () => loadStoryLocalViewBridge(userId),
     enabled: enabled && !!userId,
     staleTime: Infinity,
   });
+}
+
+export function useStoryViewsStateQuery(userId?: string, enabled = true) {
+  const queryClient = useQueryClient();
+  const localBridgeQuery = useStoryLocalViewBridgeQuery(userId, enabled);
+  const serverViewsQuery = useStoryViewsQuery(userId, enabled);
+
+  const viewsState = useMemo(
+    () => buildStoryViewsState(localBridgeQuery.data, serverViewsQuery.data),
+    [localBridgeQuery.data, serverViewsQuery.data]
+  );
+
+  useEffect(() => {
+    if (!userId || !enabled) return;
+    if (!localBridgeQuery.data || !serverViewsQuery.data) return;
+
+    const reconciled = reconcileLocalViewedBridge(localBridgeQuery.data, serverViewsQuery.data);
+    if (reconciled.viewedStoryIds.length === localBridgeQuery.data.viewedStoryIds.length) return;
+
+    void saveStoryLocalViewBridge(userId, reconciled).then(() => {
+      queryClient.setQueryData(storiesKeys.localViews(userId), reconciled);
+    }).catch(() => {});
+  }, [enabled, localBridgeQuery.data, queryClient, serverViewsQuery.data, userId]);
+
+  return {
+    localBridgeQuery,
+    serverViewsQuery,
+    data: viewsState,
+    isLoading: localBridgeQuery.isLoading || serverViewsQuery.isLoading,
+  };
 }
 
 export function useSharedVolunteerAuthorIdsQuery(stories: Story[], sharedNpoIds?: string[], enabled = true) {

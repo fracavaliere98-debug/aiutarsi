@@ -815,6 +815,42 @@ export type Database = {
           },
         ]
       }
+      story_views: {
+        Row: {
+          created_at: string
+          story_id: string
+          viewed_at: string
+          viewer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          story_id: string
+          viewed_at?: string
+          viewer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          story_id?: string
+          viewed_at?: string
+          viewer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_views_viewer_user_id_fkey"
+            columns: ["viewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_interests: {
         Row: {
           id: string

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMarkStoryViewedMutation } from "./mutations";
 import { StoryAuthorGroup, StoryViewerSession } from "./types";
 
-export function useStoryViewerView(userId?: string) {
+export function useStoryViewerView(userId?: string, serverViewedStoryIds?: string[]) {
   const [viewer, setViewer] = useState<StoryViewerSession | null>(null);
   const markStoryViewedMutation = useMarkStoryViewedMutation(userId);
+  const serverViewedSet = useMemo(() => new Set(serverViewedStoryIds || []), [serverViewedStoryIds]);
 
   const currentStory = useMemo(() => {
     if (!viewer) return null;
@@ -13,9 +14,10 @@ export function useStoryViewerView(userId?: string) {
 
   useEffect(() => {
     if (!currentStory?.id) return;
+    if (serverViewedSet.has(currentStory.id)) return;
     if (markStoryViewedMutation.isPending) return;
     void markStoryViewedMutation.mutateAsync(currentStory.id).catch(() => {});
-  }, [currentStory?.id, markStoryViewedMutation]);
+  }, [currentStory?.id, markStoryViewedMutation, serverViewedSet]);
 
   useEffect(() => {
     if (!viewer || !currentStory) return;

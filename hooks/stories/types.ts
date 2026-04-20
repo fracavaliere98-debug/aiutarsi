@@ -1,7 +1,13 @@
 import { Story } from "../../types/stories";
 
-export type StoryViewerState = {
+export type StoryLocalViewBridge = {
   viewedStoryIds: string[];
+};
+
+export type StoryViewsState = {
+  localViewedStoryIds: string[];
+  serverViewedStoryIds: string[];
+  seenStoryIds: string[];
 };
 
 export type StoryAuthorGroup = {
