@@ -8,7 +8,9 @@ const anonKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdm5maWxhZG1ud2JwdHdsd3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTgyMzEsImV4cCI6MjA4NjgzNDIzMX0.pmW7FTzjz9QMKhRlILtnvL_DMXYX0HkhpnEkM7WQ39M";
 const supabaseUrl = process.env.STAGING_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || "https://pavnfiladmnwbptwlwpr.supabase.co";
 
-export async function runStagingChatSmoke(mode: "query_consistency" | "state_transitions" | "full" = "full") {
+export async function runStagingChatSmoke(
+  mode: "query_consistency" | "state_transitions" | "inbox_visibility" | "full" = "full"
+) {
   const response = await fetch(`${supabaseUrl}/functions/v1/chat-refactor-smoke`, {
     method: "POST",
     headers: {
@@ -22,12 +24,19 @@ export async function runStagingChatSmoke(mode: "query_consistency" | "state_tra
   const payload = await response.json().catch(() => ({}));
   assert(response.ok, `Chat smoke function failed with ${response.status}: ${JSON.stringify(payload)}`);
   assert(payload?.success === true, `Chat smoke returned failure: ${JSON.stringify(payload)}`);
+  if (mode === "full") {
+    const keys = Object.keys(payload.results || {});
+    for (const expectedKey of ["query_consistency", "state_transitions", "inbox_visibility"]) {
+      assert(keys.includes(expectedKey), `Full chat smoke is missing '${expectedKey}' results`);
+    }
+  }
 
   return payload.results?.[mode] || payload.results;
 }
 
 if (import.meta.main) {
-  const modeArg = (process.argv[2] as "query_consistency" | "state_transitions" | "full" | undefined) || "full";
+  const modeArg =
+    (process.argv[2] as "query_consistency" | "state_transitions" | "inbox_visibility" | "full" | undefined) || "full";
   runStagingChatSmoke(modeArg)
     .then((result) => {
       console.log(JSON.stringify(result, null, 2));

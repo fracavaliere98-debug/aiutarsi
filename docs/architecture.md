@@ -7,7 +7,7 @@ Questo documento descrive l'architettura tecnica reale del progetto sulla base d
 - App mobile: React Native con Expo SDK 54
 - Routing: Expo Router con file-based routing
 - UI: NativeWind + componenti custom + alcuni stili inline
-- Stato e data fetching: combinazione di React Context e TanStack React Query
+- Stato e data fetching: TanStack React Query per il server state, Context solo per auth e toast
 - Persistenza locale: AsyncStorage
 - Backend: Supabase
   - PostgreSQL
@@ -37,49 +37,58 @@ L'app e organizzata per aree funzionali e ruoli:
 - `hooks/`: hook applicative e di integrazione
 - `supabase/functions/`: Edge Functions server-side
 
-L'architettura non e rigidamente a layer. Esiste un service layer, ma in diversi punti la UI interroga Supabase direttamente. Il pattern reale e quindi ibrido:
+L'architettura non e rigidamente a layer, ma il path canonico del server state nei domini migrati e ormai stabile:
 
-- `UI -> Context -> Service -> Supabase`
-- `UI -> Supabase` in alcuni casi
+- `UI -> domain hooks -> React Query -> Supabase`
+
+Restano boundary laterali mirati:
+
+- `AuthContext` per sessione e utente autenticato
+- `ToastContext` per UI transient
+- `NotificationsRuntimeBridge` per toast/reazione a push e realtime UI, non come cache o source of truth
 
 ## 3. Stato e Data Fetching
 
-La gestione stato non e basata solo su React Query.
+La gestione stato canonica dei domini migrati passa da React Query.
 
-### Context applicativi
+### Context applicativi rimasti
 
-I provider principali sono:
+I soli Context runtime rimasti sono:
 
 - `AuthProvider`
-- `ActivityProvider`
-- `NotificationProvider`
-- `ApplicationProvider`
-- `GamificationProvider`
-- `SmartMatchProvider`
-- `ChatProvider`
-- `CommunityProvider`
-- `StoriesProvider`
+- `ToastProvider`
 
-Questi provider gestiscono stato globale, orchestrazione di flussi, side effect e routing.
+Non esistono piu Context canonici per:
 
-### React Query
-
-TanStack React Query e usato per caching, invalidazione e query asincrone in diverse aree, soprattutto:
-
-- attivita
-- candidature
-- chat
+- activities
+- applications
+- community
+- smart match
 - gamification
+- chat
+- notifications
+- stories
 
-Quindi il modello corretto e:
+### Modello attuale
 
-- stato globale e flussi: Context
-- caching, query e mutation: React Query
+Per i domini migrati, il modello corretto e:
+
+- query canoniche: domain queries
+- adattamento per la UI: selectors / view hooks
+- scritture: domain mutations
+- side effect UI: hook o bridge locali, mai Context di dominio
+
+Schema operativo:
+
+- `UI -> queries/selectors/mutations di dominio -> React Query -> Supabase`
 
 Riferimenti:
-- [context/ActivityContext.tsx](/Users/francescocavaliere/aiutarsi/context/ActivityContext.tsx)
-- [context/ApplicationContext.tsx](/Users/francescocavaliere/aiutarsi/context/ApplicationContext.tsx)
-- [hooks/useChat.ts](/Users/francescocavaliere/aiutarsi/hooks/useChat.ts)
+- [app/_layout.tsx](/Users/francescocavaliere/aiutarsi/app/_layout.tsx)
+- [components/notifications/NotificationsRuntimeBridge.tsx](/Users/francescocavaliere/aiutarsi/components/notifications/NotificationsRuntimeBridge.tsx)
+- [hooks/chat/useChatInboxView.ts](/Users/francescocavaliere/aiutarsi/hooks/chat/useChatInboxView.ts)
+- [hooks/chat/useConversationView.ts](/Users/francescocavaliere/aiutarsi/hooks/chat/useConversationView.ts)
+- [hooks/stories/useStoriesFeedView.ts](/Users/francescocavaliere/aiutarsi/hooks/stories/useStoriesFeedView.ts)
+- [hooks/stories/useStoryViewerView.ts](/Users/francescocavaliere/aiutarsi/hooks/stories/useStoryViewerView.ts)
 
 ## 4. Persistenza Locale
 
@@ -318,8 +327,8 @@ Esiste un sottosistema social con:
 - moderazione
 
 Riferimenti:
-- [context/CommunityContext.tsx](/Users/francescocavaliere/aiutarsi/context/CommunityContext.tsx)
-- [context/StoriesContext.tsx](/Users/francescocavaliere/aiutarsi/context/StoriesContext.tsx)
+- [hooks/community/useCommunityFeedView.ts](/Users/francescocavaliere/aiutarsi/hooks/community/useCommunityFeedView.ts)
+- [hooks/stories/useStoriesFeedView.ts](/Users/francescocavaliere/aiutarsi/hooks/stories/useStoriesFeedView.ts)
 
 ### 9.5 Chat
 
@@ -367,13 +376,14 @@ Riferimenti:
 Le notifiche sono una capability strutturale dell'app:
 
 - tabella `notifications`
-- contesto applicativo dedicato
+- dominio Query dedicato
 - supporto foreground e push
 - edge function server-side per push
 - realtime Supabase per aggiornare l'interfaccia
 
 Riferimenti:
-- [context/NotificationContext.tsx](/Users/francescocavaliere/aiutarsi/context/NotificationContext.tsx)
+- [hooks/notifications/useNotificationsDomain.ts](/Users/francescocavaliere/aiutarsi/hooks/notifications/useNotificationsDomain.ts)
+- [components/notifications/NotificationsRuntimeBridge.tsx](/Users/francescocavaliere/aiutarsi/components/notifications/NotificationsRuntimeBridge.tsx)
 - [hooks/usePushNotifications.ts](/Users/francescocavaliere/aiutarsi/hooks/usePushNotifications.ts)
 
 ## 11. Sicurezza, Secret e Configurazione
@@ -422,5 +432,4 @@ Riferimenti:
 
 Una descrizione architetturale piu aderente al repo oggi e:
 
-> AiutarSi e una mobile app React Native/Expo basata su Supabase, con architettura frontend ibrida tra Context e React Query, service layer pragmatico ma non esclusivo, funzionalita social/chat/admin, e un sottosistema AI orchestrato via Supabase Edge Functions.
-
+> AiutarSi e una mobile app React Native/Expo basata su Supabase, con React Query come path canonico del server state, Context limitati a auth e toast, service layer pragmatico, funzionalita social/chat/admin, e un sottosistema AI orchestrato via Supabase Edge Functions.

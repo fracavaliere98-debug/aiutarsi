@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserAvatar } from './UserAvatar';
 import { AppUser } from '../types';
+import { getProfileImpactPointsSnapshot } from '../utils/profileSnapshots';
 
 interface VolunteerCardProps {
     volunteer: AppUser;
@@ -145,7 +146,7 @@ export function VolunteerCard({ volunteer, onPress, actions }: VolunteerCardProp
                 <View className="flex-row items-center mt-2 gap-3">
                     <View className="flex-row items-center bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
                         <Text className="text-indigo-600 text-[10px] font-black mr-1">XP</Text>
-                        <Text className="text-indigo-700 text-[11px] font-bold">{volunteer.xp || volunteer.impactPoints || 0}</Text>
+                        <Text className="text-indigo-700 text-[11px] font-bold">{getProfileImpactPointsSnapshot(volunteer)}</Text>
                     </View>
 
                     {volunteer.badges && volunteer.badges.length > 0 && (

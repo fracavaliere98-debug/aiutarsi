@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type Role = "VOLUNTEER" | "NPO";
-type Mode = "idempotence" | "cross_device" | "full";
+type Mode = "idempotence" | "cross_device" | "viewer_scope" | "full";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -187,6 +187,47 @@ async function runCrossDeviceTest(admin: ReturnType<typeof createClient>, supaba
   }
 }
 
+async function runViewerScopeTest(admin: ReturnType<typeof createClient>, supabaseUrl: string, anonKey: string) {
+  const viewerA = await createProfile(admin, { role: "VOLUNTEER", fullName: "Story Scope Viewer A" });
+  const viewerB = await createProfile(admin, { role: "VOLUNTEER", fullName: "Story Scope Viewer B" });
+  const author = await createProfile(admin, { role: "NPO", fullName: "Story Scope Author", npoName: "Story Scope Author" });
+  let storyId = "";
+
+  try {
+    storyId = await createStory(admin, author.id, "story-view-scope");
+    const deviceA = await createAuthenticatedClient(supabaseUrl, anonKey, viewerA.email, viewerA.password);
+    const deviceB = await createAuthenticatedClient(supabaseUrl, anonKey, viewerB.email, viewerB.password);
+
+    const write = await deviceA.from("story_views").upsert({
+      story_id: storyId,
+      viewer_user_id: viewerA.id,
+      viewed_at: new Date().toISOString(),
+    }, {
+      onConflict: "story_id,viewer_user_id",
+      ignoreDuplicates: false,
+    });
+    if (write.error) throw write.error;
+
+    const viewedOnDeviceB = await fetchViewedStoryIds(deviceB);
+    assert(
+      !viewedOnDeviceB.includes(storyId),
+      "Story views must stay scoped to the authenticated viewer"
+    );
+
+    await deviceA.auth.signOut();
+    await deviceB.auth.signOut();
+
+    return [
+      "PASS story views remain scoped to the current viewer and do not leak across users",
+    ];
+  } finally {
+    await deleteStory(admin, storyId);
+    await deleteProfile(admin, viewerA.id);
+    await deleteProfile(admin, viewerB.id);
+    await deleteProfile(admin, author.id);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: jsonHeaders });
@@ -210,6 +251,9 @@ Deno.serve(async (req) => {
     }
     if (mode === "cross_device" || mode === "full") {
       results.cross_device = await runCrossDeviceTest(admin, supabaseUrl, anonKey);
+    }
+    if (mode === "viewer_scope" || mode === "full") {
+      results.viewer_scope = await runViewerScopeTest(admin, supabaseUrl, anonKey);
     }
 
     return new Response(JSON.stringify({ success: true, results }), {

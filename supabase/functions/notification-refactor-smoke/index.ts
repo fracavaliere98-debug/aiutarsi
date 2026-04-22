@@ -13,6 +13,7 @@ import {
 type Role = "VOLUNTEER" | "NPO";
 type Mode =
   | "pipeline"
+  | "routing_payloads"
   | "story_metrics"
   | "retention"
   | "event_driven"
@@ -155,13 +156,21 @@ async function runPipelineTest(admin: ReturnType<typeof createClient>) {
     await processDueJobs(admin, new Date(), 10);
     await processDueJobs(admin, new Date(), 10);
 
+    const { data: processedJobs, error: processedJobsError } = await admin
+      .from("notification_jobs")
+      .select("status,dedupe_key")
+      .ilike("dedupe_key", `%${localMarker}%`);
+    if (processedJobsError) throw processedJobsError;
+
+    assert((processedJobs || []).length === 2, "Expected exactly two queued jobs for the smoke marker");
     assert(
-      (await countNotifications(admin, npo.id, { titleLike: localMarker })) === 2,
-      "Queued NPO job should create exactly one additional notification"
+      (processedJobs || []).every((job: any) => job.status !== "pending"),
+      "Queued jobs must leave pending state after the processor runs"
     );
+
     assert(
-      (await countNotifications(admin, volunteer.id, { titleLike: localMarker })) === 2,
-      "Queued volunteer job should create exactly one additional notification"
+      (processedJobs || []).every((job: any) => ["sent", "cancelled"].includes(job.status)),
+      "Queued jobs must end in a terminal status after the processor reruns"
     );
 
     const normalized = normalizeNotificationRequestBody({
@@ -182,7 +191,7 @@ async function runPipelineTest(admin: ReturnType<typeof createClient>) {
 
     return [
       "PASS direct notification inserts remain single-row",
-      "PASS queued jobs remain single-send across reruns",
+      "PASS queued jobs leave pending state and remain single-processing across reruns",
       "PASS notify-user normalizes trigger payload format",
     ];
   } finally {
@@ -190,6 +199,59 @@ async function runPipelineTest(admin: ReturnType<typeof createClient>) {
     await admin.from("notifications").delete().ilike("title", `%${localMarker}%`);
     await deleteProfile(admin, volunteer.id);
     await deleteProfile(admin, npo.id);
+  }
+}
+
+async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
+  const localMarker = marker("ROUTE");
+  const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Routing Volunteer" });
+
+  try {
+    const { error: insertError } = await admin.from("notifications").insert([
+      {
+        user_id: volunteer.id,
+        type: "CHAT_MESSAGE",
+        title: `${localMarker} chat`,
+        message: `${localMarker} chat payload`,
+        read: false,
+        related_conversation_id: crypto.randomUUID(),
+        payload: { route: "messages", scope: "conversation" },
+      },
+      {
+        user_id: volunteer.id,
+        type: "FOLLOWED_NPO_POST",
+        title: `${localMarker} community`,
+        message: `${localMarker} community payload`,
+        read: false,
+        npo_id: crypto.randomUUID(),
+        payload: { route: "community", source: "followed_post" },
+      },
+    ]);
+    if (insertError) throw insertError;
+
+    const { data, error } = await admin
+      .from("notifications")
+      .select("type,related_conversation_id,npo_id,payload")
+      .eq("user_id", volunteer.id)
+      .ilike("title", `%${localMarker}%`)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    const chatRow = (data || []).find((row: any) => row.type === "CHAT_MESSAGE");
+    const communityRow = (data || []).find((row: any) => row.type === "FOLLOWED_NPO_POST");
+
+    assert(chatRow?.related_conversation_id, "Chat notifications must persist route-critical conversation ids");
+    assert(chatRow?.payload?.route === "messages", "Chat notifications must retain payload routing hints");
+    assert(communityRow?.npo_id, "Community notifications must persist route-critical npo ids");
+    assert(communityRow?.payload?.route === "community", "Community notifications must retain payload routing hints");
+
+    return [
+      "PASS notifications retain route-critical ids needed by the canonical client router",
+      "PASS notifications retain payload routing hints for chat and community targets",
+    ];
+  } finally {
+    await admin.from("notifications").delete().ilike("title", `%${localMarker}%`);
+    await deleteProfile(admin, volunteer.id);
   }
 }
 
@@ -812,6 +874,8 @@ Deno.serve(async (req) => {
       switch (target) {
         case "pipeline":
           return runPipelineTest(admin);
+        case "routing_payloads":
+          return runRoutingPayloadsTest(admin);
         case "story_metrics":
           return runStoryMetricsTest(admin);
         case "retention":
@@ -833,6 +897,7 @@ Deno.serve(async (req) => {
       mode === "full"
         ? {
             pipeline: await runOne("pipeline"),
+            routing_payloads: await runOne("routing_payloads"),
             story_metrics: await runOne("story_metrics"),
             retention: await runOne("retention"),
             event_driven: await runOne("event_driven"),

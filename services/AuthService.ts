@@ -212,17 +212,17 @@ export class AuthService {
 
         const metadata = sbUser.user_metadata || {};
 
+        const impactPoints = metadata.impact_points ?? metadata.impactPoints ?? 0;
+
         return {
             id: sbUser.id,
             email: sbUser.email || '',
             role: metadata.role || 'VOLUNTEER',
             full_name: metadata.full_name || metadata.name || metadata.displayName || metadata.npo_name || 'Utente',
             avatar_url: metadata.avatar || metadata.avatar_url,
-            impact_points: metadata.impactPoints || metadata.impact_points || 0,
-            // Legacy mapping
+            impact_points: impactPoints,
             name: metadata.full_name || metadata.name || metadata.displayName || metadata.npo_name || 'Utente',
             avatar: metadata.avatar || metadata.avatar_url,
-            impactPoints: metadata.impactPoints || metadata.impact_points || 0,
             npoName: metadata.npoName || metadata.npo_name,
             companyName: metadata.companyName || metadata.company_name,
             skills: metadata.skills || [],
@@ -263,7 +263,6 @@ export class AuthService {
             show_volunteering_history: metadata.show_volunteering_history,
             volunteer_list_visible: metadata.volunteer_list_visible,
             badges: metadata.badges || [],
-            xp: metadata.impactPoints || metadata.impact_points || 0,
             deletionRequestedAt: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             deletion_requested_at: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             shortId: metadata.shortId || metadata.id?.substring(0, 8).toUpperCase(),
@@ -575,7 +574,6 @@ export class AuthService {
             full_name: profile.full_name || null,
             name: derivedDisplayName,
             avatar: profile.avatar_url,
-            impactPoints: profile.impact_points || 0,
             npoName: profile.npo_name || profile.full_name,
             companyName: profile.company_name,
             skills: profile.user_skills?.map((s: any) => s.skill) || [],
@@ -592,7 +590,6 @@ export class AuthService {
             lastSeenAt: profile.last_seen_at,
             createdAt: profile.created_at,
             badges: profile.badges || [],
-            xp: profile.impact_points || 0,
             deletion_requested_at: profile.deletion_requested_at,
             referral_code: profile.referral_code,
             referred_by: profile.referred_by,

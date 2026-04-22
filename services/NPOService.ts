@@ -30,7 +30,6 @@ export class NPOService {
             role: profile.role,
             name: profile.full_name || 'Utente',
             avatar: profile.avatar_url || 'https://i.pravatar.cc/150?img=11',
-            impactPoints: profile.impact_points || 0,
             skills: profile.user_skills?.map((s: any) => s.skill) || [],
             interests: profile.user_interests?.map((i: any) => i.interest) || [],
             npoName: profile.npo_name,

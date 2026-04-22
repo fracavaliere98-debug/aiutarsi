@@ -35,10 +35,10 @@ export type AppUser = Omit<User,
     user_skills?: UserSkill[];
     user_interests?: UserInterest[];
     followed_entities?: { npo_id: string }[];
-    // Backward compatibility for UI & convenience
+    // Transitional UI aliases. Canonical profile snapshots stay on snake_case fields.
     name: string;
     avatar: string;
-    impactPoints: number;
+    impactPoints?: number;
     bio?: string;
     phone?: string;
     website?: string;

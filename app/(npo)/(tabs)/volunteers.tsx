@@ -375,7 +375,7 @@ export default function VolunteersScreen() {
                                     interests: [],
                                     email: '',
                                     role: 'VOLUNTEER' as const,
-                                    impactPoints: 0,
+                                    impact_points: 0,
                                     skills: [],
                                     profile_completed: true,
                                     deletionRequestedAt: null
@@ -497,7 +497,7 @@ export default function VolunteersScreen() {
                                     interests: [],
                                     email: '',
                                     role: 'VOLUNTEER' as const,
-                                    impactPoints: 0,
+                                    impact_points: 0,
                                     skills: [],
                                     profile_completed: true,
                                     deletionRequestedAt: null

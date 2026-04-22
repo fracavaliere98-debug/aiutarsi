@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type Role = "VOLUNTEER" | "NPO";
-type Mode = "query_consistency" | "state_transitions" | "full";
+type Mode = "query_consistency" | "state_transitions" | "inbox_visibility" | "full";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -219,6 +219,63 @@ async function runStateTransitionsTest(admin: ReturnType<typeof createClient>) {
   }
 }
 
+async function runInboxVisibilityTest(admin: ReturnType<typeof createClient>) {
+  const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Chat Visibility Volunteer" });
+  const npo = await createProfile(admin, { role: "NPO", fullName: "Chat Visibility NPO", npoName: "Chat Visibility NPO" });
+  let conversationId = "";
+
+  try {
+    conversationId = await createPrivateConversation(admin, volunteer.id, npo.id);
+    await createMessage(admin, {
+      conversationId,
+      senderId: npo.id,
+      content: `${marker("CHATVIS")} visible message`,
+    });
+
+    const visibleInbox = await fetchInbox(admin, volunteer.id);
+    assert(
+      visibleInbox.some((row: any) => row.conversation_id === conversationId),
+      "Inbox must include a visible conversation"
+    );
+
+    const hiddenAt = new Date().toISOString();
+    const { error: hideError } = await admin
+      .from("conversation_participants")
+      .update({ hidden_at: hiddenAt })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", volunteer.id);
+    if (hideError) throw hideError;
+
+    const hiddenInbox = await fetchInbox(admin, volunteer.id);
+    assert(
+      !hiddenInbox.some((row: any) => row.conversation_id === conversationId),
+      "Inbox must exclude hidden conversations from the canonical dataset"
+    );
+
+    const { error: restoreError } = await admin
+      .from("conversation_participants")
+      .update({ hidden_at: null, inbox_visible_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", volunteer.id);
+    if (restoreError) throw restoreError;
+
+    const restoredInbox = await fetchInbox(admin, volunteer.id);
+    assert(
+      restoredInbox.some((row: any) => row.conversation_id === conversationId),
+      "Inbox must show the conversation again once visibility is restored"
+    );
+
+    return [
+      "PASS hidden conversations drop out of the canonical inbox dataset",
+      "PASS restoring inbox visibility makes the canonical conversation row visible again",
+    ];
+  } finally {
+    await cleanupConversation(admin, conversationId);
+    await deleteProfile(admin, volunteer.id);
+    await deleteProfile(admin, npo.id);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ success: false, error: "Method not allowed" }), {
@@ -247,6 +304,9 @@ Deno.serve(async (req) => {
     }
     if (mode === "state_transitions" || mode === "full") {
       results.state_transitions = await runStateTransitionsTest(admin);
+    }
+    if (mode === "inbox_visibility" || mode === "full") {
+      results.inbox_visibility = await runInboxVisibilityTest(admin);
     }
 
     return new Response(JSON.stringify({ success: true, results }), {

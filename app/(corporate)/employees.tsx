@@ -5,6 +5,7 @@ import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
 import { useState } from "react";
 import { StandardLayout } from "../../components/StandardLayout";
+import { getProfileImpactPointsSnapshot } from "../../utils/profileSnapshots";
 
 export default function EmployeesScreen() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -85,7 +86,7 @@ export default function EmployeesScreen() {
                         <View className="items-end">
                             <View className="flex-row items-center gap-1">
                                 <TrendingUp size={14} color={Colors.accent} />
-                                <Text className="text-accent font-black text-base">{emp.impactPoints}</Text>
+                                <Text className="text-accent font-black text-base">{getProfileImpactPointsSnapshot(emp)}</Text>
                             </View>
                             <Text className="text-secondary text-[10px]">{emp.hoursVolunteered} ore</Text>
                         </View>

@@ -1104,6 +1104,8 @@ Gia migrati o quasi migrati:
 
 Questa e la mappa canonica del path del server state per i domini gia migrati.
 
+Nota: le sezioni precedenti del documento restano come log storico della migrazione. Lo stato architetturale corrente da considerare canonico e quello riassunto in questo recap finale.
+
 Vale per:
 
 - `activities`
@@ -1111,10 +1113,10 @@ Vale per:
 - `community`
 - `smart match`
 - `gamification`
-
-Con una precisazione:
-
-- `notifications` ha gia React Query come source of truth, ma [NotificationContext.tsx](/Users/francescocavaliere/aiutarsi/context/NotificationContext.tsx) esiste ancora come orchestration bridge temporaneo
+- `notifications`
+- `chat`
+- `stories`
+- `story_views`
 
 Regole:
 
@@ -1493,3 +1495,37 @@ Regola:
 
 - se il Livello 1 non e tutto verde, non si pubblica `preview`
 - se il Livello 2 trova regressioni del contract canonico, il dominio non passa a `production`
+
+## Closure Status
+
+Stato finale dei domini principali:
+
+- `activities`: chiuso
+- `applications`: chiuso
+- `community posts`: chiuso
+- `smart match`: chiuso
+- `gamification`: chiuso
+- `chat`: chiuso
+- `notifications`: chiuso
+- `stories`: chiuso
+- `story_views`: chiuso
+
+Path canonico del server state:
+
+- `UI -> domain queries/selectors/mutations -> React Query -> Supabase`
+
+Residui ammessi:
+
+- `AuthContext` per sessione e utente autenticato
+- `ToastContext` per feedback UI effimero
+- `NotificationsRuntimeBridge` come orchestration UI/runtime, non come source of truth
+
+Residui legacy ancora tollerati ma non canonici:
+
+- alias profile-side come `impactPoints` / `xp` solo come snapshot compatibilita
+- `AppActivity.matchPercentage` solo come snapshot UI/compatibilita
+
+Regola finale:
+
+- nessun Context di dominio puo rientrare nel path del server state
+- nessun alias legacy puo guidare ranking, gating o decisioning canonico
