@@ -138,3 +138,4 @@ maestro test maestro/flows/
 ## Documentazione
 
 - Architettura tecnica: [docs/architecture.md](./docs/architecture.md)
+- Checklist release breve: [docs/prod-migration-checklist.md](./docs/prod-migration-checklist.md)

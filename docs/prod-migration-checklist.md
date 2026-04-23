@@ -92,3 +92,38 @@ Production smoke checklist:
 - [ ] Be able to disable cron quickly.
 - [ ] Be able to disable push processing quickly.
 - [ ] Keep previous production build/update identifiers documented.
+
+## Short Release Checklist
+
+Use this as the final release pass before shipping store builds.
+
+### Build
+- [ ] `main` is clean and pushed.
+- [ ] `preview` and `production` OTA are aligned with the target commit.
+- [ ] `npx -y expo-doctor` passes.
+- [ ] `npm run lint` passes.
+- [ ] `npx tsc --noEmit --pretty false` passes.
+- [ ] Staging smoke scripts pass for the critical domains in scope.
+- [ ] Run `eas build --platform android --profile production`.
+- [ ] Run `eas build --platform ios --profile production`.
+
+### Artifact Verification
+- [ ] Android artifact is generated and downloadable.
+- [ ] iOS artifact is generated and downloadable.
+- [ ] Confirm version / build numbers are incremented as expected.
+- [ ] Confirm bundle identifiers / package name match store targets.
+- [ ] Smoke-check the production artifacts on real devices or emulator/simulator where possible.
+
+### Submit
+- [ ] Android submit credentials are available (`google-services-key.json` or equivalent workflow path).
+- [ ] iOS submission path is defined (manual/TestFlight or `submit.production.ios`).
+- [ ] Submit Android build to the intended Play track.
+- [ ] Submit iOS build to TestFlight / App Store Connect.
+
+### Post-release Smoke
+- [ ] Open the released app and verify login.
+- [ ] Verify onboarding and a core volunteer flow.
+- [ ] Verify an NPO flow.
+- [ ] Verify chat, notifications, and stories.
+- [ ] Verify production routing from notifications.
+- [ ] Verify Sentry stays quiet on the new release for the key flows.

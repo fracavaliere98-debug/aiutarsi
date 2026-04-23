@@ -1,12 +1,8 @@
+import { buildStagingSupabaseHeaders, requireStagingSupabaseEnv } from "./lib/stagingSmokeEnv";
+
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
-
-const anonKey =
-  process.env.STAGING_SUPABASE_ANON_KEY ||
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdm5maWxhZG1ud2JwdHdsd3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTgyMzEsImV4cCI6MjA4NjgzNDIzMX0.pmW7FTzjz9QMKhRlILtnvL_DMXYX0HkhpnEkM7WQ39M";
-const supabaseUrl = process.env.STAGING_SUPABASE_URL || "https://pavnfiladmnwbptwlwpr.supabase.co";
 
 export async function runStagingNotificationSmoke(
   mode:
@@ -20,13 +16,10 @@ export async function runStagingNotificationSmoke(
     | "auth_ban_flow"
     | "full"
 ) {
+  const { supabaseUrl, anonKey } = requireStagingSupabaseEnv("notifications");
   const response = await fetch(`${supabaseUrl}/functions/v1/notification-refactor-smoke`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
-    },
+    headers: buildStagingSupabaseHeaders(anonKey, true),
     body: JSON.stringify({ mode }),
   });
 
