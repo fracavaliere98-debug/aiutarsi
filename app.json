@@ -15,6 +15,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo.",
+        "NSMicrophoneUsageDescription": "AiutarSì può usare il microfono solo quando registri o alleghi contenuti audio e video dall'app.",
         "NSCalendarsFullAccessUsageDescription": "AiutarSì usa il calendario per aggiungere le attività a cui ti iscrivi nel tuo calendario personale.",
         "NSCalendarsWriteOnlyAccessUsageDescription": "AiutarSì usa il calendario per aggiungere le attività a cui ti iscrivi nel tuo calendario personale.",
         "NSRemindersFullAccessUsageDescription": "AiutarSì può usare i promemoria per aiutarti a ricordare attività e impegni importanti nell'app.",
@@ -22,6 +23,7 @@
         "NSPhotoLibraryUsageDescription": "AiutarSì ha bisogno di accedere alla tua galleria per permetterti di scegliere e caricare una foto profilo.",
         "NSPhotoLibraryAddUsageDescription": "AiutarSì ha bisogno di salvare immagini nella tua galleria quando scegli di esportare o condividere contenuti dall'app.",
         "NSUserNotificationsUsageDescription": "AiutarSì usa le notifiche per aggiornarti su candidature, messaggi, attività e novità rilevanti.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "AiutarSì può usare la tua posizione anche durante la navigazione dell'app per mostrarti attività vicine e suggerimenti rilevanti.",
         "NSCalendarsUsageDescription": "AiutarSì usa il calendario per aggiungere le attività a cui ti iscrivi nel tuo calendario personale."
       }
     },
