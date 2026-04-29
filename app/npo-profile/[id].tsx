@@ -360,7 +360,7 @@ export default function NPOProfileScreen() {
                     <View>
                         <View className="flex-row justify-between items-center mb-4">
                             <Text className="text-primary font-bold text-lg">Prossime Attività</Text>
-                            <TouchableOpacity onPress={() => router.push("/(volunteer)/search" as any)}>
+                            <TouchableOpacity onPress={() => router.push(`/npo-activities/${npoId}` as any)}>
                                 <Text className="text-accent font-bold text-xs">VEDI TUTTE</Text>
                             </TouchableOpacity>
                         </View>
