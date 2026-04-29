@@ -61,6 +61,13 @@ const steps: Step[] = [
   },
   {
     section: "staging smoke",
+    label: "activities",
+    command: "npm",
+    args: ["run", "smoke:activities:staging"],
+    runWhen: () => !skipStaging,
+  },
+  {
+    section: "staging smoke",
     label: "notifications",
     command: "npm",
     args: ["run", "smoke:notifications:staging"],

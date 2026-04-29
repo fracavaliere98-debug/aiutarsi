@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+const PROFILE_REST_DEBUG = __DEV__ || process.env.EXPO_PUBLIC_PROFILE_REST_DEBUG === "1";
 
 type RestMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -40,7 +41,7 @@ async function request<T>(
   }
 
   const url = `${SUPABASE_URL}${path}`;
-  console.log(`[DEBUG] profileRest ${method} ${path} start`);
+  if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} start`);
 
   const headers = buildHeaders(accessToken, extraHeaders);
 
@@ -49,7 +50,7 @@ async function request<T>(
       const xhr = new XMLHttpRequest();
       const timer = setTimeout(() => {
         xhr.abort();
-        console.log(`[DEBUG] profileRest ${method} ${path} timeout fired`, { timeoutMs, readyState: xhr.readyState });
+        if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} timeout fired`, { timeoutMs, readyState: xhr.readyState });
         reject(new Error(`${method} ${path} timeout after ${timeoutMs}ms`));
       }, timeoutMs);
 
@@ -59,7 +60,7 @@ async function request<T>(
       xhr.onreadystatechange = () => {
         if (xhr.readyState !== 4) return;
         clearTimeout(timer);
-        console.log(`[DEBUG] profileRest ${method} ${path} -> ${xhr.status}`);
+        if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} -> ${xhr.status}`);
 
         if (xhr.status === 0) {
           reject(new Error(`${method} ${path} failed with status 0`));
@@ -83,12 +84,12 @@ async function request<T>(
 
         try {
           if (path.startsWith('/functions/')) {
-            console.log(`[DEBUG] profileRest ${method} ${path} success body`, xhr.responseText.slice(0, 400));
+            if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} success body`, xhr.responseText.slice(0, 400));
           }
           resolve(JSON.parse(xhr.responseText) as T);
         } catch {
           if (path.startsWith('/functions/')) {
-            console.log(`[DEBUG] profileRest ${method} ${path} raw body`, String(xhr.responseText).slice(0, 400));
+            if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} raw body`, String(xhr.responseText).slice(0, 400));
           }
           resolve(xhr.responseText as T);
         }
@@ -96,13 +97,13 @@ async function request<T>(
 
       xhr.onerror = () => {
         clearTimeout(timer);
-        console.log(`[DEBUG] profileRest ${method} ${path} onerror`, { readyState: xhr.readyState, status: xhr.status });
+        if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} onerror`, { readyState: xhr.readyState, status: xhr.status });
         reject(new Error(`${method} ${path} network error`));
       };
 
       xhr.ontimeout = () => {
         clearTimeout(timer);
-        console.log(`[DEBUG] profileRest ${method} ${path} ontimeout`, { readyState: xhr.readyState, status: xhr.status });
+        if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} ontimeout`, { readyState: xhr.readyState, status: xhr.status });
         reject(new Error(`${method} ${path} timeout after ${timeoutMs}ms`));
       };
 
@@ -127,11 +128,11 @@ async function request<T>(
       timeoutMs
     );
   } catch (error: any) {
-    console.warn(`[DEBUG] profileRest ${method} ${path} failed before response`, error?.message || error);
+    if (PROFILE_REST_DEBUG) console.warn(`[DEBUG] profileRest ${method} ${path} failed before response`, error?.message || error);
     throw error;
   }
 
-  console.log(`[DEBUG] profileRest ${method} ${path} -> ${response.status}`);
+  if (PROFILE_REST_DEBUG) console.log(`[DEBUG] profileRest ${method} ${path} -> ${response.status}`);
 
   // React Native fetch can hang on response.text() for 204/205 empty responses.
   // Short-circuit before reading the body for true no-content responses.
@@ -423,7 +424,7 @@ export const profileRest = {
   ) => {
     return request(
       "POST",
-      `/rest/v1/activity_participants`,
+      `/rest/v1/activity_participants?on_conflict=activity_id,user_id`,
       payload,
       accessToken,
       { Prefer: "resolution=merge-duplicates,return=minimal" }
@@ -452,7 +453,7 @@ export const profileRest = {
   ) => {
     return request(
       "POST",
-      `/rest/v1/activity_participants`,
+      `/rest/v1/activity_participants?on_conflict=activity_id,user_id`,
       payload,
       accessToken,
       { Prefer: "resolution=merge-duplicates,return=minimal" }

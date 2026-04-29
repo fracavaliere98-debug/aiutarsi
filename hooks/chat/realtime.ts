@@ -49,8 +49,6 @@ export function useConversationRealtime(conversationId?: string, userId?: string
           void Promise.all([
             queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) }),
             queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
-            queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
-            queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
           ]);
         }, 300);
       })
@@ -64,8 +62,6 @@ export function useConversationRealtime(conversationId?: string, userId?: string
           void Promise.all([
             queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
             queryClient.invalidateQueries({ queryKey: chatKeys.conversationMembers(conversationId) }),
-            queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
-            queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
           ]);
         }, 300);
       })

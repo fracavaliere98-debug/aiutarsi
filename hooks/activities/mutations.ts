@@ -71,8 +71,8 @@ export function useEnrollInActivityMutation(userId?: string) {
             }
             return activityService.joinActivity(activityId, userId, message, phone);
         },
-        onSuccess: async (_, variables) => {
-            await invalidateActivityQueries(queryClient, { activityId: variables.activityId, userId });
+        onSuccess: (_, variables) => {
+            void invalidateActivityQueries(queryClient, { activityId: variables.activityId, userId });
         },
     });
 }

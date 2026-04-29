@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useConversationRealtime } from "./realtime";
-import { useConversationMembersQuery, useConversationMessagesQuery, useConversationQuery } from "./queries";
+import { useConversationMessagesQuery, useConversationQuery } from "./queries";
 import { EMPTY_CHAT_PARTICIPANTS, flattenMessagePages, getConversationParticipants } from "./selectors";
 
 export function useConversationView(conversationId?: string, userId?: string, options?: { enabled?: boolean; realtime?: boolean }) {
@@ -9,14 +9,13 @@ export function useConversationView(conversationId?: string, userId?: string, op
 
   const conversationQuery = useConversationQuery(conversationId, enabled);
   const messagesQuery = useConversationMessagesQuery(conversationId, enabled);
-  const membersQuery = useConversationMembersQuery(conversationId, enabled);
 
   useConversationRealtime(conversationId, userId, enabled && realtime);
 
   const conversation = conversationQuery.data ?? null;
   const participants = useMemo(
-    () => membersQuery.data ?? getConversationParticipants(conversation) ?? EMPTY_CHAT_PARTICIPANTS,
-    [conversation, membersQuery.data]
+    () => getConversationParticipants(conversation) ?? EMPTY_CHAT_PARTICIPANTS,
+    [conversation]
   );
   const messages = useMemo(
     () => flattenMessagePages(messagesQuery.data),
@@ -27,9 +26,8 @@ export function useConversationView(conversationId?: string, userId?: string, op
     await Promise.all([
       conversationQuery.refetch(),
       messagesQuery.refetch(),
-      membersQuery.refetch(),
     ]);
-  }, [conversationQuery, messagesQuery, membersQuery]);
+  }, [conversationQuery, messagesQuery]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!messagesQuery.hasNextPage || messagesQuery.isFetchingNextPage) return;
@@ -37,11 +35,8 @@ export function useConversationView(conversationId?: string, userId?: string, op
   }, [messagesQuery]);
 
   const refreshMetadata = useCallback(async () => {
-    await Promise.all([
-      conversationQuery.refetch(),
-      membersQuery.refetch(),
-    ]);
-  }, [conversationQuery, membersQuery]);
+    await conversationQuery.refetch();
+  }, [conversationQuery]);
 
   const refreshMessages = useCallback(async () => {
     await messagesQuery.refetch();

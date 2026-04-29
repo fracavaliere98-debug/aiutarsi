@@ -17,8 +17,8 @@ function patchConversationReadState(conversations: any[] | null | undefined, con
   });
 }
 
-async function invalidateChatInboxQueries(queryClient: ReturnType<typeof useQueryClient>, userId?: string) {
-  await Promise.all([
+function invalidateChatInboxQueries(queryClient: ReturnType<typeof useQueryClient>, userId?: string) {
+  void Promise.all([
     queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
     queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
   ]);
@@ -57,8 +57,8 @@ export function useMarkConversationReadMutation(userId?: string) {
       const conversations = queryClient.getQueryData<any[]>(chatKeys.inbox(userId));
       queryClient.setQueryData(chatKeys.unreadCount(userId), getChatUnreadCount(conversations));
     },
-    onSettled: async () => {
-      await invalidateChatInboxQueries(queryClient, userId);
+    onSettled: () => {
+      invalidateChatInboxQueries(queryClient, userId);
     },
   });
 }
@@ -72,8 +72,8 @@ export function useHideConversationMutation(userId?: string) {
       await ChatService.leaveConversation(conversationId, userId);
       return conversationId;
     },
-    onSuccess: async () => {
-      await invalidateChatInboxQueries(queryClient, userId);
+    onSuccess: () => {
+      invalidateChatInboxQueries(queryClient, userId);
     },
   });
 }
@@ -104,8 +104,8 @@ export function useToggleConversationNotificationsMutation(userId?: string) {
       await ChatService.toggleNotifications(conversationId, userId, muted);
       return { conversationId, muted };
     },
-    onSuccess: async ({ conversationId }) => {
-      await Promise.all([
+    onSuccess: ({ conversationId }) => {
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
         queryClient.invalidateQueries({ queryKey: chatKeys.conversationMembers(conversationId) }),
       ]);
@@ -162,7 +162,7 @@ export function useSendMessageMutation(userId?: string, conversationId?: string)
       if (!userId || !conversationId) throw new Error("Missing conversation context");
       return ChatService.sendMessage(conversationId, userId, content, metadata);
     },
-    onSuccess: async (message) => {
+    onSuccess: (message) => {
       if (!conversationId || !userId) return;
 
       queryClient.setQueryData(
@@ -173,7 +173,7 @@ export function useSendMessageMutation(userId?: string, conversationId?: string)
 
       updateChatInboxPreviewCache(queryClient, userId, conversationId, message.content, message.sender_id);
 
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
         queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),
         queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount(userId) }),
@@ -191,9 +191,9 @@ export function useDeleteMessageMutation(userId?: string, conversationId?: strin
       await ChatService.deleteMessage(messageId, userId);
       return messageId;
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       if (!conversationId || !userId) return;
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) }),
         queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) }),
         queryClient.invalidateQueries({ queryKey: chatKeys.inbox(userId) }),

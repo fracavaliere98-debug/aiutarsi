@@ -526,23 +526,25 @@ export class ActivityService {
             accessToken
         );
 
-        // Sync with group chat if it exists
-        try {
-            const { data: conv } = await supabase
-                .from('conversations')
-                .select('id, title')
-                .eq('type', 'ACTIVITY_GROUP')
-                .eq('activity_id', activityId)
-                .single();
+        // The DB trigger is the canonical sync path. Keep this best-effort fallback
+        // outside the enrollment critical path so a chat hiccup cannot fail signup.
+        void (async () => {
+            try {
+                const { data: conv } = await supabase
+                    .from('conversations')
+                    .select('id, title')
+                    .eq('type', 'ACTIVITY_GROUP')
+                    .eq('activity_id', activityId)
+                    .maybeSingle();
 
-            if (conv) {
-                // This will trigger the sync logic I just added to startGroupConversation
-                const ChatServiceModule = require('./ChatService').default;
-                await ChatServiceModule.startGroupConversation(activityId, conv.title || '', userId);
+                if (conv) {
+                    const ChatServiceModule = require('./ChatService').default;
+                    await ChatServiceModule.startGroupConversation(activityId, conv.title || '', userId);
+                }
+            } catch {
+                // No group chat yet, or sync already handled by trigger.
             }
-        } catch (e) {
-            // No group chat yet, or error. Ignore.
-        }
+        })();
 
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
         return {

@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Use ref to track logout intent immediately and synchronously across closures
     const isLoggingOutRef = React.useRef(false);
     const usersRefreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const recentManualLoginRef = React.useRef<{ userId: string; at: number } | null>(null);
 
     const refreshUsers = useCallback(async (role?: string) => {
         // Fetch only a small page of users initially or based on role
@@ -298,6 +299,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                 if (session?.user) {
                     authService.setCachedAccessToken(session.access_token);
+                    const recentManualLogin = recentManualLoginRef.current;
+                    if (
+                        event === 'SIGNED_IN' &&
+                        recentManualLogin?.userId === session.user.id &&
+                        Date.now() - recentManualLogin.at < 5000
+                    ) {
+                        return;
+                    }
                     const appUser = await authService.getCurrentUser();
                     console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
@@ -460,7 +469,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             trackEvent("auth_login_started", { emailDomain: email.split("@")[1] || "unknown" });
             const loggedUser = await authService.login(email, password);
-            // State update is handled by onAuthStateChange
+            recentManualLoginRef.current = { userId: loggedUser.id, at: Date.now() };
             setUser(loggedUser);
             trackEvent("auth_login_succeeded", { role: loggedUser.role });
             return true;

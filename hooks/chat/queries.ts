@@ -4,6 +4,9 @@ import { chatKeys } from "./keys";
 import { getChatUnreadCount } from "./selectors";
 
 const CHAT_PAGE_SIZE = 20;
+const CHAT_INBOX_STALE_TIME_MS = 15_000;
+const CHAT_CONVERSATION_STALE_TIME_MS = 30_000;
+const CHAT_MESSAGES_STALE_TIME_MS = 8_000;
 
 type ChatMessagesPage = {
   messages: any[];
@@ -24,7 +27,7 @@ export function useChatInboxQuery(userId?: string, enabled = true) {
     queryKey: chatKeys.inbox(userId),
     queryFn: () => ChatService.getConversations(userId!),
     enabled: enabled && !!userId,
-    staleTime: 0,
+    staleTime: CHAT_INBOX_STALE_TIME_MS,
   });
 }
 
@@ -33,7 +36,7 @@ export function useChatUnreadCountQuery(userId?: string, enabled = true) {
     queryKey: chatKeys.inbox(userId),
     queryFn: () => ChatService.getConversations(userId!),
     enabled: enabled && !!userId,
-    staleTime: 0,
+    staleTime: CHAT_INBOX_STALE_TIME_MS,
     select: getChatUnreadCount,
   });
 }
@@ -43,7 +46,7 @@ export function useConversationQuery(conversationId?: string, enabled = true) {
     queryKey: chatKeys.conversation(conversationId),
     queryFn: () => ChatService.getConversationMetadata(conversationId!),
     enabled: enabled && !!conversationId,
-    staleTime: 0,
+    staleTime: CHAT_CONVERSATION_STALE_TIME_MS,
   });
 }
 
@@ -55,7 +58,7 @@ export function useConversationMembersQuery(conversationId?: string, enabled = t
       return conversation?.participants ?? [];
     },
     enabled: enabled && !!conversationId,
-    staleTime: 0,
+    staleTime: CHAT_CONVERSATION_STALE_TIME_MS,
   });
 }
 
@@ -64,7 +67,7 @@ export function useConversationMessagesQuery(conversationId?: string, enabled = 
     queryKey: chatKeys.messages(conversationId),
     queryFn: ({ pageParam }) => fetchConversationMessagesPage(conversationId!, pageParam || undefined),
     enabled: enabled && !!conversationId,
-    staleTime: 0,
+    staleTime: CHAT_MESSAGES_STALE_TIME_MS,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
