@@ -14,6 +14,7 @@ export type EmailConfirmationState = {
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
+    private lastSeenUpdateAtByUser = new Map<string, number>();
     private readonly PENDING_EMAIL_CHANGE_KEY = '@pending_email_change';
     private _isProductionSupabaseProject(): boolean {
         return getSupabaseProjectRef() === "ibyjkqowokxrlormkwzw";
@@ -1023,9 +1024,16 @@ export class AuthService {
 
     async updateLastSeen(userId: string): Promise<void> {
         try {
+            const now = Date.now();
+            const lastUpdateAt = this.lastSeenUpdateAtByUser.get(userId) || 0;
+            if (now - lastUpdateAt < 60_000) {
+                return;
+            }
+            this.lastSeenUpdateAtByUser.set(userId, now);
+
             await supabase
                 .from('profiles')
-                .update({ last_seen_at: new Date().toISOString() })
+                .update({ last_seen_at: new Date(now).toISOString() })
                 .eq('id', userId);
         } catch (e) {
             console.warn("Failed to update last seen", e);

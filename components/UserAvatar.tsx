@@ -38,6 +38,9 @@ export function UserAvatar({
     // Use passed props, or fallback to current user ONLY if explicitly requested
     const finalName = name || (useAuthFallback ? user?.name : undefined);
     const finalAvatar = avatarUrl || (useAuthFallback ? user?.avatar : undefined);
+    const finalRole = role || (useAuthFallback ? user?.role : undefined);
+    const finalVerificationStatus = verificationStatus || (useAuthFallback ? user?.verification_status : undefined);
+    const finalIsVerified = isVerified || !!(useAuthFallback && (user?.isVerified || user?.is_verified));
 
     const getInitials = (n: string) => {
         if (!n) return "";
@@ -52,7 +55,17 @@ export function UserAvatar({
 
     const initials = finalName ? getInitials(finalName) : "";
 
-    const npoAccent = Colors.primary;
+    const isNPO = finalRole === "NPO";
+    const isConfirmedVerified = isNPO && (
+        finalVerificationStatus === "verified" ||
+        (!finalVerificationStatus && finalIsVerified)
+    );
+    const isPendingVerification = isNPO && !isConfirmedVerified && finalVerificationStatus === "pending";
+    const npoBorderColor = isConfirmedVerified
+        ? Colors.primary
+        : isPendingVerification
+            ? "#2563eb"
+            : "rgba(255,255,255,0.3)";
 
     return (
         <View style={{ width: size, height: size }}>
@@ -62,10 +75,8 @@ export function UserAvatar({
                     height: size, 
                     borderRadius: size / 2, 
                     overflow: "hidden",
-                    borderWidth: role === 'NPO' ? 2 : 1,
-                    borderColor: role === 'NPO'
-                        ? npoAccent
-                        : 'rgba(255,255,255,0.3)'
+                    borderWidth: isNPO && (isConfirmedVerified || isPendingVerification) ? 2 : 1,
+                    borderColor: isNPO ? npoBorderColor : 'rgba(255,255,255,0.3)'
                 }}
                 className={`bg-slate-200 items-center justify-center ${className}`}
             >
@@ -83,7 +94,7 @@ export function UserAvatar({
                                 style={{
                                     fontSize,
                                     fontWeight: "800",
-                                    color: role === "NPO" ? Colors.primary : "#64748b",
+                                    color: isNPO ? Colors.primary : "#64748b",
                                 }}
                             >
                                 {initials}
@@ -112,7 +123,7 @@ export function UserAvatar({
             )}
 
             {/* Verification Badge */}
-            {role === 'NPO' && (
+            {isConfirmedVerified && (
                 <View
                     style={{
                         width: size * 0.35,
@@ -125,7 +136,7 @@ export function UserAvatar({
                         borderColor: 'white',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: npoAccent
+                        backgroundColor: Colors.primary
                     }}
                     className="shadow-sm"
                 >

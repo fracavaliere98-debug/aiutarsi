@@ -20,7 +20,7 @@ import { STACK_TRANSITIONS } from "../constants/motion";
 import { BrandedLoadingVideo } from "../components/BrandedLoadingVideo";
 import { consumeIntroVideoTransition } from "../utils/introVideoTransition";
 import * as Sentry from "@sentry/react-native";
-import { initializeMonitoring } from "../utils/monitoring";
+import { initializeMonitoring, isMonitoringEnabled } from "../utils/monitoring";
 import { isCorporateEnabled } from "../utils/runtimeConfig";
 
 const appIntroVideo = require("../assets/videos/hailuo-2_3_bright_lens_flare_Create_a_premium_mobile_app_opening_animation_for_a_brand_call-0.mp4");
@@ -295,6 +295,6 @@ function RootLayout() {
   );
 }
 
-const WrappedRootLayout = Sentry.wrap(RootLayout);
+const WrappedRootLayout = isMonitoringEnabled() ? Sentry.wrap(RootLayout) : RootLayout;
 
 export default WrappedRootLayout;

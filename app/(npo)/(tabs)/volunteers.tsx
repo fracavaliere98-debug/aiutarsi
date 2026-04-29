@@ -21,6 +21,49 @@ import { useNPOApplications } from "../../../hooks/applications/selectors";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
 
+const TabCountBadge = ({ count, active }: { count: number; active: boolean }) => (
+    <View
+        style={{
+            minWidth: 20,
+            height: 20,
+            paddingHorizontal: 6,
+            borderRadius: 999,
+            alignItems: "center",
+            justifyContent: "center",
+            alignSelf: "center",
+            backgroundColor: active ? "rgba(255,255,255,0.18)" : "rgba(56,36,135,0.1)",
+        }}
+    >
+        <Text
+            style={{
+                color: active ? "white" : "#382487",
+                fontSize: 11,
+                lineHeight: 20,
+                fontWeight: "900",
+                includeFontPadding: false,
+                textAlignVertical: "center",
+            }}
+        >
+            {count}
+        </Text>
+    </View>
+);
+
+const TabIconSlot = ({ children }: { children: React.ReactNode }) => (
+    <View style={{ width: 16, height: 20, alignItems: "center", justifyContent: "center" }}>
+        {children}
+    </View>
+);
+
+const tabLabelTextStyle = (active: boolean) => ({
+    color: active ? "white" : "#475569",
+    fontSize: 12,
+    lineHeight: 20,
+    fontWeight: "600" as const,
+    includeFontPadding: false,
+    textAlignVertical: "center" as const,
+});
+
 export default function VolunteersScreen() {
     const { user, getNPOFollowers, getUserById } = useAuth();
     const npoApplications = useNPOApplications(user, user?.id);
@@ -212,9 +255,11 @@ export default function VolunteersScreen() {
                 style={{
                     flex: 1,
                     minWidth: 0,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
+                    minHeight: 48,
+                    paddingHorizontal: 8,
+                    paddingVertical: 0,
                     borderRadius: 999,
+                    justifyContent: "center",
                     backgroundColor: activeTab === "CANDIDATURE" ? '#382487' : '#f0f2f5',
                     shadowColor: activeTab === "CANDIDATURE" ? '#382487' : '#d1d9e6',
                     shadowOffset: { width: 4, height: 4 },
@@ -225,15 +270,14 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <View className="flex-row items-center justify-center gap-1.5">
-                    <Clock3 size={12} color={activeTab === "CANDIDATURE" ? 'white' : '#475569'} />
-                    <Text style={{
-                        color: activeTab === "CANDIDATURE" ? 'white' : '#475569',
-                        fontSize: 13,
-                        fontWeight: '600'
-                    }}>
+                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <TabIconSlot>
+                        <Clock3 size={13} color={activeTab === "CANDIDATURE" ? 'white' : '#475569'} />
+                    </TabIconSlot>
+                    <Text style={tabLabelTextStyle(activeTab === "CANDIDATURE")}>
                         In attesa
                     </Text>
+                    <TabCountBadge count={pendingApplications.length} active={activeTab === "CANDIDATURE"} />
                 </View>
             </TouchableOpacity>
 
@@ -242,9 +286,11 @@ export default function VolunteersScreen() {
                 style={{
                     flex: 1,
                     minWidth: 0,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
+                    minHeight: 48,
+                    paddingHorizontal: 8,
+                    paddingVertical: 0,
                     borderRadius: 999,
+                    justifyContent: "center",
                     backgroundColor: activeTab === "STORICO" ? '#382487' : '#f0f2f5',
                     shadowColor: activeTab === "STORICO" ? '#382487' : '#d1d9e6',
                     shadowOffset: { width: 4, height: 4 },
@@ -255,15 +301,14 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <View className="flex-row items-center justify-center gap-1.5">
-                    <UsersRound size={12} color={activeTab === "STORICO" ? 'white' : '#475569'} />
-                    <Text style={{
-                        color: activeTab === "STORICO" ? 'white' : '#475569',
-                        fontSize: 13,
-                        fontWeight: '600'
-                    }}>
+                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <TabIconSlot>
+                        <UsersRound size={13} color={activeTab === "STORICO" ? 'white' : '#475569'} />
+                    </TabIconSlot>
+                    <Text style={tabLabelTextStyle(activeTab === "STORICO")}>
                         Volontari
                     </Text>
+                    <TabCountBadge count={approvedVolunteers.length} active={activeTab === "STORICO"} />
                 </View>
             </TouchableOpacity>
 
@@ -272,9 +317,11 @@ export default function VolunteersScreen() {
                 style={{
                     flex: 1,
                     minWidth: 0,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
+                    minHeight: 48,
+                    paddingHorizontal: 8,
+                    paddingVertical: 0,
                     borderRadius: 999,
+                    justifyContent: "center",
                     backgroundColor: activeTab === "FOLLOWERS" ? '#382487' : '#f0f2f5',
                     shadowColor: activeTab === "FOLLOWERS" ? '#382487' : '#d1d9e6',
                     shadowOffset: { width: 4, height: 4 },
@@ -285,21 +332,21 @@ export default function VolunteersScreen() {
                     borderColor: 'rgba(255,255,255,0.4)',
                 }}
             >
-                <View className="flex-row items-center justify-center gap-1.5">
-                    <HeartHandshake size={12} color={activeTab === "FOLLOWERS" ? 'white' : '#475569'} />
-                    <Text style={{
-                        color: activeTab === "FOLLOWERS" ? 'white' : '#475569',
-                        fontSize: 13,
-                        fontWeight: '600'
-                    }}>
+                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <TabIconSlot>
+                        <HeartHandshake size={13} color={activeTab === "FOLLOWERS" ? 'white' : '#475569'} />
+                    </TabIconSlot>
+                    <Text style={tabLabelTextStyle(activeTab === "FOLLOWERS")}>
                         Follower
                     </Text>
+                    <TabCountBadge count={followers.length} active={activeTab === "FOLLOWERS"} />
                 </View>
             </TouchableOpacity>
         </View>
     );
 
     const HeaderActions = <NPOHeaderActions />;
+    const npoDisplayName = user?.npoName || user?.name || "il tuo ente";
 
     return (
         <StandardLayout
@@ -356,6 +403,9 @@ export default function VolunteersScreen() {
                 <View className="flex-1">
                 <View className="mb-3 px-1">
                         <Text className="text-primary font-black text-lg">Nuove candidature</Text>
+                        <Text className="text-secondary text-xs font-semibold mt-1">
+                            Approva rapidamente chi può entrare nel tuo ente come volontario.
+                        </Text>
                     </View>
 
                     {displayPending.length > 0 ? (
@@ -419,6 +469,9 @@ export default function VolunteersScreen() {
                 <View className="flex-1">
                     <View className="mb-2 px-1">
                         <Text className="text-primary font-black text-lg">I Tuoi Follower</Text>
+                        <Text className="text-secondary text-xs font-semibold mt-1">
+                            Persone che seguono la tua NPO e che puoi coinvolgere nelle prossime attività.
+                        </Text>
                     </View>
 
                     {matchedFollowers.length > 0 && (
@@ -478,6 +531,9 @@ export default function VolunteersScreen() {
                 <View className="flex-1">
                     <View className="mb-2">
                         <Text className="text-primary font-black text-lg">I Tuoi Volontari</Text>
+                        <Text className="text-secondary text-xs font-semibold mt-1">
+                            Volontari già approvati che fan parte di {npoDisplayName}.
+                        </Text>
                     </View>
 
                     {displayApproved.length > 0 ? (

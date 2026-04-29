@@ -408,6 +408,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 filter: `id=eq.${user.id}` 
             }, async (payload) => {
                 if (payload.new) {
+                    const nextEmail = payload.new.email || user.email;
+                    const hasRelevantChange =
+                        user.is_banned !== !!payload.new.is_banned ||
+                        user.ban_reason !== payload.new.ban_reason ||
+                        user.ban_report_id !== payload.new.ban_report_id ||
+                        user.email !== nextEmail ||
+                        user.email_confirmed !== payload.new.email_confirmed;
+
+                    if (!hasRelevantChange) {
+                        return;
+                    }
+
                     console.log("[AuthContext] Profilo aggiornato tramite Realtime", {
                         is_banned: payload.new.is_banned,
                         email: payload.new.email,
@@ -423,14 +435,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         && !!normalizedPayloadEmail
                         && normalizedPayloadEmail === normalizedPendingEmail;
 
-                    setUser(prev => prev ? {
-                        ...prev,
-                        is_banned: !!payload.new.is_banned,
-                        ban_reason: payload.new.ban_reason,
-                        ban_report_id: payload.new.ban_report_id,
-                        email: payload.new.email || prev.email,
-                        email_confirmed: payload.new.email_confirmed,
-                    } : null);
+                    setUser(prev => {
+                        if (!prev) return null;
+
+                        const nextBanState = {
+                            is_banned: !!payload.new.is_banned,
+                            ban_reason: payload.new.ban_reason,
+                            ban_report_id: payload.new.ban_report_id,
+                            email: payload.new.email || prev.email,
+                            email_confirmed: payload.new.email_confirmed,
+                        };
+
+                        if (
+                            prev.is_banned === nextBanState.is_banned &&
+                            prev.ban_reason === nextBanState.ban_reason &&
+                            prev.ban_report_id === nextBanState.ban_report_id &&
+                            prev.email === nextBanState.email &&
+                            prev.email_confirmed === nextBanState.email_confirmed
+                        ) {
+                            return prev;
+                        }
+
+                        return {
+                            ...prev,
+                            ...nextBanState,
+                        };
+                    });
 
                     if (emailChangeConfirmed) {
                         try {

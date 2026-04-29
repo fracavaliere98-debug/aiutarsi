@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Share } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 import { gemmaService } from "../services/GemmaService";
@@ -26,6 +27,7 @@ export const useNPOInsights = () => {
 
     const [mutedIds, setMutedIds] = useState<string[]>([]);
     const [aiContentById, setAiContentById] = useState<Record<string, Pick<NPOInsight, "title" | "description" | "actionLabel">>>({});
+    const lastInsightRequestKeyRef = useRef<string | null>(null);
 
     const baseInsights = useMemo(() => {
         if (!user || user.role !== 'NPO') return [];
@@ -108,7 +110,7 @@ export const useNPOInsights = () => {
                 priority: 2,
                 title: "Revisione Profili 📋",
                 description: `Hai ${oldPending.length} candidature in attesa da più di 24 ore. Non far aspettare i tuoi volontari!`,
-                actionLabel: "Gestisci OldCandidature",
+                actionLabel: "Gestisci candidature",
                 onAction: () => {
                     router.push("/(npo)/(tabs)/volunteers?tab=CANDIDATURE" as any);
                 },
@@ -163,24 +165,13 @@ export const useNPOInsights = () => {
                 title: "Grande Risultato! 🎉",
                 description: `Hai generato oltre ${Math.floor(totalHours)} ore di impatto questo mese. Condividi il traguardo!`,
                 actionLabel: "Condividi Social",
-                onAction: () => {
-                    // For now just a toast/placeholder
-                    console.log("Sharing milestones...");
-                },
-                data: { metrics: sharedMetrics }
-            });
-        }
-
-        if (foundInsights.length === 0) {
-            foundInsights.push({
-                id: 'npo_overview',
-                type: 'OVERVIEW',
-                priority: 99,
-                title: "C'e qualcosa di buono da far vedere",
-                description: "La situazione e stabile. Questo e il momento giusto per farti sentire con un aggiornamento o una nuova attivita.",
-                actionLabel: "Apri dashboard",
-                onAction: () => {
-                    router.push("/(npo)/(tabs)/projects" as any);
+                onAction: async () => {
+                    const npoName = user.npoName || user.name || "Il nostro ente";
+                    const impactHours = Math.floor(totalHours);
+                    await Share.share({
+                        title: `${npoName} ha raggiunto un nuovo traguardo`,
+                        message: `${npoName} ha generato oltre ${impactHours} ore di impatto con AiutarSì. Grazie a tutte le persone che hanno contribuito!`,
+                    });
                 },
                 data: { metrics: sharedMetrics }
             });
@@ -206,6 +197,15 @@ export const useNPOInsights = () => {
         if (!user || user.role !== 'NPO' || baseInsights.length === 0) {
             return;
         }
+
+        const requestKey = baseInsights
+            .map((insight) => `${insight.id}:${insight.priority}:${insight.data?.metrics?.pendingApplicationsCount ?? 0}:${insight.data?.metrics?.openActivitiesCount ?? 0}:${insight.data?.metrics?.followerCount ?? 0}`)
+            .join("|");
+
+        if (lastInsightRequestKeyRef.current === requestKey) {
+            return;
+        }
+        lastInsightRequestKeyRef.current = requestKey;
 
         gemmaService.getNPOInsightDrafts(
             baseInsights.map((insight) => ({

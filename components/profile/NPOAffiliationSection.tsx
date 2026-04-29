@@ -53,7 +53,8 @@ export function NPOAffiliationSection({
                                             name={npo.npoName || npo.name}
                                             avatarUrl={npo.avatar}
                                             role="NPO"
-                                            isVerified={true}
+                                            isVerified={!!(npo as any).is_verified || !!npo.isVerified}
+                                            verificationStatus={(npo as any).verification_status}
                                         />
                                     </View>
                                     <View className="flex-1 ml-3">
@@ -90,7 +91,8 @@ export function NPOAffiliationSection({
                                             name={npo.npoName || npo.name}
                                             avatarUrl={npo.avatar}
                                             role="NPO"
-                                            isVerified={npo.isVerified || false}
+                                            isVerified={!!(npo as any).is_verified || !!npo.isVerified}
+                                            verificationStatus={(npo as any).verification_status}
                                         />
                                         <Text className="font-bold text-primary text-[10px] text-center mt-2 px-1" numberOfLines={2}>
                                             {npo.npoName || npo.name}
