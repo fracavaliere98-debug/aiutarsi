@@ -117,12 +117,25 @@ done
 echo "Building and installing app on simulator..."
 npx expo run:ios --device "$SIMULATOR_UDID" --no-bundler
 
+APP_PATH="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path "*/Build/Products/Debug-iphonesimulator/AiutarSi.app" -type d -print0 \
+  | xargs -0 ls -td \
+  | head -n 1)"
+
+if [[ -z "$APP_PATH" || ! -d "$APP_PATH" ]]; then
+  echo "Unable to find built AiutarSi.app in DerivedData." >&2
+  exit 1
+fi
+
 echo "Launching app..."
 xcrun simctl launch "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
 xcrun simctl openurl "$SIMULATOR_UDID" "$DEV_CLIENT_URL" >/dev/null 2>&1 || true
 sleep 3
 
 for flow in "${FLOWS[@]}"; do
+  echo "Resetting app state for flow: $flow"
+  xcrun simctl terminate "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
+  xcrun simctl uninstall "$SIMULATOR_UDID" "$APP_ID" >/dev/null 2>&1 || true
+  xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
   xcrun simctl openurl "$SIMULATOR_UDID" "$DEV_CLIENT_URL" >/dev/null 2>&1 || true
   sleep 2
   echo "Running Maestro flow: $flow"
