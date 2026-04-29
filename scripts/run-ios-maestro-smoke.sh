@@ -5,7 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SIMULATOR_NAME="${IOS_SMOKE_SIMULATOR:-iPhone 17}"
 METRO_PORT="${RCT_METRO_PORT:-8081}"
 METRO_LOG="${ROOT_DIR}/.expo/metro-smoke.log"
-DEV_CLIENT_URL="${IOS_SMOKE_DEV_CLIENT_URL:-com.aiutarsi.app://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A${METRO_PORT}}"
+APP_SCHEME="${IOS_SMOKE_APP_SCHEME:-aiutarsiapp}"
+DEV_CLIENT_URL="${IOS_SMOKE_DEV_CLIENT_URL:-${APP_SCHEME}://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A${METRO_PORT}}"
 
 export PATH="/opt/homebrew/opt/openjdk/bin:/Users/francescocavaliere/.maestro/bin:$PATH"
 
