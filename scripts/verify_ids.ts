@@ -55,7 +55,6 @@ async function verifyIdMigration() {
         description: "Test",
         status: "APERTA",
         iscritti: [],
-        matchPercentage: 0,
         skills: [],
         isUrgent: false
     });

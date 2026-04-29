@@ -27,6 +27,7 @@ function areConversationSnapshotsEqual(previous: any[], next: any[]) {
             prevConversation?.unread_count === nextConversation?.unread_count &&
             prevConversation?.inbox_visible_at === nextConversation?.inbox_visible_at &&
             prevConversation?.inbox_title === nextConversation?.inbox_title &&
+            prevConversation?.notifications_muted === nextConversation?.notifications_muted &&
             prevMeta?.last_message_at === nextMeta?.last_message_at &&
             prevMeta?.last_message_content === nextMeta?.last_message_content &&
             prevMeta?.last_message_sender_id === nextMeta?.last_message_sender_id
@@ -403,6 +404,8 @@ export default function MessagesListScreen() {
                             const lastMessageSenderId = conv.last_message_sender_id;
 
                             const isGroup = conv.type === 'ACTIVITY_GROUP';
+                            const currentParticipant = conv.participants?.find((p: any) => p.user_id === user?.id);
+                            const isMuted = item.notifications_muted === true || currentParticipant?.notifications_muted === true;
                             // Determine title and avatar
                             const activityData = conv.activities;
                             const activityTitle = Array.isArray(activityData) ? activityData[0]?.title : activityData?.title;
@@ -428,14 +431,21 @@ export default function MessagesListScreen() {
                                         isGroup={isGroup}
                                         lastSenderName={lastMessageSenderId === user?.id ? 'Tu' : (isGroup ? (conv.participants?.find((p: any) => p.user_id === lastMessageSenderId)?.profiles?.name || 'Utente') : undefined)}
                                         isOwnLastMessage={lastMessageSenderId === user?.id}
+                                        isMuted={isMuted}
                                         onPress={() => router.push(`/messages/${item.conversation_id}` as any)}
                                     />
                                 </SwipeableConversationItem>
                             );
                         }}
                         ListEmptyComponent={
-                            <View className="flex-1 items-center justify-center pt-20">
-                                <Text className="text-slate-400 font-medium">Nessuna conversazione trovata</Text>
+                            <View className="flex-1 items-center justify-center pt-20 px-8">
+                                <View className="w-14 h-14 rounded-3xl bg-primary/5 items-center justify-center mb-4">
+                                    <UsersIcon size={24} color={Colors.primary} />
+                                </View>
+                                <Text className="text-slate-700 font-black text-base text-center">Nessuna conversazione trovata</Text>
+                                <Text className="text-slate-400 text-sm text-center mt-2 leading-5">
+                                    Prova a cambiare filtro o avvia una nuova chat dal pulsante in alto.
+                                </Text>
                             </View>
                         }
                     />

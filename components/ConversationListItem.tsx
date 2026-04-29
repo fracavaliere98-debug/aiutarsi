@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserAvatar } from './UserAvatar';
-import { Check } from 'lucide-react-native';
+import { BellOff, Check } from 'lucide-react-native';
 
 interface ConversationListItemProps {
     title: string;
@@ -12,6 +12,7 @@ interface ConversationListItemProps {
     isGroup?: boolean;
     lastSenderName?: string;
     isOwnLastMessage?: boolean;
+    isMuted?: boolean;
     onPress: () => void;
 }
 
@@ -24,6 +25,7 @@ export function ConversationListItem({
     isGroup,
     lastSenderName,
     isOwnLastMessage,
+    isMuted,
     onPress
 }: ConversationListItemProps) {
     return (
@@ -48,9 +50,14 @@ export function ConversationListItem({
                     <Text className="text-[16px] font-bold text-slate-800" numberOfLines={1}>
                         {title}
                     </Text>
-                    <Text className={`text-[12px] font-medium ${unreadCount > 0 ? 'text-primary' : 'text-slate-400'}`}>
-                        {timestamp}
-                    </Text>
+                    <View className="flex-row items-center ml-3">
+                        {isMuted ? (
+                            <BellOff size={13} color="#94a3b8" style={{ marginRight: 4 }} />
+                        ) : null}
+                        <Text className={`text-[12px] font-medium ${unreadCount > 0 ? 'text-primary' : 'text-slate-400'}`}>
+                            {timestamp}
+                        </Text>
+                    </View>
                 </View>
 
                 <View className="flex-row items-center pr-4">

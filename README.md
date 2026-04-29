@@ -48,12 +48,12 @@ I secret **non vanno nel codice**. Impostarli una volta via CLI:
 
 ```bash
 # Preview
-eas secret:create --name SUPABASE_URL       --value <url>  --environment preview
-eas secret:create --name SUPABASE_ANON_KEY  --value <key>  --environment preview
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL       --value <url>  --environment preview
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY  --value <key>  --environment preview
 
 # Production
-eas secret:create --name SUPABASE_URL       --value <url>  --environment production
-eas secret:create --name SUPABASE_ANON_KEY  --value <key>  --environment production
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL       --value <url>  --environment production
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY  --value <key>  --environment production
 ```
 
 ### Configurare GitHub Secrets
@@ -138,4 +138,5 @@ maestro test maestro/flows/
 ## Documentazione
 
 - Architettura tecnica: [docs/architecture.md](./docs/architecture.md)
+- Contratto ambienti: [docs/env-contract.md](./docs/env-contract.md)
 - Checklist release breve: [docs/prod-migration-checklist.md](./docs/prod-migration-checklist.md)

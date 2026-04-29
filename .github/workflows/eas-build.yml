@@ -25,20 +25,15 @@ jobs:
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
-          eas-version: latest
+          eas-version: 18.4.0
           token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Inject Environment Variables
-        run: |
-          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.STAGING_SUPABASE_URL }}" > .env
-          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.STAGING_SUPABASE_ANON_KEY }}" >> .env
 
       - name: Build Android APK (Preview)
         id: build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          BUILD_ID=$(eas build --platform android --profile preview --non-interactive --json | jq -r '.[0].id')
+          BUILD_ID=$(CI=1 eas build --platform android --profile preview --environment preview --non-interactive --json | jq -r '.[0].id')
           if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
             echo "Failed to resolve EAS build ID"
             exit 1

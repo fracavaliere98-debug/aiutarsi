@@ -143,7 +143,6 @@ export class ActivityService {
             slots: r.slots_total,
             category: r.category,
             status: r.status,
-            matchPercentage: 0,
             isUrgent: r.is_urgent || false,
             skills: skillsMap[r.id] || [],
             iscritti: (partRows || [])
@@ -255,7 +254,6 @@ export class ActivityService {
                         activity_skills: (skillsMap[r.id] || []).map((skill) => ({ skill })),
                         activity_participants: participantsMap[r.id] || [],
                     }),
-                    matchPercentage: r.match_percentage || 0,
                     skills: skillsMap[r.id] || [],
                     iscritti: (participantsMap[r.id] || [])
                         .filter((p: any) => ['REGISTERED', 'APPROVED', 'PENDING'].includes(p.status))
@@ -364,7 +362,6 @@ export class ActivityService {
                     slots_total: activityData.slots,
                     category: activityData.category,
                     status: activityData.status || 'APERTA',
-                    match_percentage: activityData.matchPercentage,
                     is_urgent: activityData.isUrgent || false,
                     image_url: activityData.imageUrl,
                     recurrence: activityData.recurrence || null,
@@ -562,7 +559,6 @@ export class ActivityService {
             description: '',
             status: 'APERTA',
             iscritti: [userId],
-            matchPercentage: 0,
             isUrgent: false,
         };
     }
@@ -586,7 +582,6 @@ export class ActivityService {
             description: '',
             status: 'APERTA',
             iscritti: [],
-            matchPercentage: 0,
             isUrgent: false,
         };
     }

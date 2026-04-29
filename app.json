@@ -86,6 +86,7 @@
         }
       ],
       "expo-notifications",
+      "expo-web-browser",
       "expo-video"
     ],
     "experiments": {

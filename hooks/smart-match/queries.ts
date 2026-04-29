@@ -4,7 +4,7 @@ import { activityService } from '../../services/ActivityService';
 import { gemmaService } from '../../services/GemmaService';
 import { npoService } from '../../services/NPOService';
 import { smartMatchPreferencesService } from '../../services/SmartMatchPreferencesService';
-import { getLegacyActivityMatchSnapshot } from '../../utils/smartMatchLegacy';
+import { getLegacyActivityMatchSnapshot } from '../../utils/smartMatchCompatibility';
 import { smartMatchKeys } from './keys';
 import { rerankSmartMatches } from './selectors';
 

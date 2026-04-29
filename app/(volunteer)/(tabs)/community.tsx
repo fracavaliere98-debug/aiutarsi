@@ -3,7 +3,6 @@ import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
 import { useAuth } from '../../../context/AuthContext';
-import { withLegacyActivityMatchSnapshot } from '../../../utils/smartMatchLegacy';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
 import { VolunteerHeaderActions } from '../../../components/VolunteerHeaderActions';
@@ -84,7 +83,7 @@ export default function CommunityScreen() {
             .filter((match) => !enrolledIds.has(match.id))
             .filter((match) => match.activity?.status === 'APERTA')
             .slice(0, 5)
-            .map((match) => withLegacyActivityMatchSnapshot(match.activity!, match.score));
+            .map((match) => match.activity!);
     }, [allMatches, activities, user?.id]);
 
     useEffect(() => {

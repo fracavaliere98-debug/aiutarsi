@@ -103,6 +103,8 @@ Use this as the final release pass before shipping store builds.
 - [ ] `npx -y expo-doctor` passes.
 - [ ] `npm run lint` passes.
 - [ ] `npx tsc --noEmit --pretty false` passes.
+- [ ] `npm run validate:env-contract` passes.
+- [ ] `npm run release:smoke` passes.
 - [ ] Staging smoke scripts pass for the critical domains in scope.
 - [ ] Run `eas build --platform android --profile production`.
 - [ ] Run `eas build --platform ios --profile production`.

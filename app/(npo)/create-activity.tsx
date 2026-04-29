@@ -226,7 +226,6 @@ export default function CreateActivityScreen() {
                 skills: formData.skills,
                 status: "APERTA",
                 iscritti: [],
-                matchPercentage: 0,
                 isUrgent: formData.isUrgent,
                 imageUrl: formData.imageUrl,
                 recurrence: formData.recurrence === 'NONE' ? undefined : formData.recurrence,

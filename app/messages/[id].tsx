@@ -212,6 +212,13 @@ export default function ChatDetailScreen() {
   const otherUserId = otherParticipant?.user_id || (targetUserId ? String(targetUserId) : undefined);
   const currentUserParticipant = participants.find((participant: any) => participant.user_id === user?.id);
   const isMuted = currentUserParticipant?.notifications_muted === true;
+  const composerDisabledReason = useMemo(() => {
+    if (!conversationId || !user?.id) return 'Chat non disponibile in questo momento.';
+    if (sendMessageMutation.isPending) return 'Invio del messaggio in corso...';
+    if (startPrivateConversationMutation.isPending) return 'Sto aprendo la conversazione...';
+    return null;
+  }, [conversationId, sendMessageMutation.isPending, startPrivateConversationMutation.isPending, user?.id]);
+  const isComposerDisabled = Boolean(composerDisabledReason);
 
   const visibleMessages = useMemo(() => {
     const filteredCanonical = canonicalMessages.filter((message: any) => !hiddenMessageIds.includes(message.id));
@@ -282,7 +289,7 @@ export default function ChatDetailScreen() {
   };
 
   const handleSend = async (overrideText?: string) => {
-    if (!conversationId || !user?.id) return;
+    if (!conversationId || !user?.id || isComposerDisabled) return;
 
     const text = (overrideText ?? inputText).trim();
     if (!text) return;
@@ -633,24 +640,30 @@ export default function ChatDetailScreen() {
         )}
 
         <View className="p-4 bg-white border-t border-gray-100">
-          <View className="flex-row items-center bg-gray-50 rounded-3xl px-4 py-2 border border-gray-100">
-            <TouchableOpacity onPress={handleAttachFile} className="p-1">
-              <Paperclip size={22} color={Colors.secondary} />
+          {composerDisabledReason ? (
+            <View className="mb-2 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-2">
+              <Text className="text-xs font-semibold text-slate-500">{composerDisabledReason}</Text>
+            </View>
+          ) : null}
+          <View className={`flex-row items-center rounded-3xl px-4 py-2 border ${isComposerDisabled ? 'bg-slate-100 border-slate-100 opacity-70' : 'bg-gray-50 border-gray-100'}`}>
+            <TouchableOpacity onPress={handleAttachFile} disabled={isComposerDisabled} className="p-1">
+              <Paperclip size={22} color={isComposerDisabled ? '#cbd5e1' : Colors.secondary} />
             </TouchableOpacity>
             <TextInput
               className="flex-1 min-h-[40px] max-h-[100px] px-3 text-primary text-base"
-              placeholder="Scrivi un messaggio..."
+              placeholder={isComposerDisabled ? 'Attendi un momento...' : 'Scrivi un messaggio...'}
               placeholderTextColor="#94a3b8"
               multiline
               value={inputText}
               onChangeText={handleTyping}
+              editable={!isComposerDisabled}
             />
             <TouchableOpacity
               onPress={() => void handleSend()}
-              disabled={!inputText.trim() || sendMessageMutation.isPending}
-              className={`p-2 rounded-full ${inputText.trim() ? 'bg-accent shadow-sm' : 'bg-transparent'}`}
+              disabled={!inputText.trim() || isComposerDisabled}
+              className={`p-2 rounded-full ${inputText.trim() && !isComposerDisabled ? 'bg-accent shadow-sm' : 'bg-transparent'}`}
             >
-              <Send size={22} color={inputText.trim() ? 'white' : '#cbd5e1'} />
+              <Send size={22} color={inputText.trim() && !isComposerDisabled ? 'white' : '#cbd5e1'} />
             </TouchableOpacity>
           </View>
         </View>

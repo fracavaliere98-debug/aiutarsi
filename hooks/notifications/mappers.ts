@@ -29,37 +29,86 @@ export function normalizeNotificationType(rawType: unknown): AppNotificationType
   return KNOWN_NOTIFICATION_TYPES.includes(normalized) ? normalized : "INFO";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function normalizeNotificationPayload(input: unknown): Record<string, unknown> | undefined {
+  if (!isRecord(input)) return undefined;
+
+  const normalized = Object.entries(input).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (value === null || value === undefined) return acc;
+    if (typeof value === "string" && value.trim() === "") return acc;
+    if (Array.isArray(value)) return acc;
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function pickString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim() !== "") return value;
+  }
+  return undefined;
+}
+
+export function extractNotificationTargets(source: Record<string, unknown>, payload?: Record<string, unknown>) {
+  return {
+    activityId: pickString(source.related_activity_id, source.activityId, payload?.activityId, payload?.related_activity_id),
+    applicationId: pickString(
+      source.related_application_id,
+      source.applicationId,
+      payload?.applicationId,
+      payload?.related_application_id
+    ),
+    npoId: pickString(source.related_npo_id, source.npoId, payload?.npoId, payload?.related_npo_id),
+    conversationId: pickString(
+      source.related_conversation_id,
+      source.conversationId,
+      payload?.conversationId,
+      payload?.related_conversation_id
+    ),
+  };
+}
+
 export function mapNotificationRow(row: any): AppNotification {
+  const payload = normalizeNotificationPayload(row.payload);
+  const targets = extractNotificationTargets(row, payload);
+
   return {
     id: row.id,
     userId: row.user_id,
     type: normalizeNotificationType(row.type),
-    title: row.title,
-    message: row.message,
+    title: typeof row.title === "string" ? row.title : "",
+    message: typeof row.message === "string" ? row.message : "",
     read: !!row.read,
-    activityId: row.related_activity_id ?? undefined,
-    applicationId: row.related_application_id ?? undefined,
-    npoId: row.related_npo_id ?? undefined,
-    conversationId: row.related_conversation_id ?? undefined,
+    activityId: targets.activityId,
+    applicationId: targets.applicationId,
+    npoId: targets.npoId,
+    conversationId: targets.conversationId,
     timestamp: row.created_at,
     matchScore: row.match_score ?? undefined,
-    payload: row.payload ?? undefined,
+    payload,
   };
 }
 
 export function mapNotificationResponseData(response: any) {
   const request = response.notification.request;
   const data = request.content.data ?? {};
+  const payload = normalizeNotificationPayload(data);
+  const targets = extractNotificationTargets(isRecord(data) ? data : {}, payload);
 
   return {
     id: String((data as any).notificationId || request.identifier || ""),
     type: normalizeNotificationType((data as any).type),
     title: String(request.content.title || ""),
     message: String(request.content.body || ""),
-    activityId: (data as any).activityId || (data as any).related_activity_id,
-    applicationId: (data as any).applicationId || (data as any).related_application_id,
-    npoId: (data as any).npoId || (data as any).related_npo_id,
-    conversationId: (data as any).conversationId || (data as any).related_conversation_id,
-    payload: typeof data === "object" && data ? { ...(data as Record<string, unknown>) } : undefined,
+    activityId: targets.activityId,
+    applicationId: targets.applicationId,
+    npoId: targets.npoId,
+    conversationId: targets.conversationId,
+    payload,
   };
 }

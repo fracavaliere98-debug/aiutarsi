@@ -125,8 +125,9 @@ export type AppActivity = Omit<Activity,
     imageUrl?: string;
     skills: string[];
     isUrgent: boolean;
-    // Legacy/UI-only snapshot.
-    // Canonical match scoring lives in the smart match domain.
+    /**
+     * @deprecated Compatibility snapshot only. Canonical match scoring lives in the smart match domain.
+     */
     matchPercentage?: number;
     recurrence?: 'NONE' | 'WEEKLY' | 'MONTHLY';
     profiles?: {
@@ -196,6 +197,7 @@ export interface OldActivity {
     description: string;
     status: "APERTA" | "IN_CORSO" | "COMPLETATA" | "CANCELLATA";
     iscritti: string[]; // Array di ID_Volontari
+    /** @deprecated Compatibility snapshot only. Use smart match domain scores for product logic. */
     matchPercentage: number;
     isUrgent: boolean;
     imageUrl?: string;
