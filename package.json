@@ -15,6 +15,7 @@
     "test:notifications-payload": "npx -y tsx scripts/test_notification_payload_contract.ts",
     "test:chat-filter": "npx -y tsx scripts/test_chat_filter_contract.ts",
     "test:chat-ux": "npx -y tsx scripts/test_chat_ux_contract.ts",
+    "test:gemma-guard": "npx -y tsx scripts/test_gemma_invocation_guard_contract.ts",
     "test:activity-enrollment": "npx -y tsx scripts/test_activity_enrollment_contract.ts",
     "test:stories-contract": "npx -y tsx scripts/test_stories_contract.ts",
     "test:story-views-contract": "npx -y tsx scripts/test_story_views_contract.ts",

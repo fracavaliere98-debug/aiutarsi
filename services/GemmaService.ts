@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../utils/supabase";
 import { OldSmartMatchResult } from "../types";
 
@@ -67,7 +68,39 @@ export type CommunityPostDraftResult = {
   suggestedMode: "post" | "story";
 };
 
+const NPO_INSIGHT_CACHE_PREFIX = "gemma:npo-insight-drafts:";
+const NPO_INSIGHT_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const NPO_INSIGHT_STALE_TTL_MS = 48 * 60 * 60 * 1000;
+const GEMMA_CIRCUIT_FAILURE_THRESHOLD = 3;
+const GEMMA_CIRCUIT_FAILURE_WINDOW_MS = 2 * 60 * 1000;
+const GEMMA_CIRCUIT_COOLDOWN_MS = 10 * 60 * 1000;
+
+type CachedNPOInsightDrafts = {
+  savedAt: number;
+  data: NPOInsightDraftResult;
+};
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value as Record<string, unknown>)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
 class GemmaService {
+  private inFlight = new Map<string, Promise<any>>();
+  private consecutiveFailures = 0;
+  private firstFailureAt = 0;
+  private circuitOpenUntil = 0;
+
   private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     try {
@@ -146,6 +179,46 @@ class GemmaService {
     body: Record<string, unknown>,
     options?: { allowMissingAuth?: boolean }
   ) {
+    const requestKey = stableStringify({ body, allowMissingAuth: !!options?.allowMissingAuth });
+    const pending = this.inFlight.get(requestKey);
+    if (pending) return pending;
+
+    const request = this.invokeShadowGemmaRequest(body, options).finally(() => {
+      this.inFlight.delete(requestKey);
+    });
+
+    this.inFlight.set(requestKey, request);
+    return request;
+  }
+
+  private registerGemmaFailure() {
+    const now = Date.now();
+    if (!this.firstFailureAt || now - this.firstFailureAt > GEMMA_CIRCUIT_FAILURE_WINDOW_MS) {
+      this.firstFailureAt = now;
+      this.consecutiveFailures = 1;
+      return;
+    }
+
+    this.consecutiveFailures += 1;
+    if (this.consecutiveFailures >= GEMMA_CIRCUIT_FAILURE_THRESHOLD) {
+      this.circuitOpenUntil = now + GEMMA_CIRCUIT_COOLDOWN_MS;
+    }
+  }
+
+  private resetGemmaCircuit() {
+    this.firstFailureAt = 0;
+    this.consecutiveFailures = 0;
+    this.circuitOpenUntil = 0;
+  }
+
+  private async invokeShadowGemmaRequest(
+    body: Record<string, unknown>,
+    options?: { allowMissingAuth?: boolean }
+  ) {
+    if (Date.now() < this.circuitOpenUntil) {
+      throw new Error("Gemma temporaneamente non disponibile");
+    }
+
     const startedAt = Date.now();
     const accessToken = await this.getShadowAccessToken();
     console.log('[DEBUG] GemmaService: invokeShadowGemma auth resolved', {
@@ -167,19 +240,28 @@ class GemmaService {
       elapsedMs: Date.now() - startedAt,
       bodyKeys: Object.keys(body),
     });
-    const response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        mode: "shadow",
-        ...body,
-      }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(abortId));
+    let response: Response;
+    try {
+      response = await fetch(`${supabaseUrl}/functions/v1/gemma-help-assistant`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          mode: "shadow",
+          ...body,
+        }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      this.registerGemmaFailure();
+      throw error;
+    } finally {
+      clearTimeout(abortId);
+    }
+
     console.log('[DEBUG] GemmaService: invokeShadowGemma response', {
       status: response.status,
       ok: response.ok,
@@ -194,10 +276,42 @@ class GemmaService {
     });
 
     if (!response.ok) {
+      if (response.status >= 500) {
+        this.registerGemmaFailure();
+      }
       throw new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
     }
 
+    this.resetGemmaCircuit();
     return payload;
+  }
+
+  private getNPOInsightCacheKey(insights: NPOInsightDraftInput[]) {
+    return `${NPO_INSIGHT_CACHE_PREFIX}${stableStringify(insights)}`;
+  }
+
+  private async readNPOInsightCache(cacheKey: string, maxAgeMs: number): Promise<NPOInsightDraftResult | null> {
+    try {
+      const raw = await AsyncStorage.getItem(cacheKey);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as CachedNPOInsightDrafts;
+      if (!parsed?.savedAt || !parsed?.data || Date.now() - parsed.savedAt > maxAgeMs) {
+        return null;
+      }
+
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeNPOInsightCache(cacheKey: string, data: NPOInsightDraftResult) {
+    try {
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data }));
+    } catch {
+      // Cache failures must never affect the dashboard.
+    }
   }
 
   async getSmartMatchReasons(matches: OldSmartMatchResult[]): Promise<SmartMatchReasonResult> {
@@ -205,15 +319,27 @@ class GemmaService {
   }
 
   async getNPOInsightDrafts(insights: NPOInsightDraftInput[]): Promise<NPOInsightDraftResult> {
-    const data = await this.invokeShadowGemma({
-      question: "Parla come Gemma con tono caldo e concreto: guarda le priorita di questo ente e suggerisci l'azione piu utile da fare adesso, senza suonare generica.",
-      responseFormat: "npo_insight_drafts",
-      npoInsights: insights,
-    });
+    const cacheKey = this.getNPOInsightCacheKey(insights);
+    const cached = await this.readNPOInsightCache(cacheKey, NPO_INSIGHT_CACHE_TTL_MS);
+    if (cached) return cached;
 
-    return {
-      insights: Array.isArray(data?.insights) ? data.insights : [],
-    };
+    try {
+      const data = await this.invokeShadowGemma({
+        question: "Parla come Gemma con tono caldo e concreto: guarda le priorita di questo ente e suggerisci l'azione piu utile da fare adesso, senza suonare generica.",
+        responseFormat: "npo_insight_drafts",
+        npoInsights: insights,
+      });
+
+      const result = {
+        insights: Array.isArray(data?.insights) ? data.insights : [],
+      };
+      await this.writeNPOInsightCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      const stale = await this.readNPOInsightCache(cacheKey, NPO_INSIGHT_STALE_TTL_MS);
+      if (stale) return stale;
+      throw error;
+    }
   }
 
   async curateActivityDraft(activity: {

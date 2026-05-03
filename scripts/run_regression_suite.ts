@@ -5,6 +5,7 @@ const suite = [
   { label: "notifications-payload-contract", path: "scripts/test_notification_payload_contract.ts" },
   { label: "chat-filter-contract", path: "scripts/test_chat_filter_contract.ts" },
   { label: "chat-ux-contract", path: "scripts/test_chat_ux_contract.ts" },
+  { label: "gemma-invocation-guard-contract", path: "scripts/test_gemma_invocation_guard_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },
