@@ -2,7 +2,7 @@ import { supabase } from '../utils/supabase';
 import { profileRest } from '../utils/profileRest';
 import { authService } from './AuthService';
 import { MessageMetadata } from '../types/chat';
-import { filterMessage, recordMessageSent, getFilterErrorMessage } from '../utils/chatFilter';
+import { filterMessage, recordMessageSent, getFilterErrorMessage, shouldModerateMessageWithEdge } from '../utils/chatFilter';
 import { moderateChatMessage } from '../utils/communityModeration';
 
 /** Thrown when a message is blocked by the content filter */
@@ -188,22 +188,24 @@ class ChatService {
         // Record successful send for rate-limit window
         recordMessageSent();
 
-        // Best-effort server-side moderation after send: never blocks delivery.
-        void this._withTimeout(
-            moderateChatMessage({
-                message: content,
-                userId: senderId,
-                conversationId,
-            }),
-            'community-moderator-ai chat moderation background',
-            1500
-        ).then((analysis) => {
-            if (!analysis.safe) {
-                console.warn('community-moderator-ai flagged chat message after send:', analysis);
-            }
-        }).catch((e) => {
-            console.warn('community-moderator-ai unavailable after chat send:', e);
-        });
+        // Best-effort server-side moderation after send: only escalate suspicious-but-allowed messages.
+        if (shouldModerateMessageWithEdge(content)) {
+            void this._withTimeout(
+                moderateChatMessage({
+                    message: content,
+                    userId: senderId,
+                    conversationId,
+                }),
+                'community-moderator-ai chat moderation background',
+                1500
+            ).then((analysis) => {
+                if (!analysis.safe) {
+                    console.warn('community-moderator-ai flagged chat message after send:', analysis);
+                }
+            }).catch((e) => {
+                console.warn('community-moderator-ai unavailable after chat send:', e);
+            });
+        }
 
         return data;
     }

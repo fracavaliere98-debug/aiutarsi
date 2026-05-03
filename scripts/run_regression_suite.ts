@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const suite = [
   { label: "notifications-routing", path: "scripts/test_notification_routing.ts" },
   { label: "notifications-payload-contract", path: "scripts/test_notification_payload_contract.ts" },
+  { label: "chat-filter-contract", path: "scripts/test_chat_filter_contract.ts" },
   { label: "chat-ux-contract", path: "scripts/test_chat_ux_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },

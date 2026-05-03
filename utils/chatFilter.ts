@@ -2,7 +2,7 @@
  * chatFilter.ts
  * Client-side chat message filter.
  * Checks for banned words and basic spam patterns before sending.
- * For extra security, messages are also validated server-side via Edge Function.
+ * For extra security, suspicious-but-allowed messages can be escalated to Edge moderation.
  */
 
 // ── Banned words list (Italian + English) ──────────────────────────────────
@@ -43,6 +43,13 @@ export type FilterResult =
     | { blocked: true; reason: 'banned_word'; word: string }
     | { blocked: true; reason: 'spam_pattern'; detail: string }
     | { blocked: true; reason: 'rate_limit' };
+
+const EDGE_MODERATION_HINTS: RegExp[] = [
+    /\b(telegram|whatsapp|bonifico|paypal|iban|revolut|western union)\b/i,
+    /\b(password|codice|otp|documento|carta di credito|credit card)\b/i,
+    /\b(incontriamoci|vieni da solo|non dirlo|segreto)\b/i,
+    /[A-ZÀ-Ü]{18,}/,
+];
 
 /**
  * Normalize text for matching: lowercase, remove accents, collapse spaces
@@ -93,6 +100,13 @@ export function filterMessage(text: string): FilterResult {
     }
 
     return { blocked: false };
+}
+
+export function shouldModerateMessageWithEdge(text: string): boolean {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    if (trimmed.length >= 420) return true;
+    return EDGE_MODERATION_HINTS.some((pattern) => pattern.test(trimmed));
 }
 
 /**
