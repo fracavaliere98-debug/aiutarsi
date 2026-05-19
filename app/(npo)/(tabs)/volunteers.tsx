@@ -13,56 +13,15 @@ import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { Colors } from "../../../constants/Colors";
+import { SectionHeader, SegmentedControl, type SegmentedControlItem } from "../../../components/ui";
 import { useNotificationsDomain } from "../../../hooks/notifications/useNotificationsDomain";
 import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
 import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
 import { useNPOApplications } from "../../../hooks/applications/selectors";
+import { colors, palette } from "../../../theme";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
-
-const TabCountBadge = ({ count, active }: { count: number; active: boolean }) => (
-    <View
-        style={{
-            minWidth: 20,
-            height: 20,
-            paddingHorizontal: 6,
-            borderRadius: 999,
-            alignItems: "center",
-            justifyContent: "center",
-            alignSelf: "center",
-            backgroundColor: active ? "rgba(255,255,255,0.18)" : "rgba(56,36,135,0.1)",
-        }}
-    >
-        <Text
-            style={{
-                color: active ? "white" : "#382487",
-                fontSize: 11,
-                lineHeight: 20,
-                fontWeight: "900",
-                includeFontPadding: false,
-                textAlignVertical: "center",
-            }}
-        >
-            {count}
-        </Text>
-    </View>
-);
-
-const TabIconSlot = ({ children }: { children: React.ReactNode }) => (
-    <View style={{ width: 16, height: 20, alignItems: "center", justifyContent: "center" }}>
-        {children}
-    </View>
-);
-
-const tabLabelTextStyle = (active: boolean) => ({
-    color: active ? "white" : "#475569",
-    fontSize: 12,
-    lineHeight: 20,
-    fontWeight: "600" as const,
-    includeFontPadding: false,
-    textAlignVertical: "center" as const,
-});
 
 export default function VolunteersScreen() {
     const { user, getNPOFollowers, getUserById } = useAuth();
@@ -206,6 +165,29 @@ export default function VolunteersScreen() {
     const displayPending = pendingApplications.filter(searchFilter);
     const displayApproved = approvedVolunteers.filter(searchFilter);
     const displayFollowers = followers.filter(searchFilter);
+    const tabItems = useMemo<SegmentedControlItem<TabType>[]>(() => ([
+        {
+            value: "CANDIDATURE",
+            label: "In attesa",
+            count: pendingApplications.length,
+            icon: ({ color }) => <Clock3 size={13} color={color} />,
+            testID: "npo-volunteers-tab-pending",
+        },
+        {
+            value: "STORICO",
+            label: "Volontari",
+            count: approvedVolunteers.length,
+            icon: ({ color }) => <UsersRound size={13} color={color} />,
+            testID: "npo-volunteers-tab-approved",
+        },
+        {
+            value: "FOLLOWERS",
+            label: "Follower",
+            count: followers.length,
+            icon: ({ color }) => <HeartHandshake size={13} color={color} />,
+            testID: "npo-volunteers-tab-followers",
+        },
+    ]), [approvedVolunteers.length, followers.length, pendingApplications.length]);
 
     const handleInviteFollower = (volunteerId: string) => {
         const today = new Date().toISOString().split('T')[0];
@@ -248,103 +230,6 @@ export default function VolunteersScreen() {
         );
     }
 
-    const Tabs = () => (
-        <View className="flex-row justify-center gap-3 mb-4">
-            <TouchableOpacity
-                onPress={() => setActiveTab("CANDIDATURE")}
-                style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 48,
-                    paddingHorizontal: 8,
-                    paddingVertical: 0,
-                    borderRadius: 999,
-                    justifyContent: "center",
-                    backgroundColor: activeTab === "CANDIDATURE" ? '#382487' : '#f0f2f5',
-                    shadowColor: activeTab === "CANDIDATURE" ? '#382487' : '#d1d9e6',
-                    shadowOffset: { width: 4, height: 4 },
-                    shadowOpacity: activeTab === "CANDIDATURE" ? 0.3 : 1,
-                    shadowRadius: activeTab === "CANDIDATURE" ? 8 : 8,
-                    elevation: activeTab === "CANDIDATURE" ? 4 : 2,
-                    borderWidth: activeTab === "CANDIDATURE" ? 0 : 1,
-                    borderColor: 'rgba(255,255,255,0.4)',
-                }}
-            >
-                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                    <TabIconSlot>
-                        <Clock3 size={13} color={activeTab === "CANDIDATURE" ? 'white' : '#475569'} />
-                    </TabIconSlot>
-                    <Text style={tabLabelTextStyle(activeTab === "CANDIDATURE")}>
-                        In attesa
-                    </Text>
-                    <TabCountBadge count={pendingApplications.length} active={activeTab === "CANDIDATURE"} />
-                </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => setActiveTab("STORICO")}
-                style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 48,
-                    paddingHorizontal: 8,
-                    paddingVertical: 0,
-                    borderRadius: 999,
-                    justifyContent: "center",
-                    backgroundColor: activeTab === "STORICO" ? '#382487' : '#f0f2f5',
-                    shadowColor: activeTab === "STORICO" ? '#382487' : '#d1d9e6',
-                    shadowOffset: { width: 4, height: 4 },
-                    shadowOpacity: activeTab === "STORICO" ? 0.3 : 1,
-                    shadowRadius: activeTab === "STORICO" ? 8 : 8,
-                    elevation: activeTab === "STORICO" ? 4 : 2,
-                    borderWidth: activeTab === "STORICO" ? 0 : 1,
-                    borderColor: 'rgba(255,255,255,0.4)',
-                }}
-            >
-                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                    <TabIconSlot>
-                        <UsersRound size={13} color={activeTab === "STORICO" ? 'white' : '#475569'} />
-                    </TabIconSlot>
-                    <Text style={tabLabelTextStyle(activeTab === "STORICO")}>
-                        Volontari
-                    </Text>
-                    <TabCountBadge count={approvedVolunteers.length} active={activeTab === "STORICO"} />
-                </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => setActiveTab("FOLLOWERS")}
-                style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 48,
-                    paddingHorizontal: 8,
-                    paddingVertical: 0,
-                    borderRadius: 999,
-                    justifyContent: "center",
-                    backgroundColor: activeTab === "FOLLOWERS" ? '#382487' : '#f0f2f5',
-                    shadowColor: activeTab === "FOLLOWERS" ? '#382487' : '#d1d9e6',
-                    shadowOffset: { width: 4, height: 4 },
-                    shadowOpacity: activeTab === "FOLLOWERS" ? 0.3 : 1,
-                    shadowRadius: activeTab === "FOLLOWERS" ? 8 : 8,
-                    elevation: activeTab === "FOLLOWERS" ? 4 : 2,
-                    borderWidth: activeTab === "FOLLOWERS" ? 0 : 1,
-                    borderColor: 'rgba(255,255,255,0.4)',
-                }}
-            >
-                <View style={{ height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                    <TabIconSlot>
-                        <HeartHandshake size={13} color={activeTab === "FOLLOWERS" ? 'white' : '#475569'} />
-                    </TabIconSlot>
-                    <Text style={tabLabelTextStyle(activeTab === "FOLLOWERS")}>
-                        Follower
-                    </Text>
-                    <TabCountBadge count={followers.length} active={activeTab === "FOLLOWERS"} />
-                </View>
-            </TouchableOpacity>
-        </View>
-    );
-
     const HeaderActions = <NPOHeaderActions />;
     const npoDisplayName = user?.npoName || user?.name || "il tuo ente";
 
@@ -364,20 +249,20 @@ export default function VolunteersScreen() {
                         style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            backgroundColor: '#f0f2f5',
+                            backgroundColor: colors.controlSurface,
                             paddingHorizontal: 16,
                             paddingVertical: 4,
                             borderRadius: 999, // Pill style to match tabs
                             borderWidth: 1,
                             borderColor: 'rgba(0,0,0,0.08)',
-                            shadowColor: '#d1d9e6',
+                            shadowColor: colors.controlShadow,
                             shadowOffset: { width: 4, height: 4 },
                             shadowOpacity: 0.8,
                             shadowRadius: 8,
                             elevation: 2,
                         }}
                     >
-                        <Search size={16} color="#94a3b8" />
+                        <Search size={16} color={palette.slate400} />
                         <TextInput
                             placeholder="Cerca volontari..."
                             value={searchQuery}
@@ -387,26 +272,25 @@ export default function VolunteersScreen() {
                                 height: 40,
                                 flex: 1,
                                 marginLeft: 10,
-                                color: '#1e293b',
+                                color: palette.slate800,
                                 fontWeight: '600'
                             }}
-                            placeholderTextColor="#94a3b8"
+                            placeholderTextColor={palette.slate400}
                         />
                     </View>
                 </View>
 
-                <Tabs />
+                <SegmentedControl items={tabItems} value={activeTab} onChange={setActiveTab} />
             </View>
 
             {/* CANDIDATURE Tab */}
             {activeTab === "CANDIDATURE" && (
                 <View className="flex-1">
-                <View className="mb-3 px-1">
-                        <Text className="text-primary font-black text-lg">Nuove candidature</Text>
-                        <Text className="text-secondary text-xs font-semibold mt-1">
-                            Approva rapidamente chi può entrare nel tuo ente come volontario.
-                        </Text>
-                    </View>
+                    <SectionHeader
+                        title="Nuove candidature"
+                        description="Approva rapidamente chi può entrare nel tuo ente come volontario."
+                        style={{ paddingHorizontal: 4 }}
+                    />
 
                     {displayPending.length > 0 ? (
                         <FlashList
@@ -467,12 +351,11 @@ export default function VolunteersScreen() {
             {/* FOLLOWERS Tab */}
             {activeTab === "FOLLOWERS" && (
                 <View className="flex-1">
-                    <View className="mb-2 px-1">
-                        <Text className="text-primary font-black text-lg">I Tuoi Follower</Text>
-                        <Text className="text-secondary text-xs font-semibold mt-1">
-                            Persone che seguono la tua NPO e che puoi coinvolgere nelle prossime attività.
-                        </Text>
-                    </View>
+                    <SectionHeader
+                        title="I Tuoi Follower"
+                        description="Persone che seguono la tua NPO e che puoi coinvolgere nelle prossime attività."
+                        style={{ paddingHorizontal: 4, marginBottom: 8 }}
+                    />
 
                     {matchedFollowers.length > 0 && (
                         <View className="mb-6 px-1">
@@ -529,12 +412,11 @@ export default function VolunteersScreen() {
             {/* STORICO Tab - Approved Volunteers (Now "Volontari") */}
             {activeTab === "STORICO" && (
                 <View className="flex-1">
-                    <View className="mb-2">
-                        <Text className="text-primary font-black text-lg">I Tuoi Volontari</Text>
-                        <Text className="text-secondary text-xs font-semibold mt-1">
-                            Volontari già approvati che fan parte di {npoDisplayName}.
-                        </Text>
-                    </View>
+                    <SectionHeader
+                        title="I Tuoi Volontari"
+                        description={`Volontari già approvati che fan parte di ${npoDisplayName}.`}
+                        style={{ marginBottom: 8 }}
+                    />
 
                     {displayApproved.length > 0 ? (
                         <FlashList
