@@ -212,13 +212,20 @@ export class AuthService {
         if (!sbUser) return null;
 
         const metadata = sbUser.user_metadata || {};
+        // Security-sensitive fields come from app_metadata (server-only, not writable by users).
+        // Fallback to user_metadata for existing sessions that predate this change.
+        const appMeta = sbUser.app_metadata || {};
+        const secureRole: string = appMeta.role || metadata.role || 'VOLUNTEER';
+        const isBanned: boolean = appMeta.is_banned ?? metadata.is_banned ?? false;
+        const banReason: string | null = appMeta.ban_reason ?? metadata.ban_reason ?? null;
+        const banReportId: string | null = appMeta.ban_report_id ?? metadata.ban_report_id ?? null;
 
         const impactPoints = metadata.impact_points ?? metadata.impactPoints ?? 0;
 
         return {
             id: sbUser.id,
             email: sbUser.email || '',
-            role: metadata.role || 'VOLUNTEER',
+            role: secureRole,
             full_name: metadata.full_name || metadata.name || metadata.displayName || metadata.npo_name || 'Utente',
             avatar_url: metadata.avatar || metadata.avatar_url,
             impact_points: impactPoints,
@@ -267,9 +274,9 @@ export class AuthService {
             deletionRequestedAt: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             deletion_requested_at: metadata.deletionRequestedAt || metadata.deletion_requested_at || null,
             shortId: metadata.shortId || metadata.id?.substring(0, 8).toUpperCase(),
-            is_banned: metadata.is_banned,
-            ban_reason: metadata.ban_reason,
-            ban_report_id: metadata.ban_report_id,
+            is_banned: isBanned,
+            ban_reason: banReason,
+            ban_report_id: banReportId,
             referral_code: metadata.referral_code,
             referred_by: metadata.referred_by,
             // NPO Fields
@@ -411,7 +418,6 @@ export class AuthService {
                             .update({ full_name: user.full_name, updated_at: new Date().toISOString() })
                             .eq('id', user.id)
                             .is('full_name', null);
-                        console.log("[DEBUG] AuthService: Login - Backfilled missing full_name from auth metadata");
                     } catch (backfillError) {
                         console.warn("Login full_name backfill failed", backfillError);
                     }
@@ -419,7 +425,6 @@ export class AuthService {
                 const dbUser = this._mapProfileToUser(profile);
                 // Trust the public profile row as source of truth after sync triggers have run.
                 Object.assign(user, dbUser, { email: dbUser.email || user.email });
-                console.log("[DEBUG] AuthService: Login - Profile merged from DB");
             }
         } catch (e) {
             console.warn("Login profile fetch failed", e);
@@ -507,12 +512,9 @@ export class AuthService {
         // path in environments where email confirmation is intentionally enabled.
         if (!data.session) {
             requiresEmailConfirmation = true;
-            console.log("[DEBUG] AuthService: signup completed without session, email confirmation required");
         }
 
-        console.log("[DEBUG] AuthService: register success");
         const { data: sessionData } = await supabase.auth.getSession();
-        console.log("[DEBUG] AuthService: session after register:", sessionData.session?.user?.id ? "Exists" : "Missing");
 
         const user = this._mapSupabaseUserToAppUser(data.user);
 
@@ -524,13 +526,11 @@ export class AuthService {
     }
 
     async logout(): Promise<void> {
-        console.log("[DEBUG] AuthService: Nuclear logout started");
 
         try {
             // 1. TENTA IL LOGOUT LOCALE IMMEDIATO (Priorità assoluta)
             // 'local' non parla col server, pulisce solo l'SDK. È quasi istantaneo.
             await supabase.auth.signOut({ scope: 'local' });
-            console.log("[DEBUG] AuthService: Local SDK SignOut completed");
 
             // 2. FIRE AND FORGET GLOBAL SIGNOUT
             // Lo lanciamo ma non mettiamo 'await'. Se il server risponde bene, altrimenti pace.
@@ -554,7 +554,6 @@ export class AuthService {
 
             if (keysToRemove.length > 0) {
                 await AsyncStorage.multiRemove(keysToRemove);
-                console.log("[DEBUG] AuthService: Storage keys wiped:", keysToRemove);
             }
         } catch (e) {
             console.error("Critical storage cleanup failure", e);
@@ -685,7 +684,6 @@ export class AuthService {
         } | null;
     }>> {
         try {
-            console.log("[DEBUG] AuthService: getBlockedUsers start", userId);
             const accessToken = await this._getAccessTokenForRest();
             const rows = await this._withTimeout(
                 profileRest.listBlockedUsers(userId, accessToken),
@@ -694,7 +692,6 @@ export class AuthService {
             );
 
             if (!rows.length) {
-                console.log("[DEBUG] AuthService: getBlockedUsers done 0");
                 return [];
             }
 
@@ -711,7 +708,6 @@ export class AuthService {
                 profile: profileMap.get(row.blocked_id) || null,
             }));
 
-            console.log("[DEBUG] AuthService: getBlockedUsers done", result.length);
             return result;
         } catch (error) {
             console.error("Error fetching blocked users:", error);
@@ -758,7 +754,6 @@ export class AuthService {
                 .single();
 
             if (profile && !error) {
-                console.log("[DEBUG] AuthService: Loaded profile from DB");
                 user = this._mapProfileToUser(profile);
                 user.email = user.email || session.user.email || '';
 
@@ -797,7 +792,6 @@ export class AuthService {
                 'profiles.referral_code.ensure',
                 5000
             );
-            console.log("[DEBUG] AuthService: ensured referral_code", fallbackCode);
             return fallbackCode;
         } catch (error) {
             console.warn("[DEBUG] AuthService: failed ensuring referral_code", this._formatErrorDetails(error));
@@ -810,14 +804,12 @@ export class AuthService {
         let failedStage = 'initialization';
         let restProfileRow: any = null;
         const currentStoredUser = await this.loadUserLocally();
-        console.log("[DEBUG] AuthService: updateProfile (DB-First) started for", userId, updates);
 
         // 1. Handle Avatar Upload first
         // Add resilience: check both 'avatar' and 'avatar_url'
         const avatarToUpload = updates.avatar_url || (updates as any).avatar;
         if (avatarToUpload && (avatarToUpload.startsWith('file://') || avatarToUpload.startsWith('content://') || avatarToUpload.startsWith('data:'))) {
             try {
-                console.log("[DEBUG] AuthService: Uploading new avatar...");
                 const uploadedUrl = await storageService.uploadAvatar(userId, avatarToUpload);
                 if (uploadedUrl) {
                     updates.avatar_url = uploadedUrl;
@@ -878,7 +870,6 @@ export class AuthService {
         const interestsToSync = rawInterestsToSync ? Array.from(new Set(rawInterestsToSync)) : rawInterestsToSync;
 
         try {
-            console.log("[DEBUG] AuthService: updateProfile payload prepared", payload);
             const accessToken = await this._getAccessTokenForRest();
 
             if (shouldUpdateProfileRow || skillsToSync !== undefined || interestsToSync !== undefined) {
@@ -901,7 +892,6 @@ export class AuthService {
                         10000
                     );
                     restProfileRow = Array.isArray(result) ? result[0] : result;
-                    console.log("[DEBUG] AuthService: profiles.update REST completed");
                 } catch (restError: any) {
                     if (this._isTimeoutError(restError, 'profiles.update.rest')) {
                         console.warn("[DEBUG] AuthService: profiles.update REST timed out, proceeding optimistically", {
@@ -918,14 +908,11 @@ export class AuthService {
                     throw new Error(`profiles.update rejected: ${this._formatErrorDetails(restError)}`);
                     }
                 }
-                console.log("[DEBUG] AuthService: profiles.update completed in", Date.now() - startedAt, "ms");
             } else {
-                console.log("[DEBUG] AuthService: profiles.update skipped - no profile columns changed");
             }
 
             // 4. Sync Relationals (Skills/Interests)
             if (skillsToSync !== undefined) {
-                console.log("[DEBUG] AuthService: syncing user_skills", skillsToSync);
                 failedStage = 'user_skills.sync';
                 try {
                     await this._withTimeout(
@@ -945,7 +932,6 @@ export class AuthService {
                 }
             }
             if (interestsToSync !== undefined) {
-                console.log("[DEBUG] AuthService: syncing user_interests", interestsToSync);
                 failedStage = 'user_interests.sync';
                 try {
                     await this._withTimeout(
@@ -975,7 +961,6 @@ export class AuthService {
 
             failedStage = 'saveUserLocally.afterUpdate';
             await this.saveUserLocally(optimisticUser);
-            console.log("[DEBUG] AuthService: optimistic profile saved locally");
 
             failedStage = 'auth.metadata.sync';
             void this._withTimeout(
@@ -983,7 +968,6 @@ export class AuthService {
                 'auth.metadata.sync',
                 2000
             ).then(() => {
-                console.log("[DEBUG] AuthService: auth metadata sync completed");
             }).catch((metadataError) => {
                 console.warn("[DEBUG] AuthService: auth metadata sync skipped/fail", this._formatErrorDetails(metadataError));
             });
@@ -997,17 +981,14 @@ export class AuthService {
             ).then((freshUser) => {
                 if (freshUser) {
                     void this.saveUserLocally(freshUser);
-                    console.log("[DEBUG] AuthService: background rehydrate completed");
                 }
             }).catch((rehydrateError) => {
                 if (this._isTimeoutError(rehydrateError, 'getCurrentUser.afterUpdate')) {
-                    console.log("[DEBUG] AuthService: background rehydrate skipped timeout");
                 } else {
                     console.warn("[DEBUG] AuthService: background rehydrate skipped/fail", this._formatErrorDetails(rehydrateError));
                 }
             });
 
-            console.log("[DEBUG] AuthService: updateProfile finished in", Date.now() - startedAt, "ms");
 
             return optimisticUser;
 
@@ -1178,7 +1159,6 @@ export class AuthService {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Email non disponibile.");
 
-        console.log("[DEBUG] AuthService: resend signup confirmation start", {
             emailDomain: cleanEmail.split("@")[1] || "unknown",
             redirectTo: this._getAuthEmailRedirectUrl(),
         });
@@ -1200,7 +1180,6 @@ export class AuthService {
             throw new Error(msg);
         }
 
-        console.log("[DEBUG] AuthService: resend signup confirmation accepted");
     }
 
     async getEmailConfirmationState(email: string): Promise<EmailConfirmationState> {
@@ -1236,7 +1215,6 @@ export class AuthService {
         if (!cleanEmail) throw new Error("Inserisci la tua email.");
         if (!this._validateEmail(cleanEmail)) throw new Error("Formato email non valido.");
 
-        console.log("[DEBUG] AuthService: password reset start", {
             emailDomain: cleanEmail.split("@")[1] || "unknown",
             redirectTo: this._getPasswordRecoveryRedirectUrl(),
         });
@@ -1253,7 +1231,6 @@ export class AuthService {
             throw new Error(msg);
         }
 
-        console.log("[DEBUG] AuthService: password reset accepted");
     }
 
     async completePasswordRecovery(newPassword: string): Promise<void> {
@@ -1290,6 +1267,7 @@ export class AuthService {
 
                 if (user && user.id === userId) {
                     const metadata = user.user_metadata || {};
+                    const appMetaSH = user.app_metadata || {};
                     const { error: insertError } = await supabase
                         .from('profiles')
                         .insert({
@@ -1297,7 +1275,7 @@ export class AuthService {
                             email: user.email,
                             full_name: metadata.full_name || metadata.name || metadata.displayName || 'Utente',
                             avatar_url: metadata.avatar_url || metadata.avatar,
-                            role: (metadata.role || 'VOLUNTEER').toUpperCase(),
+                            role: ((appMetaSH.role || metadata.role) || 'VOLUNTEER').toUpperCase(),
                             npo_name: metadata.npoName,
                             company_name: metadata.companyName,
                             profile_completed: metadata.profile_completed || metadata.profileCompleted || false
@@ -1341,7 +1319,6 @@ export class AuthService {
     // Helper: Sync relational lists (skills, interests) with diff logic
     private async _syncRelationalList(userId: string, table: string, column: string, rawList: string[]): Promise<void> {
         try {
-            console.log(`[DEBUG] AuthService: _syncRelationalList start ${table}`, rawList);
             // 0. Deduplicate Input (Critical for Unique Constraints)
             const newList = Array.from(new Set(rawList)).filter(item => item && item.trim().length > 0);
 
@@ -1406,7 +1383,6 @@ export class AuthService {
                     throw new Error(`${table}.insert rejected: ${this._formatErrorDetails(insertError)}`);
                 }
             }
-            console.log(`[DEBUG] AuthService: _syncRelationalList done ${table}`);
         } catch (e) {
             console.error(`Error syncing ${table}:`, {
                 userId,
@@ -1521,14 +1497,12 @@ export class AuthService {
      */
     async getReferralCount(userId: string): Promise<number> {
         try {
-            console.log("[DEBUG] AuthService: getReferralCount start", userId);
             const accessToken = await this._getAccessTokenForRest();
             const count = await this._withTimeout(
                 profileRest.countReferrals(userId, accessToken),
                 'profiles.referralCount.rest',
                 8000
             );
-            console.log("[DEBUG] AuthService: getReferralCount done", count || 0);
             return count || 0;
         } catch (error) {
             console.error("Error fetching referral count:", error);

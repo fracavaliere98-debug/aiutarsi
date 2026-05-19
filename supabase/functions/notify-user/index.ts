@@ -5,6 +5,16 @@ import { normalizeNotificationRequestBody } from "../_shared/notifyUserPayload.t
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 Deno.serve(async (req) => {
+    // Only callable by internal services (edge functions, DB webhooks) via service_role key
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!serviceRoleKey || authHeader !== `Bearer ${serviceRoleKey}`) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+        });
+    }
+
     try {
         const payload = await req.json();
         const { userId, title, body, data } = normalizeNotificationRequestBody(payload);

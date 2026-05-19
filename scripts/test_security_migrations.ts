@@ -25,11 +25,12 @@ function pass(label: string) {
 // Config
 // ---------------------------------------------------------------------------
 
-const BASE_URL = process.env.STAGING_SUPABASE_URL ?? "https://pavnfiladmnwbptwlwpr.supabase.co";
+const BASE_URL = process.env.STAGING_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.STAGING_SUPABASE_ANON_KEY ?? "";
-const TEST_EMAIL = process.env.STAGING_TEST_EMAIL ?? "test.maestro@aiutarsi.it";
-const TEST_PASSWORD = process.env.STAGING_TEST_PASSWORD ?? "TestMaestro123!";
+const TEST_EMAIL = process.env.STAGING_TEST_EMAIL ?? "";
+const TEST_PASSWORD = process.env.STAGING_TEST_PASSWORD ?? "";
 
+assert(BASE_URL, "STAGING_SUPABASE_URL is required");
 assert(ANON_KEY, "STAGING_SUPABASE_ANON_KEY is required");
 
 const REST = `${BASE_URL}/rest/v1`;

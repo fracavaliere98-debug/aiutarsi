@@ -85,7 +85,6 @@ function RootLayoutNav() {
     const hasCompletedOnboarding = user?.profile_completed;
 
     const navigate = (dest: string) => {
-      console.log(`[DEBUG] RootLayoutNav: Redirecting to ${dest}`);
       isRedirecting.current = true;
       router.replace(dest as any);
       setTimeout(() => { isRedirecting.current = false; }, 800);
@@ -100,7 +99,6 @@ function RootLayoutNav() {
     }
 
     if (!corporateEnabled && user.role === "CORPORATE") {
-      console.log("[DEBUG] RootLayoutNav: Corporate disabled in production, forcing logout");
       isRedirecting.current = true;
       void logout().finally(() => {
         router.replace("/");
@@ -149,7 +147,6 @@ function RootLayoutNav() {
             { text: "Installa ora", onPress: async () => { await Updates.fetchUpdateAsync(); await Updates.reloadAsync(); } }
           ]);
         }
-      }).catch(e => console.log("[DEBUG] OTA Check error:", e));
     }
 
     }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister]);
@@ -191,7 +188,6 @@ function RootLayoutNav() {
     );
   }
 
-  console.log("[DEBUG] RootLayoutNav Rendering key:", segmentKey || "root", "user:", user ? user.role : "NULL");
 
   // BANNED USER GUARD 
   // Rende la schermata fissa di account sospeso invece di navigare

@@ -102,7 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const resetState = useCallback(async () => {
         try {
-            console.log("[DEBUG] AuthContext: Force clearing all storage");
             const keys = await AsyncStorage.getAllKeys();
             const supabaseProjectRef = getSupabaseProjectRef();
             const authKeys = keys.filter((key) => (
@@ -118,18 +117,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         setUser(null);
-        console.log("[DEBUG] AuthContext: resetState completed, user null");
     }, []);
 
     const logout = useCallback(async () => {
-        console.log("[DEBUG] AuthContext: logout process started");
 
         isLoggingOutRef.current = true;
         setIsLoggingOut(true);
         setIsLoading(true);
 
         try {
-            console.log("[DEBUG] AuthContext: Performing local SDK signOut");
             try {
                 await Promise.race([
                     supabase.auth.signOut({ scope: 'local' }),
@@ -143,7 +139,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(null);
             await resetState();
 
-            console.log("[DEBUG] AuthContext: logout logic sequence completed");
         } catch (error) {
             console.error("[DEBUG] AuthContext: Critical logout error:", error);
             trackError(error, {
@@ -159,7 +154,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setIsLoading(false);
                 setIsLoggingOut(false);
                 isLoggingOutRef.current = false;
-                console.log("[DEBUG] AuthContext: Logout flags cleared, app stable.");
             }, 800);
         }
     }, [resetState]);
@@ -245,7 +239,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (result?.data?.session?.user && isMounted) {
                     authService.setCachedAccessToken(result.data.session.access_token);
                     const currentUser = await authService.getCurrentUser();
-                    console.log("[DEBUG USER] Init:", currentUser);
                     setUser(currentUser);
                 }
                 // REMOVED FALLBACK: We rely on Supabase Persistence. 
@@ -308,7 +301,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         return;
                     }
                     const appUser = await authService.getCurrentUser();
-                    console.log("[DEBUG USER] AuthStateChange:", appUser);
                     setUser(appUser);
                     // No automatic full refresh anymore
                 }
@@ -578,7 +570,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!user || isLoggingOutRef.current) return false;
 
         try {
-            console.log("[DEBUG] AuthContext: Update started for", data);
             trackEvent("profile_update_started", {
                 userId: user.id,
                 role: user.role,
@@ -588,7 +579,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Sync to backend first to avoid optimistic local changes
             // from cascading into other providers while the save is still in flight.
             const persistedUser = await authService.updateProfile(user.id, data);
-            console.log("[DEBUG] AuthContext: updateProfile resolved", persistedUser?.id, {
                 interests: persistedUser?.interests?.length,
                 skills: persistedUser?.skills?.length,
             });
@@ -597,8 +587,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(persistedUser);
             }
 
-            console.log("[DEBUG USER] Profile Updated:", persistedUser || user);
-            console.log("[DEBUG] AuthContext: updateUserProfile about to return true");
 
             void refreshUsers().catch((refreshError) => {
                 console.warn("Background users refresh failed after profile update:", refreshError);
