@@ -16,6 +16,15 @@ npx expo start --ios
 
 Requisito runtime: usare Node 20.x. Con versioni piu recenti di Node, Expo SDK 54 puo fallire in avvio.
 
+## UI e Design System
+
+La base condivisa del design system vive in:
+
+- `theme/`: palette primitive, token semantici, spacing, radius, typography, shadows, motion e colori per ruolo.
+- `components/ui/`: primitive UI condivise come `CountBadge`, `StatusPill`, `SectionHeader` e `SegmentedControl`.
+
+Le nuove schermate dovrebbero importare token semantici da `theme` e componenti condivisi da `components/ui`, evitando nuovi valori hardcoded quando esiste gia un token. Le regole complete sono in [docs/design-system.md](./docs/design-system.md).
+
 ## Segreti e credenziali
 
 `credentials.json` non deve contenere segreti versionati. Le credenziali Android locali ora vengono generate da variabili d'ambiente:
@@ -74,21 +83,29 @@ Andare su GitHub → repo → **Settings → Secrets & Variables → Actions**:
 
 ## CI/CD Pipeline
 
+Il repository installa anche un hook locale `pre-push` che esegue `npm run smoke:ios` prima del push. Per bypassarlo temporaneamente:
+
+```bash
+SKIP_LOCAL_SMOKE=1 git push origin main
+```
+
 ```
 push to main
-  └─► Maestro smoke tests (emulatore Android)
-        ├─ PASS → eas update --branch preview
-        └─ FAIL → pipeline bloccata, NO OTA update
+  └─► ota-deploy.yml
+        ├─ env contract check
+        ├─ regression suite
+        ├─ optional Maestro smoke
+        └─ eas update --branch preview --environment preview
 
-git tag v1.2.3 && git push --tags
-  └─► eas build --profile production (APK + IPA)
-        └─► eas update --branch production
+manual workflow_dispatch
+  └─► eas-build.yml
+        └─ eas build --platform android --profile preview --environment preview
 ```
 
 ### Altri Workflow
 
-- **Full QA Check** (`full-qa-check.yml`): Run su ogni PR verso `main`. Esegue build nativa (se necessaria) e test Maestro in emulatore.
-- **EAS Build & Maestro Cloud** (`eas-build.yml`): Run su push/PR verso `main`. Esegue build su EAS Cloud e test su Maestro Cloud.
+- **OTA Deploy** (`ota-deploy.yml`): Run su push verso `main`. Esegue controlli statici/regression e pubblica OTA preview.
+- **EAS Build** (`eas-build.yml`): Run manuale. Esegue build Android preview su EAS Cloud.
 - **Generate Master Audit Report** (`generate-audit.yml`): Run su push verso `main`. Rigenera la documentazione in `audit/`.
 
 ---
@@ -138,5 +155,6 @@ maestro test maestro/flows/
 ## Documentazione
 
 - Architettura tecnica: [docs/architecture.md](./docs/architecture.md)
+- Design system: [docs/design-system.md](./docs/design-system.md)
 - Contratto ambienti: [docs/env-contract.md](./docs/env-contract.md)
 - Checklist release breve: [docs/prod-migration-checklist.md](./docs/prod-migration-checklist.md)
