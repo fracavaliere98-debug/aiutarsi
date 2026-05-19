@@ -12,6 +12,7 @@ const suite = [
   { label: "gamification-contract", path: "scripts/test_gamification_contract.ts" },
   { label: "gamification-report", path: "scripts/test_volunteer_report.ts" },
   { label: "smart-match-compatibility", path: "scripts/test_smart_match_compatibility_contract.ts" },
+  { label: "unit-logic", path: "scripts/test_unit_logic.ts" },
 ];
 
 for (const test of suite) {
