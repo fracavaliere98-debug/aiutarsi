@@ -60,6 +60,10 @@ const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
+const RATE_LIMIT_AUTH = 30;             // authenticated users
+const RATE_LIMIT_ANON = 5;             // unauthenticated (by IP)
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -110,6 +114,42 @@ Ruolo: ${role}
 Profilo autenticato: non disponibile
 Usa solo le FAQ e i flussi pertinenti a questo ruolo.
 `;
+}
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+async function checkRateLimit(
+  serviceClient: any,
+  userId: string | null,
+  ip: string,
+): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+  const scopeKey = userId ? `gemma:${userId}` : `gemma:anon:${ip}`;
+  const maxCalls = userId ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON;
+
+  try {
+    const { data, error } = await serviceClient.rpc("try_consume_ai_rate_limit", {
+      p_scope_key: scopeKey,
+      p_max_calls: maxCalls,
+      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    });
+
+    if (error) {
+      // If rate limit check fails, allow through to avoid blocking legitimate users
+      console.warn("[GemmaHelp] Rate limit check error, allowing through:", error.message);
+      return { allowed: true, retryAfterSeconds: 0 };
+    }
+
+    return { allowed: Boolean(data), retryAfterSeconds: data ? 0 : RATE_LIMIT_WINDOW_SECONDS };
+  } catch (err) {
+    console.warn("[GemmaHelp] Rate limit check threw, allowing through:", err);
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
 }
 
 async function getHfToken(serviceClient: any): Promise<string> {
@@ -331,6 +371,19 @@ Deno.serve(async (req) => {
       }
     } else if (assistantMode === "shadow") {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+
+    // Rate limit check — runs before any HuggingFace call
+    const clientIp = getClientIp(req);
+    const { allowed, retryAfterSeconds } = await checkRateLimit(serviceClient, authUserId, clientIp);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Troppe richieste. Riprova tra qualche minuto." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Retry-After": String(retryAfterSeconds) },
+        },
+      );
     }
 
     const userContext = profile ? buildUserContext(profile) : buildRoleOnlyContext(effectiveRole);
