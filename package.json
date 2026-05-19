@@ -22,6 +22,7 @@
     "test:gamification-contract": "npx -y tsx scripts/test_gamification_contract.ts",
     "test:gamification-report": "npx -y tsx scripts/test_volunteer_report.ts",
     "test:smart-match-compatibility": "npx -y tsx scripts/test_smart_match_compatibility_contract.ts",
+    "test:unit-logic": "npx -y tsx scripts/test_unit_logic.ts",
     "test:regression": "npx -y tsx scripts/run_regression_suite.ts",
     "validate:env-contract": "npx -y tsx scripts/validate_env_contract.ts",
     "release:smoke": "npx -y tsx scripts/run_release_smoke.ts",
