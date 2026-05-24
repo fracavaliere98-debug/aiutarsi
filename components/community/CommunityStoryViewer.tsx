@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StoryViewerSession } from '../../hooks/stories/types';
+import { palette } from "@/theme";
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -57,7 +58,7 @@ export function CommunityStoryViewer({ viewer, onClose, onAdvance, onRewind }: C
                                         );
                                     }
                                 }}
-                                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ede9fe', overflow: 'hidden', marginRight: 10 }}
+                                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: palette.purple100, overflow: 'hidden', marginRight: 10 }}
                             >
                                 {authorData?.avatar_url ? (
                                     <Image source={{ uri: authorData.avatar_url }} style={{ width: 36, height: 36 }} />

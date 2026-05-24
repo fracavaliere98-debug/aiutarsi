@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowUpRight } from 'lucide-react-native';
 import { CommunityPost } from '../../types/community';
-import { colors } from "@/theme";
+import { colors, palette } from "@/theme";
 
 interface CommunityCompactPostCardProps {
     post: CommunityPost;
@@ -35,9 +35,9 @@ export function CommunityCompactPostCard({
                 marginRight: isCarousel ? 12 : 0,
                 marginBottom: isCarousel ? 0 : 12,
                 borderRadius: 22,
-                backgroundColor: 'white',
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: '#e2e8f0',
+                borderColor: colors.border,
                 overflow: 'hidden',
             }}
         >
@@ -53,7 +53,7 @@ export function CommunityCompactPostCard({
                             height: 42,
                             borderRadius: 21,
                             overflow: 'hidden',
-                            backgroundColor: '#ede9fe',
+                            backgroundColor: palette.purple100,
                             alignItems: 'center',
                             justifyContent: 'center',
                             marginRight: 12,
@@ -70,16 +70,16 @@ export function CommunityCompactPostCard({
                         <Text style={{ fontSize: 14, fontWeight: '900', color: colors.primary }} numberOfLines={1}>
                             {authorName}
                         </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748b', marginTop: 2 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted, marginTop: 2 }}>
                             {post.author?.role === 'VOLUNTEER' ? 'Volontario' : 'NPO'}
                         </Text>
                     </View>
 
-                    <ArrowUpRight size={16} color="#94a3b8" />
+                    <ArrowUpRight size={16} color={colors.textSubtle} />
                 </View>
 
                 {post.caption ? (
-                    <Text style={{ marginTop: 12, fontSize: 13, lineHeight: 19, color: '#334155' }} numberOfLines={isCarousel ? 4 : 3}>
+                    <Text style={{ marginTop: 12, fontSize: 13, lineHeight: 19, color: palette.slate700 }} numberOfLines={isCarousel ? 4 : 3}>
                         {post.caption}
                     </Text>
                 ) : null}
@@ -90,12 +90,12 @@ export function CommunityCompactPostCard({
                             alignSelf: 'flex-start',
                             marginTop: 10,
                             borderRadius: 999,
-                            backgroundColor: '#f5f3ff',
+                            backgroundColor: palette.purple50,
                             paddingHorizontal: 10,
                             paddingVertical: 6,
                         }}
                     >
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#6d28d9' }} numberOfLines={1}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.primary }} numberOfLines={1}>
                             {post.linked_activity.title}
                         </Text>
                     </View>

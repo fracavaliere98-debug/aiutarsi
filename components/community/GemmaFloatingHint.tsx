@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { GemmaAvatar } from '../GemmaAvatar';
-import { colors } from "@/theme";
+import { colors, palette, radius, spacing } from "@/theme";
 
 interface GemmaFloatingHintProps {
     eyebrow?: string;
@@ -18,7 +18,7 @@ export function GemmaFloatingHint({
     onPress,
 }: GemmaFloatingHintProps) {
     return (
-        <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+        <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.md }}>
             <TouchableOpacity
                 activeOpacity={onPress ? 0.92 : 1}
                 onPress={onPress}
@@ -27,12 +27,12 @@ export function GemmaFloatingHint({
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 10,
-                    backgroundColor: '#f8f7ff',
-                    borderRadius: 22,
-                    paddingHorizontal: 12,
+                    backgroundColor: palette.purple50,
+                    borderRadius: radius["2xl"],
+                    paddingHorizontal: spacing.md,
                     paddingVertical: 10,
                     borderWidth: 1,
-                    borderColor: '#ddd6fe',
+                    borderColor: palette.purple100,
                 }}
             >
                 <View style={{ width: 34 }}>
@@ -43,7 +43,7 @@ export function GemmaFloatingHint({
                         style={{
                             fontSize: 10,
                             fontWeight: '900',
-                            color: '#6366f1',
+                            color: palette.blue400,
                             textTransform: 'uppercase',
                             letterSpacing: 0.6,
                             marginBottom: 2,
@@ -51,7 +51,7 @@ export function GemmaFloatingHint({
                     >
                         {eyebrow}
                     </Text>
-                    <Text numberOfLines={2} style={{ fontSize: 12, lineHeight: 17, color: '#475569', fontWeight: '700' }}>
+                    <Text numberOfLines={2} style={{ fontSize: 12, lineHeight: 17, color: palette.slate600, fontWeight: '700' }}>
                         {message}
                     </Text>
                 </View>

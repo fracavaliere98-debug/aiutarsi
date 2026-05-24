@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 
 const allowedFiles = new Set([
   "types/index.ts",
@@ -10,9 +10,11 @@ const allowedFiles = new Set([
   "scripts/test_smart_match_compatibility_contract.ts",
 ]);
 
-const output = execFileSync("rg", ["-l", "matchPercentage", "app", "components", "hooks", "services", "utils", "types", "scripts"], {
-  encoding: "utf8",
-});
+// Use grep -rl (portable, no ripgrep dependency)
+const output = execSync(
+  'grep -rl "matchPercentage" app components hooks services utils types scripts 2>/dev/null || true',
+  { encoding: "utf8" }
+);
 
 const files = output
   .split("\n")
