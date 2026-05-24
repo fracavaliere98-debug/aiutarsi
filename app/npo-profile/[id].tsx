@@ -12,11 +12,11 @@ import { UserAvatar } from "../../components/UserAvatar";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
 import { ActivityCard } from "../../components/ActivityCard";
-import { Colors } from "../../constants/Colors";
 import ReportModal from "../../components/ReportModal";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useHasAppliedToNPO } from "../../hooks/applications/selectors";
 import { useStartPrivateConversationMutation } from "../../hooks/chat/mutations";
+import { colors } from "@/theme";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
@@ -91,7 +91,7 @@ export default function NPOProfileScreen() {
         return (
             <StandardLayout title="Caricamento..." label="Profilo Ente">
                 <View className="flex-1 items-center justify-center p-10">
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                     <Text className="text-secondary mt-4 font-medium">Recupero informazioni ente...</Text>
                 </View>
             </StandardLayout>
@@ -102,7 +102,7 @@ export default function NPOProfileScreen() {
         return (
             <StandardLayout title="Ente Non Trovato" label="Profilo Non Trovato" onBack={() => router.back()}>
                 <View className="flex-1 items-center justify-center p-10">
-                    <AlertTriangle size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
+                    <AlertTriangle size={48} color={colors.accent} style={{ marginBottom: 16 }} />
                     <Text className="text-primary font-bold text-lg mb-2">Ops! Profilo non trovato</Text>
                     <Text className="text-secondary text-center mb-6">Non siamo riusciti a trovare le informazioni per questo ente.</Text>
                     <TouchableOpacity 
@@ -228,9 +228,9 @@ export default function NPOProfileScreen() {
                 <TouchableOpacity
                     className="flex-row items-center justify-center rounded-2xl w-full max-w-[220px]"
                     style={{
-                        backgroundColor: isFollowingNPO(npoId) ? 'transparent' : Colors.primary,
+                        backgroundColor: isFollowingNPO(npoId) ? 'transparent' : colors.primary,
                         borderWidth: isFollowingNPO(npoId) ? 1 : 0,
-                        borderColor: isFollowingNPO(npoId) ? Colors.primary : 'transparent',
+                        borderColor: isFollowingNPO(npoId) ? colors.primary : 'transparent',
                         opacity: isProcessing ? 0.7 : 1,
                         minHeight: 46,
                         paddingHorizontal: 18,
@@ -246,17 +246,17 @@ export default function NPOProfileScreen() {
                     }}
                 >
                     {isProcessing ? (
-                        <ActivityIndicator size="small" color={isFollowingNPO(npoId) ? Colors.primary : "#fff"} />
+                        <ActivityIndicator size="small" color={isFollowingNPO(npoId) ? colors.primary : "#fff"} />
                     ) : (
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                             <Heart
                                 size={18}
-                                color={isFollowingNPO(npoId) ? Colors.primary : "#fff"}
-                                fill={isFollowingNPO(npoId) ? Colors.primary : "transparent"}
+                                color={isFollowingNPO(npoId) ? colors.primary : "#fff"}
+                                fill={isFollowingNPO(npoId) ? colors.primary : "transparent"}
                             />
                             <Text
                                 className="ml-2 font-bold"
-                                style={{ color: isFollowingNPO(npoId) ? Colors.primary : "#fff", fontSize: 14 }}
+                                style={{ color: isFollowingNPO(npoId) ? colors.primary : "#fff", fontSize: 14 }}
                             >
                                 {isFollowingNPO(npoId) ? "Seguito" : "Segui Ente"}
                             </Text>
@@ -415,7 +415,7 @@ export default function NPOProfileScreen() {
                                         onPress={() => handleOpenLink(`mailto:${npoUser.publicEmail}`)}
                                     >
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Mail size={16} color={Colors.primary} />
+                                            <Mail size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Email</Text>
@@ -430,7 +430,7 @@ export default function NPOProfileScreen() {
                                         onPress={() => handleOpenLink(`tel:${npoUser.phone}`)}
                                     >
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Phone size={16} color={Colors.primary} />
+                                            <Phone size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Telefono</Text>
@@ -445,7 +445,7 @@ export default function NPOProfileScreen() {
                                         onPress={() => handleOpenLink(npoUser.website!)}
                                     >
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Globe size={16} color={Colors.primary} />
+                                            <Globe size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Sito Web</Text>
@@ -456,7 +456,7 @@ export default function NPOProfileScreen() {
 
                                 <View className="flex-row items-center gap-3">
                                     <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                        <MapPin size={16} color={Colors.primary} />
+                                        <MapPin size={16} color={colors.primary} />
                                     </View>
                                     <View>
                                         <Text className="text-secondary text-xs font-bold uppercase">Sede Operativa</Text>
@@ -477,7 +477,7 @@ export default function NPOProfileScreen() {
 
                         {/* Map Placeholder */}
                         <View className="h-40 bg-slate-100 rounded-2xl items-center justify-center border border-slate-200">
-                            <MapPin size={32} color={Colors.secondary} />
+                            <MapPin size={32} color={colors.textSecondary} />
                             <Text className="text-secondary/50 text-xs font-bold mt-2">Mappa non disponibile</Text>
                         </View>
                     </View>
@@ -495,7 +495,7 @@ export default function NPOProfileScreen() {
                                     <View className="flex-row justify-between items-start mb-2">
                                         <View className="flex-row gap-0.5">
                                             {[1, 2, 3, 4, 5].map(s => (
-                                                <Star key={s} size={14} color={s <= review.stars ? Colors.accent : "#e2e8f0"} fill={s <= review.stars ? Colors.accent : "transparent"} />
+                                                <Star key={s} size={14} color={s <= review.stars ? colors.accent : "#e2e8f0"} fill={s <= review.stars ? colors.accent : "transparent"} />
                                             ))}
                                         </View>
                                         <Text className="text-secondary/40 text-[10px] font-bold">{new Date(review.date).toLocaleDateString()}</Text>

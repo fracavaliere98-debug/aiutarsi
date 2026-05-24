@@ -5,10 +5,10 @@ import { KeyRound, ShieldCheck } from "lucide-react-native";
 import { AuthShell } from "../../components/auth/AuthShell";
 import { AuthField } from "../../components/auth/AuthField";
 import { Button } from "../../components/Button";
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordRequirementsShortText } from "../../utils/passwordValidation";
 import { supabase } from "../../utils/supabase";
+import { colors } from "@/theme";
 
 export default function ResetPasswordScreen() {
     const router = useRouter();
@@ -86,7 +86,7 @@ export default function ResetPasswordScreen() {
             >
                 <View style={styles.card}>
                     <View style={styles.iconWrap}>
-                        <KeyRound size={28} color={Colors.primary} />
+                        <KeyRound size={28} color={colors.primary} />
                     </View>
                     <Text style={styles.cardTitle}>Reset password</Text>
                     <Text style={styles.cardBody}>
@@ -95,7 +95,7 @@ export default function ResetPasswordScreen() {
                             : "In attesa del link di recupero. Aprilo su questo dispositivo per continuare."}
                     </Text>
                     <View style={styles.statusPill}>
-                        <ShieldCheck size={14} color={Colors.primary} />
+                        <ShieldCheck size={14} color={colors.primary} />
                         <Text style={styles.statusText}>
                             {hasRecoverySession ? "Sessione di recupero attiva" : "Link non ancora rilevato"}
                         </Text>
@@ -109,7 +109,7 @@ export default function ResetPasswordScreen() {
                     onChangeText={setNewPassword}
                     autoCapitalize="none"
                     secureTextEntry
-                    icon={<KeyRound size={18} color={Colors.secondary} />}
+                    icon={<KeyRound size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -119,7 +119,7 @@ export default function ResetPasswordScreen() {
                     onChangeText={setConfirmPassword}
                     autoCapitalize="none"
                     secureTextEntry
-                    icon={<KeyRound size={18} color={Colors.secondary} />}
+                    icon={<KeyRound size={18} color={colors.textSecondary} />}
                 />
 
                 <Text style={styles.hint}>{getPasswordRequirementsShortText()}</Text>
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 24,
         fontWeight: "900",
-        color: Colors.primary,
+        color: colors.primary,
         textAlign: "center",
     },
     cardBody: {
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     statusText: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "700",
     },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { colors } from "@/theme";
 
 interface EmptyStateProps {
     icon?: any;
@@ -19,8 +19,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     actionLabel,
     onAction,
 }) => {
-    // Assuming resolvedIconColor should be Colors.accent based on the original code
-    const resolvedIconColor = Colors.accent;
+    // Assuming resolvedIconColor should be colors.accent based on the original code
+    const resolvedIconColor = colors.accent;
 
     return (
         <View className="flex-1 items-center justify-center px-8 py-12">

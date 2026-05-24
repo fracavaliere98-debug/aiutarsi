@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl } from 
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { CalendarDays } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
@@ -14,6 +13,7 @@ import { CommunityHero } from './CommunityHero';
 import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 import { useNPOApplications } from '../../hooks/applications/selectors';
 import { StoryAuthorGroup } from '../../hooks/stories/types';
+import { colors, palette, spacing } from "@/theme";
 
 interface NPOCommunityScreenProps {
     posts: CommunityPost[];
@@ -153,9 +153,9 @@ export function NPOCommunityScreen({
                             ? 'Hai già qualcosa da raccontare.'
                             : 'Post veri, volontari veri, NPO affini.'
                     }
-                    accent="#311b92"
+                    accent={palette.purple800}
                     accentSoft="rgba(255,255,255,0.12)"
-                    accentText="#311b92"
+                    accentText={palette.purple800}
                     ctaLabel={draftLoadingId === 'today_prompt' ? '...' : 'Apri bozza'}
                     onPress={() =>
                         handleDraftFromGemma({
@@ -183,17 +183,17 @@ export function NPOCommunityScreen({
                         marginHorizontal: 16,
                         marginBottom: 16,
                         borderRadius: 28,
-                        backgroundColor: '#f8f7ff',
+                        backgroundColor: palette.purple50,
                         borderWidth: 1,
-                        borderColor: '#ddd6fe',
-                        paddingVertical: 16,
+                        borderColor: palette.purple100,
+                        paddingVertical: spacing.lg,
                     }}
                 >
                     <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
                             Altre NPO da osservare
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>
                             Realtà simili alla tua.
                         </Text>
                     </View>
@@ -208,16 +208,16 @@ export function NPOCommunityScreen({
                     marginHorizontal: 16,
                     marginBottom: 10,
                     borderTopWidth: 1,
-                    borderTopColor: '#e2e8f0',
+                    borderTopColor: colors.border,
                     paddingTop: 18,
                 }}
             >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
                             Tutto il feed
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, paddingHorizontal: 2 }}>
                             Tutti i post.
                         </Text>
                     </View>
@@ -228,7 +228,7 @@ export function NPOCommunityScreen({
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: 8,
-                            backgroundColor: Colors.primary,
+                            backgroundColor: colors.primary,
                             paddingHorizontal: 14,
                             paddingVertical: 10,
                             borderRadius: 999,
@@ -249,10 +249,10 @@ export function NPOCommunityScreen({
             {myOpenActivities.length > 0 ? (
                 <View style={{ marginTop: 10, marginBottom: 10 }}>
                     <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
                             Attività da valorizzare
                         </Text>
-                        <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 20 }}>
+                        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 4, lineHeight: 20 }}>
                             Gemma puo trasformare una tua attivita aperta in un post pronto da rifinire.
                         </Text>
                     </View>
@@ -276,38 +276,38 @@ export function NPOCommunityScreen({
                                 style={{
                                     width: 248,
                                     marginRight: 12,
-                                    backgroundColor: '#fffdf8',
+                                    backgroundColor: palette.amber75,
                                     borderRadius: 26,
                                     borderWidth: 1,
-                                    borderColor: '#fde6bf',
-                                    padding: 16,
+                                    borderColor: palette.amber200,
+                                    padding: spacing.lg,
                                 }}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                                    <CalendarDays size={16} color="#ea580c" />
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#c2410c', marginLeft: 8 }}>
+                                    <CalendarDays size={16} color={palette.orange600} />
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: palette.orange700, marginLeft: 8 }}>
                                         {new Date(item.dateTime).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                                     </Text>
                                 </View>
-                                <Text style={{ fontSize: 15, fontWeight: '900', color: Colors.primary }} numberOfLines={2}>
+                                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.primary }} numberOfLines={2}>
                                     {item.title}
                                 </Text>
-                                <Text style={{ fontSize: 13, color: '#7c2d12', marginTop: 8, lineHeight: 19 }} numberOfLines={2}>
+                                <Text style={{ fontSize: 13, color: palette.amber900, marginTop: 8, lineHeight: 19 }} numberOfLines={2}>
                                     Questa attivita ha gia il potenziale per un buon post.
                                 </Text>
                                 <View style={{
                                     marginTop: 12,
                                     alignSelf: 'flex-start',
-                                    backgroundColor: '#ffffff',
+                                    backgroundColor: colors.white,
                                     borderRadius: 999,
                                     paddingHorizontal: 12,
                                     paddingVertical: 8,
                                 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: Colors.primary }}>Apri la bozza di Gemma</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: colors.primary }}>Apri la bozza di Gemma</Text>
                                 </View>
                                 {draftLoadingId === item.id ? (
                                     <View style={{ position: 'absolute', top: 12, right: 12 }}>
-                                        <ActivityIndicator size="small" color={Colors.primary} />
+                                        <ActivityIndicator size="small" color={colors.primary} />
                                     </View>
                                 ) : null}
                             </TouchableOpacity>
@@ -316,7 +316,7 @@ export function NPOCommunityScreen({
                 </View>
             ) : null}
 
-            {isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
+            {isLoadingMore ? <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} /> : null}
         </View>
     );
 
@@ -329,25 +329,25 @@ export function NPOCommunityScreen({
             contentContainerStyle={{ paddingBottom: 100 }}
             onEndReached={onLoadMore}
             onEndReachedThreshold={0.5}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             ListHeaderComponent={listHeader}
             ListFooterComponent={listFooter}
             ListEmptyComponent={
                 isLoading ? (
                     <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
-                        <ActivityIndicator size="large" color={Colors.primary} />
-                        <Text style={{ fontSize: 14, color: '#94a3b8', fontWeight: '700' }}>Caricamento community...</Text>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={{ fontSize: 14, color: colors.textSubtle, fontWeight: '700' }}>Caricamento community...</Text>
                     </View>
                 ) : (
                     <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
                         <Text style={{ fontSize: 40 }}>📣</Text>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua voce può aprire la community</Text>
-                        <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>La tua voce può aprire la community</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSubtle, textAlign: 'center', lineHeight: 22 }}>
                             Pubblica il primo aggiornamento, collega una tua attività e rendi più chiaro perché vale la pena partecipare.
                         </Text>
                         <TouchableOpacity
                             onPress={() => router.push('/community/create-post' as any)}
-                            style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+                            style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
                         >
                             <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Pubblica il primo post</Text>
                         </TouchableOpacity>

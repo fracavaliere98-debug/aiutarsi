@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThumbsUp, ThumbsDown, MessageSquare, AlertCircle } from 'lucide-react-native';
 import { supabase } from '../../../utils/supabase';
-import { Colors } from '../../../constants/Colors';
+import { colors } from "@/theme";
 
 interface FAQFeedbackStats {
   faq_id: string;
@@ -74,7 +74,7 @@ export default function FAQFeedbackDashboard() {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={styles.iconBox}>
-            <MessageSquare size={24} color={Colors.primary} />
+            <MessageSquare size={24} color={colors.primary} />
           </View>
           <Text style={styles.headerTitle}>Feedback FAQ</Text>
         </View>
@@ -85,7 +85,7 @@ export default function FAQFeedbackDashboard() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   errorText: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 },
   errorSubtext: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 24 },
-  retryBtn: { backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  retryBtn: { backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   retryBtnText: { color: 'white', fontWeight: '700', fontSize: 16 },
   emptyText: { fontSize: 18, fontWeight: '700', color: '#9CA3AF', marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: '#D1D5DB' },

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { AppActivity } from "../types";
+import { colors } from "@/theme";
 
 interface CalendarGridProps {
     activities: AppActivity[];
@@ -97,13 +97,13 @@ export function CalendarGrid({ activities, onSelectDate, selectedDate }: Calenda
             {/* Header */}
             <View className="flex-row items-center justify-between mb-4 px-2">
                 <TouchableOpacity onPress={prevMonth} className="p-2 bg-gray-50 rounded-full">
-                    <ChevronLeft size={20} color={Colors.primary} />
+                    <ChevronLeft size={20} color={colors.primary} />
                 </TouchableOpacity>
                 <Text className="text-lg font-black text-primary capitalize">
                     {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </Text>
                 <TouchableOpacity onPress={nextMonth} className="p-2 bg-gray-50 rounded-full">
-                    <ChevronRight size={20} color={Colors.primary} />
+                    <ChevronRight size={20} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 

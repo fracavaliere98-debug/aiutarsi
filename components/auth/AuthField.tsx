@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { colors } from "@/theme";
 
 interface AuthFieldProps extends TextInputProps {
     label: string;
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     label: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "800",
         marginBottom: 8,
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 15,
         fontWeight: "600",
         paddingVertical: 16,

@@ -6,8 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/Button";
 import { AuthShell } from "../../components/auth/AuthShell";
 import { AuthField } from "../../components/auth/AuthField";
-import { Colors } from "../../constants/Colors";
 import { trackEvent } from "../../utils/monitoring";
+import { colors } from "@/theme";
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -97,7 +97,7 @@ export default function LoginScreen() {
                     onChangeText={setEmail}
                     autoCapitalize="none"
                     keyboardType="email-address"
-                    icon={<Mail size={18} color={Colors.secondary} />}
+                    icon={<Mail size={18} color={colors.textSecondary} />}
                     testID="input-email"
                 />
 
@@ -108,7 +108,7 @@ export default function LoginScreen() {
                     onChangeText={setPassword}
                     autoCapitalize="none"
                     secureTextEntry
-                    icon={<Lock size={18} color={Colors.secondary} />}
+                    icon={<Lock size={18} color={colors.textSecondary} />}
                     testID="input-password"
                 />
 
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     recoveryLink: {
-        color: Colors.accent,
+        color: colors.accent,
         fontSize: 13,
         fontWeight: "800",
     },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     footerLink: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 14,
         fontWeight: "900",
     },

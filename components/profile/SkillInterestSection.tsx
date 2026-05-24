@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { Heart, Hand } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
-import { Colors } from "../../constants/Colors";
+import { colors } from "@/theme";
 
 interface SkillInterestSectionProps {
     skills?: string[];
@@ -19,8 +19,8 @@ export function SkillInterestSection({ skills = [], interests = [] }: SkillInter
                 {interests.length > 0 && (
                     <SoftCard className="p-4">
                         <View className="flex-row items-center gap-2 mb-3">
-                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: Colors.accent + "15" }}>
-                                <Heart size={15} color={Colors.accent} />
+                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: colors.accent + "15" }}>
+                                <Heart size={15} color={colors.accent} />
                             </View>
                             <Text className="text-primary font-bold text-sm">Cause che ti coinvolgono di più</Text>
                         </View>
@@ -37,8 +37,8 @@ export function SkillInterestSection({ skills = [], interests = [] }: SkillInter
                 {skills.length > 0 && (
                     <SoftCard className="p-4">
                         <View className="flex-row items-center gap-2 mb-3">
-                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: Colors.primary + "15" }}>
-                                <Hand size={15} color={Colors.primary} />
+                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: colors.primary + "15" }}>
+                                <Hand size={15} color={colors.primary} />
                             </View>
                             <Text className="text-primary font-bold text-sm">Cosa sai fare?</Text>
                         </View>

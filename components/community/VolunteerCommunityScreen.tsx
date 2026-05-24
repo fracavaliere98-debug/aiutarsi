@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Image, RefreshControl 
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
 import { StoriesRow } from '../StoriesRow';
 import { CommunityPostCard } from '../CommunityPostCard';
 import { CommunityPost } from '../../types/community';
@@ -14,6 +13,7 @@ import { supabase } from '../../utils/supabase';
 import { useVolunteerApplications } from '../../hooks/applications/selectors';
 import { useSmartMatchActivityScoresView } from '../../hooks/smart-match/useSmartMatchView';
 import { StoryAuthorGroup } from '../../hooks/stories/types';
+import { colors, palette, spacing, radius } from "@/theme";
 
 interface VolunteerCommunityScreenProps {
     posts: CommunityPost[];
@@ -224,13 +224,13 @@ export function VolunteerCommunityScreen({
                     }}
                     style={{
                         flex: 1,
-                        backgroundColor: '#f8fafc',
-                        borderRadius: 18,
+                        backgroundColor: colors.surfaceMuted,
+                        borderRadius: radius["2xl"],
                         paddingHorizontal: 14,
-                        paddingVertical: 12,
+                        paddingVertical: spacing.md,
                     }}
                 >
-                    <Text style={{ color: Colors.primary, fontSize: 14, fontWeight: '800', lineHeight: 19 }}>
+                    <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '800', lineHeight: 19 }}>
                         {gemmaTarget ? `Se ti va, possiamo partire da ${gemmaTarget.title}.` : gemmaSummary || 'Se ti va, qui c’è un bel punto da cui partire.'}
                     </Text>
                 </TouchableOpacity>
@@ -249,31 +249,31 @@ export function VolunteerCommunityScreen({
                     activeOpacity={0.88}
                     onPress={() => router.push(`/activity/${weekendActivity.id}` as any)}
                     style={{
-                        marginHorizontal: 16,
+                        marginHorizontal: spacing.lg,
                         marginBottom: 18,
-                        backgroundColor: '#f8faff',
+                        backgroundColor: palette.blue75,
                         borderRadius: 26,
-                        padding: 16,
+                        padding: spacing.lg,
                         borderWidth: 1,
-                        borderColor: '#dbe4ff',
+                        borderColor: palette.blue100,
                     }}
                 >
-                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: palette.blue400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Questo weekend
                     </Text>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: colors.primary, marginBottom: 10 }}>
                         {weekendActivity.title}
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Calendar size={14} color="#6366f1" />
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#4f46e5' }}>
+                            <Calendar size={14} color={palette.blue400} />
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.blue400 }}>
                                 {new Date(weekendActivity.dateTime).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
                             </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <MapPin size={14} color="#6366f1" />
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#4f46e5' }}>
+                            <MapPin size={14} color={palette.blue400} />
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.blue400 }}>
                                 {getCityLabel(weekendActivity.location?.address)}
                             </Text>
                         </View>
@@ -286,16 +286,16 @@ export function VolunteerCommunityScreen({
                     marginHorizontal: 16,
                     marginBottom: 10,
                     borderTopWidth: 1,
-                    borderTopColor: '#e2e8f0',
+                    borderTopColor: colors.border,
                     paddingTop: 18,
                 }}
             >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 }}>
                             Tutto il feed
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4, paddingHorizontal: 2 }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, paddingHorizontal: 2 }}>
                             Tutti i post.
                         </Text>
                     </View>
@@ -306,7 +306,7 @@ export function VolunteerCommunityScreen({
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: 8,
-                            backgroundColor: Colors.primary,
+                            backgroundColor: colors.primary,
                             paddingHorizontal: 14,
                             paddingVertical: 10,
                             borderRadius: 999,
@@ -340,14 +340,14 @@ export function VolunteerCommunityScreen({
             style={{
                 width: 250,
                 marginRight: 12,
-                backgroundColor: 'white',
+                backgroundColor: colors.surface,
                 borderRadius: 22,
                 borderWidth: 1,
-                borderColor: '#e2e8f0',
+                borderColor: colors.border,
                 overflow: 'hidden',
             }}
         >
-            <View style={{ height: 120, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ height: 120, backgroundColor: palette.purple100, alignItems: 'center', justifyContent: 'center' }}>
                 {item.imageUrl ? (
                     <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} />
                 ) : (
@@ -355,13 +355,13 @@ export function VolunteerCommunityScreen({
                 )}
             </View>
             <View style={{ padding: 14 }}>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: Colors.primary }} numberOfLines={2}>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.primary }} numberOfLines={2}>
                     {item.title}
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#7c3aed', marginTop: 4 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: palette.purple500, marginTop: 4 }}>
                     {item.npoName}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
+                <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 8 }}>
                     {getCityLabel(item.location?.address)}
                     {' · '}
                     {activityScore}% match
@@ -376,10 +376,10 @@ export function VolunteerCommunityScreen({
             {suggestedActivities.length > 0 ? (
                 <View style={{ marginTop: 10 }}>
                     <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
                             Opportunità dalla community
                         </Text>
-                        <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
                             Se vuoi partecipare, queste sono quelle che meritano uno sguardo adesso.
                         </Text>
                     </View>
@@ -394,7 +394,7 @@ export function VolunteerCommunityScreen({
                 </View>
             ) : null}
 
-            {isLoadingMore ? <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} /> : null}
+            {isLoadingMore ? <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} /> : null}
         </View>
     ), [isLoadingMore, renderSuggestedActivity, suggestedActivities]);
 
@@ -407,20 +407,20 @@ export function VolunteerCommunityScreen({
             contentContainerStyle={{ paddingBottom: 20 }}
             onEndReached={onLoadMore}
             onEndReachedThreshold={0.5}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             ListHeaderComponent={listHeader}
             ListFooterComponent={listFooter}
             ListEmptyComponent={
                 isLoading ? (
                     <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
-                        <ActivityIndicator size="large" color={Colors.primary} />
-                        <Text style={{ fontSize: 14, color: '#94a3b8', fontWeight: '700' }}>Caricamento community...</Text>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={{ fontSize: 14, color: colors.textSubtle, fontWeight: '700' }}>Caricamento community...</Text>
                     </View>
                 ) : (
                     <View style={{ alignItems: 'center', padding: 40, gap: 12 }}>
                         <Text style={{ fontSize: 40 }}>🌱</Text>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>La tua community sta iniziando a muoversi</Text>
-                        <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>La tua community sta iniziando a muoversi</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSubtle, textAlign: 'center', lineHeight: 22 }}>
                             Segui alcuni enti e torna qui per vedere storie, attività e aggiornamenti più vicini a te.
                         </Text>
                     </View>

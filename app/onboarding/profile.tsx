@@ -4,7 +4,6 @@ import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { OnboardingStepHeader } from "../../components/onboarding/OnboardingStepHeader";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { useEffect, useState } from "react";
 import { Camera, UserRound, Gift, Calendar, ChevronDown, Check } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
@@ -21,6 +20,7 @@ import {
     getAdultMaxDate,
 } from "../../utils/profileDemographics";
 import { trackError, trackEvent } from "../../utils/monitoring";
+import { colors } from "@/theme";
 
 function parseStringArrayParam(value: string | string[] | undefined): string[] {
     if (!value) return [];
@@ -190,7 +190,7 @@ export default function OnboardingProfile() {
                                     <Image source={{ uri: avatar }} className="w-full h-full" />
                                 ) : (
                                     <View className="items-center justify-center">
-                                        <UserRound size={38} color={Colors.primary} opacity={0.55} />
+                                        <UserRound size={38} color={colors.primary} opacity={0.55} />
                                     </View>
                                 )}
                                 <View className="absolute bottom-0 right-0 bg-accent p-2 rounded-full">
@@ -212,7 +212,7 @@ export default function OnboardingProfile() {
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <View className="flex-row items-center gap-2 mb-3">
                                 <View className="w-8 h-8 rounded-full items-center justify-center bg-primary/10">
-                                    <UserRound size={15} color={Colors.primary} />
+                                    <UserRound size={15} color={colors.primary} />
                                 </View>
                                 <Text className="text-sm font-bold text-primary">Biografia</Text>
                             </View>
@@ -236,7 +236,7 @@ export default function OnboardingProfile() {
                                     <Text className={`${gender ? "text-primary" : "text-secondary/60"} font-medium`}>
                                         {GENDER_OPTIONS.find((option) => option.value === gender)?.label || "Seleziona il sesso"}
                                     </Text>
-                                    <ChevronDown size={18} color={Colors.primary} />
+                                    <ChevronDown size={18} color={colors.primary} />
                                 </TouchableOpacity>
 
                                 {showGenderDropdown && (
@@ -255,7 +255,7 @@ export default function OnboardingProfile() {
                                                     <Text className={`${selected ? "text-primary" : "text-secondary"} font-medium`}>
                                                         {option.label}
                                                     </Text>
-                                                    {selected ? <Check size={16} color={Colors.primary} /> : null}
+                                                    {selected ? <Check size={16} color={colors.primary} /> : null}
                                                 </TouchableOpacity>
                                             );
                                         })}
@@ -278,7 +278,7 @@ export default function OnboardingProfile() {
                                     onPress={() => setShowBirthDatePicker(true)}
                                     className="w-14 h-14 rounded-2xl border border-primary/15 bg-primary/10 items-center justify-center"
                                 >
-                                    <Calendar size={20} color={Colors.primary} />
+                                    <Calendar size={20} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
                             <Text className="text-[11px] text-secondary/70 mt-2 leading-relaxed">
@@ -288,7 +288,7 @@ export default function OnboardingProfile() {
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <View className="flex-row items-center gap-2 mb-3">
                                 <View className="w-8 h-8 rounded-full items-center justify-center bg-accent/10">
-                                    <Gift size={15} color={Colors.accent} />
+                                    <Gift size={15} color={colors.accent} />
                                 </View>
                                 <Text className="text-sm font-bold text-primary">Codice amico</Text>
                                 <Text className="text-[11px] text-secondary">(Opzionale)</Text>

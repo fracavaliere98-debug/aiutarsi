@@ -8,7 +8,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Image as ImageIcon, X, Link2, Zap } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useQueryClient } from '@tanstack/react-query';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
@@ -19,6 +18,7 @@ import {
     useCommunityPostQuery,
 } from '../../hooks/community/queries';
 import {
+import { colors } from "@/theme";
     useCreateCommunityPostMutation,
     useUpdateCommunityPostMutation,
 } from '../../hooks/community/mutations';
@@ -187,7 +187,7 @@ export default function CreatePostScreen() {
     if (isEditMode && postId && postQuery.isLoading && !editPost) {
         return (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' }}>
-                <ActivityIndicator size="large" color={Colors.primary} />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
@@ -197,15 +197,15 @@ export default function CreatePostScreen() {
             <SafeAreaView edges={['top']}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
                     <TouchableOpacity onPress={() => router.back()} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                        <ArrowLeft size={18} color={Colors.primary} />
+                        <ArrowLeft size={18} color={colors.primary} />
                     </TouchableOpacity>
-                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>
+                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: colors.primary }}>
                         {composerTitle}
                     </Text>
                     <TouchableOpacity
                         onPress={handleSubmit}
                         disabled={isSubmitting}
-                        style={{ backgroundColor: Colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                        style={{ backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6 }}
                         activeOpacity={0.85}
                     >
                         {isSubmitting
@@ -220,10 +220,10 @@ export default function CreatePostScreen() {
                 <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} showsVerticalScrollIndicator={false}>
                     {draftLabel && !isEditMode && (
                         <View style={{ backgroundColor: '#eef2ff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#c7d2fe' }}>
-                            <Text style={{ fontSize: 12, fontWeight: '900', color: Colors.accent, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            <Text style={{ fontSize: 12, fontWeight: '900', color: colors.accent, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                 Bozza Gemma
                             </Text>
-                            <Text style={{ fontSize: 13, color: Colors.primary, fontWeight: '700', marginTop: 4 }}>
+                            <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '700', marginTop: 4 }}>
                                 {draftLabel}
                             </Text>
                         </View>
@@ -271,9 +271,9 @@ export default function CreatePostScreen() {
                                 }}
                             >
                                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-                                    <ImageIcon size={22} color={Colors.primary} />
+                                    <ImageIcon size={22} color={colors.primary} />
                                 </View>
-                                <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 13, textAlign: 'center' }}>Aggiungi{'\n'}Foto</Text>
+                                <Text style={{ fontWeight: '800', color: colors.primary, fontSize: 13, textAlign: 'center' }}>Aggiungi{'\n'}Foto</Text>
                             </TouchableOpacity>
                         )}
                     </ScrollView>
@@ -287,7 +287,7 @@ export default function CreatePostScreen() {
                             placeholderTextColor="#94a3b8"
                             multiline
                             textAlignVertical="top"
-                            style={{ fontSize: 16, color: Colors.primary, lineHeight: 24, minHeight: 100 }}
+                            style={{ fontSize: 16, color: colors.primary, lineHeight: 24, minHeight: 100 }}
                             maxLength={500}
                         />
                         <Text style={{ textAlign: 'right', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>{caption.length}/500</Text>
@@ -297,14 +297,14 @@ export default function CreatePostScreen() {
                     {!isStoryMode && (
                         <TouchableOpacity
                             onPress={() => setShowActivityPicker(true)}
-                            style={{ backgroundColor: 'white', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: linkedActivityId ? Colors.primary : '#e2e8f0', flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                            style={{ backgroundColor: 'white', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: linkedActivityId ? colors.primary : '#e2e8f0', flexDirection: 'row', alignItems: 'center', gap: 12 }}
                             activeOpacity={0.8}
                         >
                             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: linkedActivityId ? '#ede9fe' : '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
-                                <Link2 size={18} color={linkedActivityId ? Colors.primary : '#94a3b8'} />
+                                <Link2 size={18} color={linkedActivityId ? colors.primary : '#94a3b8'} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontWeight: '800', color: linkedActivityId ? Colors.primary : '#64748b', fontSize: 14 }}>
+                                <Text style={{ fontWeight: '800', color: linkedActivityId ? colors.primary : '#64748b', fontSize: 14 }}>
                                     {linkedActivity ? linkedActivity.title : `${activityPickerTitle} (opzionale)`}
                                 </Text>
                                 {linkedActivity && (
@@ -342,7 +342,7 @@ export default function CreatePostScreen() {
                 <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '60%', paddingBottom: Platform.OS === 'ios' ? 34 : 24 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: Colors.primary }}>{activityPickerTitle}</Text>
+                            <Text style={{ flex: 1, fontSize: 18, fontWeight: '900', color: colors.primary }}>{activityPickerTitle}</Text>
                             <TouchableOpacity onPress={() => setShowActivityPicker(false)}>
                                 <X size={20} color="#64748b" />
                             </TouchableOpacity>
@@ -355,9 +355,9 @@ export default function CreatePostScreen() {
                                     <TouchableOpacity
                                         key={act.id}
                                         onPress={() => { setLinkedActivityId(act.id); setShowActivityPicker(false); }}
-                                        style={{ backgroundColor: linkedActivityId === act.id ? '#ede9fe' : '#f8fafc', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: linkedActivityId === act.id ? Colors.primary : '#e2e8f0' }}
+                                        style={{ backgroundColor: linkedActivityId === act.id ? '#ede9fe' : '#f8fafc', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: linkedActivityId === act.id ? colors.primary : '#e2e8f0' }}
                                     >
-                                        <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{act.title}</Text>
+                                        <Text style={{ fontWeight: '800', color: colors.primary, fontSize: 14 }}>{act.title}</Text>
                                         <Text style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                                             {act.status} · {new Date(act.dateTime).toLocaleDateString('it-IT')}
                                         </Text>

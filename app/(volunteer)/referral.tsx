@@ -2,10 +2,10 @@ import { View, Text, TouchableOpacity, Share, ActivityIndicator, ScrollView } fr
 import { useAuth } from "../../context/AuthContext";
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
-import { Colors } from "../../constants/Colors";
 import { Share2, Users, Trophy, Gift } from "lucide-react-native";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
+import { colors } from "@/theme";
 
 export default function ReferralScreen() {
     const { user, getReferralCount } = useAuth();
@@ -64,7 +64,7 @@ export default function ReferralScreen() {
                 <View className="px-6 py-4">
                     <SoftCard className="p-6 items-center mb-8">
                         <View className="w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-4">
-                            <Users size={32} color={Colors.primary} />
+                            <Users size={32} color={colors.primary} />
                         </View>
                         <Text className="text-2xl font-black text-primary text-center mb-2">
                             Invita i tuoi amici!
@@ -84,11 +84,11 @@ export default function ReferralScreen() {
                         </SoftCard>
                         <SoftCard className="flex-1 p-4 items-center">
                             <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mb-2">
-                                <Users size={20} color={Colors.primary} />
+                                <Users size={20} color={colors.primary} />
                             </View>
                             <Text className="text-[10px] uppercase tracking-widest font-bold text-secondary/60 mb-1">Amici Invitati</Text>
                             {isLoading ? (
-                                <ActivityIndicator size="small" color={Colors.primary} />
+                                <ActivityIndicator size="small" color={colors.primary} />
                             ) : (
                                 <Text className="font-black text-primary text-xl">{count}</Text>
                             )}
@@ -113,7 +113,7 @@ export default function ReferralScreen() {
                     <View className="bg-primary/5 p-6 rounded-3xl border border-primary/5">
                         <View className="flex-row items-center gap-3 mb-6">
                             <View className="bg-primary/20 p-2 rounded-lg">
-                                <Gift size={18} color={Colors.primary} />
+                                <Gift size={18} color={colors.primary} />
                             </View>
                             <Text className="text-lg font-black text-primary">Come funziona?</Text>
                         </View>

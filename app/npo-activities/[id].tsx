@@ -6,10 +6,10 @@ import { ActivityCard } from "../../components/ActivityCard";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { StandardLayout } from "../../components/StandardLayout";
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { AppUser } from "../../types";
+import { colors } from "@/theme";
 
 type ActivityFilter = "APERTA" | "COMPLETATA";
 
@@ -66,7 +66,7 @@ export default function NPOActivitiesScreen() {
         return (
             <StandardLayout title="Attività" label="Profilo Ente" onBack={() => router.back()}>
                 <View className="flex-1 items-center justify-center p-10">
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                     <Text className="text-secondary mt-4 font-medium">Carico le attività dell{"'"}ente...</Text>
                 </View>
             </StandardLayout>
@@ -77,7 +77,7 @@ export default function NPOActivitiesScreen() {
         return (
             <StandardLayout title="Attività" label="Profilo Ente" onBack={() => router.back()}>
                 <View className="flex-1 items-center justify-center p-10">
-                    <AlertTriangle size={48} color={Colors.accent} style={{ marginBottom: 16 }} />
+                    <AlertTriangle size={48} color={colors.accent} style={{ marginBottom: 16 }} />
                     <Text className="text-primary font-bold text-lg mb-2">Ente non trovato</Text>
                     <Text className="text-secondary text-center mb-6">
                         Non siamo riusciti a trovare le attività per questo ente.
@@ -118,14 +118,14 @@ export default function NPOActivitiesScreen() {
                             className="flex-1 rounded-full items-center justify-center"
                             style={{
                                 minHeight: 42,
-                                backgroundColor: isActive ? Colors.primary : "#f0f2f5",
+                                backgroundColor: isActive ? colors.primary : "#f0f2f5",
                                 borderWidth: isActive ? 0 : 1,
                                 borderColor: "rgba(255,255,255,0.5)",
                             }}
                         >
                             <Text
                                 style={{
-                                    color: isActive ? "white" : Colors.secondary,
+                                    color: isActive ? "white" : colors.textSecondary,
                                     fontSize: 13,
                                     fontWeight: "800",
                                 }}

@@ -18,12 +18,12 @@ import { useRouter } from 'expo-router';
 import { ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, LifeBuoy } from 'lucide-react-native';
 import { StandardLayout } from '../components/StandardLayout';
 import { SoftCard } from '../components/SoftCard';
-import { Colors } from '../constants/Colors';
 import { GemmaAIChat } from '../components/GemmaAIChat';
 import { GemmaAvatar } from '../components/GemmaAvatar';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
 import { FAQ, GuideSection, getGuideSectionsForRole } from '../shared/helpCenterContent';
+import { colors } from "@/theme";
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -58,19 +58,19 @@ const FAQItem = ({ faq, isOpen, onToggle, onFeedback }: {
                     gap: 12,
                 }}
             >
-                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: Colors.primary, lineHeight: 21 }}>
+                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.primary, lineHeight: 21 }}>
                     {faq.question}
                 </Text>
                 {isOpen ? (
-                    <ChevronUp size={18} color={Colors.accent} />
+                    <ChevronUp size={18} color={colors.accent} />
                 ) : (
-                    <ChevronDown size={18} color={Colors.secondary} />
+                    <ChevronDown size={18} color={colors.textSecondary} />
                 )}
             </TouchableOpacity>
 
             {isOpen && (
                 <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                    <Text style={{ fontSize: 14, color: Colors.secondary, lineHeight: 22 }}>{faq.answer}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}>{faq.answer}</Text>
 
                     {/* Thumbs feedback */}
                     <View style={{
@@ -158,7 +158,7 @@ const GuideSectionCard = ({ section }: { section: GuideSection }) => {
                 gap: 10,
             }}>
                 <Text style={{ fontSize: 22 }}>{section.emoji}</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: Colors.primary }}>{section.title}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: colors.primary }}>{section.title}</Text>
             </View>
             {section.faqs.map((faq) => (
                 <FAQItem
@@ -198,7 +198,7 @@ const GemmaFloatingButton = ({ onPress }: { onPress: () => void }) => {
                 position: 'absolute',
                 bottom: 24,
                 right: 20,
-                shadowColor: Colors.primary,
+                shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 0.3,
                 shadowRadius: 12,
@@ -213,7 +213,7 @@ const GemmaFloatingButton = ({ onPress }: { onPress: () => void }) => {
                 style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: Colors.primary,
+                    backgroundColor: colors.primary,
                     borderRadius: 40,
                     paddingVertical: 10,
                     paddingLeft: 10,
@@ -246,7 +246,7 @@ export default function HelpCenterScreen() {
             >
                 {/* Intro Banner */}
                 <View style={{
-                    backgroundColor: Colors.primary + '0d',
+                    backgroundColor: colors.primary + '0d',
                     borderRadius: 20,
                     padding: 16,
                     marginBottom: 24,
@@ -255,17 +255,17 @@ export default function HelpCenterScreen() {
                     alignItems: 'center',
                 }}>
                     <View style={{
-                        backgroundColor: Colors.primary + '15',
+                        backgroundColor: colors.primary + '15',
                         borderRadius: 24,
                         padding: 10,
                     }}>
-                        <LifeBuoy size={28} color={Colors.primary} />
+                        <LifeBuoy size={28} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '900', color: Colors.primary, marginBottom: 2 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '900', color: colors.primary, marginBottom: 2 }}>
                             Come possiamo aiutarti?
                         </Text>
-                        <Text style={{ fontSize: 12, color: Colors.secondary, lineHeight: 17 }}>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
                             Sfoglia le guide qui sotto o chiedi direttamente a Gemma, il nostro assistente AI.
                         </Text>
                     </View>

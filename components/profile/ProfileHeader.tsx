@@ -4,10 +4,10 @@ import * as ImagePicker from "expo-image-picker";
 import { Award, Camera, Mail, Sparkles, ChevronRight } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { AppUser } from "../../types";
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { saveImageToPermanentStorage } from "../../utils/FileStorage";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
+import { colors } from "@/theme";
 
 interface ProfileHeaderProps {
     user: AppUser | null;
@@ -114,7 +114,7 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                     >
                         <View className="flex-row items-center">
                             <View className="w-9 h-9 rounded-2xl bg-primary/10 items-center justify-center mr-3">
-                                <Sparkles size={16} color={Colors.primary} />
+                                <Sparkles size={16} color={colors.primary} />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-primary font-bold text-sm">Completa il tuo profilo</Text>
@@ -122,7 +122,7 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
                                     Aggiungi foto e bio per presentarti meglio agli enti.
                                 </Text>
                             </View>
-                            <ChevronRight size={16} color={Colors.primary} />
+                            <ChevronRight size={16} color={colors.primary} />
                         </View>
                     </TouchableOpacity>
                 )}

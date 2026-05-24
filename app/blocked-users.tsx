@@ -8,9 +8,9 @@ import { useAuth } from "../context/AuthContext";
 import { StandardLayout } from "../components/StandardLayout";
 import { SoftCard } from "../components/SoftCard";
 import { UserAvatar } from "../components/UserAvatar";
-import { Colors } from "../constants/Colors";
 import { useToast } from "../context/ToastContext";
 import { authService } from "../services/AuthService";
+import { colors } from "@/theme";
 
 interface BlockedUser {
     id: string; // block id
@@ -133,14 +133,14 @@ export default function BlockedUsersScreen() {
                     disabled={!!isActionLoading}
                     activeOpacity={0.7}
                     className="bg-primary/10 px-4 py-2 rounded-xl flex-row items-center"
-                    style={{ backgroundColor: Colors.primary + '10' }}
+                    style={{ backgroundColor: colors.primary + '10' }}
                 >
                     {isActionLoading === item.id ? (
-                        <ActivityIndicator size="small" color={Colors.primary} />
+                        <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
                         <>
-                            <Unlock size={16} color={Colors.primary} className="mr-2" />
-                            <Text className="font-bold text-sm" style={{ color: Colors.primary }}>
+                            <Unlock size={16} color={colors.primary} className="mr-2" />
+                            <Text className="font-bold text-sm" style={{ color: colors.primary }}>
                                 Sblocca
                             </Text>
                         </>
@@ -164,7 +164,7 @@ export default function BlockedUsersScreen() {
 
                 {isLoading ? (
                     <View className="flex-1 items-center justify-center py-20">
-                        <ActivityIndicator size="large" color={Colors.primary} />
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
                 ) : blockedUsers.length === 0 ? (
                     <View className="flex-1 items-center justify-center py-20 px-8">

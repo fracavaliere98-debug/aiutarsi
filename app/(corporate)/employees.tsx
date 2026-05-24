@@ -1,11 +1,11 @@
 import { View, Text, Image, TextInput } from "react-native";
 
 import { Trophy, Search, TrendingUp, ChevronRight } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
 import { useState } from "react";
 import { StandardLayout } from "../../components/StandardLayout";
 import { getProfileImpactPointsSnapshot } from "../../utils/profileSnapshots";
+import { colors } from "@/theme";
 
 export default function EmployeesScreen() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +29,7 @@ export default function EmployeesScreen() {
             {/* Search Bar moved to Body for consistency */}
             <View className="mb-6">
                 <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 shadow-sm border border-primary/5">
-                    <Search size={20} color={Colors.secondary} />
+                    <Search size={20} color={colors.textSecondary} />
                     <TextInput
                         placeholder="Cerca dipendente o reparto..."
                         placeholderTextColor="#9ca3af"
@@ -85,7 +85,7 @@ export default function EmployeesScreen() {
                         </View>
                         <View className="items-end">
                             <View className="flex-row items-center gap-1">
-                                <TrendingUp size={14} color={Colors.accent} />
+                                <TrendingUp size={14} color={colors.accent} />
                                 <Text className="text-accent font-black text-base">{getProfileImpactPointsSnapshot(emp)}</Text>
                             </View>
                             <Text className="text-secondary text-[10px]">{emp.hoursVolunteered} ore</Text>

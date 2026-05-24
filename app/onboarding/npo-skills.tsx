@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SKILLS } from '../../constants/Skills';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
+import { colors } from "@/theme";
 
 const { width } = Dimensions.get('window');
 
@@ -74,12 +74,12 @@ export default function NPOSkillsScreen() {
                                     ]}
                                 >
                                     <View style={[styles.iconContainer, isSelected && styles.iconContainerSelected]}>
-                                        <Icon size={24} color={isSelected ? 'white' : Colors.primary} />
+                                        <Icon size={24} color={isSelected ? 'white' : colors.primary} />
                                     </View>
                                     <Text style={[styles.label, isSelected && styles.labelSelected]}>{item.label}</Text>
                                     {isSelected && (
                                         <View style={styles.checkIcon}>
-                                            <CheckCircle2 size={20} color={Colors.success} fill="white" />
+                                            <CheckCircle2 size={20} color={colors.success} fill="white" />
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     cardSelected: {
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
         backgroundColor: '#F0F0FF',
     },
     iconContainer: {
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     iconContainerSelected: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
     },
     label: {
         fontSize: 12,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     labelSelected: {
-        color: Colors.primary,
+        color: colors.primary,
     },
     checkIcon: {
         position: 'absolute',

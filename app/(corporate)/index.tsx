@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { TrendingUp, Users, Clock, LogOut } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
 import { UserAvatar } from "../../components/UserAvatar";
 import { StandardLayout } from "../../components/StandardLayout";
+import { colors } from "@/theme";
 
 export default function CorporateDashboard() {
     const { user, logout } = useAuth();
@@ -27,17 +27,17 @@ export default function CorporateDashboard() {
             {/* ESG Highlights */}
             <View className="flex-row gap-2 mb-6">
                 <Card className="flex-1 items-center py-4 bg-primary">
-                    <TrendingUp color={Colors.accent} size={24} />
+                    <TrendingUp color={colors.accent} size={24} />
                     <Text className="text-2xl font-bold text-white mt-2">4.5k</Text>
                     <Text className="text-[10px] text-white/70 uppercase text-center">Impact Points</Text>
                 </Card>
                 <Card className="flex-1 items-center py-4">
-                    <Clock color={Colors.primary} size={24} />
+                    <Clock color={colors.primary} size={24} />
                     <Text className="text-2xl font-bold text-primary mt-2">120h</Text>
                     <Text className="text-[10px] text-secondary uppercase text-center">Ore Volontariato</Text>
                 </Card>
                 <Card className="flex-1 items-center py-4">
-                    <Users color={Colors.primary} size={24} />
+                    <Users color={colors.primary} size={24} />
                     <Text className="text-2xl font-bold text-primary mt-2">45</Text>
                     <Text className="text-[10px] text-secondary uppercase text-center">Dipendenti Attivi</Text>
                 </Card>

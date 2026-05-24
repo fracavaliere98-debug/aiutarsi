@@ -5,11 +5,11 @@ import { Activity, BellRing, ChartColumnIncreasing, HeartHandshake, Sparkles, Us
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { reportService, type NPOReportSummary } from "../../services/ReportService";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useApplicationsDomain } from "../../hooks/applications/selectors";
+import { colors } from "@/theme";
 
 export default function NPOReportScreen() {
     const router = useRouter();
@@ -61,8 +61,8 @@ export default function NPOReportScreen() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.primary}
-                    colors={[Colors.primary]}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
                 />
             }
         >
@@ -157,7 +157,7 @@ export default function NPOReportScreen() {
 
             <SoftCard className="mb-6 p-5">
                 <View className="flex-row items-center gap-3 mb-4">
-                    <ChartColumnIncreasing size={18} color={Colors.primary} />
+                    <ChartColumnIncreasing size={18} color={colors.primary} />
                     <Text className="text-primary font-black text-lg">Crescita dell’ente</Text>
                 </View>
                 <View className="gap-3">
@@ -243,7 +243,7 @@ export default function NPOReportScreen() {
 
             <SoftCard className="mb-10 p-5">
                 <View className="flex-row items-center gap-3 mb-4">
-                    <Activity size={18} color={Colors.primary} />
+                    <Activity size={18} color={colors.primary} />
                     <Text className="text-primary font-black text-lg">Panoramica attività</Text>
                 </View>
                 <Text className="text-secondary text-sm">

@@ -3,11 +3,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { ArrowLeft, Star, Heart, Send, Sparkles, CheckCircle2 } from "lucide-react-native";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useActivityDetailQuery } from "../../hooks/activities/queries";
 import { useSubmitReviewMutation } from "../../hooks/activities/mutations";
+import { colors } from "@/theme";
 
 export default function FeedbackScreen() {
     const { id } = useLocalSearchParams();
@@ -79,7 +79,7 @@ export default function FeedbackScreen() {
             {/* Custom Header */}
             <View className="px-6 py-6 border-b border-gray-100 flex-row items-center">
                 <TouchableOpacity onPress={() => router.back()}>
-                    <ArrowLeft size={24} color={Colors.primary} />
+                    <ArrowLeft size={24} color={colors.primary} />
                 </TouchableOpacity>
                 <Text className="flex-1 text-center font-black text-primary text-xl mr-6">Feedback Attività</Text>
             </View>
@@ -88,7 +88,7 @@ export default function FeedbackScreen() {
                 {/* Heart Icon Badge */}
                 <View className="items-center mt-10 mb-6">
                     <View className="w-24 h-24 bg-indigo-50 rounded-full items-center justify-center">
-                        <Heart size={48} color={Colors.primary} fill={Colors.primary} />
+                        <Heart size={48} color={colors.primary} fill={colors.primary} />
                     </View>
                 </View>
 
@@ -100,8 +100,8 @@ export default function FeedbackScreen() {
                         <TouchableOpacity key={s} onPress={() => setRating(s)}>
                             <Star
                                 size={44}
-                                color={s <= rating ? Colors.accent : "#e2e8f0"}
-                                fill={s <= rating ? Colors.accent : "transparent"}
+                                color={s <= rating ? colors.accent : "#e2e8f0"}
+                                fill={s <= rating ? colors.accent : "transparent"}
                             />
                         </TouchableOpacity>
                     ))}
@@ -140,7 +140,7 @@ export default function FeedbackScreen() {
                         className="text-primary font-medium text-base min-h-[120px]"
                     />
                     <View className="flex-row items-center gap-1 self-end mt-4 bg-indigo-50 px-3 py-1.5 rounded-full">
-                        <Sparkles size={12} color={Colors.primary} />
+                        <Sparkles size={12} color={colors.primary} />
                         <Text className="text-primary font-black text-[10px] uppercase tracking-tighter">AI Analysis</Text>
                     </View>
                 </View>

@@ -6,7 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
-import { Colors } from "../../../constants/Colors";
+import { colors } from "@/theme";
 
 export default function CorporateRegister() {
     const router = useRouter();
@@ -75,7 +75,7 @@ export default function CorporateRegister() {
                     placeholder="Azienda SpA"
                     value={formData.companyName}
                     onChangeText={(text) => setFormData({ ...formData, companyName: text })}
-                    icon={<BriefcaseBusiness size={18} color={Colors.secondary} />}
+                    icon={<BriefcaseBusiness size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -83,7 +83,7 @@ export default function CorporateRegister() {
                     placeholder="IT12345678901"
                     value={formData.vatId}
                     onChangeText={(text) => setFormData({ ...formData, vatId: text })}
-                    icon={<ShieldCheck size={18} color={Colors.secondary} />}
+                    icon={<ShieldCheck size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -93,7 +93,7 @@ export default function CorporateRegister() {
                     autoCapitalize="none"
                     value={formData.email}
                     onChangeText={(text) => setFormData({ ...formData, email: text })}
-                    icon={<Mail size={18} color={Colors.secondary} />}
+                    icon={<Mail size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -102,7 +102,7 @@ export default function CorporateRegister() {
                     secureTextEntry
                     value={formData.password}
                     onChangeText={(text) => setFormData({ ...formData, password: text })}
-                    icon={<Lock size={18} color={Colors.secondary} />}
+                    icon={<Lock size={18} color={colors.textSecondary} />}
                 />
 
                 <TouchableOpacity
@@ -160,8 +160,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     checkboxChecked: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
     checkboxTick: {
         color: "#fff",
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     inlineLink: {
-        color: Colors.primary,
+        color: colors.primary,
         fontWeight: "800",
         textDecorationLine: "underline",
     },

@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { BarChart3, Users, Award, User } from 'lucide-react-native';
-import { Colors } from "../../constants/Colors";
+import { colors } from "@/theme";
 
 
 export default function CorporateLayout() {
@@ -9,13 +9,13 @@ export default function CorporateLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: Colors.primary,
+                    backgroundColor: colors.primary,
                     borderTopWidth: 0,
                     height: 70,
                     paddingBottom: 10,
                     paddingTop: 10,
                 },
-                tabBarActiveTintColor: Colors.accent,
+                tabBarActiveTintColor: colors.accent,
                 tabBarInactiveTintColor: "rgba(255, 255, 255, 0.5)",
             }}
         >

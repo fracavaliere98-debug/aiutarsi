@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Share } from "react-native";
 import { Search, Share2, Sparkles, Filter, MapPin, Building2 } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { Card } from "../../components/Card";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useState } from "react";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
+import { colors } from "@/theme";
 
 export default function CorporateCatalog() {
     const { activities } = useActivitiesDomain(undefined);
@@ -33,7 +33,7 @@ export default function CorporateCatalog() {
         >
             {/* Search */}
             <View className="bg-white rounded-2xl flex-row items-center px-4 py-3 mb-6 shadow-sm border border-primary/5">
-                <Search size={20} color={Colors.secondary} />
+                <Search size={20} color={colors.textSecondary} />
                 <TextInput
                     className="flex-1 ml-3 text-primary font-medium"
                     placeholder="Cerca attività o NPO..."
@@ -41,7 +41,7 @@ export default function CorporateCatalog() {
                     onChangeText={setSearchQuery}
                 />
                 <TouchableOpacity className="bg-primary/5 p-2 rounded-xl">
-                    <Filter size={18} color={Colors.primary} />
+                    <Filter size={18} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
@@ -54,7 +54,7 @@ export default function CorporateCatalog() {
                             <View className="flex-row justify-between items-start mb-4">
                                 <View className="flex-1">
                                     <View className="flex-row items-center gap-2 mb-1">
-                                        <Building2 size={12} color={Colors.secondary} />
+                                        <Building2 size={12} color={colors.textSecondary} />
                                         <Text className="text-secondary text-[10px] font-bold uppercase tracking-widest">{act.npoName}</Text>
                                     </View>
                                     <Text className="text-xl font-black text-primary leading-tight">{act.title}</Text>
@@ -66,11 +66,11 @@ export default function CorporateCatalog() {
 
                             <View className="flex-row items-center gap-4 mb-5">
                                 <View className="flex-row items-center gap-1.5">
-                                    <MapPin size={14} color={Colors.secondary} />
+                                    <MapPin size={14} color={colors.textSecondary} />
                                     <Text className="text-secondary text-xs">{act.location.address}</Text>
                                 </View>
                                 <View className="flex-row items-center gap-1.5">
-                                    <Sparkles size={14} color={Colors.primary} />
+                                    <Sparkles size={14} color={colors.primary} />
                                     <Text className="text-primary font-bold text-[10px]">95% ESG Impact</Text>
                                 </View>
                             </View>

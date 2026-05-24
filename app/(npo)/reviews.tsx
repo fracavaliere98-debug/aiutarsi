@@ -2,11 +2,11 @@ import { View, Text } from "react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useAuth } from "../../context/AuthContext";
 import { Star, Calendar } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { EmptyState } from "../../components/EmptyState";
 import { useRouter } from "expo-router";
 import { UserAvatar } from "../../components/UserAvatar";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
+import { colors } from "@/theme";
 
 export default function NPOReviewsScreen() {
     const { user, getUserById } = useAuth();
@@ -97,7 +97,7 @@ export default function NPOReviewsScreen() {
 
                                     {relatedActivity && (
                                         <View className="flex-row items-center gap-1.5 mb-3 bg-indigo-50/50 self-start px-2 py-1 rounded-md">
-                                            <Calendar size={10} color={Colors.primary} />
+                                            <Calendar size={10} color={colors.primary} />
                                             <Text className="text-[10px] font-bold text-indigo-900" numberOfLines={1}>
                                                 Missione: {relatedActivity.title}
                                             </Text>

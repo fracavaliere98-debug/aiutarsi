@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { UserAvatar } from "./UserAvatar";
 import { OldUser } from "../types";
-import { Colors } from "../constants/Colors";
 import { Mail } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
 import { useRouter } from "expo-router";
 import { useGamificationStateQuery } from "../hooks/gamification/queries";
+import { colors } from "@/theme";
 
 interface CompactFollowerCardProps {
     volunteer: OldUser;
@@ -52,7 +52,7 @@ export function CompactFollowerCard({ volunteer, onInvite }: CompactFollowerCard
                     onPress={() => onInvite(volunteer.id)}
                     className="bg-accent/10 p-2.5 rounded-xl active:scale-95"
                 >
-                    <Mail size={18} color={Colors.accent} />
+                    <Mail size={18} color={colors.accent} />
                 </TouchableOpacity>
             </SoftCard>
         </TouchableOpacity>

@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { ScreenWrapper } from "../ScreenWrapper";
-import { Colors } from "../../constants/Colors";
+import { colors } from "@/theme";
 
 interface AuthShellProps {
     title: string;
@@ -29,7 +29,7 @@ export function AuthShell({
 
                 <View style={styles.topBar}>
                     <TouchableOpacity onPress={backAction} style={styles.backButton} activeOpacity={0.8}>
-                        <ArrowLeft size={20} color={Colors.primary} />
+                        <ArrowLeft size={20} color={colors.primary} />
                     </TouchableOpacity>
 
                     <View style={styles.brandPill}>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
         height: 24,
     },
     brandText: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "900",
     },
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     eyebrow: {
-        color: Colors.accent,
+        color: colors.accent,
         fontSize: 12,
         fontWeight: "900",
         letterSpacing: 1,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     title: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 29,
         lineHeight: 33,
         fontWeight: "900",

@@ -9,9 +9,9 @@ import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { Colors } from "../../../constants/Colors";
 import { reportIssue } from "../../../utils/monitoring";
 import { useNPOApplications } from "../../../hooks/applications/selectors";
+import { colors } from "@/theme";
 
 const SectionHeader = ({ title }: { title: string }) => (
     <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-1">
@@ -105,10 +105,10 @@ export default function NPOSettingsScreen() {
                 <TouchableOpacity
                     className="mt-6 px-8 py-3 rounded-2xl"
                     activeOpacity={0.7}
-                    style={{ backgroundColor: Colors.primary + '10' }}
+                    style={{ backgroundColor: colors.primary + '10' }}
                     onPress={() => router.push("/(npo)/edit-profile" as any)}
                 >
-                    <Text className="font-black text-sm" style={{ color: Colors.primary }}>
+                    <Text className="font-black text-sm" style={{ color: colors.primary }}>
                         Modifica profilo ente
                     </Text>
                 </TouchableOpacity>
@@ -120,21 +120,21 @@ export default function NPOSettingsScreen() {
                     icon={Building2}
                     label="Modifica profilo"
                     description="Logo, missione, contatti e sede operativa"
-                    color={Colors.primary}
+                    color={colors.primary}
                     onPress={() => router.push("/(npo)/edit-profile" as any)}
                 />
                 <MenuItem
                     icon={Target}
                     label="Settori e competenze"
                     description="Aree di intervento e skill che cercate nei volontari"
-                    color={Colors.primary}
+                    color={colors.primary}
                     onPress={() => router.push("/(npo)/interests-skills" as any)}
                 />
                 <MenuItem
                     icon={UserCircle}
                     label="Referente principale"
                     description="Persona di riferimento visibile sul profilo pubblico"
-                    color={Colors.primary}
+                    color={colors.primary}
                     onPress={() => router.push("/(npo)/referent-details" as any)}
                     last
                 />
@@ -146,7 +146,7 @@ export default function NPOSettingsScreen() {
                     icon={Users}
                     label="Membri del team"
                     description="Gestisci iscritti e candidature ricevute"
-                    color={Colors.primary}
+                    color={colors.primary}
                     badge={teamCount}
                     onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
                 />
@@ -154,7 +154,7 @@ export default function NPOSettingsScreen() {
                     icon={ChartColumnIncreasing}
                     label="Report"
                     description="Follower, crescita, iscritti e attività da attenzionare"
-                    color={Colors.accent}
+                    color={colors.accent}
                     onPress={() => router.push("/(npo)/report" as any)}
                     testID="npo-settings-report"
                 />
@@ -162,21 +162,21 @@ export default function NPOSettingsScreen() {
                     icon={Eye}
                     label="Privacy e visibilità"
                     description="Controlla cosa è visibile agli utenti"
-                    color={Colors.success}
+                    color={colors.success}
                     onPress={() => router.push("/(npo)/settings/privacy" as any)}
                 />
                 <MenuItem
                     icon={ShieldBan}
                     label="Account bloccati"
                     description="Gestisci i profili che non possono interagire"
-                    color={Colors.accent}
+                    color={colors.accent}
                     onPress={() => router.push("/blocked-users" as any)}
                 />
                 <MenuItem
                     icon={Key}
                     label="Credenziali accesso"
                     description="Email, password e sicurezza"
-                    color={Colors.primary}
+                    color={colors.primary}
                     onPress={() => router.push("/(npo)/settings/security" as any)}
                     last
                 />
@@ -195,7 +195,7 @@ export default function NPOSettingsScreen() {
                     icon={Mail}
                     label="Segnala un problema"
                     description="Invia una segnalazione con i dettagli tecnici dell'app"
-                    color={Colors.accent}
+                    color={colors.accent}
                     onPress={() => {
                         void reportIssue({
                             user,
@@ -207,7 +207,7 @@ export default function NPOSettingsScreen() {
                     icon={FileText}
                     label="Termini e condizioni"
                     description="Informazioni legali e condizioni d'uso"
-                    color={Colors.primary}
+                    color={colors.primary}
                     onPress={() => router.push("/terms" as any)}
                     last
                 />

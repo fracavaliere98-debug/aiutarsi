@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowUpRight } from 'lucide-react-native';
 import { CommunityPost } from '../../types/community';
-import { Colors } from '../../constants/Colors';
+import { colors } from "@/theme";
 
 interface CommunityCompactPostCardProps {
     post: CommunityPost;
@@ -67,7 +67,7 @@ export function CommunityCompactPostCard({
                     </View>
 
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '900', color: Colors.primary }} numberOfLines={1}>
+                        <Text style={{ fontSize: 14, fontWeight: '900', color: colors.primary }} numberOfLines={1}>
                             {authorName}
                         </Text>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748b', marginTop: 2 }}>

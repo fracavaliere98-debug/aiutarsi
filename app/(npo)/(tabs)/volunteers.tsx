@@ -12,7 +12,6 @@ import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { VolunteerCard } from "../../../components/VolunteerCard";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
-import { Colors } from "../../../constants/Colors";
 import { SectionHeader, SegmentedControl, type SegmentedControlItem } from "../../../components/ui";
 import { useNotificationsDomain } from "../../../hooks/notifications/useNotificationsDomain";
 import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
@@ -360,7 +359,7 @@ export default function VolunteersScreen() {
                     {matchedFollowers.length > 0 && (
                         <View className="mb-6 px-1">
                             <View className="flex-row items-center gap-2 mb-4">
-                                <Sparkles size={18} color={Colors.accent} />
+                                <Sparkles size={18} color={colors.accent} />
                                 <Text className="text-secondary font-black text-xs uppercase tracking-widest">Top matches per l&apos;attività</Text>
                             </View>
                             {matchedFollowers.map((f) => (

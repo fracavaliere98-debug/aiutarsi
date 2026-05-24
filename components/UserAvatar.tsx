@@ -3,8 +3,8 @@ import { View, Text } from "react-native";
 import { User as UserIcon, CheckCircle2 } from 'lucide-react-native';
 import { Image } from "expo-image";
 import { useAuth } from "../context/AuthContext";
-import { Colors } from "../constants/Colors";
 import { Role } from "../types";
+import { colors } from "@/theme";
 
 interface UserAvatarProps {
     size?: number;
@@ -62,7 +62,7 @@ export function UserAvatar({
     );
     const isPendingVerification = isNPO && !isConfirmedVerified && finalVerificationStatus === "pending";
     const npoBorderColor = isConfirmedVerified
-        ? Colors.primary
+        ? colors.primary
         : isPendingVerification
             ? "#2563eb"
             : "rgba(255,255,255,0.3)";
@@ -94,7 +94,7 @@ export function UserAvatar({
                                 style={{
                                     fontSize,
                                     fontWeight: "800",
-                                    color: isNPO ? Colors.primary : "#64748b",
+                                    color: isNPO ? colors.primary : "#64748b",
                                 }}
                             >
                                 {initials}
@@ -136,7 +136,7 @@ export function UserAvatar({
                         borderColor: 'white',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: Colors.primary
+                        backgroundColor: colors.primary
                     }}
                     className="shadow-sm"
                 >

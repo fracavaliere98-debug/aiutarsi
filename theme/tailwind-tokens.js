@@ -1,49 +1,74 @@
-import { palette } from "./primitives";
+// CJS bridge — consumed by tailwind.config.js
+// Source of truth: theme/primitives.ts + theme/colors.ts
+// Keep in sync manually when primitives or semantic tokens change.
 
-export const colors = {
+const palette = {
+  purple700: "#462282",
+  purple600: "#5b3dc4",
+  purple800: "#311b92",
+  pink600: "#cd057f",
+  pink700: "#be185d",
+  pink400: "#ec4899",
+  slate850: "#1e1b4b",
+  slate550: "#4B5563",
+  slate500: "#64748b",
+  slate400: "#94a3b8",
+  slate300: "#cbd5e1",
+  slate200: "#e2e8f0",
+  slate100: "#f1f5f9",
+  slate75: "#f8fafc",
+  gray50: "#f6f6f8",
+  gray90: "#f0f2f5",
+  green500: "#22c55e",
+  green600: "#16a34a",
+  green100: "#dcfce7",
+  amber500: "#f59e0b",
+  amber600: "#d97706",
+  amber75: "#fffbeb",
+  red500: "#ef4444",
+  red600: "#dc2626",
+  red50: "#fef2f2",
+  blue500: "#3b82f6",
+  blue600: "#2563eb",
+  blue75: "#eef2ff",
+  white: "#ffffff",
+  black: "#000000",
+};
+
+const colors = {
   primary: palette.purple700,
   accent: palette.pink600,
-
   background: palette.white,
   canvas: palette.gray50,
   surface: palette.white,
   surfaceMuted: palette.slate75,
   surfaceSubtle: palette.slate100,
   controlSurface: palette.gray90,
-  overlay: "rgba(0,0,0,0.5)",
-
   text: "#333333",
   textStrong: palette.slate850,
   textSecondary: palette.slate550,
   textMuted: palette.slate500,
   textSubtle: palette.slate400,
   textInverse: palette.white,
-
   border: palette.slate200,
   borderMuted: palette.slate100,
   borderStrong: palette.slate300,
-  controlShadow: "#d1d9e6",
-
   success: palette.green500,
   successStrong: palette.green600,
   successSoft: palette.green100,
-
   warning: palette.amber500,
   warningStrong: palette.amber600,
   warningSoft: palette.amber75,
-
   danger: palette.red500,
   dangerStrong: palette.red600,
   dangerSoft: palette.red50,
-
   info: palette.blue500,
   infoStrong: palette.blue600,
   infoSoft: palette.blue75,
-
   disabled: palette.slate300,
   disabledText: palette.slate400,
   white: palette.white,
   black: palette.black,
-} as const;
+};
 
-export type ColorToken = keyof typeof colors;
+module.exports = { palette, colors };

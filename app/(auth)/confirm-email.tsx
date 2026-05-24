@@ -6,8 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { AuthShell } from "../../components/auth/AuthShell";
 import { Button } from "../../components/Button";
-import { Colors } from "../../constants/Colors";
 import { supabase } from "../../utils/supabase";
+import { colors } from "@/theme";
 
 function getRoleLabel(role?: string | string[]) {
     const normalized = Array.isArray(role) ? role[0] : role;
@@ -125,7 +125,7 @@ export default function ConfirmEmailScreen() {
             >
                 <View style={styles.card}>
                     <View style={styles.iconWrap}>
-                        <MailCheck size={28} color={Colors.primary} />
+                        <MailCheck size={28} color={colors.primary} />
                     </View>
                     <Text style={styles.cardTitle}>{isEmailChangeFlow ? "Ultimo passaggio" : "Quasi fatto"}</Text>
                     <Text style={styles.cardBody}>
@@ -134,7 +134,7 @@ export default function ConfirmEmailScreen() {
                     <Text style={styles.email}>{email || "indirizzo email non disponibile"}</Text>
                     {!isEmailChangeFlow ? (
                         <View style={styles.rolePill}>
-                            <ShieldCheck size={14} color={Colors.primary} />
+                            <ShieldCheck size={14} color={colors.primary} />
                             <Text style={styles.roleText}>Ruolo: {roleLabel}</Text>
                         </View>
                     ) : null}
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 24,
         fontWeight: "900",
-        color: Colors.primary,
+        color: colors.primary,
         textAlign: "center",
     },
     cardBody: {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     roleText: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "700",
     },

@@ -3,11 +3,11 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotificationsDomain } from "../../hooks/notifications/useNotificationsDomain";
 import { StandardLayout } from "../../components/StandardLayout";
 import { CheckCircle } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useToast } from "../../context/ToastContext";
 import { NotificationsFeed } from "../../components/notifications/NotificationsFeed";
+import { colors } from "@/theme";
 
 export default function NPONotificationsScreen() {
     const { user } = useAuth();
@@ -53,8 +53,8 @@ export default function NPONotificationsScreen() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.accent}
-                    colors={[Colors.accent]}
+                    tintColor={colors.accent}
+                    colors={[colors.accent]}
                 />
             }
         >

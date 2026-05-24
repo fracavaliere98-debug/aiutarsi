@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { LayoutDashboard, Users, Calendar, User, Globe } from "lucide-react-native";
-import { Colors } from "../../../constants/Colors";
 import { View, Text, TouchableOpacity, GestureResponderEvent } from "react-native";
+import { colors } from "@/theme";
 
 export default function NPOTabsLayout() {
     return (
@@ -26,7 +26,7 @@ export default function NPOTabsLayout() {
                 tabBarItemStyle: {
                     marginHorizontal: -10,
                 },
-                tabBarActiveTintColor: Colors.primary,
+                tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: "#94a3b8",
                 tabBarLabelStyle: {
                     fontSize: 11,
@@ -77,10 +77,10 @@ export default function NPOTabsLayout() {
                     tabBarIcon: ({ focused }) => (
                         <View style={{
                             width: 56, height: 56, borderRadius: 28,
-                            backgroundColor: Colors.primary,
+                            backgroundColor: colors.primary,
                             alignItems: 'center', justifyContent: 'center',
                             marginTop: -22,
-                            shadowColor: Colors.primary,
+                            shadowColor: colors.primary,
                             shadowOpacity: 0.4,
                             shadowRadius: 10,
                             elevation: 8,
@@ -89,7 +89,7 @@ export default function NPOTabsLayout() {
                         </View>
                     ),
                     tabBarLabel: () => (
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary, marginTop: 10 }}>Community</Text>
                     ),
                 }}
             />

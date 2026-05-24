@@ -3,9 +3,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { X, ArrowRight } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { colors } from "@/theme";
 
 const { width } = Dimensions.get('window');
 
@@ -31,7 +31,7 @@ export default function OnboardingIntro() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-                    <X size={20} color={Colors.primary} strokeWidth={2.5} />
+                    <X size={20} color={colors.primary} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>AiutarSì</Text>
                 <View style={{ width: 40 }} />
@@ -55,9 +55,9 @@ export default function OnboardingIntro() {
                 >
                     <Text style={styles.title}>
                         {isNPO ? (
-                            <>Benvenuti su <Text style={{ color: Colors.accent }}>AiutarSì</Text>. Sono Gemma, la vostra consulente.</>
+                            <>Benvenuti su <Text style={{ color: colors.accent }}>AiutarSì</Text>. Sono Gemma, la vostra consulente.</>
                         ) : (
-                            <>Ciao! Io sono <Text style={{ color: Colors.accent }}>Gemma</Text>, la tua assistente di bordo.</>
+                            <>Ciao! Io sono <Text style={{ color: colors.accent }}>Gemma</Text>, la tua assistente di bordo.</>
                         )}
                     </Text>
                     <Text style={styles.subtitle}>

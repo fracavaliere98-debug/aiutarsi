@@ -3,12 +3,12 @@ import { View, Text, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StandardLayout } from '../../components/StandardLayout';
 import { useAuth } from '../../context/AuthContext';
-import { Colors } from '../../constants/Colors';
 import { Star, Calendar, Building2 } from 'lucide-react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { UserAvatar } from '../../components/UserAvatar';
 import { useActivitiesDomain } from '../../hooks/activities/selectors';
 import { useVolunteerReviewsQuery } from '../../hooks/activities/queries';
+import { colors } from "@/theme";
 
 export default function MyReviewsScreen() {
     const router = useRouter();
@@ -52,8 +52,8 @@ export default function MyReviewsScreen() {
                                 <Star
                                     key={star}
                                     size={24}
-                                    color={averageRating >= star - 0.5 ? Colors.accent : "#cbd5e1"}
-                                    fill={averageRating >= star - 0.5 ? Colors.accent : "transparent"}
+                                    color={averageRating >= star - 0.5 ? colors.accent : "#cbd5e1"}
+                                    fill={averageRating >= star - 0.5 ? colors.accent : "transparent"}
                                 />
                             ))}
                         </View>
@@ -82,7 +82,7 @@ export default function MyReviewsScreen() {
                                         <View>
                                             <Text className="font-bold text-primary text-base">{npo?.name || "Ente Sconosciuto"}</Text>
                                             <View className="flex-row items-center gap-1 mt-0.5">
-                                                <Calendar size={12} color={Colors.secondary} />
+                                                <Calendar size={12} color={colors.textSecondary} />
                                                 <Text className="text-xs text-secondary/70 font-medium">
                                                     {new Date(review.date).toLocaleDateString("it-IT", { day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </Text>
@@ -102,7 +102,7 @@ export default function MyReviewsScreen() {
                                 {/* OldActivity Context */}
                                 {activity && (
                                     <View className="bg-slate-50 p-3 rounded-xl mb-4 flex-row items-center gap-2 border border-slate-100">
-                                        <Building2 size={16} color={Colors.primary} />
+                                        <Building2 size={16} color={colors.primary} />
                                         <Text className="text-sm font-bold text-primary flex-1" numberOfLines={1}>
                                             {activity.title}
                                         </Text>

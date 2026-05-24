@@ -10,12 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { INTERESTS } from '../../constants/Interests';
+import { colors } from "@/theme";
 
 const { width } = Dimensions.get('window');
 
@@ -80,7 +80,7 @@ export default function NPOCategoryScreen() {
                                         <Text style={styles.label}>{item.label}</Text>
                                         {isSelected && (
                                             <View style={styles.checkIcon}>
-                                                <CheckCircle2 size={24} color="white" fill={Colors.success} />
+                                                <CheckCircle2 size={24} color="white" fill={colors.success} />
                                             </View>
                                         )}
                                     </View>
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     },
     cardSelected: {
         borderWidth: 3,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
     },
     cardImage: {
         ...StyleSheet.absoluteFillObject,

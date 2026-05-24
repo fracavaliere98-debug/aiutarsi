@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ArrowRight, Camera, Globe, Info, Mail, Phone, Search } from 'lucide-react-native';
@@ -21,6 +20,7 @@ import { AddressAutocomplete } from '../../components/AddressAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
+import { colors } from "@/theme";
 
 export default function NPODetailsScreen() {
     const router = useRouter();
@@ -132,7 +132,7 @@ export default function NPODetailsScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>MISSIONE / DESCRIZIONE *</Text>
                             <View style={[styles.inputContainer, styles.textAreaContainer]}>
-                                <Info size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <Info size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={[styles.input, styles.textArea]}
                                     placeholder="Raccontate brevemente chi siete e cosa fate..."
@@ -160,7 +160,7 @@ export default function NPODetailsScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>P.IVA / CODICE FISCALE *</Text>
                             <View style={styles.inputContainer}>
-                                <Globe size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <Globe size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
                                     placeholder="Es. 12345678901"
@@ -173,7 +173,7 @@ export default function NPODetailsScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>EMAIL PUBBLICA *</Text>
                             <View style={styles.inputContainer}>
-                                <Mail size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <Mail size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="contatti@tuoente.org"
@@ -188,7 +188,7 @@ export default function NPODetailsScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>TELEFONO *</Text>
                             <View style={styles.inputContainer}>
-                                <Phone size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <Phone size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
                                     placeholder="Es. +39 02 1234567"
@@ -202,7 +202,7 @@ export default function NPODetailsScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>SITO WEB</Text>
                             <View style={styles.inputContainer}>
-                                <Search size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <Search size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
                                     placeholder="https://www.tuoente.org"
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         width: 36,
         height: 36,
         borderRadius: 18,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 12,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 1,
     },

@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Platform, ScrollView } from 'react-native';
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
+import { colors } from "@/theme";
 
 export interface CalendarPickerProps {
     visible: boolean;
@@ -185,15 +185,15 @@ export function CalendarPicker({
                     {/* Header */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>{headerLabel}</Text>
+                            <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>{headerLabel}</Text>
                             {rangeMode && (
                                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                                     <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '600' }}>
-                                        Da: <Text style={{ color: pendingFrom ? Colors.primary : '#94a3b8', fontWeight: '800' }}>{fmtDate(pendingFrom)}</Text>
+                                        Da: <Text style={{ color: pendingFrom ? colors.primary : '#94a3b8', fontWeight: '800' }}>{fmtDate(pendingFrom)}</Text>
                                     </Text>
                                     {pendingTo ? (
                                         <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '600' }}>
-                                            A: <Text style={{ color: Colors.primary, fontWeight: '800' }}>{fmtDate(pendingTo)}</Text>
+                                            A: <Text style={{ color: colors.primary, fontWeight: '800' }}>{fmtDate(pendingTo)}</Text>
                                         </Text>
                                     ) : null}
                                 </View>
@@ -207,19 +207,19 @@ export function CalendarPicker({
                     {/* Month navigation */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 }}>
                         <TouchableOpacity onPress={prevMonth} style={{ padding: 8, borderRadius: 20, backgroundColor: '#f1f5f9' }}>
-                            <ChevronLeft size={18} color={Colors.primary} />
+                            <ChevronLeft size={18} color={colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setShowMonthYearPicker((current) => !current)}
                             style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}
                         >
-                            <Text style={{ fontWeight: '900', fontSize: 16, color: Colors.primary }}>
+                            <Text style={{ fontWeight: '900', fontSize: 16, color: colors.primary }}>
                                 {MONTHS_IT[viewMonth]} {viewYear}
                             </Text>
-                            <ChevronDown size={16} color={Colors.primary} />
+                            <ChevronDown size={16} color={colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={nextMonth} style={{ padding: 8, borderRadius: 20, backgroundColor: '#f1f5f9' }}>
-                            <ChevronRight size={18} color={Colors.primary} />
+                            <ChevronRight size={18} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -231,7 +231,7 @@ export function CalendarPicker({
                                 </Text>
                                 <View style={{ flexDirection: 'row', gap: 12, minHeight: 268 }}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 8 }}>Mese</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, marginBottom: 8 }}>Mese</Text>
                                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                             {MONTHS_IT.map((monthLabel, monthIndex) => {
                                                 const selected = monthIndex === viewMonth;
@@ -243,13 +243,13 @@ export function CalendarPicker({
                                                             width: '31%',
                                                             paddingVertical: 10,
                                                             borderRadius: 14,
-                                                            backgroundColor: selected ? `${Colors.primary}18` : 'white',
+                                                            backgroundColor: selected ? `${colors.primary}18` : 'white',
                                                             borderWidth: 1,
-                                                            borderColor: selected ? `${Colors.primary}55` : '#e2e8f0',
+                                                            borderColor: selected ? `${colors.primary}55` : '#e2e8f0',
                                                             alignItems: 'center',
                                                         }}
                                                     >
-                                                        <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? Colors.primary : '#475569' }}>
+                                                        <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? colors.primary : '#475569' }}>
                                                             {monthLabel.slice(0, 3)}
                                                         </Text>
                                                     </TouchableOpacity>
@@ -258,7 +258,7 @@ export function CalendarPicker({
                                         </View>
                                     </View>
                                     <View style={{ width: 96, minHeight: 268 }}>
-                                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 8 }}>Anno</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, marginBottom: 8 }}>Anno</Text>
                                         <ScrollView style={{ maxHeight: 268 }} showsVerticalScrollIndicator={false}>
                                             <View style={{ gap: 8 }}>
                                                 {yearOptions.map((year) => {
@@ -270,13 +270,13 @@ export function CalendarPicker({
                                                             style={{
                                                                 paddingVertical: 10,
                                                                 borderRadius: 14,
-                                                                backgroundColor: selected ? `${Colors.primary}18` : 'white',
+                                                                backgroundColor: selected ? `${colors.primary}18` : 'white',
                                                                 borderWidth: 1,
-                                                                borderColor: selected ? `${Colors.primary}55` : '#e2e8f0',
+                                                                borderColor: selected ? `${colors.primary}55` : '#e2e8f0',
                                                                 alignItems: 'center',
                                                             }}
                                                         >
-                                                            <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? Colors.primary : '#475569' }}>
+                                                            <Text style={{ fontSize: 12, fontWeight: '800', color: selected ? colors.primary : '#475569' }}>
                                                                 {year}
                                                             </Text>
                                                         </TouchableOpacity>
@@ -317,13 +317,13 @@ export function CalendarPicker({
                                             style={{
                                                 flex: 1, height: 40, alignItems: 'center', justifyContent: 'center',
                                                 borderRadius: highlighted ? 20 : (inRange ? 0 : 20),
-                                                backgroundColor: highlighted ? Colors.primary : inRange ? `${Colors.primary}20` : todayCell ? `${Colors.primary}15` : 'transparent',
+                                                backgroundColor: highlighted ? colors.primary : inRange ? `${colors.primary}20` : todayCell ? `${colors.primary}15` : 'transparent',
                                             }}
                                         >
                                             <Text style={{
                                                 fontSize: 14,
                                                 fontWeight: highlighted ? '900' : inRange ? '700' : todayCell ? '800' : '600',
-                                                color: highlighted ? 'white' : disabled ? '#d1d5db' : inRange ? Colors.primary : todayCell ? Colors.primary : '#1e1b4b',
+                                                color: highlighted ? 'white' : disabled ? '#d1d5db' : inRange ? colors.primary : todayCell ? colors.primary : '#1e1b4b',
                                             }}>
                                                 {day}
                                             </Text>

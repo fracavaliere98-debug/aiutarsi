@@ -13,11 +13,11 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { X, Heart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { INTERESTS } from '../../constants/Interests';
+import { colors } from "@/theme";
 
 const { width, height } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.3;
@@ -281,7 +281,7 @@ export default function OnboardingInterests() {
             {/* Action Buttons */}
             <View style={styles.buttons}>
                 <TouchableOpacity style={styles.btnDislike} onPress={swipeLeft} activeOpacity={0.8}>
-                    <X size={32} color={Colors.primary} strokeWidth={2.5} />
+                    <X size={32} color={colors.primary} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnLike} onPress={swipeRight} activeOpacity={0.8}>
                     <Heart size={38} color="white" fill="white" />
@@ -313,12 +313,12 @@ const styles = StyleSheet.create({
     logo: {
         fontSize: 22,
         fontWeight: '900',
-        color: Colors.primary,
+        color: colors.primary,
     },
     skipText: {
         fontSize: 11,
         fontWeight: '700',
-        color: Colors.primary,
+        color: colors.primary,
         letterSpacing: 2,
         textTransform: 'uppercase',
     },
@@ -334,19 +334,19 @@ const styles = StyleSheet.create({
     progressLabel: {
         fontSize: 10,
         fontWeight: '700',
-        color: `${Colors.primary}66`,
+        color: `${colors.primary}66`,
         letterSpacing: 1.5,
         textTransform: 'uppercase',
     },
     progressTrack: {
         height: 6,
-        backgroundColor: `${Colors.primary}18`,
+        backgroundColor: `${colors.primary}18`,
         borderRadius: 3,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         borderRadius: 3,
     },
     headerSection: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 13,
-        color: Colors.secondary,
+        color: colors.textSecondary,
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     hintText: {
         fontSize: 10,
         fontWeight: '700',
-        color: `${Colors.primary}40`,
+        color: `${colors.primary}40`,
         letterSpacing: 4,
     },
 });

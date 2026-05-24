@@ -2,13 +2,13 @@ import { View, Text, TouchableOpacity, ScrollView, Dimensions } from "react-nati
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useAuth } from "../../context/AuthContext";
-import { Colors } from "../../constants/Colors";
 import { useState } from "react";
 import { Save, CheckCircle2 } from "lucide-react-native";
 import { SKILLS } from "../../constants/Skills";
 import { INTERESTS } from "../../constants/Interests";
 import { useToast } from "../../context/ToastContext";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { colors } from "@/theme";
 
 const { width } = Dimensions.get('window');
 
@@ -100,7 +100,7 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
                                         </Text>
                                         {isSelected && (
                                             <View className="absolute top-3 right-3">
-                                                <CheckCircle2 size={18} color={Colors.primary} fill="white" />
+                                                <CheckCircle2 size={18} color={colors.primary} fill="white" />
                                             </View>
                                         )}
                                     </TouchableOpacity>
@@ -136,7 +136,7 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
                                         style={{ gap: 8 }}
                                     >
                                         <View className={`p-2 rounded-xl ${isSelected ? 'bg-accent/20' : 'bg-slate-50'}`}>
-                                            <Icon size={20} color={isSelected ? Colors.accent : "#94a3b8"} />
+                                            <Icon size={20} color={isSelected ? colors.accent : "#94a3b8"} />
                                         </View>
                                         <Text 
                                             className={`font-bold text-[10px] text-center px-1 ${isSelected ? "text-accent" : "text-slate-500"}`} 

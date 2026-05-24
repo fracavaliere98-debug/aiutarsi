@@ -4,10 +4,10 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2 } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
-import { Colors } from "../../constants/Colors";
 import { useActivityDetailQuery } from "../../hooks/activities/queries";
 import { useEnrollInActivityMutation } from "../../hooks/activities/mutations";
 import { useApplyToNPOMutation } from "../../hooks/applications/mutations";
+import { colors } from "@/theme";
 
 export default function ReviewApplication() {
     const router = useRouter();
@@ -85,7 +85,7 @@ export default function ReviewApplication() {
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
                 <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                    <ArrowLeft size={24} color={Colors.primary} />
+                    <ArrowLeft size={24} color={colors.primary} />
                 </TouchableOpacity>
                 <Text className="text-xl font-bold text-primary">
                     {isActivity ? "Riepilogo Iscrizione" : "Candidatura Ente"}
@@ -106,7 +106,7 @@ export default function ReviewApplication() {
                 <View className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8">
                     <View className="flex-row items-center gap-4 mb-4">
                         <View className="w-12 h-12 bg-indigo-50 rounded-full items-center justify-center">
-                            {isActivity ? <Text className="text-xl">🤝</Text> : <Building2 size={24} color={Colors.accent} />}
+                            {isActivity ? <Text className="text-xl">🤝</Text> : <Building2 size={24} color={colors.accent} />}
                         </View>
                         <View className="flex-1">
                             <Text className="text-lg font-bold text-primary leading-tight mb-1">
@@ -121,13 +121,13 @@ export default function ReviewApplication() {
                     {isActivity ? (
                         <View className="space-y-3">
                             <View className="flex-row items-center gap-3">
-                                <Calendar size={18} color={Colors.secondary} />
+                                <Calendar size={18} color={colors.textSecondary} />
                                 <Text className="text-secondary">
                                     {new Date(activity!.dateTime).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                 </Text>
                             </View>
                             <View className="flex-row items-center gap-3">
-                                <MapPin size={18} color={Colors.secondary} />
+                                <MapPin size={18} color={colors.textSecondary} />
                                 <Text className="text-secondary flex-1" numberOfLines={1}>
                                     {activity!.location.address}
                                 </Text>
@@ -157,7 +157,7 @@ export default function ReviewApplication() {
                             keyboardType="phone-pad"
                             placeholder="+39 ..."
                         />
-                        <CheckCircle2 size={20} color={Colors.success} fill={Colors.success} className="opacity-20" />
+                        <CheckCircle2 size={20} color={colors.success} fill={colors.success} className="opacity-20" />
                     </View>
                     <Text className="text-gray-400 text-xs mt-2 px-1">
                         Usiamo questo numero per contattarti in caso di necessità.

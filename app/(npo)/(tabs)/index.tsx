@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
 import { Sparkles, Star, Users, Plus } from "lucide-react-native";
-import { Colors } from "../../../constants/Colors";
 import { StatCard } from "../../../components/StatCard";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -16,6 +15,7 @@ import { InsightCarousel } from "../../../components/InsightCarousel";
 import { reportService } from "../../../services/ReportService";
 import { useActivitiesDomain, useNPORating } from "../../../hooks/activities/selectors";
 import { useApplicationsDomain, useNPOApplications } from "../../../hooks/applications/selectors";
+import { colors } from "@/theme";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
@@ -102,8 +102,8 @@ export default function NPODashboard() {
                 <RefreshControl
                     refreshing={isRefreshing}
                     onRefresh={handleRefresh}
-                    tintColor={Colors.primary}
-                    colors={[Colors.primary]}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
                 />
             }
         >
@@ -190,7 +190,7 @@ export default function NPODashboard() {
                         onPress={() => router.push("/(npo)/volunteers" as any)}
                         className="py-1"
                     >
-                        <Text className="font-bold text-xs" style={{ color: Colors.primary }}>Vedi tutti</Text>
+                        <Text className="font-bold text-xs" style={{ color: colors.primary }}>Vedi tutti</Text>
                     </TouchableOpacity>
                 </View>
                 <ScrollView
@@ -235,7 +235,7 @@ export default function NPODashboard() {
                     <TouchableOpacity
                         onPress={() => router.push("/(npo)/create-activity" as any)}
                         className="px-4 py-2.5 rounded-xl flex-row items-center justify-center gap-1.5 shadow-sm active:scale-95"
-                        style={{ backgroundColor: Colors.accent }}
+                        style={{ backgroundColor: colors.accent }}
                     >
                         <Plus size={14} color="white" strokeWidth={3} />
                         <Text className="text-white font-extrabold text-[10px]">Aggiungi</Text>

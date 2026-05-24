@@ -1,46 +1,84 @@
 import { TouchableOpacity, Text, ActivityIndicator } from "react-native";
 import { styled } from "nativewind";
+import { colors } from "@/theme";
 
 const StyledTouchableOpacity = styled(TouchableOpacity);
 const StyledText = styled(Text);
 
 interface ButtonProps {
-    title: string;
-    onPress: () => void;
-    variant?: "primary" | "accent" | "outline";
-    isLoading?: boolean;
-    className?: string;
-    testID?: string;
+  title: string;
+  onPress: () => void;
+  variant?: "primary" | "accent" | "outline";
+  size?: "sm" | "md" | "lg";
+  isLoading?: boolean;
+  disabled?: boolean;
+  className?: string;
+  testID?: string;
 }
 
-export const Button = ({ title, onPress, variant = "primary", isLoading, className, testID }: ButtonProps) => {
-    // Increased rounding to rounded-[24px]
-    let baseStyle = "py-4 px-6 rounded-[24px] flex-row justify-center items-center active:opacity-90 shadow-sm";
-    let textStyle = "font-bold text-lg";
+const SIZE_PADDING: Record<"sm" | "md" | "lg", string> = {
+  sm: "py-2 px-4",
+  md: "py-3 px-6",
+  lg: "py-4 px-6",
+};
 
-    if (variant === "primary") {
-        baseStyle += " bg-primary";
-        textStyle += " text-white";
-    } else if (variant === "accent") {
-        baseStyle += " bg-accent";
-        textStyle += " text-white";
-    } else {
-        baseStyle += " bg-transparent border-2 border-primary";
-        textStyle += " text-primary";
-    }
+const SIZE_TEXT: Record<"sm" | "md" | "lg", string> = {
+  sm: "font-bold text-sm",
+  md: "font-bold text-base",
+  lg: "font-bold text-lg",
+};
 
-    return (
-        <StyledTouchableOpacity 
-            onPress={onPress} 
-            className={`${baseStyle} ${className}`} 
-            disabled={isLoading}
-            testID={testID}
-        >
-            {isLoading ? (
-                <ActivityIndicator color={variant === "outline" ? "#462282" : "#ffffff"} />
-            ) : (
-                <StyledText className={textStyle}>{title}</StyledText>
-            )}
-        </StyledTouchableOpacity>
-    );
+export const Button = ({
+  title,
+  onPress,
+  variant = "primary",
+  size = "lg",
+  isLoading,
+  disabled,
+  className,
+  testID,
+}: ButtonProps) => {
+  const isDisabled = disabled || isLoading;
+
+  let variantClass = "";
+  if (!isDisabled) {
+    if (variant === "primary") variantClass = "bg-primary";
+    else if (variant === "accent") variantClass = "bg-accent";
+    else variantClass = "bg-transparent border-2 border-primary";
+  }
+
+  const containerClass = `${SIZE_PADDING[size]} rounded-[24px] flex-row justify-center items-center active:opacity-90 shadow-sm ${variantClass} ${className ?? ""}`;
+
+  const disabledBgStyle =
+    isDisabled && variant !== "outline" ? { backgroundColor: colors.disabled } : undefined;
+
+  const indicatorColor = isDisabled
+    ? colors.disabledText
+    : variant === "outline"
+    ? colors.primary
+    : colors.white;
+
+  const textColor = isDisabled
+    ? colors.disabledText
+    : variant === "outline"
+    ? colors.primary
+    : colors.white;
+
+  return (
+    <StyledTouchableOpacity
+      onPress={onPress}
+      className={containerClass}
+      style={disabledBgStyle}
+      disabled={isDisabled}
+      testID={testID}
+    >
+      {isLoading ? (
+        <ActivityIndicator color={indicatorColor} />
+      ) : (
+        <StyledText className={SIZE_TEXT[size]} style={{ color: textColor }}>
+          {title}
+        </StyledText>
+      )}
+    </StyledTouchableOpacity>
+  );
 };

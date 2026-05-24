@@ -7,7 +7,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../../utils/supabase';
 import { ChatBubble } from '../../components/ChatBubble';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import ReportModal from '../../components/ReportModal';
@@ -22,6 +21,7 @@ import {
   useUnblockUserMutation,
 } from '../../hooks/chat/mutations';
 import { useConversationView } from '../../hooks/chat/useConversationView';
+import { colors } from "@/theme";
 
 type PendingMessage = {
   id: string;
@@ -467,7 +467,7 @@ export default function ChatDetailScreen() {
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center px-4 py-2 border-b border-gray-100">
         <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
-          <ArrowLeft size={24} color={Colors.primary} />
+          <ArrowLeft size={24} color={colors.primary} />
         </TouchableOpacity>
 
         <View className="flex-row items-center flex-1 ml-1">
@@ -509,20 +509,20 @@ export default function ChatDetailScreen() {
           >
             {!otherPhone ? (
               <View className="items-center">
-                <PhoneOff size={22} color={Colors.secondary} />
-                <Text style={{ fontSize: 8, color: Colors.secondary, marginTop: -2 }}>No Num</Text>
+                <PhoneOff size={22} color={colors.textSecondary} />
+                <Text style={{ fontSize: 8, color: colors.textSecondary, marginTop: -2 }}>No Num</Text>
               </View>
             ) : !otherAllowsCalls ? (
               <View className="items-center">
-                <PhoneOff size={22} color={Colors.secondary} />
-                <Text style={{ fontSize: 8, color: Colors.secondary, marginTop: -2 }}>Privacy</Text>
+                <PhoneOff size={22} color={colors.textSecondary} />
+                <Text style={{ fontSize: 8, color: colors.textSecondary, marginTop: -2 }}>Privacy</Text>
               </View>
             ) : (
-              <Phone size={24} color={Colors.primary} />
+              <Phone size={24} color={colors.primary} />
             )}
           </TouchableOpacity>
           <TouchableOpacity className="p-2" onPress={() => setShowMenu(!showMenu)}>
-            <MoreVertical size={24} color={Colors.primary} />
+            <MoreVertical size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -647,7 +647,7 @@ export default function ChatDetailScreen() {
           ) : null}
           <View className={`flex-row items-center rounded-3xl px-4 py-2 border ${isComposerDisabled ? 'bg-slate-100 border-slate-100 opacity-70' : 'bg-gray-50 border-gray-100'}`}>
             <TouchableOpacity onPress={handleAttachFile} disabled={isComposerDisabled} className="p-1">
-              <Paperclip size={22} color={isComposerDisabled ? '#cbd5e1' : Colors.secondary} />
+              <Paperclip size={22} color={isComposerDisabled ? '#cbd5e1' : colors.textSecondary} />
             </TouchableOpacity>
             <TextInput
               className="flex-1 min-h-[40px] max-h-[100px] px-3 text-primary text-base"
@@ -740,7 +740,7 @@ export default function ChatDetailScreen() {
                     <Text className="text-primary font-bold text-base">{item.profiles?.npo_name || item.profiles?.name || 'Utente'}</Text>
                     <Text className="text-slate-500 text-xs capitalize">{item.profiles?.role?.toLowerCase() || 'aderente'}</Text>
                   </View>
-                  <ArrowLeft size={16} color={Colors.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+                  <ArrowLeft size={16} color={colors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
                 </TouchableOpacity>
               )}
             />

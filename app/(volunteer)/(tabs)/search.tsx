@@ -3,7 +3,6 @@ import {
     ActivityIndicator, ScrollView, Modal, Platform, Share
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { Colors } from "../../../constants/Colors";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
     Search, MapPin, Calendar, X, Map as MapIcon,
@@ -25,6 +24,7 @@ import { INTERESTS } from "../../../constants/Interests";
 import { useSmartMatchActivityScoresView, useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
+import { colors } from "@/theme";
 
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
 
@@ -96,7 +96,7 @@ function FilterModal({
                         <Text style={{ fontSize: 20, fontWeight: '900', color: '#1e1b4b' }}>Filtra Attività</Text>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
                             <TouchableOpacity onPress={() => setPendingFilters(DEFAULT_FILTERS)}>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.accent }}>Reset</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accent }}>Reset</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={onClose}>
                                 <X size={22} color="#64748b" />
@@ -109,7 +109,7 @@ function FilterModal({
                         <View>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
                                 <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b' }}>Raggio d&apos;azione</Text>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>Entro {pendingFilters.radiusKm}km</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>Entro {pendingFilters.radiusKm}km</Text>
                             </View>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {RADIUS_OPTIONS.map(r => (
@@ -117,7 +117,7 @@ function FilterModal({
                                         onPress={() => setPendingFilters(f => ({ ...f, radiusKm: r }))}
                                         style={{
                                             paddingHorizontal: 18, paddingVertical: 9, borderRadius: 99,
-                                            backgroundColor: pendingFilters.radiusKm === r ? Colors.primary : '#f1f5f9',
+                                            backgroundColor: pendingFilters.radiusKm === r ? colors.primary : '#f1f5f9',
                                         }}>
                                         <Text style={{ fontSize: 13, fontWeight: '700', color: pendingFilters.radiusKm === r ? 'white' : '#64748b' }}>{r} km</Text>
                                     </TouchableOpacity>
@@ -148,11 +148,11 @@ function FilterModal({
                                 onPress={() => setPendingFilters(f => ({ ...f, onlyAvailable: !f.onlyAvailable }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                                    backgroundColor: pendingFilters.onlyAvailable ? `${Colors.primary}10` : '#f8f9ff',
+                                    backgroundColor: pendingFilters.onlyAvailable ? `${colors.primary}10` : '#f8f9ff',
                                     padding: 14, borderRadius: 16,
-                                    borderWidth: 1.5, borderColor: pendingFilters.onlyAvailable ? Colors.primary : '#e2e8f0',
+                                    borderWidth: 1.5, borderColor: pendingFilters.onlyAvailable ? colors.primary : '#e2e8f0',
                                 }}>
-                                <CheckCircle2 size={22} color={pendingFilters.onlyAvailable ? Colors.primary : '#94a3b8'} />
+                                <CheckCircle2 size={22} color={pendingFilters.onlyAvailable ? colors.primary : '#94a3b8'} />
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ fontWeight: '800', fontSize: 14, color: '#1e1b4b' }}>Solo con posti disponibili</Text>
                                     <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '500' }}>Mostra solo attività con slot liberi</Text>
@@ -162,11 +162,11 @@ function FilterModal({
                                 onPress={() => setPendingFilters(f => ({ ...f, onlyUrgent: !f.onlyUrgent }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                                    backgroundColor: pendingFilters.onlyUrgent ? `${Colors.accent}10` : '#f8f9ff',
+                                    backgroundColor: pendingFilters.onlyUrgent ? `${colors.accent}10` : '#f8f9ff',
                                     padding: 14, borderRadius: 16,
-                                    borderWidth: 1.5, borderColor: pendingFilters.onlyUrgent ? Colors.accent : '#e2e8f0',
+                                    borderWidth: 1.5, borderColor: pendingFilters.onlyUrgent ? colors.accent : '#e2e8f0',
                                 }}>
-                                <Zap size={22} color={pendingFilters.onlyUrgent ? Colors.accent : '#94a3b8'} />
+                                <Zap size={22} color={pendingFilters.onlyUrgent ? colors.accent : '#94a3b8'} />
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ fontWeight: '800', fontSize: 14, color: '#1e1b4b' }}>Solo urgenti</Text>
                                     <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '500' }}>Mostra solo attività marcate come urgenti</Text>
@@ -190,7 +190,7 @@ function FilterModal({
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,
                                                 paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99,
-                                                backgroundColor: isSelected ? Colors.primary : '#f1f5f9',
+                                                backgroundColor: isSelected ? colors.primary : '#f1f5f9',
                                             }}>
                                             <Icon size={13} color={isSelected ? 'white' : '#64748b'} />
                                             <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? 'white' : '#64748b' }}>{item.label}</Text>
@@ -216,7 +216,7 @@ function FilterModal({
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,
                                                 paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99,
-                                                backgroundColor: isSelected ? Colors.accent : '#f1f5f9',
+                                                backgroundColor: isSelected ? colors.accent : '#f1f5f9',
                                             }}>
                                             <Icon size={13} color={isSelected ? 'white' : '#64748b'} />
                                             <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? 'white' : '#64748b' }}>{item.label}</Text>
@@ -230,7 +230,7 @@ function FilterModal({
                     <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
                         <TouchableOpacity
                             onPress={onApply}
-                            style={{ backgroundColor: Colors.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center' }}>
+                            style={{ backgroundColor: colors.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center' }}>
                             <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Applica Filtri</Text>
                         </TouchableOpacity>
                     </View>
@@ -432,7 +432,7 @@ export default function SearchScreen() {
                         alignItems: 'center',
                         gap: 8,
                     }}>
-                        <Sparkles size={15} color={Colors.accent} />
+                        <Sparkles size={15} color={colors.accent} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: '#be185d', fontSize: 12, fontWeight: '900', textTransform: 'uppercase' }}>
                                 Top match per te
@@ -493,7 +493,7 @@ export default function SearchScreen() {
                                 paddingVertical: 5,
                                 borderRadius: 999,
                                 gap: 5,
-                                backgroundColor: isTopGemma ? Colors.accent : Colors.primary,
+                                backgroundColor: isTopGemma ? colors.accent : colors.primary,
                             }} className="shadow-md border border-white/20">
                                 <Sparkles size={12} color="#ffffff" fill="#ffffff" />
                                 <Text
@@ -536,11 +536,11 @@ export default function SearchScreen() {
                         <View className="flex-row items-center justify-between mb-3">
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                                 <View className={`${catColors.bg} px-2.5 py-1 rounded-md`}>
-                                    <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                                    <Text className={`${catcolors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
                                 </View>
                                 {displayScore > 0 && (
                                     <View style={{ backgroundColor: isTopGemma ? '#fff1f7' : '#eef2ff', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999 }}>
-                                        <Text style={{ color: isTopGemma ? Colors.accent : Colors.primary, fontSize: 10, fontWeight: '900' }}>
+                                        <Text style={{ color: isTopGemma ? colors.accent : colors.primary, fontSize: 10, fontWeight: '900' }}>
                                             {displayScore}% fit
                                         </Text>
                                     </View>
@@ -568,8 +568,8 @@ export default function SearchScreen() {
                                 borderColor: isTopGemma ? '#ffd6e4' : '#e8eaf0',
                             }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                                    <Sparkles size={12} color={isTopGemma ? Colors.accent : Colors.primary} />
-                                    <Text style={{ color: isTopGemma ? Colors.accent : Colors.primary, fontSize: 11, fontWeight: '900' }}>
+                                    <Sparkles size={12} color={isTopGemma ? colors.accent : colors.primary} />
+                                    <Text style={{ color: isTopGemma ? colors.accent : colors.primary, fontSize: 11, fontWeight: '900' }}>
                                         {displayBadge}{displayScore > 0 ? ` · ${displayScore}%` : ''}
                                     </Text>
                                 </View>
@@ -583,7 +583,7 @@ export default function SearchScreen() {
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                                 {aiChips.map((chip) => (
                                     <View key={`${item.id}-${chip}`} style={{ backgroundColor: '#eef2ff', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 }}>
-                                        <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '800' }}>{chip}</Text>
+                                        <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>{chip}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -618,7 +618,7 @@ export default function SearchScreen() {
                                         <TouchableOpacity
                                             onPress={() => void saveMatch(visibleAiMatch)}
                                             className="bg-indigo-50 p-3.5 rounded-2xl items-center justify-center">
-                                            <Bookmark size={18} color={Colors.primary} fill={visibleAiMatch.saved ? Colors.primary : 'transparent'} />
+                                            <Bookmark size={18} color={colors.primary} fill={visibleAiMatch.saved ? colors.primary : 'transparent'} />
                                         </TouchableOpacity>
                                     )}
                                     {visibleAiMatch && (
@@ -685,9 +685,9 @@ export default function SearchScreen() {
                         paddingHorizontal: 12,
                         paddingVertical: 10,
                         borderWidth: isSearchFocused ? 1.5 : 1,
-                        borderColor: isSearchFocused ? Colors.primary : '#e8eaf0',
+                        borderColor: isSearchFocused ? colors.primary : '#e8eaf0',
                     }}>
-                        <Search size={16} color={Colors.primary} style={{ marginRight: 8, flexShrink: 0 }} />
+                        <Search size={16} color={colors.primary} style={{ marginRight: 8, flexShrink: 0 }} />
                         <TextInput
                             value={searchText}
                             onChangeText={setSearchText}
@@ -727,7 +727,7 @@ export default function SearchScreen() {
                             alignItems: 'center', justifyContent: 'center',
                             borderWidth: 1, borderColor: '#e8eaf0',
                         }}>
-                        <MapIcon size={18} color={Colors.primary} />
+                        <MapIcon size={18} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
 
@@ -739,16 +739,16 @@ export default function SearchScreen() {
                         <TouchableOpacity key={chip.id} onPress={openFilters}
                             style={{
                                 flexDirection: 'row', alignItems: 'center', gap: 5,
-                                backgroundColor: chip.count > 0 ? Colors.primary : '#f0f2fa',
+                                backgroundColor: chip.count > 0 ? colors.primary : '#f0f2fa',
                                 paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                             }}>
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: chip.count > 0 ? 'white' : Colors.primary }}>{chip.label}</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: chip.count > 0 ? 'white' : colors.primary }}>{chip.label}</Text>
                             {chip.count > 0 && (
                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 99, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
                                     <Text style={{ color: 'white', fontSize: 9, fontWeight: '900' }}>{chip.count}</Text>
                                 </View>
                             )}
-                            <ChevronDown size={11} color={chip.count > 0 ? 'white' : Colors.primary} />
+                            <ChevronDown size={11} color={chip.count > 0 ? 'white' : colors.primary} />
                         </TouchableOpacity>
                     ))}
 
@@ -757,11 +757,11 @@ export default function SearchScreen() {
                         onPress={() => setShowDatePicker(true)}
                         style={{
                             flexDirection: 'row', alignItems: 'center', gap: 5,
-                            backgroundColor: filters.dateFrom ? Colors.primary : '#f0f2fa',
+                            backgroundColor: filters.dateFrom ? colors.primary : '#f0f2fa',
                             paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                         }}>
-                        <Calendar size={11} color={filters.dateFrom ? 'white' : Colors.primary} />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : Colors.primary }}>
+                        <Calendar size={11} color={filters.dateFrom ? 'white' : colors.primary} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : colors.primary }}>
                             {filters.dateFrom && filters.dateTo
                                 ? `${filters.dateFrom.slice(5).replace('-', '/')} → ${filters.dateTo.slice(5).replace('-', '/')}`
                                 : filters.dateFrom
@@ -776,22 +776,22 @@ export default function SearchScreen() {
                                 <X size={11} color="white" />
                             </TouchableOpacity>
                         ) : (
-                            <ChevronDown size={11} color={Colors.primary} />
+                            <ChevronDown size={11} color={colors.primary} />
                         )}
                     </TouchableOpacity>
 
                     {/* Disponibili chip */}
                     <TouchableOpacity
                         onPress={() => setFilters(f => ({ ...f, onlyAvailable: !f.onlyAvailable }))}
-                        style={{ backgroundColor: filters.onlyAvailable ? Colors.primary : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : Colors.primary }}>Disponibili</Text>
+                        style={{ backgroundColor: filters.onlyAvailable ? colors.primary : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : colors.primary }}>Disponibili</Text>
                     </TouchableOpacity>
                     {/* Urgenti chip */}
                     <TouchableOpacity
                         onPress={() => setFilters(f => ({ ...f, onlyUrgent: !f.onlyUrgent }))}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: filters.onlyUrgent ? Colors.accent : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
-                        <Zap size={11} color={filters.onlyUrgent ? 'white' : Colors.accent} />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyUrgent ? 'white' : Colors.accent }}>Urgenti</Text>
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: filters.onlyUrgent ? colors.accent : '#f0f2fa', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99 }}>
+                        <Zap size={11} color={filters.onlyUrgent ? 'white' : colors.accent} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyUrgent ? 'white' : colors.accent }}>Urgenti</Text>
                     </TouchableOpacity>
                 </ScrollView>
 
@@ -816,7 +816,7 @@ export default function SearchScreen() {
                         shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 14,
                         overflow: 'hidden',
                     }}>
-                        {searchLoading && <View style={{ padding: 16, alignItems: 'center' }}><ActivityIndicator size="small" color={Colors.primary} /></View>}
+                        {searchLoading && <View style={{ padding: 16, alignItems: 'center' }}><ActivityIndicator size="small" color={colors.primary} /></View>}
                         {/* Activities section */}
                         {!searchLoading && suggestedActivities.length > 0 && (
                             <>
@@ -840,7 +840,7 @@ export default function SearchScreen() {
                                             {act.imageUrl ? (
                                                 <Image source={{ uri: act.imageUrl }} style={{ width: '100%', height: '100%' }} />
                                             ) : (
-                                                <Calendar size={16} color={Colors.primary} />
+                                                <Calendar size={16} color={colors.primary} />
                                             )}
                                         </View>
                                         <View style={{ flex: 1 }}>
@@ -926,13 +926,13 @@ export default function SearchScreen() {
                 }}>
                     <View style={{
                         flexDirection: 'row', alignItems: 'center', gap: 6,
-                        backgroundColor: `${Colors.primary}15`,
+                        backgroundColor: `${colors.primary}15`,
                         borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7,
-                        borderWidth: 1.5, borderColor: `${Colors.primary}40`,
+                        borderWidth: 1.5, borderColor: `${colors.primary}40`,
                         flex: 1,
                     }}>
-                        <MapPin size={13} color={Colors.primary} />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary, flex: 1 }} numberOfLines={1}>
+                        <MapPin size={13} color={colors.primary} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, flex: 1 }} numberOfLines={1}>
                             Entro {filters.radiusKm}km da {searchCenter.label}
                         </Text>
                     </View>
@@ -966,15 +966,15 @@ export default function SearchScreen() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={Colors.accent}
-                        colors={[Colors.accent]}
+                        tintColor={colors.accent}
+                        colors={[colors.accent]}
                         progressViewOffset={12}
                     />
                 }
                 ListFooterComponent={() => (
                     <View className="py-8 items-center">
                         {isLoadingMore ? (
-                            <ActivityIndicator color={Colors.accent} size="small" />
+                            <ActivityIndicator color={colors.accent} size="small" />
                         ) : !hasMore && paginatedActivities.length > 0 ? (
                             <View className="items-center">
                                 <View className="h-[1px] w-20 bg-gray-200 mb-2" />

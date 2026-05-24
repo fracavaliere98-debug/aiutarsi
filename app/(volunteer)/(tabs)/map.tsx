@@ -11,7 +11,6 @@ import {
     ArrowRight, Search, X, MapPin, Target, Calendar, Plus, Minus,
     Clock, Users, ChevronDown, CheckCircle2, Zap, LayoutList
 } from "lucide-react-native";
-import { Colors } from "../../../constants/Colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { OldActivity, AppActivity } from "../../../types";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -27,6 +26,7 @@ import { INTERESTS } from "../../../constants/Interests";
 import { useSmartMatchActivityScoresView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
+import { colors } from "@/theme";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 async function fetchNominatim(text: string): Promise<{ id: number; label: string; lat: number; lng: number }[]> {
@@ -116,7 +116,7 @@ export function FilterModal({
                         <Text style={{ fontSize: 20, fontWeight: '900', color: '#1e1b4b' }}>Filtra Attività</Text>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
                             <TouchableOpacity onPress={reset}>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.accent }}>Reset</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accent }}>Reset</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={onClose}>
                                 <X size={22} color="#64748b" />
@@ -129,7 +129,7 @@ export function FilterModal({
                         <View>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
                                 <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e1b4b' }}>Raggio d&apos;azione</Text>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>Entro {pendingFilters.radiusKm}km</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>Entro {pendingFilters.radiusKm}km</Text>
                             </View>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {RADIUS_OPTIONS.map((r) => (
@@ -138,7 +138,7 @@ export function FilterModal({
                                         onPress={() => setPendingFilters(f => ({ ...f, radiusKm: r }))}
                                         style={{
                                             paddingHorizontal: 18, paddingVertical: 9, borderRadius: 99,
-                                            backgroundColor: pendingFilters.radiusKm === r ? Colors.primary : '#f1f5f9',
+                                            backgroundColor: pendingFilters.radiusKm === r ? colors.primary : '#f1f5f9',
                                             borderWidth: pendingFilters.radiusKm === r ? 0 : 1, borderColor: '#e2e8f0',
                                         }}>
                                         <Text style={{ fontSize: 13, fontWeight: '700', color: pendingFilters.radiusKm === r ? 'white' : '#64748b' }}>{r} km</Text>
@@ -181,11 +181,11 @@ export function FilterModal({
                                 onPress={() => setPendingFilters(f => ({ ...f, onlyAvailable: !f.onlyAvailable }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                                    backgroundColor: pendingFilters.onlyAvailable ? `${Colors.primary}10` : '#f8f9ff',
+                                    backgroundColor: pendingFilters.onlyAvailable ? `${colors.primary}10` : '#f8f9ff',
                                     padding: 14, borderRadius: 16,
-                                    borderWidth: 1.5, borderColor: pendingFilters.onlyAvailable ? Colors.primary : '#e2e8f0',
+                                    borderWidth: 1.5, borderColor: pendingFilters.onlyAvailable ? colors.primary : '#e2e8f0',
                                 }}>
-                                <CheckCircle2 size={22} color={pendingFilters.onlyAvailable ? Colors.primary : '#94a3b8'} />
+                                <CheckCircle2 size={22} color={pendingFilters.onlyAvailable ? colors.primary : '#94a3b8'} />
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ fontWeight: '800', fontSize: 14, color: '#1e1b4b' }}>Solo con posti disponibili</Text>
                                     <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '500' }}>Mostra solo attività con slot liberi</Text>
@@ -195,11 +195,11 @@ export function FilterModal({
                                 onPress={() => setPendingFilters(f => ({ ...f, onlyUrgent: !f.onlyUrgent }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                                    backgroundColor: pendingFilters.onlyUrgent ? `${Colors.accent}10` : '#f8f9ff',
+                                    backgroundColor: pendingFilters.onlyUrgent ? `${colors.accent}10` : '#f8f9ff',
                                     padding: 14, borderRadius: 16,
-                                    borderWidth: 1.5, borderColor: pendingFilters.onlyUrgent ? Colors.accent : '#e2e8f0',
+                                    borderWidth: 1.5, borderColor: pendingFilters.onlyUrgent ? colors.accent : '#e2e8f0',
                                 }}>
-                                <Zap size={22} color={pendingFilters.onlyUrgent ? Colors.accent : '#94a3b8'} />
+                                <Zap size={22} color={pendingFilters.onlyUrgent ? colors.accent : '#94a3b8'} />
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ fontWeight: '800', fontSize: 14, color: '#1e1b4b' }}>Solo urgenti</Text>
                                     <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '500' }}>Mostra solo attività marcate come urgenti</Text>
@@ -224,7 +224,7 @@ export function FilterModal({
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,
                                                 paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99,
-                                                backgroundColor: isSelected ? Colors.primary : '#f1f5f9',
+                                                backgroundColor: isSelected ? colors.primary : '#f1f5f9',
                                             }}>
                                             <Icon size={13} color={isSelected ? 'white' : '#64748b'} />
                                             <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? 'white' : '#64748b' }}>{item.label}</Text>
@@ -251,7 +251,7 @@ export function FilterModal({
                                             style={{
                                                 flexDirection: 'row', alignItems: 'center', gap: 6,
                                                 paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99,
-                                                backgroundColor: isSelected ? Colors.accent : '#f1f5f9',
+                                                backgroundColor: isSelected ? colors.accent : '#f1f5f9',
                                             }}>
                                             <Icon size={13} color={isSelected ? 'white' : '#64748b'} />
                                             <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? 'white' : '#64748b' }}>{item.label}</Text>
@@ -265,7 +265,7 @@ export function FilterModal({
                     <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
                         <TouchableOpacity
                             onPress={onApply}
-                            style={{ backgroundColor: Colors.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center' }}>
+                            style={{ backgroundColor: colors.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center' }}>
                             <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Applica Filtri</Text>
                         </TouchableOpacity>
                     </View>
@@ -521,7 +521,7 @@ export default function VolunteerMap() {
         /* We build the marker data explicitly for injection into WebView */
         const mapMarkers = (filteredActivities || []).map(act => {
             const isEnrolled = user?.id ? (act.iscritti || []).includes(user.id) : false;
-            const markerColor = act.isUrgent ? Colors.accent : isEnrolled ? '#22c55e' : Colors.primary;
+            const markerColor = act.isUrgent ? colors.accent : isEnrolled ? '#22c55e' : colors.primary;
             return {
                 id: act.id,
                 lat: act.location?.coords?.lat || 0,
@@ -578,8 +578,8 @@ export default function VolunteerMap() {
 
                 // Add Radius Circle
                 L.circle([${centerLat}, ${centerLng}], {
-                    color: '${Colors.primary}',
-                    fillColor: '${Colors.primary}',
+                    color: '${colors.primary}',
+                    fillColor: '${colors.primary}',
                     fillOpacity: 0.12,
                     weight: 1,
                     radius: ${filters.radiusKm * 1000}
@@ -709,9 +709,9 @@ export default function VolunteerMap() {
                                 paddingHorizontal: 12,
                                 paddingVertical: 10,
                                 borderWidth: isSearchFocused ? 1.5 : 1,
-                                borderColor: isSearchFocused ? Colors.primary : '#e8eaf0',
+                                borderColor: isSearchFocused ? colors.primary : '#e8eaf0',
                             }}>
-                                <Search size={16} color={Colors.primary} style={{ marginRight: 8, flexShrink: 0 }} />
+                                <Search size={16} color={colors.primary} style={{ marginRight: 8, flexShrink: 0 }} />
                                 <TextInput
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
@@ -745,7 +745,7 @@ export default function VolunteerMap() {
                                     alignItems: 'center', justifyContent: 'center',
                                     borderWidth: 1, borderColor: '#e8eaf0',
                                 }}>
-                                <LayoutList size={18} color={Colors.primary} />
+                                <LayoutList size={18} color={colors.primary} />
                             </TouchableOpacity>
                         </View>
 
@@ -761,10 +761,10 @@ export default function VolunteerMap() {
                                     onPress={openFilters}
                                     style={{
                                         flexDirection: 'row', alignItems: 'center', gap: 5,
-                                        backgroundColor: chip.count > 0 ? Colors.primary : '#f0f2fa',
+                                        backgroundColor: chip.count > 0 ? colors.primary : '#f0f2fa',
                                         paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                                     }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '700', color: chip.count > 0 ? 'white' : Colors.primary }}>
+                                    <Text style={{ fontSize: 12, fontWeight: '700', color: chip.count > 0 ? 'white' : colors.primary }}>
                                         {chip.label}
                                     </Text>
                                     {chip.count > 0 && (
@@ -772,7 +772,7 @@ export default function VolunteerMap() {
                                             <Text style={{ color: 'white', fontSize: 9, fontWeight: '900' }}>{chip.count}</Text>
                                         </View>
                                     )}
-                                    <ChevronDown size={11} color={chip.count > 0 ? 'white' : Colors.primary} />
+                                    <ChevronDown size={11} color={chip.count > 0 ? 'white' : colors.primary} />
                                 </TouchableOpacity>
                             ))}
 
@@ -781,10 +781,10 @@ export default function VolunteerMap() {
                                 onPress={() => setFilters(f => ({ ...f, onlyAvailable: !f.onlyAvailable }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 4,
-                                    backgroundColor: filters.onlyAvailable ? Colors.primary : '#f0f2fa',
+                                    backgroundColor: filters.onlyAvailable ? colors.primary : '#f0f2fa',
                                     paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                                 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : Colors.primary }}>Disponibili</Text>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyAvailable ? 'white' : colors.primary }}>Disponibili</Text>
                             </TouchableOpacity>
 
                             {/* Date chip — CalendarPicker range mode */}
@@ -792,11 +792,11 @@ export default function VolunteerMap() {
                                 onPress={() => setShowDatePicker(true)}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 5,
-                                    backgroundColor: filters.dateFrom ? Colors.primary : '#f0f2fa',
+                                    backgroundColor: filters.dateFrom ? colors.primary : '#f0f2fa',
                                     paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                                 }}>
-                                <Calendar size={11} color={filters.dateFrom ? 'white' : Colors.primary} />
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : Colors.primary }}>
+                                <Calendar size={11} color={filters.dateFrom ? 'white' : colors.primary} />
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.dateFrom ? 'white' : colors.primary }}>
                                     {filters.dateFrom && filters.dateTo
                                         ? `${filters.dateFrom.slice(5).replace('-', '/')} → ${filters.dateTo.slice(5).replace('-', '/')}`
                                         : filters.dateFrom
@@ -811,7 +811,7 @@ export default function VolunteerMap() {
                                         <X size={11} color="white" />
                                     </TouchableOpacity>
                                 ) : (
-                                    <ChevronDown size={11} color={Colors.primary} />
+                                    <ChevronDown size={11} color={colors.primary} />
                                 )}
                             </TouchableOpacity>
 
@@ -820,11 +820,11 @@ export default function VolunteerMap() {
                                 onPress={() => setFilters(f => ({ ...f, onlyUrgent: !f.onlyUrgent }))}
                                 style={{
                                     flexDirection: 'row', alignItems: 'center', gap: 4,
-                                    backgroundColor: filters.onlyUrgent ? Colors.accent : '#f0f2fa',
+                                    backgroundColor: filters.onlyUrgent ? colors.accent : '#f0f2fa',
                                     paddingHorizontal: 13, paddingVertical: 7, borderRadius: 99,
                                 }}>
-                                <Zap size={11} color={filters.onlyUrgent ? 'white' : Colors.accent} />
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyUrgent ? 'white' : Colors.accent }}>Urgenti</Text>
+                                <Zap size={11} color={filters.onlyUrgent ? 'white' : colors.accent} />
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: filters.onlyUrgent ? 'white' : colors.accent }}>Urgenti</Text>
                             </TouchableOpacity>
                         </ScrollView>
 
@@ -846,7 +846,7 @@ export default function VolunteerMap() {
                         }}>
                             {searchLoading && (
                                 <View style={{ padding: 16, alignItems: 'center' }}>
-                                    <ActivityIndicator size="small" color={Colors.primary} />
+                                    <ActivityIndicator size="small" color={colors.primary} />
                                 </View>
                             )}
                             {!searchLoading && suggestedActivities.length > 0 && (
@@ -885,7 +885,7 @@ export default function VolunteerMap() {
                                                 {act.imageUrl ? (
                                                     <Image source={{ uri: act.imageUrl }} style={{ width: '100%', height: '100%' }} />
                                                 ) : (
-                                                    <Calendar size={16} color={Colors.primary} />
+                                                    <Calendar size={16} color={colors.primary} />
                                                 )}
                                             </View>
                                             <View style={{ flex: 1 }}>
@@ -954,7 +954,7 @@ export default function VolunteerMap() {
                                                 borderBottomWidth: idx < searchSuggestions.length - 1 ? 1 : 0,
                                                 borderBottomColor: '#f1f5f9',
                                             }}>
-                                            <MapPin size={16} color={Colors.accent} />
+                                            <MapPin size={16} color={colors.accent} />
                                             <View style={{ flex: 1 }}>
                                                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e1b4b' }} numberOfLines={1}>
                                                     {item.label.split(',')[0]}
@@ -983,7 +983,7 @@ export default function VolunteerMap() {
                             alignItems: 'center', justifyContent: 'center',
                             shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
                         }}>
-                        <Plus size={22} color={Colors.primary} />
+                        <Plus size={22} color={colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={zoomOut}
@@ -992,7 +992,7 @@ export default function VolunteerMap() {
                             alignItems: 'center', justifyContent: 'center',
                             shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
                         }}>
-                        <Minus size={22} color={Colors.primary} />
+                        <Minus size={22} color={colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={centerOnUser}
@@ -1000,7 +1000,7 @@ export default function VolunteerMap() {
                             backgroundColor: 'white', borderRadius: 14, padding: 12,
                             shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
                         }}>
-                        <Target size={22} color={Colors.primary} />
+                        <Target size={22} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
 
@@ -1011,7 +1011,7 @@ export default function VolunteerMap() {
                         exiting={FadeOut}
                         style={{
                             position: 'absolute', bottom: 28, alignSelf: 'center',
-                            backgroundColor: Colors.primary,
+                            backgroundColor: colors.primary,
                             paddingHorizontal: 18, paddingVertical: 9, borderRadius: 99,
                             shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 8,
                         }}>
@@ -1046,14 +1046,14 @@ export default function VolunteerMap() {
                                 <View style={{ width: 88, height: 88, borderRadius: 18, overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
                                     {activity.imageUrl
                                         ? <Image source={{ uri: activity.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                                        : <View style={{ flex: 1, backgroundColor: `${Colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}><MapPin size={22} color={Colors.primary} /></View>
+                                        : <View style={{ flex: 1, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}><MapPin size={22} color={colors.primary} /></View>
                                     }
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                                         <Text style={{ fontSize: 16, fontWeight: '900', color: '#1e1b4b', flex: 1 }} numberOfLines={1}>{activity.title}</Text>
                                         {activity.isUrgent && (
-                                            <View style={{ width: 26, height: 26, borderRadius: 99, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                                            <View style={{ width: 26, height: 26, borderRadius: 99, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
                                                 <Zap size={13} color="white" />
                                             </View>
                                         )}
@@ -1061,12 +1061,12 @@ export default function VolunteerMap() {
                                     <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '600', marginBottom: 8 }}>{activity.npoName}</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f8f9ff', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
-                                            <CategoryIcon size={12} color={Colors.primary} />
-                                            <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.category}</Text>
+                                            <CategoryIcon size={12} color={colors.primary} />
+                                            <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>{activity.category}</Text>
                                         </View>
                                         {activityMatchScore > 0 && (
-                                            <View style={{ backgroundColor: `${Colors.primary}15`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
-                                                <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '800' }}>{activityMatchScore}% Match</Text>
+                                            <View style={{ backgroundColor: `${colors.primary}15`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
+                                                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>{activityMatchScore}% Match</Text>
                                             </View>
                                         )}
                                         {dist && (
@@ -1089,15 +1089,15 @@ export default function VolunteerMap() {
                                     { Icon: Users, text: `${activity.slots - activity.iscritti.length} posti` },
                                 ].map(({ Icon, text }) => (
                                     <View key={text} style={{ flex: 1, backgroundColor: '#f8f9ff', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                        <Icon size={14} color={Colors.primary} />
-                                        <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '700' }}>{text}</Text>
+                                        <Icon size={14} color={colors.primary} />
+                                        <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '700' }}>{text}</Text>
                                     </View>
                                 ))}
                             </View>
 
                             <TouchableOpacity
                                 onPress={() => router.push(`/activity/${activity.id}` as any)}
-                                style={{ marginTop: 14, backgroundColor: Colors.primary, borderRadius: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                style={{ marginTop: 14, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                 <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>Vedi Dettagli</Text>
                                 <ArrowRight size={18} color="white" />
                             </TouchableOpacity>

@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetModal } from "../SheetModal";
 import { Info, X, Clock, Award, Star, CheckCircle2 } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { GamificationState } from "../../hooks/gamification/types";
+import { colors } from "@/theme";
 
 interface Badge {
     id: string;
@@ -35,7 +35,7 @@ const ALL_BADGES = [
     { id: "copp", name: "Coppia Vincente", icon: "👫", criteria: "Porta un amico a fare volontariato con te e sbloccate entrambi il badge.", xp: 500, goal: 1 },
 ];
 
-const ProgressBar = ({ progress, label, color = Colors.accent }: { progress: number, label: string, color?: string }) => {
+const ProgressBar = ({ progress, label, color = colors.accent }: { progress: number, label: string, color?: string }) => {
     const clampedProgress = Math.min(100, Math.max(0, progress));
     return (
         <View className="mt-2">
@@ -148,7 +148,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f1f5f9', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}
                 >
                     <Text style={{ fontSize: 11, color: '#1e1b4b', fontWeight: '800', lineHeight: 14 }}>{badges.length} / 12</Text>
-                    <Info size={11} color={Colors.primary} />
+                    <Info size={11} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
@@ -205,7 +205,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                     <View className="flex-row justify-between items-center mb-8">
                         <Text className="text-2xl font-black text-primary">Dettaglio Badge</Text>
                         <TouchableOpacity onPress={() => setSelectedBadge(null)} className="p-2 bg-slate-100 rounded-full">
-                            <X size={20} color={Colors.primary} />
+                            <X size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -226,7 +226,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                                 </Text>
                                 {selectedBadge.dateEarned && (
                                     <View className="flex-row items-center justify-center gap-2 pt-4 border-t border-slate-200/50">
-                                        <Clock size={16} color={Colors.secondary} />
+                                        <Clock size={16} color={colors.textSecondary} />
                                         <Text className="text-secondary font-bold text-sm">
                                             Ottenuto il {new Date(selectedBadge.dateEarned).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
                                         </Text>
@@ -257,7 +257,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                             <Text className="text-secondary font-semibold text-sm">Scopri come scalare la classifica</Text>
                         </View>
                         <TouchableOpacity onPress={() => setShowInfoModal(false)} className="p-2 bg-slate-100 rounded-full">
-                            <X size={20} color={Colors.primary} />
+                            <X size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -283,7 +283,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                                                 {isEarned ? (
                                                     <CheckCircle2 size={14} color="#10b981" />
                                                 ) : (
-                                                    <Award size={12} color={Colors.secondary} />
+                                                    <Award size={12} color={colors.textSecondary} />
                                                 )}
                                             </View>
                                             <Text className="text-[11px] text-secondary leading-4 font-medium" numberOfLines={2}>

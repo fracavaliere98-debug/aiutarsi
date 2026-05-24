@@ -2,9 +2,9 @@ import React, { useRef, useState } from "react";
 import { View, Text, TouchableOpacity, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { X } from "lucide-react-native";
-import { Colors } from "../constants/Colors";
 import { NPOInsight } from "../hooks/useNPOInsights";
 import { GemmaAvatar } from "./GemmaAvatar";
+import { colors } from "@/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // The component is rendered inside a bleed wrapper with negative margins,
@@ -30,13 +30,13 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
     const renderItem = ({ item }: { item: NPOInsight }) => (
         <View style={{ width: SCREEN_WIDTH, paddingHorizontal: H_PAD }}>
             <LinearGradient
-                colors={[Colors.primary, '#5b3dc4']}
+                colors={[colors.primary, '#5b3dc4']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
                     borderRadius: 24,
                     padding: 20,
-                    shadowColor: Colors.primary,
+                    shadowColor: colors.primary,
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.3,
                     shadowRadius: 15,
@@ -105,7 +105,7 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                                 width: i === activeIndex ? 20 : 6,
                                 height: 6,
                                 borderRadius: 3,
-                                backgroundColor: i === activeIndex ? Colors.primary : '#d1d5db',
+                                backgroundColor: i === activeIndex ? colors.primary : '#d1d5db',
                             }}
                         />
                     ))}

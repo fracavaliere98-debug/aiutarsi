@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { Calendar, Users, Send, Clock, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../components/StandardLayout";
 import { AddressAutocomplete } from "../../components/AddressAutocomplete";
@@ -16,6 +15,7 @@ import { gemmaService } from "../../services/GemmaService";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
 import { useCreateActivityMutation } from "../../hooks/activities/mutations";
 import { useActivitiesListQuery } from "../../hooks/activities/queries";
+import { colors } from "@/theme";
 
 export default function CreateActivityScreen() {
     const router = useRouter();
@@ -273,7 +273,7 @@ export default function CreateActivityScreen() {
                                     ) : (
                                         <View className="items-center">
                                             <View className="bg-primary/5 p-4 rounded-3xl mb-2">
-                                                <RefreshCw size={32} color={Colors.primary} />
+                                                <RefreshCw size={32} color={colors.primary} />
                                             </View>
                                             <Text className="text-primary/40 font-bold text-sm">Carica una foto per l&apos;attività</Text>
                                         </View>
@@ -338,12 +338,12 @@ export default function CreateActivityScreen() {
                                                     flexDirection: 'row',
                                                     justifyContent: 'center',
                                                     gap: 4,
-                                                    backgroundColor: isSelected ? Colors.primary : 'white',
-                                                    borderColor: isSelected ? Colors.primary : '#ede9fe',
+                                                    backgroundColor: isSelected ? colors.primary : 'white',
+                                                    borderColor: isSelected ? colors.primary : '#ede9fe',
                                                 }}
                                             >
-                                                <SkillIcon size={11} color={isSelected ? 'white' : Colors.primary} />
-                                                <Text style={{ fontWeight: '800', fontSize: 10, color: isSelected ? 'white' : Colors.primary }}>{skill.label}</Text>
+                                                <SkillIcon size={11} color={isSelected ? 'white' : colors.primary} />
+                                                <Text style={{ fontWeight: '800', fontSize: 10, color: isSelected ? 'white' : colors.primary }}>{skill.label}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -393,14 +393,14 @@ export default function CreateActivityScreen() {
                                         style={{
                                             backgroundColor: 'white', padding: 16, borderRadius: 16,
                                             flexDirection: 'row', alignItems: 'center', gap: 10,
-                                            borderWidth: 1, borderColor: formData.date ? Colors.primary + '40' : '#ede9fe',
+                                            borderWidth: 1, borderColor: formData.date ? colors.primary + '40' : '#ede9fe',
                                             shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
                                         }}
                                     >
-                                        <Calendar size={18} color={formData.date ? Colors.primary : Colors.secondary} />
+                                        <Calendar size={18} color={formData.date ? colors.primary : colors.textSecondary} />
                                         <Text style={{
                                             flex: 1, fontSize: 14, fontWeight: '600',
-                                            color: formData.date ? Colors.primary : '#94a3b8',
+                                            color: formData.date ? colors.primary : '#94a3b8',
                                         }}>
                                             {formData.date
                                                 ? new Date(formData.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' })
@@ -412,7 +412,7 @@ export default function CreateActivityScreen() {
                                 <View style={{ flex: 1 }}>
                                     <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">N. Volontari</Text>
                                     <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                        <Users size={18} color={Colors.secondary} style={{ marginRight: 6 }} />
+                                        <Users size={18} color={colors.textSecondary} style={{ marginRight: 6 }} />
                                         <TextInput
                                             placeholder="10"
                                             placeholderTextColor="#94a3b8"
@@ -420,7 +420,7 @@ export default function CreateActivityScreen() {
                                             maxLength={3}
                                             value={formData.slots}
                                             onChangeText={(t) => setFormData({ ...formData, slots: t })}
-                                            style={{ flex: 1, color: Colors.primary, fontWeight: '700', fontSize: 16 }}
+                                            style={{ flex: 1, color: colors.primary, fontWeight: '700', fontSize: 16 }}
                                         />
                                     </View>
                                 </View>
@@ -431,26 +431,26 @@ export default function CreateActivityScreen() {
                                 <View style={{ flex: 1 }}>
                                     <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Inizio</Text>
                                     <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                        <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
+                                        <Clock size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
                                         <TextInput
                                             placeholder="10:00"
                                             placeholderTextColor="#94a3b8"
                                             value={formData.startTime}
                                             onChangeText={(t) => setFormData({ ...formData, startTime: t })}
-                                            style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
+                                            style={{ flex: 1, color: colors.primary, fontWeight: '500', fontSize: 14 }}
                                         />
                                     </View>
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Fine</Text>
                                     <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                        <Clock size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
+                                        <Clock size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
                                         <TextInput
                                             placeholder="12:00"
                                             placeholderTextColor="#94a3b8"
                                             value={formData.endTime}
                                             onChangeText={(t) => setFormData({ ...formData, endTime: t })}
-                                            style={{ flex: 1, color: Colors.primary, fontWeight: '500', fontSize: 14 }}
+                                            style={{ flex: 1, color: colors.primary, fontWeight: '500', fontSize: 14 }}
                                         />
                                     </View>
                                 </View>
@@ -495,7 +495,7 @@ export default function CreateActivityScreen() {
                                         disabled={isCuratingDraft}
                                         className={`px-3 py-2 rounded-full border flex-row items-center gap-2 ${isCuratingDraft ? 'bg-slate-100 border-slate-200' : 'bg-white border-primary/10'}`}
                                     >
-                                        <RefreshCw size={14} color={isCuratingDraft ? '#94a3b8' : Colors.primary} />
+                                        <RefreshCw size={14} color={isCuratingDraft ? '#94a3b8' : colors.primary} />
                                         <Text className={`font-bold text-[11px] ${isCuratingDraft ? 'text-slate-400' : 'text-primary'}`}>
                                             {isCuratingDraft ? 'Gemma al lavoro...' : 'Migliora con AI'}
                                         </Text>
@@ -535,7 +535,7 @@ export default function CreateActivityScreen() {
                                         }
                                         setFormData({ ...formData, isUrgent: v });
                                     }}
-                                    trackColor={{ false: "#e2e8f0", true: Colors.accent }}
+                                    trackColor={{ false: "#e2e8f0", true: colors.accent }}
                                 />
                             </View>
 

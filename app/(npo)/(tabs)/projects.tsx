@@ -7,12 +7,12 @@ import { EmptyState } from "../../../components/EmptyState";
 import { useRouter } from "expo-router";
 import { useState, useMemo } from "react";
 import { CalendarGrid } from "../../../components/CalendarGrid";
-import { Colors } from "../../../constants/Colors";
 import { useToast } from "../../../context/ToastContext";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { ErrorState } from "../../../components/ErrorState";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
+import { colors } from "@/theme";
 
 type ViewMode = "list" | "calendar";
 
@@ -88,11 +88,11 @@ export default function NPOCalendarScreen() {
             rightElement={HeaderActions}
             hideBack={true}
             refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
             }
         >
             <View className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-3 mb-4 border border-slate-200">
-                <Search size={16} color={Colors.secondary} />
+                <Search size={16} color={colors.textSecondary} />
                 <TextInput
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -108,7 +108,7 @@ export default function NPOCalendarScreen() {
                     onPress={() => setViewMode("calendar")}
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "calendar" ? "bg-white shadow-sm" : ""}`}
                 >
-                    <CalendarIcon size={18} color={viewMode === "calendar" ? Colors.primary : Colors.secondary} />
+                    <CalendarIcon size={18} color={viewMode === "calendar" ? colors.primary : colors.textSecondary} />
                     <Text className={`font-bold ${viewMode === "calendar" ? "text-primary" : "text-secondary"}`}>
                         Calendario
                     </Text>
@@ -117,7 +117,7 @@ export default function NPOCalendarScreen() {
                     onPress={() => setViewMode("list")}
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "list" ? "bg-white shadow-sm" : ""}`}
                 >
-                    <List size={18} color={viewMode === "list" ? Colors.primary : Colors.secondary} />
+                    <List size={18} color={viewMode === "list" ? colors.primary : colors.textSecondary} />
                     <Text className={`font-bold ${viewMode === "list" ? "text-primary" : "text-secondary"}`}>
                         Lista
                     </Text>

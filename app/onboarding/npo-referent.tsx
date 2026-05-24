@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ArrowRight, Camera, MessageCircle, User } from 'lucide-react-native';
@@ -20,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
+import { colors } from "@/theme";
 
 export default function NPOReferentScreen() {
     const router = useRouter();
@@ -119,7 +119,7 @@ export default function NPOReferentScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>NOME E COGNOME REFERENTE *</Text>
                             <View style={styles.inputContainer}>
-                                <User size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <User size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
                                     placeholder="Es. Mario Rossi"
@@ -132,7 +132,7 @@ export default function NPOReferentScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>RUOLO NELL&apos;ORGANIZZAZIONE *</Text>
                             <View style={styles.inputContainer}>
-                                <User size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <User size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
                                     placeholder="Es. Coordinatore Volontari"
@@ -148,7 +148,7 @@ export default function NPOReferentScreen() {
                                 Verrà inviato automaticamente in chat ai volontari che accetterete per i vostri progetti.
                             </Text>
                             <View style={[styles.inputContainer, styles.textAreaContainer]}>
-                                <MessageCircle size={20} color={Colors.primary} style={styles.inputIcon} />
+                                <MessageCircle size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={[styles.input, styles.textArea]}
                                     placeholder="Scrivi un messaggio di benvenuto..."
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 12,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 1,
     },

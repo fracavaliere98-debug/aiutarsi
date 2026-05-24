@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, Image } from 'react-native';
-import { Colors } from '../constants/Colors';
 import { SoftCard } from './SoftCard';
 import { OldActivity } from '../types';
 import { useRouter } from 'expo-router';
+import { colors } from "@/theme";
 
 interface NPOActivityCardProps {
     activity: OldActivity;
@@ -59,8 +59,8 @@ export function NPOActivityCard({ activity, onPress }: NPOActivityCardProps) {
                         <Text className="text-slate-400 text-[10px] font-bold">
                             {new Date(activity.dateTime).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })} • {new Date(activity.dateTime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                         </Text>
-                        <View className="self-start px-2 py-0.5 rounded-lg mt-1.5" style={{ backgroundColor: `${Colors.primary}15` }}>
-                            <Text className="font-black text-[8px] uppercase" style={{ color: Colors.primary }}>
+                        <View className="self-start px-2 py-0.5 rounded-lg mt-1.5" style={{ backgroundColor: `${colors.primary}15` }}>
+                            <Text className="font-black text-[8px] uppercase" style={{ color: colors.primary }}>
                                 {activity.category}
                             </Text>
                         </View>
@@ -71,7 +71,7 @@ export function NPOActivityCard({ activity, onPress }: NPOActivityCardProps) {
                         className="bg-[#f0f2f5] px-3 py-1.5 rounded-lg border border-white/50"
                         style={{ elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}
                     >
-                        <Text className="font-black text-[9px]" style={{ color: Colors.primary }}>Gestisci</Text>
+                        <Text className="font-black text-[9px]" style={{ color: colors.primary }}>Gestisci</Text>
                     </View>
                 </View>
 
@@ -85,7 +85,7 @@ export function NPOActivityCard({ activity, onPress }: NPOActivityCardProps) {
                     <View className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <View
                             className="h-full rounded-full"
-                            style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: Colors.primary }}
+                            style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: colors.primary }}
                         />
                     </View>
                 </View>

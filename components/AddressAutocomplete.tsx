@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import { MapPin, X } from "lucide-react-native";
-import { Colors } from "../constants/Colors";
+import { colors } from "@/theme";
 
 interface Suggestion {
     place_id: number;
@@ -83,7 +83,7 @@ export function AddressAutocomplete({ onSelect, onChangeText: onTextChange, init
         <View className="z-50 error-boundary-fix">
             <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center relative">
                 <View className="mr-3">
-                    <MapPin size={20} color={Colors.secondary} />
+                    <MapPin size={20} color={colors.textSecondary} />
                 </View>
                 <TextInput
                     placeholder={placeholder}
@@ -98,7 +98,7 @@ export function AddressAutocomplete({ onSelect, onChangeText: onTextChange, init
                 />
                 {query.length > 0 && (
                     <TouchableOpacity onPress={() => { setQuery(""); setShowSuggestions(false); }}>
-                        <X size={20} color={Colors.secondary} />
+                        <X size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -108,7 +108,7 @@ export function AddressAutocomplete({ onSelect, onChangeText: onTextChange, init
                 <View className="absolute top-[110%] left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" style={{ maxHeight: 200 }}>
                     {loading && (
                         <View className="p-4 items-center">
-                            <ActivityIndicator size="small" color={Colors.primary} />
+                            <ActivityIndicator size="small" color={colors.primary} />
                         </View>
                     )}
                     {!loading && (
@@ -119,7 +119,7 @@ export function AddressAutocomplete({ onSelect, onChangeText: onTextChange, init
                                     onPress={() => handleSelect(item)}
                                     className="p-3 border-b border-gray-50 flex-row items-center gap-3 active:bg-gray-50"
                                 >
-                                    <MapPin size={16} color={Colors.accent} />
+                                    <MapPin size={16} color={colors.accent} />
                                     <View className="flex-1">
                                         <Text className="text-primary font-bold text-sm" numberOfLines={1}>
                                             {item.address.road || item.display_name.split(',')[0]}

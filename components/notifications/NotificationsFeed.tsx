@@ -16,28 +16,28 @@ import {
 } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
 import { EmptyState } from "../EmptyState";
-import { Colors } from "../../constants/Colors";
 import { AppNotification } from "../../hooks/notifications/types";
+import { colors } from "@/theme";
 
 function getNotificationIcon(type: string, title?: string) {
   switch (type) {
     case "ACTIVITY_UPDATE":
-      return { Icon: AlertCircle, color: Colors.accent };
+      return { Icon: AlertCircle, color: colors.accent };
     case "ACTIVITY_COMPLETED":
       return { Icon: CheckCircle, color: "#22c55e" };
     case "ACTIVITY_REMINDER":
-      return { Icon: CalendarClock, color: Colors.primary };
+      return { Icon: CalendarClock, color: colors.primary };
     case "REVIEW_REMINDER":
       return { Icon: HeartHandshake, color: "#db2777" };
     case "FOLLOWED_NPO_ACTIVITY":
-      return { Icon: Bell, color: Colors.primary };
+      return { Icon: Bell, color: colors.primary };
     case "VOLUNTEER_WEEKLY_RECAP":
     case "NPO_WEEKLY_RECAP":
       return { Icon: ChartColumnIncreasing, color: "#7c3aed" };
     case "VOLUNTEER_ENROLLED":
-      return { Icon: Users, color: Colors.accent };
+      return { Icon: Users, color: colors.accent };
     case "APPLICATION_RECEIVED":
-      return { Icon: FileText, color: Colors.primary };
+      return { Icon: FileText, color: colors.primary };
     case "APPLICATION_APPROVED":
     case "APPLICATION_REJECTED":
       return { Icon: CheckCircle, color: "#22c55e" };
@@ -48,15 +48,15 @@ function getNotificationIcon(type: string, title?: string) {
     case "SKILL_MATCH":
     case "BADGE_UNLOCKED":
     case "GAMIFICATION_REMIND":
-      return { Icon: Sparkles, color: Colors.accent };
+      return { Icon: Sparkles, color: colors.accent };
     case "CHAT_MESSAGE":
-      return { Icon: MessageCircle, color: Colors.primary };
+      return { Icon: MessageCircle, color: colors.primary };
     case "INFO":
     default:
       if (title?.startsWith("Nuovo messaggio da")) {
-        return { Icon: MessageCircle, color: Colors.primary };
+        return { Icon: MessageCircle, color: colors.primary };
       }
-      return { Icon: Info, color: Colors.accent };
+      return { Icon: Info, color: colors.accent };
   }
 }
 

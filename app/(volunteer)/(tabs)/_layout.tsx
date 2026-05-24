@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Home, Compass, Calendar as CalendarIcon, Globe, LifeBuoy } from 'lucide-react-native';
 import { TouchableOpacity, View, Text, GestureResponderEvent } from "react-native";
-import { Colors } from "../../../constants/Colors";
+import { colors } from "@/theme";
 
 export default function VolunteerTabsLayout() {
     return (
@@ -22,7 +22,7 @@ export default function VolunteerTabsLayout() {
                     elevation: 5,
                     position: 'absolute',
                 },
-                tabBarActiveTintColor: Colors.primary,
+                tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: "#94a3b8",
                 tabBarLabelStyle: {
                     fontSize: 12,
@@ -73,10 +73,10 @@ export default function VolunteerTabsLayout() {
                     tabBarIcon: ({ focused }) => (
                         <View style={{
                             width: 56, height: 56, borderRadius: 28,
-                            backgroundColor: Colors.primary,
+                            backgroundColor: colors.primary,
                             alignItems: 'center', justifyContent: 'center',
                             marginTop: -22,
-                            shadowColor: Colors.primary,
+                            shadowColor: colors.primary,
                             shadowOpacity: 0.4,
                             shadowRadius: 10,
                             elevation: 8,
@@ -85,7 +85,7 @@ export default function VolunteerTabsLayout() {
                         </View>
                     ),
                     tabBarLabel: () => (
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary, marginTop: 10 }}>Community</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary, marginTop: 10 }}>Community</Text>
                     ),
                     tabBarButton: (props) => (
                         <TouchableOpacity

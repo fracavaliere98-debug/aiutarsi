@@ -8,11 +8,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Flame, RefreshCw } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { OldSmartMatchResult } from '../types';
 import { GemmaAvatar } from './GemmaAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useSmartMatchView } from '../hooks/smart-match/useSmartMatchView';
+import { colors } from "@/theme";
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -85,7 +85,7 @@ function MatchCard({
             style={{
                 width: 300,
                 marginRight: 16,
-                backgroundColor: isTopMatch ? Colors.primary : '#ffffff',
+                backgroundColor: isTopMatch ? colors.primary : '#ffffff',
                 borderRadius: 24,
                 padding: 20,
                 shadowColor: '#000',
@@ -127,7 +127,7 @@ function MatchCard({
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <Text
                     style={{
-                        color: isTopMatch ? 'rgba(255,255,255,0.65)' : Colors.secondary,
+                        color: isTopMatch ? 'rgba(255,255,255,0.65)' : colors.textSecondary,
                         fontSize: 11,
                         fontWeight: '700',
                         letterSpacing: 0.5,
@@ -158,7 +158,7 @@ function MatchCard({
             {/* OldActivity Title */}
             <Text
                 style={{
-                    color: isTopMatch ? '#ffffff' : Colors.primary,
+                    color: isTopMatch ? '#ffffff' : colors.primary,
                     fontSize: 17,
                     fontWeight: '900',
                     lineHeight: 22,
@@ -172,10 +172,10 @@ function MatchCard({
             {/* Date & Location */}
             <View style={{ gap: 5, marginBottom: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Calendar size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.secondary} />
+                    <Calendar size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
                     <Text
                         style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : Colors.secondary,
+                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : colors.textSecondary,
                             fontSize: 12,
                             fontWeight: '600',
                         }}
@@ -184,10 +184,10 @@ function MatchCard({
                     </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <MapPin size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.secondary} />
+                    <MapPin size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
                     <Text
                         style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : Colors.secondary,
+                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : colors.textSecondary,
                             fontSize: 12,
                             fontWeight: '600',
                         }}
@@ -217,7 +217,7 @@ function MatchCard({
                     <GemmaAvatar size={20} />
                     <Text
                         style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.9)' : Colors.primary,
+                            color: isTopMatch ? 'rgba(255,255,255,0.9)' : colors.primary,
                             fontSize: 11,
                             fontWeight: '700',
                         }}
@@ -225,7 +225,7 @@ function MatchCard({
                         {match.confidenceLabel || 'Consiglio di Gemma'}
                     </Text>
                 </View>
-                <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : Colors.accent} />
+                <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.accent} />
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -244,8 +244,8 @@ function MatchCard({
                         paddingVertical: 7,
                     }}
                 >
-                    <Heart size={13} color={isTopMatch ? '#ffffff' : Colors.accent} fill={match.liked ? (isTopMatch ? '#ffffff' : Colors.accent) : 'transparent'} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.accent, fontSize: 11, fontWeight: '700' }}>Mi piace</Text>
+                    <Heart size={13} color={isTopMatch ? '#ffffff' : colors.accent} fill={match.liked ? (isTopMatch ? '#ffffff' : colors.accent) : 'transparent'} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.accent, fontSize: 11, fontWeight: '700' }}>Mi piace</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={(event) => {
@@ -262,8 +262,8 @@ function MatchCard({
                         paddingVertical: 7,
                     }}
                 >
-                    <Bookmark size={13} color={isTopMatch ? '#ffffff' : Colors.info} fill={match.saved ? (isTopMatch ? '#ffffff' : Colors.info) : 'transparent'} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.info, fontSize: 11, fontWeight: '700' }}>Salva</Text>
+                    <Bookmark size={13} color={isTopMatch ? '#ffffff' : colors.info} fill={match.saved ? (isTopMatch ? '#ffffff' : colors.info) : 'transparent'} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.info, fontSize: 11, fontWeight: '700' }}>Salva</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={(event) => {
@@ -280,8 +280,8 @@ function MatchCard({
                         paddingVertical: 7,
                     }}
                 >
-                    <EyeOff size={13} color={isTopMatch ? '#ffffff' : Colors.secondary} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : Colors.secondary, fontSize: 11, fontWeight: '700' }}>Nascondi</Text>
+                    <EyeOff size={13} color={isTopMatch ? '#ffffff' : colors.textSecondary} />
+                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.textSecondary, fontSize: 11, fontWeight: '700' }}>Nascondi</Text>
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -322,10 +322,10 @@ export function SmartMatchCarousel() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <GemmaAvatar size={30} />
                 <View>
-                    <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.primary }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: colors.primary }}>
                         Consigliato per te
                     </Text>
-                    <Text style={{ fontSize: 10, color: Colors.secondary, fontWeight: '500' }}>
+                    <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '500' }}>
                         Proposta AI con Gemma
                     </Text>
                 </View>
@@ -333,11 +333,11 @@ export function SmartMatchCarousel() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 {lastUpdated && (
                     <TouchableOpacity onPress={() => void refresh()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <RefreshCw size={16} color={Colors.accent} strokeWidth={2.2} />
+                        <RefreshCw size={16} color={colors.accent} strokeWidth={2.2} />
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => router.push('/(volunteer)/smart-match' as any)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Text style={{ fontSize: 11, color: Colors.primary, fontWeight: '700' }}>
+                    <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
                         Vedi tutti
                     </Text>
                 </TouchableOpacity>
@@ -364,8 +364,8 @@ export function SmartMatchCarousel() {
                         alignSelf: 'flex-start',
                     }}
                 >
-                    <ActivityIndicator size="small" color={Colors.accent} />
-                    <Text style={{ fontSize: 12, color: Colors.accent, fontWeight: '600' }}>
+                    <ActivityIndicator size="small" color={colors.accent} />
+                    <Text style={{ fontSize: 12, color: colors.accent, fontWeight: '600' }}>
                         Gemma sta analizzando il tuo profilo…
                     </Text>
                 </View>
@@ -394,7 +394,7 @@ export function SmartMatchCarousel() {
                         borderRadius: 16,
                         padding: 16,
                         borderWidth: 1,
-                        borderColor: `${Colors.accent}30`,
+                        borderColor: `${colors.accent}30`,
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 12,
@@ -402,18 +402,18 @@ export function SmartMatchCarousel() {
                 >
                     <View
                         style={{
-                            backgroundColor: `${Colors.accent}15`,
+                            backgroundColor: `${colors.accent}15`,
                             borderRadius: 12,
                             padding: 10,
                         }}
                     >
-                        <Zap size={20} color={Colors.accent} />
+                        <Zap size={20} color={colors.accent} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13, color: Colors.primary, fontWeight: '700', marginBottom: 3 }}>
+                        <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '700', marginBottom: 3 }}>
                             Quota AI esaurita per oggi
                         </Text>
-                        <Text style={{ fontSize: 12, color: Colors.secondary, lineHeight: 17 }}>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
                             I suggerimenti Gemma si ricaricano ogni 24h. Ricontrolla domani! ✨
                         </Text>
                     </View>
@@ -466,15 +466,15 @@ export function SmartMatchCarousel() {
                         gap: 6,
                     }}
                 >
-                    <Sparkles size={28} color={Colors.accent} />
-                    <Text style={{ fontSize: 14, color: Colors.primary, fontWeight: '700' }}>
+                    <Sparkles size={28} color={colors.accent} />
+                    <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '700' }}>
                         Nessun suggerimento disponibile
                     </Text>
-                    <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>
                         Aggiorna il tuo profilo con bio e interessi per ricevere match personalizzati.
                     </Text>
                     <TouchableOpacity onPress={() => void resetHiddenMatches()} style={{ marginTop: 10 }}>
-                        <Text style={{ fontSize: 12, color: Colors.accent, fontWeight: '700' }}>
+                        <Text style={{ fontSize: 12, color: colors.accent, fontWeight: '700' }}>
                             Ripristina attività nascoste
                         </Text>
                     </TouchableOpacity>
@@ -519,7 +519,7 @@ export function SmartMatchCarousel() {
                             width: i === activeIndex ? 16 : 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: i === activeIndex ? Colors.accent : '#e2e8f0',
+                            backgroundColor: i === activeIndex ? colors.accent : '#e2e8f0',
                         }}
                     />
                 ))}

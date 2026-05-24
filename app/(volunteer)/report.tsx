@@ -5,12 +5,12 @@ import { Award, ChartColumnIncreasing, CheckCircle2, Heart, Sparkles } from "luc
 import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { StatCard } from "../../components/StatCard";
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { volunteerReportService, type VolunteerReportSummary } from "../../services/VolunteerReportService";
 import { useActivitiesDomain, useUserReviews } from "../../hooks/activities/selectors";
 import { useApplicationsDomain, useVolunteerApplications } from "../../hooks/applications/selectors";
 import { useGamificationView } from "../../hooks/gamification/selectors";
+import { colors } from "@/theme";
 
 export default function VolunteerReportScreen() {
     const router = useRouter();
@@ -61,8 +61,8 @@ export default function VolunteerReportScreen() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.primary}
-                    colors={[Colors.primary]}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
                 />
             }
         >
@@ -153,7 +153,7 @@ export default function VolunteerReportScreen() {
 
             <SoftCard className="mb-6 p-5">
                 <View className="flex-row items-center gap-3 mb-4">
-                    <ChartColumnIncreasing size={18} color={Colors.primary} />
+                    <ChartColumnIncreasing size={18} color={colors.primary} />
                     <Text className="text-primary font-black text-lg">Il tuo percorso</Text>
                 </View>
                 <View className="gap-3">
@@ -174,7 +174,7 @@ export default function VolunteerReportScreen() {
 
             <SoftCard className="mb-10 p-5">
                 <View className="flex-row items-center gap-3 mb-4">
-                    <Sparkles size={18} color={Colors.primary} />
+                    <Sparkles size={18} color={colors.primary} />
                     <Text className="text-primary font-black text-lg">Attenzione e continuità</Text>
                 </View>
                 <View className="gap-3">

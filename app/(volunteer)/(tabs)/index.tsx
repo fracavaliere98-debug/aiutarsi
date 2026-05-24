@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
 import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-react-native";
-import { Colors } from "../../../constants/Colors";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
@@ -14,6 +13,7 @@ import { ErrorState } from "../../../components/ErrorState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
 import { useActivitiesDomain, useUserReviews, useVolunteerStats } from "../../../hooks/activities/selectors";
 import { useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
+import { colors } from "@/theme";
 
 export default function VolunteerDashboard() {
     const router = useRouter();
@@ -102,8 +102,8 @@ export default function VolunteerDashboard() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.accent}
-                    colors={[Colors.accent]}
+                    tintColor={colors.accent}
+                    colors={[colors.accent]}
                 />
             }
         >
@@ -131,7 +131,7 @@ export default function VolunteerDashboard() {
                         value={volunteerStats.upcomingMissions.toString()}
                         label="ATTIVE"
                         valueColor="text-accent"
-                        icon={<Clock size={14} color={Colors.accent} style={{ marginBottom: 2 }} />}
+                        icon={<Clock size={14} color={colors.accent} style={{ marginBottom: 2 }} />}
                         onPress={() => router.push("/(volunteer)/calendar?view=list&filter=upcoming" as any)}
                     />
                 </View>
@@ -155,7 +155,7 @@ export default function VolunteerDashboard() {
                                 <Text className="text-secondary text-xs font-semibold">La tua opinione aiuta la community</Text>
                             </View>
                         </View>
-                        <ArrowRight size={20} color={Colors.accent} />
+                        <ArrowRight size={20} color={colors.accent} />
                     </View>
                 </SoftCard>
             )}
@@ -205,7 +205,7 @@ export default function VolunteerDashboard() {
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: 7, borderRadius: 12 }}>
-                                    <MapIcon size={18} color={Colors.accent} />
+                                    <MapIcon size={18} color={colors.accent} />
                                 </View>
                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
                                     <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 }}>LIVE</Text>
@@ -250,7 +250,7 @@ export default function VolunteerDashboard() {
                         onPress={() => router.push("/(volunteer)/map" as any)}
                         className="flex-row items-center gap-1"
                     >
-                        <MapIcon size={16} color={Colors.accent} />
+                        <MapIcon size={16} color={colors.accent} />
                         <Text className="text-accent font-bold text-sm">Mappa</Text>
                     </TouchableOpacity>
                 </View>

@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, Users } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { StoryAuthorGroup } from '../hooks/stories/types';
+import { colors } from "@/theme";
 
 interface StoriesRowProps {
     allowAddStory?: boolean;
@@ -26,7 +26,7 @@ export function StoriesRow({
     return (
         <View style={{ paddingVertical: 14 }}>
             <Text style={{
-                fontSize: 13, fontWeight: '900', color: Colors.primary,
+                fontSize: 13, fontWeight: '900', color: colors.primary,
                 paddingHorizontal: 16, marginBottom: 12,
                 textTransform: 'uppercase', letterSpacing: 0.6
             }}>
@@ -46,16 +46,16 @@ export function StoriesRow({
                         <View style={{
                             width: 72, height: 72, borderRadius: 36,
                             backgroundColor: '#f1f5f9',
-                            borderWidth: 2, borderColor: Colors.primary + '50',
+                            borderWidth: 2, borderColor: colors.primary + '50',
                             borderStyle: 'dashed',
                             alignItems: 'center', justifyContent: 'center',
                             marginBottom: 6,
                         }}>
-                            <Text style={{ fontSize: 28, color: Colors.primary, lineHeight: 32 }}>+</Text>
+                            <Text style={{ fontSize: 28, color: colors.primary, lineHeight: 32 }}>+</Text>
                         </View>
                         <Text style={{
                             fontSize: 11, fontWeight: '700',
-                            color: Colors.primary, textAlign: 'center'
+                            color: colors.primary, textAlign: 'center'
                         }}>
                             La tua{'\n'}storia
                         </Text>
@@ -64,7 +64,7 @@ export function StoriesRow({
 
                 {isLoading && authorGroups.length === 0 ? (
                     <View style={{ width: 72, height: 72, alignItems: 'center', justifyContent: 'center' }}>
-                        <ActivityIndicator color={Colors.primary} />
+                        <ActivityIndicator color={colors.primary} />
                     </View>
                 ) : null}
 
@@ -80,7 +80,7 @@ export function StoriesRow({
                                 group.isLive
                                     ? ['#f59e0b', '#ef4444']
                                     : group.hasUnseenStories
-                                        ? [Colors.primary, Colors.accent]
+                                        ? [colors.primary, colors.accent]
                                         : ['#cbd5e1', '#94a3b8']
                             }
                             style={{
@@ -123,7 +123,7 @@ export function StoriesRow({
                                 {group.isAffiliatedNpo ? (
                                     <Users size={12} color="#2563eb" />
                                 ) : (
-                                    <Heart size={12} color={Colors.accent} fill={Colors.accent} />
+                                    <Heart size={12} color={colors.accent} fill={colors.accent} />
                                 )}
                             </View>
                         )}
@@ -142,14 +142,14 @@ export function StoriesRow({
 
                         <Text style={{
                             fontSize: 11, fontWeight: '700',
-                            color: Colors.primary, textAlign: 'center',
+                            color: colors.primary, textAlign: 'center',
                         }} numberOfLines={1}>
                             {group.authorShortName}
                         </Text>
                         <Text style={{
                             fontSize: 9,
                             fontWeight: '800',
-                            color: group.hasUnseenStories ? Colors.accent : '#94a3b8',
+                            color: group.hasUnseenStories ? colors.accent : '#94a3b8',
                             textTransform: 'uppercase',
                             letterSpacing: 0.5,
                             marginTop: 2,

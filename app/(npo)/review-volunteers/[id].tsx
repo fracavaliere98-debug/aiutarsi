@@ -3,7 +3,6 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingVi
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { useAuth } from '../../../context/AuthContext';
-import { Colors } from '../../../constants/Colors';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { Star, CheckCircle2, XCircle, Loader2 } from 'lucide-react-native';
 import { useToast } from '../../../context/ToastContext';
@@ -11,6 +10,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { AppUser } from '../../../types';
 import { useActivityDetailQuery, useVolunteerReviewsQuery } from '../../../hooks/activities/queries';
 import { useSubmitVolunteerReviewsMutation } from '../../../hooks/activities/mutations';
+import { colors } from "@/theme";
 
 type VolunteerReviewDraft = {
     volunteerId: string;
@@ -226,8 +226,8 @@ export default function ReviewVolunteersScreen() {
                                                     >
                                                         <Star
                                                             size={32}
-                                                            color={draft.stars >= star ? Colors.accent : "#e2e8f0"}
-                                                            fill={draft.stars >= star ? Colors.accent : "transparent"}
+                                                            color={draft.stars >= star ? colors.accent : "#e2e8f0"}
+                                                            fill={draft.stars >= star ? colors.accent : "transparent"}
                                                         />
                                                     </TouchableOpacity>
                                                 ))}
@@ -258,7 +258,7 @@ export default function ReviewVolunteersScreen() {
                             onPress={handleSave}
                             disabled={pendingCount === 0 || isSubmitting}
                             className={`w-full py-4 rounded-2xl flex-row items-center justify-center gap-2 ${pendingCount > 0 ? 'bg-accent shadow-lg shadow-accent/30' : 'bg-slate-200'}`}
-                            style={{ backgroundColor: pendingCount > 0 ? Colors.accent : '#e2e8f0' }}
+                            style={{ backgroundColor: pendingCount > 0 ? colors.accent : '#e2e8f0' }}
                         >
                             {isSubmitting ? (
                                 <Loader2 size={24} color="white" />

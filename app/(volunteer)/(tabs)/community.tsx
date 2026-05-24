@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
+import { palette, colors, spacing } from '../../../theme';
 import { useAuth } from '../../../context/AuthContext';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';
@@ -35,19 +36,19 @@ function DeletionBanner() {
             onPress={() => router.push('/(volunteer)/(tabs)/profile')}
             activeOpacity={0.9}
             style={{
-                backgroundColor: '#fee2e2',
+                backgroundColor: palette.red100,
                 paddingVertical: 10,
-                paddingHorizontal: 16,
+                paddingHorizontal: spacing.lg,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderBottomWidth: 1,
-                borderBottomColor: '#fecaca',
-                gap: 8
+                borderBottomColor: palette.red200,
+                gap: spacing.sm,
             }}
         >
-            <AlertCircle size={14} color="#b91c1c" />
-            <Text style={{ color: '#b91c1c', fontSize: 13, fontWeight: '700' }}>
+            <AlertCircle size={14} color={palette.red700} />
+            <Text style={{ color: palette.red700, fontSize: 13, fontWeight: '700' }}>
                 Account in eliminazione ({daysRemaining}gg). Per annullare clicca qui
             </Text>
         </TouchableOpacity>

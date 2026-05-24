@@ -7,8 +7,8 @@ import { useToast } from "../../../context/ToastContext";
 import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
-import { Colors } from "../../../constants/Colors";
 import { trackEvent } from "../../../utils/monitoring";
+import { colors } from "@/theme";
 
 export default function NPORegister() {
     const router = useRouter();
@@ -94,7 +94,7 @@ export default function NPORegister() {
                     placeholder="Associazione Onlus..."
                     value={formData.orgName}
                     onChangeText={(text) => setFormData({ ...formData, orgName: text })}
-                    icon={<Building2 size={18} color={Colors.secondary} />}
+                    icon={<Building2 size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -102,7 +102,7 @@ export default function NPORegister() {
                     placeholder="12345678901"
                     value={formData.taxId}
                     onChangeText={(text) => setFormData({ ...formData, taxId: text })}
-                    icon={<ShieldCheck size={18} color={Colors.secondary} />}
+                    icon={<ShieldCheck size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -112,7 +112,7 @@ export default function NPORegister() {
                     autoCapitalize="none"
                     value={formData.email}
                     onChangeText={(text) => setFormData({ ...formData, email: text })}
-                    icon={<Mail size={18} color={Colors.secondary} />}
+                    icon={<Mail size={18} color={colors.textSecondary} />}
                 />
 
                 <AuthField
@@ -121,7 +121,7 @@ export default function NPORegister() {
                     secureTextEntry
                     value={formData.password}
                     onChangeText={(text) => setFormData({ ...formData, password: text })}
-                    icon={<Lock size={18} color={Colors.secondary} />}
+                    icon={<Lock size={18} color={colors.textSecondary} />}
                 />
 
                 <TouchableOpacity
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     checkboxChecked: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
     checkboxTick: {
         color: "#fff",
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     inlineLink: {
-        color: Colors.primary,
+        color: colors.primary,
         fontWeight: "800",
         textDecorationLine: "underline",
     },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     footerLink: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 14,
         fontWeight: "900",
     },

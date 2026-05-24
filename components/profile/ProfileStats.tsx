@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Award, Clock, Target, Star, Info, X } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { StatCard } from "../StatCard";
 import { SheetModal } from "../SheetModal";
 import { useVolunteerReviewsQuery } from "../../hooks/activities/queries";
+import { colors } from "@/theme";
 
 const XP_LEVELS = [
     { level: 1, name: "Novizio", minXP: 0, nextXP: 110, description: "Stai muovendo i primi passi nella community." },
@@ -75,7 +75,7 @@ export function ProfileStats({
             <View className="px-6 mb-10">
                 <View className="flex-row items-center justify-between mb-3">
                     <View className="flex-row items-center gap-2">
-                        <Award size={20} color={Colors.accent} />
+                        <Award size={20} color={colors.accent} />
                         <Text className="text-primary font-black text-lg">
                             Livello {level} {levelName ? `• ${levelName}` : ''}
                         </Text>
@@ -85,7 +85,7 @@ export function ProfileStats({
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f1f5f9', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}
                     >
                         <Text style={{ fontSize: 11, color: '#1e1b4b', fontWeight: '800', lineHeight: 14 }}>{xpInLevel} / {xpNeededForLevel} XP</Text>
-                        <Info size={11} color={Colors.primary} />
+                        <Info size={11} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
                 <View className="bg-slate-100 rounded-full h-3 overflow-hidden mb-1.5">
@@ -146,7 +146,7 @@ export function ProfileStats({
                             <Text className="text-secondary font-semibold text-sm">Scopri nome e soglia di ogni livello</Text>
                         </View>
                         <TouchableOpacity onPress={() => setShowXpInfo(false)} className="p-2 bg-slate-100 rounded-full">
-                            <X size={20} color={Colors.primary} />
+                            <X size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 

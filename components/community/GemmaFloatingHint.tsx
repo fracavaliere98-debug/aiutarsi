@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
 import { GemmaAvatar } from '../GemmaAvatar';
+import { colors } from "@/theme";
 
 interface GemmaFloatingHintProps {
     eyebrow?: string;
@@ -57,10 +57,10 @@ export function GemmaFloatingHint({
                 </View>
                 {ctaLabel ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, fontWeight: '900', color: Colors.primary }}>
+                        <Text style={{ fontSize: 11, fontWeight: '900', color: colors.primary }}>
                             {ctaLabel}
                         </Text>
-                        <ChevronRight size={14} color={Colors.primary} style={{ marginLeft: 2 }} />
+                        <ChevronRight size={14} color={colors.primary} style={{ marginLeft: 2 }} />
                     </View>
                 ) : null}
             </TouchableOpacity>

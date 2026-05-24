@@ -1,12 +1,12 @@
 import { TouchableOpacity, RefreshControl, Text } from "react-native";
 import { CheckCircle } from "lucide-react-native";
-import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import { StandardLayout } from "../../components/StandardLayout";
 import { useNotificationsDomain } from "../../hooks/notifications/useNotificationsDomain";
 import { useToast } from "../../context/ToastContext";
 import { useState } from "react";
 import { NotificationsFeed } from "../../components/notifications/NotificationsFeed";
+import { colors } from "@/theme";
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -46,8 +46,8 @@ export default function NotificationsScreen() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.accent}
-                    colors={[Colors.accent]}
+                    tintColor={colors.accent}
+                    colors={[colors.accent]}
                 />
             }
         >

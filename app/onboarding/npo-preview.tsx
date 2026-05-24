@@ -3,11 +3,11 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, CheckCircle2, Clock, Globe, MapPin, MessageCircle, ShieldCheck, Star, Users } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Colors } from '../../constants/Colors';
 import { StandardLayout } from '../../components/StandardLayout';
 import { SoftCard } from '../../components/SoftCard';
 import { StatCard } from '../../components/StatCard';
 import { UserAvatar } from '../../components/UserAvatar';
+import { colors } from "@/theme";
 
 export default function NPOPreviewScreen() {
     const router = useRouter();
@@ -56,8 +56,8 @@ export default function NPOPreviewScreen() {
                             backgroundColor: verificationStatus === 'pending' ? '#fff7ed' : '#f8f4ff',
                         }}
                     >
-                        <ShieldCheck size={16} color={verificationStatus === 'pending' ? '#c2410c' : Colors.primary} />
-                        <Text style={{ color: verificationStatus === 'pending' ? '#c2410c' : Colors.primary, fontSize: 12, fontWeight: '700' }}>
+                        <ShieldCheck size={16} color={verificationStatus === 'pending' ? '#c2410c' : colors.primary} />
+                        <Text style={{ color: verificationStatus === 'pending' ? '#c2410c' : colors.primary, fontSize: 12, fontWeight: '700' }}>
                             {verificationStatus === 'pending' ? 'Verifica inviata' : 'Profilo in preparazione'}
                         </Text>
                     </View>
@@ -81,7 +81,7 @@ export default function NPOPreviewScreen() {
                         {!!user?.website && (
                             <View className="flex-row items-center gap-3">
                                 <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                    <Globe size={16} color={Colors.primary} />
+                                    <Globe size={16} color={colors.primary} />
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-secondary text-xs font-bold uppercase">Sito web</Text>
@@ -92,7 +92,7 @@ export default function NPOPreviewScreen() {
 
                         <View className="flex-row items-center gap-3">
                             <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                <MapPin size={16} color={Colors.primary} />
+                                <MapPin size={16} color={colors.primary} />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-secondary text-xs font-bold uppercase">Sede operativa</Text>
@@ -127,7 +127,7 @@ export default function NPOPreviewScreen() {
                     <View className="gap-2">
                         {soughtSkills.length > 0 ? soughtSkills.map((skill, index) => (
                             <View key={`${skill}_${index}`} className="flex-row items-center gap-2">
-                                <CheckCircle2 size={14} color={Colors.accent} />
+                                <CheckCircle2 size={14} color={colors.accent} />
                                 <Text className="text-secondary text-sm">{skill}</Text>
                             </View>
                         )) : (
@@ -152,7 +152,7 @@ export default function NPOPreviewScreen() {
                             </View>
                         </View>
                         <View className="bg-primary/10 p-2 rounded-full">
-                            <MessageCircle size={18} color={Colors.primary} />
+                            <MessageCircle size={18} color={colors.primary} />
                         </View>
                     </View>
                 </SoftCard>

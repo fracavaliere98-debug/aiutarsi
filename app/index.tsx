@@ -17,7 +17,6 @@ import {
     ShieldCheck,
     Users,
 } from "lucide-react-native";
-import { Colors } from "../constants/Colors";
 import Animated, {
     FadeInDown,
     FadeInUp,
@@ -37,6 +36,7 @@ import { authService } from "../services/AuthService";
 import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
 import { Layout } from "../utils/layout";
+import { colors } from "@/theme";
 
 const BACKGROUND_GRADIENTS = [
     ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
@@ -328,7 +328,7 @@ export default function LandingPage() {
 
                 <View style={styles.conversionStrip}>
                     <View style={styles.conversionPill}>
-                        <MapPin size={15} color={Colors.primary} />
+                        <MapPin size={15} color={colors.primary} />
                         <View style={styles.conversionPillTextRow}>
                             <Text style={styles.conversionPillText}>Ultime opportunità pubblicate a </Text>
                             <Animated.Text
@@ -354,15 +354,15 @@ export default function LandingPage() {
 
                     <FeatureCard
                         delay={120}
-                        accent={Colors.primary}
-                        icon={<MapPin size={22} color={Colors.primary} />}
+                        accent={colors.primary}
+                        icon={<MapPin size={22} color={colors.primary} />}
                         title="Scopri attività vicine"
                         text="Le opportunità vengono presentate in modo semplice, con contesto territoriale e priorità leggibili."
                     />
                     <FeatureCard
                         delay={220}
-                        accent={Colors.accent}
-                        icon={<CalendarClock size={22} color={Colors.accent} />}
+                        accent={colors.accent}
+                        icon={<CalendarClock size={22} color={colors.accent} />}
                         title="Scegli in base al tuo tempo"
                         text="Non serve stravolgere la giornata: puoi trovare occasioni brevi, urgenti o ricorrenti."
                     />
@@ -380,11 +380,11 @@ export default function LandingPage() {
                         “Non ti chiediamo di cambiare vita. Ti chiediamo di dare più valore al tempo che hai già.”
                     </Text>
                     <View style={styles.statementTrustRow}>
-                        <Users size={18} color={Colors.secondary} />
+                        <Users size={18} color={colors.textSecondary} />
                         <View style={styles.statementDot} />
-                        <HeartHandshake size={18} color={Colors.secondary} />
+                        <HeartHandshake size={18} color={colors.textSecondary} />
                         <View style={styles.statementDot} />
-                        <Building2 size={18} color={Colors.secondary} />
+                        <Building2 size={18} color={colors.textSecondary} />
                     </View>
                 </View>
 
@@ -431,13 +431,13 @@ const styles = StyleSheet.create({
         height: 28,
     },
     brandPillText: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "900",
         letterSpacing: 0.2,
     },
     loginLinkTop: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "800",
     },
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     heroHeadline: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: Math.min(Layout.window.width * 0.094, 37),
         lineHeight: Math.min(Layout.window.width * 0.102, 41),
         fontWeight: "900",
@@ -473,12 +473,12 @@ const styles = StyleSheet.create({
         borderColor: "rgba(70,34,130,0.08)",
     },
     liveNoticeText: {
-        color: Colors.secondary,
+        color: colors.textSecondary,
         fontSize: 13,
         fontWeight: "600",
     },
     liveNoticeStrong: {
-        color: Colors.primary,
+        color: colors.primary,
         fontWeight: "900",
     },
     heroStatsRow: {
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
         gap: 14,
     },
     roleIntroEyebrow: {
-        color: Colors.accent,
+        color: colors.accent,
         fontSize: 12,
         fontWeight: "900",
         letterSpacing: 1.1,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     registrationTitle: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 23,
         lineHeight: 27,
         fontWeight: "900",
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
     conversionPillStrong: {
-        color: Colors.accent,
+        color: colors.accent,
         fontSize: 13,
         fontWeight: "900",
     },
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     sectionEyebrow: {
-        color: Colors.accent,
+        color: colors.accent,
         fontSize: 12,
         fontWeight: "900",
         letterSpacing: 1.2,
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     sectionTitle: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 25,
         lineHeight: 29,
         fontWeight: "900",
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
         borderColor: "rgba(70,34,130,0.06)",
     },
     statementQuote: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 20,
         lineHeight: 28,
         fontWeight: "800",
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     bottomLoginLink: {
-        color: Colors.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: "900",
     },

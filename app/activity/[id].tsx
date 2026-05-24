@@ -7,7 +7,6 @@ import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-rou
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
-import { Colors } from "../../constants/Colors";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
     RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare, AlertTriangle
@@ -28,6 +27,7 @@ import { useCommunityRealtime } from "../../hooks/community/realtime";
 import { useRecordActivityShareMutation } from "../../hooks/gamification/mutations";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
+import { colors } from "@/theme";
 
 // Conditional import for map opening
 const openMapsUrl = (lat: number, lng: number, label?: string) => {
@@ -232,12 +232,12 @@ export default function ActivityDetail() {
     if (error) return <ErrorState title="Errore" description="Problema nel caricamento" onRetry={() => Promise.all([loadData(), refetchActivity()]).then(() => undefined)} />;
     if (isActivityLoading) return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-            <ActivityIndicator size="large" color={Colors.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
         </View>
     );
     if (!activity) return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-            <Text style={{ color: Colors.secondary }}>Attività non trovata</Text>
+            <Text style={{ color: colors.textSecondary }}>Attività non trovata</Text>
         </View>
     );
 
@@ -280,7 +280,7 @@ export default function ActivityDetail() {
                     {/* Badges row: category + recurrence */}
                     <Animated.View entering={FadeInDown.delay(100).springify()} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
                         {activity.category && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
                                 <Star size={12} color="white" fill="white" />
                                 <Text style={{ color: 'white', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                     {activity.category}
@@ -300,7 +300,7 @@ export default function ActivityDetail() {
                     {/* Title */}
                     <Animated.Text
                         entering={FadeInDown.delay(150).springify()}
-                        style={{ fontSize: 28, fontWeight: '900', color: Colors.primary, lineHeight: 34, marginBottom: 20, textAlign: 'center' }}
+                        style={{ fontSize: 28, fontWeight: '900', color: colors.primary, lineHeight: 34, marginBottom: 20, textAlign: 'center' }}
                     >
                         {activity.title}
                     </Animated.Text>
@@ -321,10 +321,10 @@ export default function ActivityDetail() {
                                 isVerified={!!(npoUser?.isVerified || npoUser?.is_verified || activity?.profiles?.is_verified)}
                             />
                             <View style={{ alignItems: 'center' }}>
-                                <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.primary, textAlign: 'center' }}>
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primary, textAlign: 'center' }}>
                                     {npoUser?.npoName || npoUser?.name || activity.npoName || 'Ente Solidale'}
                                 </Text>
-                                <Text style={{ fontSize: 12, color: Colors.secondary, textAlign: 'center' }}>Organizzatore</Text>
+                                <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>Organizzatore</Text>
                             </View>
                         </TouchableOpacity>
                     </Animated.View>
@@ -342,11 +342,11 @@ export default function ActivityDetail() {
                             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}
                         >
                             <View style={{ width: 38, height: 38, backgroundColor: '#ede9fe', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                                <Calendar size={18} color={Colors.primary} />
+                                <Calendar size={18} color={colors.primary} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>DATA E ORA</Text>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>{formattedDateRange}</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>{formattedDateRange}</Text>
                                 {isEnrolled && (
                                     <Text style={{ fontSize: 12, color: '#64748b' }}>
                                         Tocca per aggiungerla al tuo calendario
@@ -354,7 +354,7 @@ export default function ActivityDetail() {
                                 )}
                             </View>
                             {isEnrolled && (
-                                <ChevronRight size={18} color={Colors.secondary} />
+                                <ChevronRight size={18} color={colors.textSecondary} />
                             )}
                         </TouchableOpacity>
 
@@ -377,13 +377,13 @@ export default function ActivityDetail() {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>LUOGO</Text>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>{locationShortName}</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>{locationShortName}</Text>
                                 {activity.location?.address && locationShortName !== activity.location.address && (
                                     <Text style={{ fontSize: 12, color: '#64748b' }} numberOfLines={1}>{activity.location.address}</Text>
                                 )}
                             </View>
                             {activity.location?.coords?.lat && (
-                                <ChevronRight size={18} color={Colors.secondary} />
+                                <ChevronRight size={18} color={colors.textSecondary} />
                             )}
                         </TouchableOpacity>
                     </Animated.View>
@@ -392,7 +392,7 @@ export default function ActivityDetail() {
                     {activity.skills && activity.skills.length > 0 && (
                         <Animated.View entering={FadeInDown.delay(280).springify()} style={{ marginBottom: 24 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Competenze Richieste</Text>
+                                <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>Competenze Richieste</Text>
                             </View>
                             {/* Auto-sizing chips that wrap naturally */}
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -410,8 +410,8 @@ export default function ActivityDetail() {
                                                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6
                                             }}
                                         >
-                                            <Icon size={14} color={Colors.primary} />
-                                            <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary }}>
+                                            <Icon size={14} color={colors.primary} />
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>
                                                 {label}
                                             </Text>
                                         </View>
@@ -423,13 +423,13 @@ export default function ActivityDetail() {
 
                     {/* Description */}
                     <Animated.View entering={FadeInDown.delay(340).springify()} style={{ marginBottom: 28 }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary, marginBottom: 10 }}>Descrizione Attività</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary, marginBottom: 10 }}>Descrizione Attività</Text>
                         <Text style={{ fontSize: 15, color: '#475569', lineHeight: 24 }}>{activity.description}</Text>
                     </Animated.View>
 
                     {/* Volunteers participating – icon + avatars inline, no title */}
                     <Animated.View entering={FadeInDown.delay(400).springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                        <Users size={20} color={Colors.primary} />
+                        <Users size={20} color={colors.primary} />
                         {currentIscritti.length === 0 ? (
                             <Text style={{ color: '#94a3b8', fontSize: 13 }}>Nessun volontario ancora</Text>
                         ) : (
@@ -460,7 +460,7 @@ export default function ActivityDetail() {
                                     })}
                                     {currentIscritti.length > 8 && (
                                         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#f1f5f9', borderWidth: 2, borderColor: 'white', alignItems: 'center', justifyContent: 'center', marginLeft: 14 }}>
-                                            <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.secondary }}>+{currentIscritti.length - 8}</Text>
+                                            <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary }}>+{currentIscritti.length - 8}</Text>
                                         </View>
                                     )}
                                 </View>
@@ -477,7 +477,7 @@ export default function ActivityDetail() {
                             backgroundColor: '#f8fafc', borderRadius: 20, padding: 20,
                             borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20
                         }}>
-                            <Text style={{ fontSize: 17, fontWeight: '900', color: Colors.primary, marginBottom: 12 }}>Gestione Volontari</Text>
+                            <Text style={{ fontSize: 17, fontWeight: '900', color: colors.primary, marginBottom: 12 }}>Gestione Volontari</Text>
                             {currentIscritti.map(volId => {
                                 const v = users.find(u => u.id === volId);
                                 if (!v) return null;
@@ -490,10 +490,10 @@ export default function ActivityDetail() {
                                     >
                                         <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
                                         <View style={{ marginLeft: 12, flex: 1 }}>
-                                            <Text style={{ fontWeight: '700', color: Colors.primary, fontSize: 14 }}>{v.name}</Text>
+                                            <Text style={{ fontWeight: '700', color: colors.primary, fontSize: 14 }}>{v.name}</Text>
                                             <Text style={{ color: '#64748b', fontSize: 12 }}>{v.email}</Text>
                                         </View>
-                                        <ChevronRight size={16} color={Colors.secondary} />
+                                        <ChevronRight size={16} color={colors.textSecondary} />
                                     </TouchableOpacity>
                                 );
                             })}
@@ -523,7 +523,7 @@ export default function ActivityDetail() {
                                 <>
                                     {/* Section header */}
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>Cosa ne pensa la Community</Text>
+                                        <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>Cosa ne pensa la Community</Text>
                                         {avgStars !== null && (
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#fde68a' }}>
                                                 <Star size={13} color="#f59e0b" fill="#f59e0b" />
@@ -555,8 +555,8 @@ export default function ActivityDetail() {
                                             </Text>
                                             <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>Leggi le recensioni generali della NPO organizzatrice</Text>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                                <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.accent }}>Vedi recensioni NPO</Text>
-                                                <ChevronRight size={14} color={Colors.accent} />
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.accent }}>Vedi recensioni NPO</Text>
+                                                <ChevronRight size={14} color={colors.accent} />
                                             </View>
                                         </TouchableOpacity>
                                     ) : (
@@ -594,11 +594,11 @@ export default function ActivityDetail() {
                                                                 <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                                                                     {reviewer?.avatar
                                                                         ? <Image source={{ uri: reviewer.avatar }} style={{ width: 38, height: 38, borderRadius: 19 }} />
-                                                                        : <Users size={18} color={Colors.primary} />
+                                                                        : <Users size={18} color={colors.primary} />
                                                                     }
                                                                 </View>
                                                                 <View style={{ flex: 1 }}>
-                                                                    <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>
+                                                                    <Text style={{ fontWeight: '800', color: colors.primary, fontSize: 14 }}>
                                                                         {reviewer?.name || 'Volontario'}
                                                                     </Text>
                                                                     <Text style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600', letterSpacing: 0.3 }}>Volontario</Text>
@@ -635,8 +635,8 @@ export default function ActivityDetail() {
                                                 activeOpacity={0.7}
                                                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 14 }}
                                             >
-                                                <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.accent }}>Tutte le recensioni della NPO</Text>
-                                                <ChevronRight size={15} color={Colors.accent} />
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.accent }}>Tutte le recensioni della NPO</Text>
+                                                <ChevronRight size={15} color={colors.accent} />
                                             </TouchableOpacity>
                                         </>
                                     )}
@@ -649,7 +649,7 @@ export default function ActivityDetail() {
                         <Animated.View entering={FadeInDown.delay(560).springify()} style={{ marginBottom: 28 }}>
                             <View testID="activity-community-posts" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                                 <View style={{ flex: 1, marginRight: 12 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>
+                                    <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>
                                         Dalla community su questa attività
                                     </Text>
                                     <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
@@ -704,7 +704,7 @@ export default function ActivityDetail() {
                                 onPress={() => router.push(`/(npo)/edit-activity/${activity.id}` as any)}
                                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 }}
                             >
-                                <Pencil size={18} color={Colors.primary} />
+                                <Pencil size={18} color={colors.primary} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -721,7 +721,7 @@ export default function ActivityDetail() {
             }}>
                 {activity.status !== 'COMPLETATA' && (
                     <View>
-                        <Text style={{ fontSize: 20, fontWeight: '900', color: Colors.primary }}>
+                        <Text style={{ fontSize: 20, fontWeight: '900', color: colors.primary }}>
                             {`${slotsLeft} posti`}
                         </Text>
                         <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 1 }}>
@@ -735,7 +735,7 @@ export default function ActivityDetail() {
                     activity.status === 'COMPLETATA' ? (
                         <TouchableOpacity
                             onPress={() => router.push(`/(npo)/review-volunteers/${activity.id}` as any)}
-                            style={{ backgroundColor: Colors.accent, paddingHorizontal: 24, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                            style={{ backgroundColor: colors.accent, paddingHorizontal: 24, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                         >
                             <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Gestisci</Text>
                             <ChevronRight size={18} color="white" />
@@ -752,7 +752,7 @@ export default function ActivityDetail() {
                 ) : canLeaveReview ? (
                     <TouchableOpacity
                         onPress={() => router.push(`/feedback/${activity.id}` as any)}
-                        style={{ backgroundColor: Colors.accent, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                        style={{ backgroundColor: colors.accent, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                     >
                         <Star size={16} color="white" />
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Recensisci</Text>
@@ -771,8 +771,8 @@ export default function ActivityDetail() {
                     </View>
                 ) : hasSubmittedReview ? (
                     <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#ddd6fe', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <CheckCircle2 size={16} color={Colors.primary} />
-                        <Text style={{ color: Colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
+                        <CheckCircle2 size={16} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
                     </View>
                 ) : isEnrolled ? (
                     <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -809,7 +809,7 @@ export default function ActivityDetail() {
                         disabled={isFull || activity.status === 'COMPLETATA'}
                         testID="btn-activity-apply"
                         style={{
-                            backgroundColor: (isFull || activity.status === 'COMPLETATA') ? '#e2e8f0' : Colors.accent,
+                            backgroundColor: (isFull || activity.status === 'COMPLETATA') ? '#e2e8f0' : colors.accent,
                             paddingHorizontal: 26, paddingVertical: 16, borderRadius: 28,
                             flexDirection: 'row', alignItems: 'center', gap: 8
                         }}

@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Dimensions, Alert, Animated, ActivityIndi
 import { Image } from 'expo-image';
 import { Heart, MoreHorizontal, Users } from 'lucide-react-native';
 import { CommunityPost, REACTION_EMOJI, ReactionType } from '../types/community';
-import { Colors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -15,6 +14,7 @@ import {
     getCommunityReactionSnapshot,
 } from '../hooks/community/selectors';
 import {
+import { colors } from "@/theme";
     useDeleteCommunityPostMutation,
     useReportCommunityPostMutation,
     useToggleCommunityReactionMutation,
@@ -122,7 +122,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                     }
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', color: Colors.primary, fontSize: 14 }}>{authorName}</Text>
+                    <Text style={{ fontWeight: '800', color: colors.primary, fontSize: 14 }}>{authorName}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
                         <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>{timeAgo}</Text>
                         {effectiveRelation === 'affiliated' && (
@@ -135,8 +135,8 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                         )}
                         {effectiveRelation === 'followed' && (
                             <View style={{ backgroundColor: '#fff1f7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <Heart size={10} color={Colors.accent} fill={Colors.accent} />
-                                <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
+                                <Heart size={10} color={colors.accent} fill={colors.accent} />
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.accent }}>
                                     Sei un follower
                                 </Text>
                             </View>
@@ -154,7 +154,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                     }
                                 }}
                                 style={{
-                                    backgroundColor: Colors.primary,
+                                    backgroundColor: colors.primary,
                                     paddingHorizontal: 10,
                                     paddingVertical: 5,
                                     borderRadius: 999,
@@ -177,7 +177,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                         )}
                         {post.linked_activity && post.linked_activity.status === 'IN_CORSO' && (
                             <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-                                <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.accent }}>
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.accent }}>
                                     LIVE
                                 </Text>
                             </View>
@@ -255,7 +255,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                 style={{ padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                             >
                                 <View style={{ flex: 1, marginRight: 10 }}>
-                                    <View style={{ backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
+                                    <View style={{ backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
                                         <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>Attività Collegata</Text>
                                     </View>
                                     <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
@@ -268,7 +268,7 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                     </Text>
                                 </View>
                                 <View style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
-                                    <Text style={{ color: Colors.primary, fontWeight: '900', fontSize: 13 }}>Apri attività</Text>
+                                    <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 13 }}>Apri attività</Text>
                                 </View>
                             </LinearGradient>
                         </TouchableOpacity>
@@ -300,12 +300,12 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
                                 backgroundColor: active ? '#ede9fe' : '#f8fafc',
                                 paddingHorizontal: 10, paddingVertical: 6,
                                 borderRadius: 20, borderWidth: 1,
-                                borderColor: active ? Colors.primary : '#e2e8f0',
+                                borderColor: active ? colors.primary : '#e2e8f0',
                             }}
                         >
                             <Text style={{ fontSize: 16 }}>{REACTION_EMOJI[type]}</Text>
                             {count > 0 && (
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? Colors.primary : '#64748b' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? colors.primary : '#64748b' }}>
                                     {count}
                                 </Text>
                             )}

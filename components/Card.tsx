@@ -1,24 +1,31 @@
 import { View, TouchableOpacity } from "react-native";
-
-// Use styled to wrap View/TouchableOpacity if needed, but here we pass className prop directly
-// which NativeWind handles if configured correctly. 
-// However, to be safe with custom components, simple view wrapping is fine.
+import { colors, radius, shadows } from "@/theme";
 
 interface CardProps {
-    children: React.ReactNode;
-    className?: string;
-    onPress?: () => void;
+  children: React.ReactNode;
+  className?: string;
+  style?: object;
+  onPress?: () => void;
+  variant?: "elevated" | "flat" | "outlined";
 }
 
-export function Card({ children, className, onPress }: CardProps) {
-    const Container = onPress ? TouchableOpacity : View;
-    return (
-        <Container
-            onPress={onPress}
-            // Changed rounded-2xl to rounded-[32px] (approx 3xl) for very round look
-            className={`bg-white rounded-[32px] p-5 shadow-sm border border-primary/5 ${className}`}
-        >
-            {children}
-        </Container>
-    );
+export function Card({ children, className, style, onPress, variant = "elevated" }: CardProps) {
+  const Container = onPress ? TouchableOpacity : View;
+
+  const variantStyle =
+    variant === "flat"
+      ? { borderRadius: radius.card }
+      : variant === "outlined"
+      ? { borderRadius: radius.card, borderWidth: 1, borderColor: colors.border }
+      : { borderRadius: radius.card, ...shadows.card };
+
+  return (
+    <Container
+      onPress={onPress}
+      className={`bg-surface p-5 ${className ?? ""}`}
+      style={[variantStyle, style]}
+    >
+      {children}
+    </Container>
+  );
 }

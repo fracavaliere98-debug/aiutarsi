@@ -10,9 +10,9 @@ import Animated, {
     runOnJS
 } from 'react-native-reanimated';
 import { Award, Star, Share2, X } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 import { useGamificationLevelUp } from '../hooks/gamification/useGamificationLevelUp';
+import { colors } from "@/theme";
 
 export const LevelUpOverlay = () => {
     const { user } = useAuth();
@@ -90,7 +90,7 @@ export const LevelUpOverlay = () => {
                         onPress={handleDismiss}
                         className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full"
                     >
-                        <X size={20} color={Colors.secondary} />
+                        <X size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
 
                     {/* Stars Decoration */}

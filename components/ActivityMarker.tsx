@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Zap } from 'lucide-react-native';
 import { OldActivity } from '../types';
-import { Colors } from '../constants/Colors';
+import { colors } from "@/theme";
 
 interface ActivityMarkerProps {
     activity: OldActivity;
@@ -84,7 +84,7 @@ export const ActivityMarker = ({ activity, isSelected, isEnrolled, markerColor, 
                 {activity.isUrgent && !isSelected && (
                     <View style={{
                         position: 'absolute', top: -8, right: -8,
-                        backgroundColor: Colors.accent,
+                        backgroundColor: colors.accent,
                         borderRadius: 99, padding: 3,
                         borderWidth: 1.5, borderColor: 'white'
                     }}>

@@ -5,11 +5,11 @@ import * as DocumentPicker from "expo-document-picker";
 import { ArrowRight, FileText, Upload, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { OnboardingStepHeader } from "../onboarding/OnboardingStepHeader";
 import { storageService } from "../../services/StorageService";
 import { authService } from "../../services/AuthService";
 import { supabase } from "../../utils/supabase";
+import { colors } from "@/theme";
 
 type Props = {
   title: string;
@@ -176,9 +176,9 @@ export function NPOVerificationFlow({
 
         <View style={styles.badgePreview}>
           <View style={styles.badgeIconContainer}>
-            <ShieldCheck size={48} color={Colors.primary} />
+            <ShieldCheck size={48} color={colors.primary} />
             <View style={styles.miniBadge}>
-              <CheckCircle2 size={24} color="white" fill={Colors.accent} />
+              <CheckCircle2 size={24} color="white" fill={colors.accent} />
             </View>
           </View>
           <Text style={styles.badgeTitle}>Bollino Viola</Text>
@@ -209,7 +209,7 @@ export function NPOVerificationFlow({
           >
             {document && document.assets?.[0] ? (
               <View style={styles.fileInfo}>
-                <FileText size={32} color={Colors.primary} />
+                <FileText size={32} color={colors.primary} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fileName} numberOfLines={1}>
                     {document.assets[0].name}
@@ -224,7 +224,7 @@ export function NPOVerificationFlow({
               </View>
             ) : (
               <>
-                <Upload size={32} color={Colors.secondary} style={{ marginBottom: 12 }} />
+                <Upload size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
                 <Text style={styles.uploadText}>Tocca per selezionare un file</Text>
                 <Text style={styles.formatText}>PDF o immagini, max 5MB</Text>
               </>
@@ -285,14 +285,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 8,
     right: 4,
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: 999,
   },
-  badgeTitle: { fontSize: 24, fontWeight: "900", color: Colors.primary, marginBottom: 8 },
-  badgeDesc: { fontSize: 14, lineHeight: 22, textAlign: "center", color: Colors.secondary },
+  badgeTitle: { fontSize: 24, fontWeight: "900", color: colors.primary, marginBottom: 8 },
+  badgeDesc: { fontSize: 14, lineHeight: 22, textAlign: "center", color: colors.textSecondary },
   uploadSection: { marginHorizontal: 24, marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: "900", color: Colors.primary, marginBottom: 6 },
-  sectionDesc: { fontSize: 14, lineHeight: 21, color: Colors.secondary, marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: "900", color: colors.primary, marginBottom: 6 },
+  sectionDesc: { fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginBottom: 14 },
   uploadBox: {
     backgroundColor: "white",
     borderRadius: 28,
@@ -304,10 +304,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 160,
   },
-  uploadBoxActive: { borderStyle: "solid", borderColor: Colors.primary, backgroundColor: "#faf8ff" },
+  uploadBoxActive: { borderStyle: "solid", borderColor: colors.primary, backgroundColor: "#faf8ff" },
   uploadBoxDisabled: { opacity: 0.55 },
-  uploadText: { fontSize: 15, fontWeight: "700", color: Colors.primary },
-  formatText: { fontSize: 12, fontWeight: "600", color: Colors.secondary, marginTop: 6 },
+  uploadText: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  formatText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary, marginTop: 6 },
   pendingBox: {
     backgroundColor: "#fff7ed",
     borderWidth: 1,
@@ -319,11 +319,11 @@ const styles = StyleSheet.create({
   pendingTitle: { color: "#c2410c", fontSize: 13, fontWeight: "900", marginBottom: 4 },
   pendingText: { color: "#9a3412", fontSize: 12, lineHeight: 18 },
   fileInfo: { width: "100%", flexDirection: "row", alignItems: "center", gap: 14 },
-  fileName: { fontSize: 14, fontWeight: "700", color: Colors.primary },
-  fileSize: { fontSize: 12, color: Colors.secondary, marginTop: 4 },
-  removeText: { color: Colors.primary, fontSize: 12, fontWeight: "800" },
+  fileName: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  fileSize: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+  removeText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
   disclaimerBox: { marginHorizontal: 24, borderRadius: 24, padding: 18, backgroundColor: "#F2F4F8", marginBottom: 24 },
-  disclaimerText: { fontSize: 13, lineHeight: 20, color: Colors.secondary },
+  disclaimerText: { fontSize: 13, lineHeight: 20, color: colors.textSecondary },
   footer: {
     position: "absolute",
     bottom: 0,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   button: {
     height: 56,
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",

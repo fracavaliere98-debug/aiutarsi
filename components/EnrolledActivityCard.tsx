@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
 import { Clock, Building2, MapPin } from "lucide-react-native";
-import { Colors } from "../constants/Colors";
+import { colors } from "@/theme";
 
 interface EnrolledActivityCardProps {
     activity: any; // We'll use any if type is hard to import perfectly, but better OldActivity
@@ -45,7 +45,7 @@ export function EnrolledActivityCard({ activity, onPress, style }: EnrolledActiv
                     <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
                         {/* Date Badge */}
                         <View style={{ width: 56, height: 56, backgroundColor: '#eef2ff', borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e0e7ff' }}>
-                            <Text style={{ fontSize: 9, fontWeight: '900', color: Colors.accent, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: -2 }}>{month}</Text>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: colors.accent, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: -2 }}>{month}</Text>
                             <Text style={{ fontSize: 22, fontWeight: '900', color: '#1e1b4b' }}>{day}</Text>
                         </View>
 

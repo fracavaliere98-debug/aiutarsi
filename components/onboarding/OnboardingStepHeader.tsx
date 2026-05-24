@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { ArrowLeft, X } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
+import { colors } from "@/theme";
 
 type OnboardingStepHeaderProps = {
     title: string;
@@ -38,7 +38,7 @@ export function OnboardingStepHeader({
                         opacity: onBack ? 1 : 0,
                     }}
                 >
-                    <ArrowLeft size={20} color={Colors.primary} />
+                    <ArrowLeft size={20} color={colors.primary} />
                 </TouchableOpacity>
 
                 {onClose ? (
@@ -66,11 +66,11 @@ export function OnboardingStepHeader({
                 )}
             </View>
 
-            <Text style={{ fontSize: compact ? 26 : 30, lineHeight: compact ? 32 : 36, fontWeight: '900', color: Colors.primary, marginBottom: subtitle ? 8 : 0 }}>
+            <Text style={{ fontSize: compact ? 26 : 30, lineHeight: compact ? 32 : 36, fontWeight: '900', color: colors.primary, marginBottom: subtitle ? 8 : 0 }}>
                 {title}
             </Text>
             {!!subtitle && (
-                <Text style={{ fontSize: 14, lineHeight: 21, color: Colors.secondary }}>
+                <Text style={{ fontSize: 14, lineHeight: 21, color: colors.textSecondary }}>
                     {subtitle}
                 </Text>
             )}

@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { UserAvatar } from "./UserAvatar";
 import { CheckCircle2 } from "lucide-react-native";
-import { Colors } from "../constants/Colors";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "expo-router";
 
 import { OldApplication, OldActivityApplication } from "../types";
+import { colors } from "@/theme";
 
 interface VolunteerApplicationCardProps {
     application: (OldApplication | OldActivityApplication) & { metrics?: { matchScore: number }, phone?: string };
@@ -47,7 +47,7 @@ export const VolunteerApplicationCard = ({
                         />
                         {fullUser?.isVerified && (
                             <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-                                <CheckCircle2 size={16} color={Colors.success} fill="white" />
+                                <CheckCircle2 size={16} color={colors.success} fill="white" />
                             </View>
                         )}
                     </View>

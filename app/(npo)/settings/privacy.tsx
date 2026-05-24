@@ -7,7 +7,7 @@ import { SoftCard } from "../../../components/SoftCard";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { supabase } from "../../../utils/supabase";
-import { Colors } from "../../../constants/Colors";
+import { colors } from "@/theme";
 
 
 export default function NPOPrivacyScreen() {
@@ -61,7 +61,7 @@ export default function NPOPrivacyScreen() {
 
     if (isFetching) return (
         <View className="flex-1 items-center justify-center bg-background-light">
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={colors.primary} />
         </View>
     );
 
@@ -72,13 +72,13 @@ export default function NPOPrivacyScreen() {
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">CHIAMATE</Text>
             <SoftCard className="p-5 mb-6">
                 <PrivacyRow
-                    icon={<Phone size={22} color={allowCalls ? Colors.success : Colors.secondary} />}
+                    icon={<Phone size={22} color={allowCalls ? colors.success : colors.textSecondary} />}
                     iconBg={allowCalls ? "bg-emerald-50" : "bg-slate-100"}
                     title="Ricevi chiamate dall'app"
                     subtitle={allowCalls ? "I volontari possono chiamarti direttamente" : "Il tasto chiamata è disabilitato per i tuoi contatti"}
                     value={allowCalls}
                     onValueChange={setAllowCalls}
-                    trackTrue={Colors.success}
+                    trackTrue={colors.success}
                 />
             </SoftCard>
 
@@ -86,7 +86,7 @@ export default function NPOPrivacyScreen() {
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">CONTATTI</Text>
             <SoftCard className="p-5 mb-8">
                 <PrivacyRow
-                    icon={<Mail size={22} color={Colors.primary} />}
+                    icon={<Mail size={22} color={colors.primary} />}
                     iconBg="bg-blue-50"
                     title="Mostra email di contatto"
                     subtitle={showEmail ? "L'email è visibile in Chi siamo" : "L'email resta nascosta nel profilo pubblico"}
@@ -123,7 +123,7 @@ function PrivacyRow({ icon, iconBg, title, subtitle, value, onValueChange, track
             <Switch
                 value={value}
                 onValueChange={onValueChange}
-                trackColor={{ false: "#e2e8f0", true: trackTrue || Colors.primary }}
+                trackColor={{ false: "#e2e8f0", true: trackTrue || colors.primary }}
             />
         </View>
     );

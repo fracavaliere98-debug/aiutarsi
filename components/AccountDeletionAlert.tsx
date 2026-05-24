@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { AlertTriangle, RotateCcw } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
-import { Colors } from '../constants/Colors';
+import { colors } from "@/theme";
 
 export const AccountDeletionAlert: React.FC = () => {
     const { user, cancelAccountDeletion } = useAuth();
@@ -37,7 +37,7 @@ export const AccountDeletionAlert: React.FC = () => {
                 onPress={() => cancelAccountDeletion()}
                 activeOpacity={0.8}
             >
-                <RotateCcw size={14} color={Colors.primary} />
+                <RotateCcw size={14} color={colors.primary} />
                 <Text style={styles.cancelText}>Annulla richiesta</Text>
             </TouchableOpacity>
         </View>
@@ -105,6 +105,6 @@ const styles = StyleSheet.create({
     cancelText: {
         fontSize: 12,
         fontWeight: '800',
-        color: Colors.primary,
+        color: colors.primary,
     },
 });

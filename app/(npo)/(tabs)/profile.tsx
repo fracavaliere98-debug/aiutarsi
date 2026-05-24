@@ -18,9 +18,9 @@ import { StatCard } from "../../../components/StatCard";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useAuth } from "../../../context/AuthContext";
-import { Colors } from "../../../constants/Colors";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 import { supabase } from "../../../utils/supabase";
+import { colors } from "@/theme";
 
 export default function NPOProfileScreen() {
     const { user, getNPOFollowers, fetchUserById, setUser } = useAuth();
@@ -141,8 +141,8 @@ export default function NPOProfileScreen() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={handleRefresh}
-                    tintColor={Colors.primary}
-                    colors={[Colors.primary]}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
                 />
             }
         >
@@ -174,7 +174,7 @@ export default function NPOProfileScreen() {
                     >
                         <View className="flex-row items-center">
                             <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mr-3">
-                                <Settings size={18} color={Colors.primary} />
+                                <Settings size={18} color={colors.primary} />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-primary font-bold text-sm">Completa il profilo del tuo ente</Text>
@@ -300,7 +300,7 @@ export default function NPOProfileScreen() {
                                 {(user?.publicEmail || user?.public_email) && (
                                     <View className="flex-row items-center gap-3">
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Mail size={16} color={Colors.primary} />
+                                            <Mail size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Email</Text>
@@ -311,7 +311,7 @@ export default function NPOProfileScreen() {
                                 {user?.phone && (
                                     <View className="flex-row items-center gap-3">
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Phone size={16} color={Colors.primary} />
+                                            <Phone size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Telefono</Text>
@@ -322,7 +322,7 @@ export default function NPOProfileScreen() {
                                 {user?.website && (
                                     <View className="flex-row items-center gap-3">
                                         <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                            <Globe size={16} color={Colors.primary} />
+                                            <Globe size={16} color={colors.primary} />
                                         </View>
                                         <View>
                                             <Text className="text-secondary text-xs font-bold uppercase">Sito Web</Text>
@@ -332,7 +332,7 @@ export default function NPOProfileScreen() {
                                 )}
                                 <View className="flex-row items-center gap-3">
                                     <View className="w-8 h-8 bg-indigo-50 rounded-full items-center justify-center">
-                                        <MapPin size={16} color={Colors.primary} />
+                                        <MapPin size={16} color={colors.primary} />
                                     </View>
                                     <View>
                                         <Text className="text-secondary text-xs font-bold uppercase">Sede Operativa</Text>
@@ -353,7 +353,7 @@ export default function NPOProfileScreen() {
                                     <View className="flex-row justify-between items-start mb-2">
                                         <View className="flex-row gap-0.5">
                                             {[1, 2, 3, 4, 5].map((s) => (
-                                                <Star key={s} size={14} color={s <= review.stars ? Colors.accent : "#e2e8f0"} fill={s <= review.stars ? Colors.accent : "transparent"} />
+                                                <Star key={s} size={14} color={s <= review.stars ? colors.accent : "#e2e8f0"} fill={s <= review.stars ? colors.accent : "transparent"} />
                                             ))}
                                         </View>
                                         <Text className="text-secondary/40 text-[10px] font-bold">{new Date(review.date).toLocaleDateString()}</Text>

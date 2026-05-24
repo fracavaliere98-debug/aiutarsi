@@ -3,7 +3,6 @@ import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, I
 import { Search, Edit, Users as UsersIcon, ChevronRight, X, Trash2 } from 'lucide-react-native';
 import { ConversationListItem } from '../../components/ConversationListItem';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAvailableChatEntitiesQuery } from '../../hooks/chat/queries';
@@ -11,6 +10,7 @@ import { useChatInboxView } from '../../hooks/chat/useChatInboxView';
 import { useHideConversationMutation, useStartGroupConversationMutation, useStartPrivateConversationMutation } from '../../hooks/chat/mutations';
 
 import { StandardLayout } from '../../components/StandardLayout';
+import { colors } from "@/theme";
 
 function areConversationSnapshotsEqual(previous: any[], next: any[]) {
     if (previous.length !== next.length) return false;
@@ -355,7 +355,7 @@ export default function MessagesListScreen() {
                             setShowNpoPicker(true);
                             void availableEntitiesQuery.refetch();
                         }}
-                        style={{ backgroundColor: Colors.accent }} // Pink/Magenta color from photo
+                        style={{ backgroundColor: colors.accent }} // Pink/Magenta color from photo
                         className="w-12 h-12 rounded-full items-center justify-center shadow-sm"
                     >
                         <Edit size={22} color="white" />
@@ -440,7 +440,7 @@ export default function MessagesListScreen() {
                         ListEmptyComponent={
                             <View className="flex-1 items-center justify-center pt-20 px-8">
                                 <View className="w-14 h-14 rounded-3xl bg-primary/5 items-center justify-center mb-4">
-                                    <UsersIcon size={24} color={Colors.primary} />
+                                    <UsersIcon size={24} color={colors.primary} />
                                 </View>
                                 <Text className="text-slate-700 font-black text-base text-center">Nessuna conversazione trovata</Text>
                                 <Text className="text-slate-400 text-sm text-center mt-2 leading-5">
@@ -491,13 +491,13 @@ export default function MessagesListScreen() {
                                         onPress={() => setShowNpoPicker(false)}
                                         className="w-10 h-10 bg-slate-100 rounded-full items-center justify-center"
                                     >
-                                        <X size={24} color={Colors.primary} />
+                                        <X size={24} color={colors.primary} />
                                     </TouchableOpacity>
                                 </View>
 
                                 {loadingNpos ? (
                                     <View className="flex-1 items-center justify-center">
-                                        <ActivityIndicator color={Colors.primary} size="large" />
+                                        <ActivityIndicator color={colors.primary} size="large" />
                                     </View>
                                 ) : myNpos.length === 0 ? (
                                     <View className="flex-1 items-center justify-center py-10">
@@ -521,7 +521,7 @@ export default function MessagesListScreen() {
                                                 >
                                                     <View className={`w-14 h-14 rounded-full items-center justify-center border border-slate-100 ${item.isGroup ? 'bg-indigo-50' : 'bg-white'}`}>
                                                         {item.isGroup ? (
-                                                            <UsersIcon size={24} color={Colors.primary} />
+                                                            <UsersIcon size={24} color={colors.primary} />
                                                         ) : (
                                                             <Image
                                                                 source={{ uri: item.avatar || `https://ui-avatars.com/api/?name=${item.name || item.full_name || 'OldUser'}` }}
@@ -538,7 +538,7 @@ export default function MessagesListScreen() {
                                                         </Text>
                                                     </View>
                                                     <View className="bg-white p-2 rounded-2xl shadow-sm">
-                                                        <ChevronRight size={20} color={Colors.primary} />
+                                                        <ChevronRight size={20} color={colors.primary} />
                                                     </View>
                                                 </TouchableOpacity >
                                             ))}

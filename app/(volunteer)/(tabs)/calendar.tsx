@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity, RefreshControl } from "react-native";
-import { Colors } from "../../../constants/Colors";
 import { useAuth } from "../../../context/AuthContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar as CalendarIcon, List } from "lucide-react-native";
@@ -13,6 +12,7 @@ import { CalendarGrid } from "../../../components/CalendarGrid";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { ErrorState } from "../../../components/ErrorState";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
+import { colors } from "@/theme";
 
 type ViewMode = "list" | "calendar";
 type FilterMode = "upcoming" | "completed";
@@ -121,8 +121,8 @@ export default function VolunteerCalendar() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    tintColor={Colors.accent}
-                    colors={[Colors.accent]}
+                    tintColor={colors.accent}
+                    colors={[colors.accent]}
                 />
             }
         >
@@ -133,7 +133,7 @@ export default function VolunteerCalendar() {
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "calendar" ? "bg-white shadow-sm" : ""
                         }`}
                 >
-                    <CalendarIcon size={18} color={viewMode === "calendar" ? Colors.primary : Colors.secondary} />
+                    <CalendarIcon size={18} color={viewMode === "calendar" ? colors.primary : colors.textSecondary} />
                     <Text className={`font-bold ${viewMode === "calendar" ? "text-primary" : "text-secondary"}`}>
                         Calendario
                     </Text>
@@ -143,7 +143,7 @@ export default function VolunteerCalendar() {
                     className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${viewMode === "list" ? "bg-white shadow-sm" : ""
                         }`}
                 >
-                    <List size={18} color={viewMode === "list" ? Colors.primary : Colors.secondary} />
+                    <List size={18} color={viewMode === "list" ? colors.primary : colors.textSecondary} />
                     <Text className={`font-bold ${viewMode === "list" ? "text-primary" : "text-secondary"}`}>
                         Lista
                     </Text>
@@ -239,7 +239,7 @@ export default function VolunteerCalendar() {
                         (filterMode === "upcoming" || groupedActivities.past.length === 0) && (
                             <SoftCard className="p-8 items-center">
                                 <View className="bg-indigo-50 p-6 rounded-full mb-6">
-                                    <CalendarIcon size={48} color={Colors.primary} />
+                                    <CalendarIcon size={48} color={colors.primary} />
                                 </View>
                                 <Text className="text-xl font-black text-primary text-center mb-2">
                                     {filterMode === "upcoming" ? "Nessuna attività in programma" : "Nessuna attività completata"}

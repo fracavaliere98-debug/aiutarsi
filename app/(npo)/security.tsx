@@ -6,9 +6,9 @@ import { StandardLayout } from "../../components/StandardLayout";
 import { SoftCard } from "../../components/SoftCard";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { authService } from "../../services/AuthService";
 import { getPasswordRequirementsShortText, getPasswordRequirementsText, isPasswordStrongEnough } from "../../utils/passwordValidation";
+import { colors } from "@/theme";
 
 export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
     const { user } = useAuth();
@@ -116,7 +116,7 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
             <SoftCard className="p-5 mb-6">
                 <View className="flex-row items-center gap-4">
                     <View className={`p-3 rounded-full ${isEditingEmail ? "bg-accent/10" : "bg-indigo-50"}`}>
-                        <Mail size={24} color={isEditingEmail ? Colors.accent : Colors.primary} />
+                        <Mail size={24} color={isEditingEmail ? colors.accent : colors.primary} />
                     </View>
                     <View className="flex-1">
                         <Text className="text-secondary text-xs font-bold uppercase">Email attuale</Text>
@@ -158,7 +158,7 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
             <SoftCard className="p-5 mb-24 flex-row items-center justify-between">
                 <View className="flex-row items-center gap-4 flex-1">
                     <View className="bg-emerald-50 p-2.5 rounded-full">
-                        <Shield size={24} color={Colors.success} />
+                        <Shield size={24} color={colors.success} />
                     </View>
                     <View className="flex-1">
                         <Text className="text-primary font-bold text-base">Autenticazione a due fattori</Text>
@@ -168,7 +168,7 @@ export default function SecurityScreen({ onClose }: { onClose?: () => void }) {
                 <Switch
                     value={twoFactorEnabled}
                     onValueChange={setTwoFactorEnabled}
-                    trackColor={{ false: "#e2e8f0", true: Colors.success }}
+                    trackColor={{ false: "#e2e8f0", true: colors.success }}
                 />
             </SoftCard>
 
@@ -213,7 +213,7 @@ const PasswordInput = ({
     <View className="mb-4">
         <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-2 ml-1">{label}</Text>
         <View className="bg-white border border-gray-200 rounded-2xl flex-row items-center px-4 py-3">
-            <Lock size={20} color={Colors.secondary} className="mr-3" />
+            <Lock size={20} color={colors.textSecondary} className="mr-3" />
             <TextInput
                 className="flex-1 text-primary font-medium text-base"
                 value={value}
@@ -223,9 +223,9 @@ const PasswordInput = ({
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? (
-                    <EyeOff size={20} color={Colors.secondary} />
+                    <EyeOff size={20} color={colors.textSecondary} />
                 ) : (
-                    <Eye size={20} color={Colors.secondary} />
+                    <Eye size={20} color={colors.textSecondary} />
                 )}
             </TouchableOpacity>
         </View>

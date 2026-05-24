@@ -18,7 +18,6 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { X, Send } from 'lucide-react-native';
-import { Colors } from '../constants/Colors';
 import { supabase } from '../utils/supabase';
 import { profileRest } from '../utils/profileRest';
 import { GemmaAvatar } from './GemmaAvatar';
@@ -27,6 +26,7 @@ import { getFirstName } from '../utils/getFirstName';
 import { authService } from '../services/AuthService';
 import { buildContextAwareHelpAnswer, buildLocalHelpFallback, type LocalHelpContext } from '../utils/gemmaHelpLocal';
 import { isExpectedUserInputError, trackError, trackEvent } from '../utils/monitoring';
+import { colors } from "@/theme";
 
 interface Message {
     role: 'user' | 'model';
@@ -162,9 +162,9 @@ const TypingDots = () => {
 
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
-            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.primary + 'aa' }, s1]} />
-            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.primary + 'aa' }, s2]} />
-            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.primary + 'aa' }, s3]} />
+            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary + 'aa' }, s1]} />
+            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary + 'aa' }, s2]} />
+            <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary + 'aa' }, s3]} />
         </View>
     );
 };
@@ -456,14 +456,14 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                 }}>
                     <GemmaAvatar size={44} />
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: Colors.primary }}>{title}</Text>
-                        <Text style={{ fontSize: 12, color: Colors.secondary }}>{subtitle}</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>{title}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>{subtitle}</Text>
                     </View>
                     <TouchableOpacity
                         onPress={onClose}
                         style={{ backgroundColor: '#f1f5f9', borderRadius: 20, padding: 8 }}
                     >
-                        <X size={20} color={Colors.secondary} />
+                        <X size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
 
@@ -495,9 +495,9 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                                         {msg.isTyping && msg.text === '' ? (
                                             <TypingDots />
                                         ) : (
-                                            <Text style={{ fontSize: 15, color: Colors.primary, lineHeight: 22 }}>
+                                            <Text style={{ fontSize: 15, color: colors.primary, lineHeight: 22 }}>
                                                 {msg.text}
-                                                {msg.isTyping && <Text style={{ color: Colors.primary }}>▍</Text>}
+                                                {msg.isTyping && <Text style={{ color: colors.primary }}>▍</Text>}
                                             </Text>
                                         )}
                                     </View>
@@ -505,7 +505,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                             )}
                             {msg.role === 'user' && (
                                 <View style={{
-                                    backgroundColor: Colors.primary,
+                                    backgroundColor: colors.primary,
                                     borderRadius: 18,
                                     borderTopRightRadius: 4,
                                     padding: 12,
@@ -536,7 +536,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                             paddingHorizontal: 18,
                             paddingVertical: 12,
                             fontSize: 15,
-                            color: Colors.primary,
+                            color: colors.primary,
                             borderWidth: 1,
                             borderColor: '#e2e8f0',
                             maxHeight: 100,
@@ -554,7 +554,7 @@ export const GemmaAIChat: React.FC<GemmaAIChatProps> = ({
                         onPress={sendMessage}
                         disabled={!input.trim() || isLoading}
                         style={{
-                            backgroundColor: input.trim() && !isLoading ? Colors.primary : '#e2e8f0',
+                            backgroundColor: input.trim() && !isLoading ? colors.primary : '#e2e8f0',
                             borderRadius: 22,
                             padding: 12,
                             alignItems: 'center',

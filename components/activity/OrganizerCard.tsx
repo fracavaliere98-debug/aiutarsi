@@ -2,9 +2,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
-import { Colors } from '../../constants/Colors';
 import { UserAvatar } from '../UserAvatar';
 import { Link } from 'expo-router';
+import { colors } from "@/theme";
 
 interface OrganizerCardProps {
     npoId: string;
@@ -34,7 +34,7 @@ export const OrganizerCard = ({ npoId, npoName, avatarUrl, isVerified }: Organiz
                     </View>
                 </View>
                 <View className="bg-white p-2 rounded-full shadow-sm">
-                    <ChevronRight size={20} color={Colors.primary} />
+                    <ChevronRight size={20} color={colors.primary} />
                 </View>
             </TouchableOpacity>
         </Link>

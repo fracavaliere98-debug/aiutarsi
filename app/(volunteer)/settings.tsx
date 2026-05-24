@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Moda
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordRequirementsText, getPasswordRequirementsShortText, isPasswordStrongEnough } from "../../utils/passwordValidation";
 import { LogOut, ChevronRight, Shield, HelpCircle, Heart, Camera, User, FileText, Database, ShieldBan, Users, Mail, Lock, ChartColumnIncreasing, Calendar, ChevronDown, Check } from 'lucide-react-native';
@@ -27,6 +26,7 @@ import {
     getAdultMaxDate,
 } from "../../utils/profileDemographics";
 import { useResetApplicationsQueryState } from "../../hooks/applications/mutations";
+import { colors } from "@/theme";
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images
@@ -354,7 +354,7 @@ export default function VolunteerSettings() {
                         {!avatar && !user?.avatar && (
                             <View
                                 className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white"
-                                style={{ backgroundColor: Colors.primary }}
+                                style={{ backgroundColor: colors.primary }}
                             >
                                 <Camera size={16} color="white" />
                             </View>
@@ -376,10 +376,10 @@ export default function VolunteerSettings() {
                     <TouchableOpacity
                         className="mt-6 px-8 py-3 rounded-2xl"
                         activeOpacity={0.7}
-                        style={{ backgroundColor: Colors.primary + '10' }}
+                        style={{ backgroundColor: colors.primary + '10' }}
                         onPress={() => setShowEditProfile(true)}
                     >
-                        <Text className="font-black text-sm" style={{ color: Colors.primary }}>
+                        <Text className="font-black text-sm" style={{ color: colors.primary }}>
                             Modifica Profilo Personale
                         </Text>
                     </TouchableOpacity>
@@ -390,7 +390,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={User}
                         label="Dati Personali"
-                        color={Colors.primary}
+                        color={colors.primary}
                         onPress={() => setShowEditProfile(true)}
                     />
                     <MenuItem
@@ -402,19 +402,19 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={ShieldBan}
                         label="Account bloccati"
-                        color={Colors.accent}
+                        color={colors.accent}
                         onPress={() => router.push("/blocked-users" as any)}
                     />
                     <MenuItem
                         icon={Users}
                         label="Porta un amico"
-                        color={Colors.primary}
+                        color={colors.primary}
                         onPress={() => router.push("/(volunteer)/referral" as any)}
                     />
                     <MenuItem
                         icon={ChartColumnIncreasing}
                         label="Report"
-                        color={Colors.accent}
+                        color={colors.accent}
                         onPress={() => router.push("/(volunteer)/report" as any)}
                         testID="volunteer-settings-report"
                         last
@@ -447,7 +447,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={Lock}
                         label="Cambia Password"
-                        color={Colors.accent}
+                        color={colors.accent}
                         onPress={() => setShowChangePassword(true)}
                         last
                     />
@@ -458,7 +458,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={Shield}
                         label="Privacy e Visibilità"
-                        color={Colors.success}
+                        color={colors.success}
                         onPress={() => router.push("/(volunteer)/privacy" as any)}
                     />
                     <MenuItem
@@ -470,7 +470,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={Mail}
                         label="Segnala un problema"
-                        color={Colors.accent}
+                        color={colors.accent}
                         onPress={() => {
                             void reportIssue({
                                 user,
@@ -481,7 +481,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={FileText}
                         label="Termini e Condizioni"
-                        color={Colors.primary}
+                        color={colors.primary}
                         onPress={() => router.push("/terms" as any)}
                         last
                     />
@@ -493,7 +493,7 @@ export default function VolunteerSettings() {
                     <MenuItem
                         icon={Database}
                         label="Resetta Dati App (Debug)"
-                        color={Colors.secondary}
+                        color={colors.textSecondary}
                         onPress={async () => {
                             await resetUsers();
                             await resetApplicationsMutation.mutateAsync();
@@ -582,9 +582,9 @@ export default function VolunteerSettings() {
                         <Text className="text-primary font-black text-lg">Modifica Profilo</Text>
                         <TouchableOpacity onPress={saveProfile} disabled={isSaving}>
                             {isSaving ? (
-                                <ActivityIndicator color={Colors.primary} size="small" />
+                                <ActivityIndicator color={colors.primary} size="small" />
                             ) : (
-                                <Text className="font-bold text-base" style={{ color: Colors.primary }}>Salva</Text>
+                                <Text className="font-bold text-base" style={{ color: colors.primary }}>Salva</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -634,7 +634,7 @@ export default function VolunteerSettings() {
                                                 <Text className={`${gender ? "text-primary" : "text-secondary/60"} font-medium`}>
                                                     {GENDER_OPTIONS.find((option) => option.value === gender)?.label || "Seleziona il sesso"}
                                                 </Text>
-                                                <ChevronDown size={18} color={Colors.primary} />
+                                                <ChevronDown size={18} color={colors.primary} />
                                             </TouchableOpacity>
                                             {showGenderDropdown && (
                                                 <View className="border-t border-primary/5 bg-white">
@@ -652,7 +652,7 @@ export default function VolunteerSettings() {
                                                                 <Text className={`${selected ? "text-primary" : "text-secondary"} font-medium`}>
                                                                     {option.label}
                                                                 </Text>
-                                                                {selected ? <Check size={16} color={Colors.primary} /> : null}
+                                                                {selected ? <Check size={16} color={colors.primary} /> : null}
                                                             </TouchableOpacity>
                                                         );
                                                     })}
@@ -689,7 +689,7 @@ export default function VolunteerSettings() {
                                                 onPress={() => setShowBirthDatePicker(true)}
                                                 className="w-8 h-8 rounded-lg border border-primary/15 bg-primary/10 items-center justify-center"
                                             >
-                                                <Calendar size={15} color={Colors.primary} />
+                                                <Calendar size={15} color={colors.primary} />
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -779,9 +779,9 @@ export default function VolunteerSettings() {
                             <Text className="text-primary font-black text-lg">Cambia Email</Text>
                             <TouchableOpacity onPress={handleEmailUpdate} disabled={isUpdatingAuth}>
                                 {isUpdatingAuth ? (
-                                    <ActivityIndicator color={Colors.primary} size="small" />
+                                    <ActivityIndicator color={colors.primary} size="small" />
                                 ) : (
-                                    <Text className="font-bold text-base" style={{ color: Colors.primary }}>Aggiorna</Text>
+                                    <Text className="font-bold text-base" style={{ color: colors.primary }}>Aggiorna</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -836,9 +836,9 @@ export default function VolunteerSettings() {
                             <Text className="text-primary font-black text-lg">Cambia Password</Text>
                             <TouchableOpacity onPress={handlePasswordUpdate} disabled={isUpdatingAuth}>
                                 {isUpdatingAuth ? (
-                                    <ActivityIndicator color={Colors.primary} size="small" />
+                                    <ActivityIndicator color={colors.primary} size="small" />
                                 ) : (
-                                    <Text className="font-bold text-base" style={{ color: Colors.primary }}>Aggiorna</Text>
+                                    <Text className="font-bold text-base" style={{ color: colors.primary }}>Aggiorna</Text>
                                 )}
                             </TouchableOpacity>
                         </View>

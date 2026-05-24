@@ -1,7 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { Colors } from "../../../constants/Colors";
 import { Calendar, Users, Send, Clock, Trash2, RefreshCw } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
@@ -13,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SKILLS } from "../../../constants/Skills";
 import { ACTIVITY_CATEGORIES } from "../../../constants/Interests";
 import { requestMediaLibraryPermission } from "../../../utils/permissions";
+import { colors } from "@/theme";
 
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
@@ -174,7 +174,7 @@ export default function EditActivityScreen() {
         return (
             <StandardLayout title="Modifica" label="Caricamento...">
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             </StandardLayout>
         );
@@ -211,7 +211,7 @@ export default function EditActivityScreen() {
                                     ) : (
                                         <View className="items-center justify-center p-6">
                                             <View className="w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-3">
-                                                <RefreshCw color={Colors.primary} size={32} />
+                                                <RefreshCw color={colors.primary} size={32} />
                                             </View>
                                             <Text className="text-primary/60 font-medium">Tocca per caricare una foto</Text>
                                         </View>
@@ -292,7 +292,7 @@ export default function EditActivityScreen() {
                             <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Data Attività (AAAA-MM-GG)</Text>
                             <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
                                 <View className="mr-3">
-                                    <Calendar size={20} color={Colors.secondary} />
+                                    <Calendar size={20} color={colors.textSecondary} />
                                 </View>
                                 <TextInput
                                     placeholder="2026-02-12"
@@ -309,7 +309,7 @@ export default function EditActivityScreen() {
                                 <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Inizio</Text>
                                 <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
                                     <View className="mr-3">
-                                        <Clock size={20} color={Colors.secondary} />
+                                        <Clock size={20} color={colors.textSecondary} />
                                     </View>
                                     <TextInput
                                         placeholder="10:00"
@@ -323,7 +323,7 @@ export default function EditActivityScreen() {
                                 <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Fine</Text>
                                 <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
                                     <View className="mr-3">
-                                        <Clock size={20} color={Colors.secondary} />
+                                        <Clock size={20} color={colors.textSecondary} />
                                     </View>
                                     <TextInput
                                         placeholder="12:00"
@@ -368,7 +368,7 @@ export default function EditActivityScreen() {
                             <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Volontari Necessari</Text>
                             <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
                                 <View className="mr-3">
-                                    <Users size={20} color={Colors.secondary} />
+                                    <Users size={20} color={colors.textSecondary} />
                                 </View>
                                 <TextInput
                                     placeholder="10"
@@ -427,7 +427,7 @@ export default function EditActivityScreen() {
                                     }
                                     setFormData({ ...formData, isUrgent: v });
                                 }}
-                                trackColor={{ false: "#e2e8f0", true: Colors.accent }}
+                                trackColor={{ false: "#e2e8f0", true: colors.accent }}
                             />
                         </View>
 

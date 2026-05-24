@@ -8,8 +8,8 @@ import { SoftCard } from "../../components/SoftCard";
 import { UserAvatar } from "../../components/UserAvatar";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { Colors } from "../../constants/Colors";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
+import { colors } from "@/theme";
 
 export default function EditProfileScreen({ onClose }: { onClose?: () => void }) {
     const { user, updateUserProfile } = useAuth();
@@ -200,7 +200,7 @@ const InputField = ({
         <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-2 ml-1">{label}</Text>
         <View className={`bg-white border border-gray-200 rounded-2xl flex-row items-${multiline ? 'start' : 'center'} px-4 py-3 focus:border-primary`}>
             <View className={`mr-3 ${multiline ? 'mt-1' : ''}`}>
-                <Icon size={20} color={Colors.secondary} />
+                <Icon size={20} color={colors.textSecondary} />
             </View>
             <TextInput
                 className={`flex-1 text-primary font-medium text-base ${multiline ? 'h-24 pb-2' : ''}`}
