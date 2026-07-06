@@ -215,7 +215,7 @@ export class AuthService {
         // Security-sensitive fields come from app_metadata (server-only, not writable by users).
         // Fallback to user_metadata for existing sessions that predate this change.
         const appMeta = sbUser.app_metadata || {};
-        const secureRole: string = appMeta.role || metadata.role || 'VOLUNTEER';
+        const secureRole = (appMeta.role || metadata.role || 'VOLUNTEER') as AppUser['role'];
         const isBanned: boolean = appMeta.is_banned ?? metadata.is_banned ?? false;
         const banReason: string | null = appMeta.ban_reason ?? metadata.ban_reason ?? null;
         const banReportId: string | null = appMeta.ban_report_id ?? metadata.ban_report_id ?? null;
@@ -1159,6 +1159,7 @@ export class AuthService {
         const cleanEmail = email.trim();
         if (!cleanEmail) throw new Error("Email non disponibile.");
 
+        console.log("[DEBUG] AuthService: resending signup confirmation", {
             emailDomain: cleanEmail.split("@")[1] || "unknown",
             redirectTo: this._getAuthEmailRedirectUrl(),
         });
@@ -1215,6 +1216,7 @@ export class AuthService {
         if (!cleanEmail) throw new Error("Inserisci la tua email.");
         if (!this._validateEmail(cleanEmail)) throw new Error("Formato email non valido.");
 
+        console.log("[DEBUG] AuthService: requesting password reset", {
             emailDomain: cleanEmail.split("@")[1] || "unknown",
             redirectTo: this._getPasswordRecoveryRedirectUrl(),
         });

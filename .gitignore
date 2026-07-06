@@ -36,6 +36,8 @@ tsc_output.txt
 .env*.local
 credentials.json
 google-services-key.json
+test-embedding.js
+test-hf.js
 
 # typescript
 *.tsbuildinfo

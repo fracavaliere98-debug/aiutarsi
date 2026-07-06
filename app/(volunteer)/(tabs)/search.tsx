@@ -536,7 +536,7 @@ export default function SearchScreen() {
                         <View className="flex-row items-center justify-between mb-3">
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                                 <View className={`${catColors.bg} px-2.5 py-1 rounded-md`}>
-                                    <Text className={`${catcolors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                                    <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
                                 </View>
                                 {displayScore > 0 && (
                                     <View style={{ backgroundColor: isTopGemma ? '#fff1f7' : '#eef2ff', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999 }}>

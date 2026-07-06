@@ -147,6 +147,7 @@ function RootLayoutNav() {
             { text: "Installa ora", onPress: async () => { await Updates.fetchUpdateAsync(); await Updates.reloadAsync(); } }
           ]);
         }
+      });
     }
 
     }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister]);

@@ -14,11 +14,11 @@ import {
     getCommunityReactionSnapshot,
 } from '../hooks/community/selectors';
 import {
-import { colors } from "@/theme";
     useDeleteCommunityPostMutation,
     useReportCommunityPostMutation,
     useToggleCommunityReactionMutation,
 } from '../hooks/community/mutations';
+import { colors } from "@/theme";
 
 const SCREEN_W = Dimensions.get('window').width;
 

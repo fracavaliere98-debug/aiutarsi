@@ -579,6 +579,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Sync to backend first to avoid optimistic local changes
             // from cascading into other providers while the save is still in flight.
             const persistedUser = await authService.updateProfile(user.id, data);
+
+            trackEvent("profile_update_completed", {
+                userId: user.id,
                 interests: persistedUser?.interests?.length,
                 skills: persistedUser?.skills?.length,
             });

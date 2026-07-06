@@ -1,4 +1,5 @@
-const token = "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";
+const token = process.env.HUGGINGFACE_API_KEY || "";
+if (!token) { console.error("HUGGINGFACE_API_KEY is not set"); process.exit(1); }
 const text = "Titolo: Aiutare i gatti. Categoria: Animali.";
 
 async function testEmbedding() {

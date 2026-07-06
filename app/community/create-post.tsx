@@ -18,10 +18,10 @@ import {
     useCommunityPostQuery,
 } from '../../hooks/community/queries';
 import {
-import { colors } from "@/theme";
     useCreateCommunityPostMutation,
     useUpdateCommunityPostMutation,
 } from '../../hooks/community/mutations';
+import { colors } from "@/theme";
 
 const IMAGE_PICKER_MEDIA_TYPES =
     (ImagePicker as any).MediaType?.images

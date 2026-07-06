@@ -1,4 +1,5 @@
-const token = "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";
+const token = process.env.HUGGINGFACE_API_KEY || "";
+if (!token) { console.error("HUGGINGFACE_API_KEY is not set"); process.exit(1); }
 const systemPrompt = "Sei Gemma, l'assistente ufficiale di AiutarSì. Rispondi in italiano.";
 const userQuestion = "Ciao, come funziona il sistema XP?";
 
