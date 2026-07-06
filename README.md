@@ -83,10 +83,10 @@ Andare su GitHub → repo → **Settings → Secrets & Variables → Actions**:
 
 ## CI/CD Pipeline
 
-Il repository installa anche un hook locale `pre-push` che esegue `npm run smoke:ios` prima del push. Per bypassarlo temporaneamente:
+Il repository installa anche un hook locale `pre-push` che *potrebbe* eseguire `npm run smoke:ios` prima del push. È **disabilitato di default** (2026-07-06: richiede un simulatore iOS locale ed era solo bloccante senza uno disponibile). Per farlo girare comunque:
 
 ```bash
-SKIP_LOCAL_SMOKE=1 git push origin main
+RUN_LOCAL_SMOKE=1 git push origin main
 ```
 
 ```

@@ -3,8 +3,13 @@ set -eu
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 
-if [ "${SKIP_LOCAL_SMOKE:-0}" = "1" ]; then
-  echo "Skipping local iOS smoke tests because SKIP_LOCAL_SMOKE=1"
+# 2026-07-06: disabled by default — requires a local iOS simulator and was
+# purely blocking local pushes with no simulator reliably available.
+# Re-enable by running with RUN_LOCAL_SMOKE=1, or flip the default back
+# once this is wired into a CI job that actually has a simulator
+# (Maestro Cloud, etc).
+if [ "${RUN_LOCAL_SMOKE:-0}" != "1" ]; then
+  echo "Skipping local iOS smoke tests (disabled by default, set RUN_LOCAL_SMOKE=1 to run them)"
   exit 0
 fi
 
