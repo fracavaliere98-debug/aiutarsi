@@ -17,7 +17,7 @@ export function Card({ children, className, style, onPress, variant = "elevated"
       ? { borderRadius: radius.card }
       : variant === "outlined"
       ? { borderRadius: radius.card, borderWidth: 1, borderColor: colors.border }
-      : { borderRadius: radius.card, ...shadows.card };
+      : { borderRadius: radius.card, ...shadows.card() };
 
   return (
     <Container

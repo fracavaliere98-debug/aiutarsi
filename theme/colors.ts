@@ -12,7 +12,7 @@ export const colors = {
   controlSurface: palette.gray90,
   overlay: "rgba(0,0,0,0.5)",
 
-  text: "#333333",
+  text: palette.slate850,
   textStrong: palette.slate850,
   textSecondary: palette.slate550,
   textMuted: palette.slate500,
@@ -42,6 +42,9 @@ export const colors = {
 
   disabled: palette.slate300,
   disabledText: palette.slate400,
+  primarySoft: palette.purple100,
+  accentSoft: palette.pink100,
+  inverseSoft: "rgba(255,255,255,0.18)",
   white: palette.white,
   black: palette.black,
 } as const;

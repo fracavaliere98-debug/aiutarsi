@@ -15,10 +15,10 @@ type CountBadgeProps = {
 };
 
 const toneStyles: Record<CountBadgeTone, { backgroundColor: string; color: string }> = {
-  primary: { backgroundColor: "rgba(56,36,135,0.1)", color: palette.purple725 },
-  accent: { backgroundColor: "rgba(205,5,127,0.1)", color: colors.accent },
+  primary: { backgroundColor: colors.primarySoft, color: palette.purple725 },
+  accent: { backgroundColor: colors.accentSoft, color: colors.accent },
   neutral: { backgroundColor: colors.surfaceSubtle, color: colors.textMuted },
-  inverse: { backgroundColor: "rgba(255,255,255,0.18)", color: colors.textInverse },
+  inverse: { backgroundColor: colors.inverseSoft, color: colors.textInverse },
 };
 
 export function CountBadge({

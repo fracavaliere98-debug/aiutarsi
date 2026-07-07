@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertCircle } from 'lucide-react-native';
-import { palette, colors, spacing } from '../../../theme';
+import { palette, spacing } from '../../../theme';
 import { useAuth } from '../../../context/AuthContext';
 import { StandardLayout } from '../../../components/StandardLayout';
 import { NPOHeaderActions } from '../../../components/NPOHeaderActions';

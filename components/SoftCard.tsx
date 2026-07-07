@@ -16,7 +16,7 @@ const tokenStyle = {
   borderRadius: radius.card,
   borderWidth: 1,
   borderColor: colors.borderMuted,
-  ...shadows.softCard,
+  ...shadows.softCard(),
 } as const;
 
 export function SoftCard({ children, className = "", onPress, style, testID }: SoftCardProps) {

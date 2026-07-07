@@ -19,7 +19,7 @@ const toneStyles: Record<StatusPillTone, { backgroundColor: string; color: strin
   warning: { backgroundColor: colors.warningSoft, color: colors.warningStrong, borderColor: colors.warningSoft },
   danger: { backgroundColor: colors.dangerSoft, color: colors.dangerStrong, borderColor: colors.dangerSoft },
   info: { backgroundColor: colors.infoSoft, color: colors.infoStrong, borderColor: colors.infoSoft },
-  accent: { backgroundColor: "rgba(205,5,127,0.1)", color: colors.accent, borderColor: "rgba(205,5,127,0.12)" },
+  accent: { backgroundColor: colors.accentSoft, color: colors.accent, borderColor: colors.accentSoft },
 };
 
 export function StatusPill({ label, tone = "neutral", icon, style, testID }: StatusPillProps) {

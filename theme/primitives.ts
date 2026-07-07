@@ -5,13 +5,9 @@ export const palette = {
 
   purple950: "#150c2a",
   purple900: "#1e1238",
-  purple850: "#25193d",
   purple800: "#311b92",
-  purple775: "#352F8B",
-  purple750: "#3b2391",
   purple725: "#382487",
   purple700: "#462282",
-  purple650: "#4c1d95",
   purple600: "#5b3dc4",
   purple500: "#7c3aed",
   purple400: "#8B5CF6",
