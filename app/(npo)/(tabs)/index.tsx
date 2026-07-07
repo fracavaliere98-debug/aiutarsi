@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-
 import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
-import { Sparkles, Star, Users, Plus } from "lucide-react-native";
+import { Sparkles, Star, Users, Plus, ArrowRight } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { StatCard } from "../../../components/StatCard";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -118,8 +119,9 @@ export default function NPODashboard() {
                     <StatCard
                         value={npoRating.toFixed(1)}
                         label="RATING"
-                        valueColor="text-amber-600"
+                        valueColor={colors.warningStrong}
                         icon={<Star size={12} color="#d97706" fill="#d97706" />}
+                        compact
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -131,8 +133,9 @@ export default function NPODashboard() {
                     <StatCard
                         value={myActivities.length}
                         label="ATTIVITÀ"
-                        valueColor="text-indigo-600"
+                        valueColor={colors.primary}
                         icon={<Sparkles size={12} color="#4f46e5" />}
+                        compact
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -144,8 +147,9 @@ export default function NPODashboard() {
                     <StatCard
                         value={followerCount}
                         label="FOLLOWERS"
-                        valueColor="text-blue-600"
+                        valueColor={colors.infoStrong}
                         icon={<Users size={12} color="#2563eb" />}
+                        compact
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -157,23 +161,43 @@ export default function NPODashboard() {
                     <StatCard
                         value={totalEnrollmentsCount}
                         label="VOLONTARI"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Users size={12} color="#db2777" />}
+                        compact
                     />
                 </TouchableOpacity>
             </View>
 
             {lowCoverageCount > 0 && (
                 <TouchableOpacity
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     onPress={() => router.push("/(npo)/report" as any)}
-                    className="mb-6 bg-orange-50 border border-orange-100 rounded-3xl px-5 py-4"
+                    style={{
+                        height: 92,
+                        borderRadius: 22,
+                        overflow: 'hidden',
+                        marginBottom: 20,
+                    }}
                     testID="npo-dashboard-low-coverage"
                 >
-                    <Text className="text-orange-700 font-black text-sm mb-1">Attività da attenzionare</Text>
-                    <Text className="text-orange-700/80 text-xs">
-                        Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per vedere il report.
-                    </Text>
+                    <LinearGradient
+                        colors={[colors.warning, colors.warningStrong]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}
+                    >
+                        <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>ATTENZIONE</Text>
+                            </View>
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }} numberOfLines={1}>
+                                Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per vedere il report.
+                            </Text>
+                        </View>
+                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowRight size={16} color="white" />
+                        </View>
+                    </LinearGradient>
                 </TouchableOpacity>
             )}
 
@@ -246,7 +270,7 @@ export default function NPODashboard() {
                     <View>
                         {upcomingActivities.map((act) => (
                             <View key={act.id} className="mb-4">
-                                <ActivityCard activity={act} onPress={() => router.push(`/activity/${act.id}` as any)} />
+                                <ActivityCard activity={act} onPress={() => router.push(`/activity/${act.id}` as any)} showProgress />
                             </View>
                         ))}
                     </View>

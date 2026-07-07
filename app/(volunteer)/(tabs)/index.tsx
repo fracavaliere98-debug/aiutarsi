@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-react-native";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -10,6 +11,7 @@ import { StatCard } from "../../../components/StatCard";
 import { useToast } from "../../../context/ToastContext";
 import { useState, useMemo, useCallback } from "react";
 import { ErrorState } from "../../../components/ErrorState";
+import { EmptyState } from "../../../components/EmptyState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
 import { useActivitiesDomain, useUserReviews, useVolunteerStats } from "../../../hooks/activities/selectors";
 import { useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
@@ -113,7 +115,7 @@ export default function VolunteerDashboard() {
                     <StatCard
                         value={volunteerStats.totalHours.toString()}
                         label="ORE DONATE"
-                        valueColor="text-indigo-900"
+                        valueColor={colors.primary}
                         icon={<Clock size={14} color="#312e81" style={{ marginBottom: 2 }} />}
                     />
                 </View>
@@ -121,7 +123,7 @@ export default function VolunteerDashboard() {
                     <StatCard
                         value={volunteerStats.completedMissions.toString()}
                         label="ATTIVITÀ"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
                         onPress={() => router.push("/(volunteer)/calendar?view=list&filter=completed" as any)}
                     />
@@ -130,7 +132,7 @@ export default function VolunteerDashboard() {
                     <StatCard
                         value={volunteerStats.upcomingMissions.toString()}
                         label="ATTIVE"
-                        valueColor="text-accent"
+                        valueColor={colors.accent}
                         icon={<Clock size={14} color={colors.accent} style={{ marginBottom: 2 }} />}
                         onPress={() => router.push("/(volunteer)/calendar?view=list&filter=upcoming" as any)}
                     />
@@ -165,61 +167,35 @@ export default function VolunteerDashboard() {
                 activeOpacity={0.85}
                 onPress={() => router.push("/(volunteer)/map" as any)}
                 style={{
-                    height: 130,
-                    borderRadius: 24,
+                    height: 92,
+                    borderRadius: 22,
                     overflow: 'hidden',
                     marginBottom: 20,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.12,
-                    shadowRadius: 12,
-                    elevation: 5,
                 }}
             >
-                {/* Map-like layered background */}
-                <View style={{ flex: 1, backgroundColor: '#e8ecef' }}>
-                    {/* Road grid simulation */}
-                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                        {/* Horizontal roads */}
-                        <View style={{ position: 'absolute', top: 28, left: 0, right: 0, height: 7, backgroundColor: '#ffffff', opacity: 0.85 }} />
-                        <View style={{ position: 'absolute', top: 66, left: 0, right: 0, height: 5, backgroundColor: '#ffffff', opacity: 0.7 }} />
-                        <View style={{ position: 'absolute', top: 100, left: 0, right: 0, height: 4, backgroundColor: '#ffffff', opacity: 0.6 }} />
-                        {/* Vertical roads */}
-                        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 60, width: 7, backgroundColor: '#ffffff', opacity: 0.75 }} />
-                        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 165, width: 5, backgroundColor: '#ffffff', opacity: 0.65 }} />
-                        <View style={{ position: 'absolute', top: 0, bottom: 0, right: 70, width: 6, backgroundColor: '#ffffff', opacity: 0.7 }} />
-                        {/* Blue-gray water patch */}
-                        <View style={{ position: 'absolute', bottom: 0, right: 0, width: 95, height: 60, backgroundColor: '#b8cfe0', opacity: 0.65, borderTopLeftRadius: 40 }} />
-                        {/* Park block — muted gray-green */}
-                        <View style={{ position: 'absolute', top: 0, right: 75, width: 55, height: 65, backgroundColor: '#c8d8c4', opacity: 0.75, borderBottomLeftRadius: 12, borderBottomRightRadius: 8 }} />
-                        {/* Building blocks — medium grays */}
-                        <View style={{ position: 'absolute', top: 0, left: 0, width: 55, height: 25, backgroundColor: '#cdd3d8', opacity: 0.9 }} />
-                        <View style={{ position: 'absolute', top: 35, left: 68, width: 85, height: 24, backgroundColor: '#c8cdd2', opacity: 0.8 }} />
-                        <View style={{ position: 'absolute', top: 73, left: 68, width: 45, height: 18, backgroundColor: '#c4c9ce', opacity: 0.75 }} />
-                        <View style={{ position: 'absolute', bottom: 0, left: 0, width: 55, height: 20, backgroundColor: '#c0c6cb', opacity: 0.8 }} />
-                    </View>
-                    {/* Dark overlay for text contrast */}
-                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(30,40,55,0.38)' }} />
-                    {/* Content */}
-                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
-                        <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <View style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: 7, borderRadius: 12 }}>
-                                    <MapIcon size={18} color={colors.accent} />
-                                </View>
-                                <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-                                    <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 }}>LIVE</Text>
-                                </View>
+                <LinearGradient
+                    colors={[colors.primary, '#7c3aed']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ flex: 1 }}
+                >
+                    {/* 3 stylized pin dots instead of the fake map */}
+                    <View style={{ position: 'absolute', top: 18, left: 46, width: 8, height: 8, borderRadius: 999, backgroundColor: 'white', opacity: 0.9 }} />
+                    <View style={{ position: 'absolute', top: 40, left: 90, width: 6, height: 6, borderRadius: 999, backgroundColor: 'white', opacity: 0.7 }} />
+                    <View style={{ position: 'absolute', top: 24, left: 130, width: 6, height: 6, borderRadius: 999, backgroundColor: 'white', opacity: 0.7 }} />
+
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+                        <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>LIVE</Text>
                             </View>
-                            <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '900', letterSpacing: 0.3, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>
-                                TROVA ATTIVITÀ VICINO A TE
-                            </Text>
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }}>Trova attività vicino a te</Text>
                         </View>
-                        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' }}>
-                            <ArrowRight size={20} color="#ffffff" />
+                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowRight size={16} color="white" />
                         </View>
                     </View>
-                </View>
+                </LinearGradient>
             </TouchableOpacity>
 
             {/* AI Smart Match Carousel — Consigliato per te */}
@@ -243,29 +219,39 @@ export default function VolunteerDashboard() {
             )}
 
             {/* Explore Opportunities */}
-            <View className="mb-8">
-                <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-lg font-bold text-primary">Esplora Opportunità</Text>
-                    <TouchableOpacity
-                        onPress={() => router.push("/(volunteer)/map" as any)}
-                        className="flex-row items-center gap-1"
-                    >
-                        <MapIcon size={16} color={colors.accent} />
-                        <Text className="text-accent font-bold text-sm">Mappa</Text>
-                    </TouchableOpacity>
-                </View>
+            {activeEnrolled.length === 0 && openActivities.length === 0 ? (
+                <EmptyState
+                    emoji="🌱"
+                    title="Nessuna attività ancora"
+                    description="Esplora le opportunità vicino a te e trova la tua prima attività di volontariato."
+                    actionLabel="Esplora Opportunità"
+                    onAction={() => router.push("/(volunteer)/map" as any)}
+                />
+            ) : (
+                <View className="mb-8">
+                    <View className="flex-row items-center justify-between mb-4">
+                        <Text className="text-lg font-bold text-primary">Esplora Opportunità</Text>
+                        <TouchableOpacity
+                            onPress={() => router.push("/(volunteer)/map" as any)}
+                            className="flex-row items-center gap-1"
+                        >
+                            <MapIcon size={16} color={colors.accent} />
+                            <Text className="text-accent font-bold text-sm">Mappa</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                {openActivities.slice(0, 5).map(activity => (
-                    <ActivityCard
-                        key={activity.id}
-                        activity={activity}
-                        onPress={() => router.push(`/activity/${activity.id}` as any)}
-                    />
-                ))}
-                
-                {/* Bottom Spacer to separate from footer/pills */}
-                <View style={{ height: 50 }} />
-            </View>
+                    {openActivities.slice(0, 5).map(activity => (
+                        <ActivityCard
+                            key={activity.id}
+                            activity={activity}
+                            onPress={() => router.push(`/activity/${activity.id}` as any)}
+                        />
+                    ))}
+
+                    {/* Bottom Spacer to separate from footer/pills */}
+                    <View style={{ height: 50 }} />
+                </View>
+            )}
         </StandardLayout>
     );
 }

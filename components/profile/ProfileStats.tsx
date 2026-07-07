@@ -103,7 +103,7 @@ export function ProfileStats({
                         <StatCard
                             value={Math.round(stats.totalHours).toString()}
                             label="ORE DONATE"
-                            valueColor="text-indigo-900"
+                            valueColor={colors.primary}
                             icon={<Clock size={14} color="#312e81" style={{ marginBottom: 2 }} />}
                         />
                     </View>
@@ -111,7 +111,7 @@ export function ProfileStats({
                         <StatCard
                             value={stats.completedMissions.toString()}
                             label="ATTIVITÀ"
-                            valueColor="text-pink-600"
+                            valueColor={colors.accent}
                             icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
                             onPress={isOwnProfile ? () => router.push("/(volunteer)/calendar?view=list&filter=completed" as any) : undefined}
                         />
@@ -122,7 +122,7 @@ export function ProfileStats({
                                 <StatCard
                                     value={averageRating}
                                     label="VALUTAZIONE"
-                                    valueColor="text-yellow-600"
+                                    valueColor={colors.warningStrong}
                                     icon={<Star size={14} color="#d97706" style={{ marginBottom: 2 }} />}
                                 />
                             </TouchableOpacity>
@@ -130,7 +130,7 @@ export function ProfileStats({
                             <StatCard
                                 value={averageRating}
                                 label="VALUTAZIONE"
-                                valueColor="text-yellow-600"
+                                valueColor={colors.warningStrong}
                                 icon={<Star size={14} color="#d97706" style={{ marginBottom: 2 }} />}
                             />
                         )}

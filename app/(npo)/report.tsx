@@ -78,7 +78,7 @@ export default function NPOReportScreen() {
                     <StatCard
                         value={summary?.newFollowersThisWeek ?? 0}
                         label="NUOVI FOLLOWER"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Users size={12} color="#db2777" />}
                         testID="npo-report-new-followers"
                     />
@@ -87,7 +87,7 @@ export default function NPOReportScreen() {
                     <StatCard
                         value={summary?.applicationsThisWeek ?? 0}
                         label="CANDIDATURE"
-                        valueColor="text-indigo-600"
+                        valueColor={colors.primary}
                         icon={<HeartHandshake size={12} color="#4f46e5" />}
                         testID="npo-report-applications"
                     />
@@ -99,7 +99,7 @@ export default function NPOReportScreen() {
                     <StatCard
                         value={summary?.registrationsThisWeek ?? 0}
                         label="NUOVI ISCRITTI"
-                        valueColor="text-blue-600"
+                        valueColor={colors.infoStrong}
                         icon={<Users size={12} color="#2563eb" />}
                         testID="npo-report-registrations"
                     />
@@ -108,7 +108,7 @@ export default function NPOReportScreen() {
                     <StatCard
                         value={summary?.approvedThisWeek ?? 0}
                         label="APPROVATI"
-                        valueColor="text-emerald-600"
+                        valueColor={colors.successStrong}
                         icon={<Sparkles size={12} color="#059669" />}
                         testID="npo-report-approved"
                     />
@@ -122,7 +122,7 @@ export default function NPOReportScreen() {
                         <StatCard
                             value={summary?.newFollowersThisMonth ?? 0}
                             label="NUOVI FOLLOWER"
-                            valueColor="text-pink-600"
+                            valueColor={colors.accent}
                             icon={<Users size={12} color="#db2777" />}
                         />
                     </View>
@@ -130,7 +130,7 @@ export default function NPOReportScreen() {
                         <StatCard
                             value={summary?.applicationsThisMonth ?? 0}
                             label="CANDIDATURE"
-                            valueColor="text-indigo-600"
+                            valueColor={colors.primary}
                             icon={<HeartHandshake size={12} color="#4f46e5" />}
                         />
                     </View>
@@ -140,7 +140,7 @@ export default function NPOReportScreen() {
                         <StatCard
                             value={summary?.registrationsThisMonth ?? 0}
                             label="NUOVI ISCRITTI"
-                            valueColor="text-blue-600"
+                            valueColor={colors.infoStrong}
                             icon={<Users size={12} color="#2563eb" />}
                         />
                     </View>
@@ -148,7 +148,7 @@ export default function NPOReportScreen() {
                         <StatCard
                             value={summary?.approvedThisMonth ?? 0}
                             label="APPROVATI"
-                            valueColor="text-emerald-600"
+                            valueColor={colors.successStrong}
                             icon={<Sparkles size={12} color="#059669" />}
                         />
                     </View>

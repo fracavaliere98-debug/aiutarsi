@@ -11,13 +11,14 @@ interface ActivityCardProps {
     activity: OldActivity | AppActivity;
     onPress?: () => void;
     style?: StyleProp<ViewStyle>;
+    showProgress?: boolean;
 }
 
 const MAX_AVATARS = 3;
 const AVATAR_SIZE = 22;
 const OVERLAP = 5;
 
-export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
+export function ActivityCard({ activity, onPress, style, showProgress }: ActivityCardProps) {
     const { users, user } = useAuth();
 
     const status = activity.status;
@@ -85,6 +86,26 @@ export function ActivityCard({ activity, onPress, style }: ActivityCardProps) {
                             </Text>
                         </View>
                     </View>
+
+                    {showProgress && (
+                        <View style={{ marginBottom: 12 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <Text style={{ fontSize: 9, fontWeight: '700', color: '#64748b' }}>
+                                    {iscritti.length}/{activity.slots} Iscritti
+                                </Text>
+                            </View>
+                            <View style={{ width: '100%', height: 6, backgroundColor: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+                                <View
+                                    style={{
+                                        height: '100%',
+                                        borderRadius: 999,
+                                        width: `${Math.min((iscritti.length / activity.slots) * 100, 100)}%`,
+                                        backgroundColor: colors.primary,
+                                    }}
+                                />
+                            </View>
+                        </View>
+                    )}
 
                     <View style={{ gap: 8 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

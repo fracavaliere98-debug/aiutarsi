@@ -78,7 +78,7 @@ export default function VolunteerReportScreen() {
                     <StatCard
                         value={summary?.completedActivitiesThisWeek ?? 0}
                         label="ATTIVITÀ SVOLTE"
-                        valueColor="text-emerald-600"
+                        valueColor={colors.successStrong}
                         icon={<CheckCircle2 size={12} color="#059669" />}
                     />
                 </View>
@@ -86,7 +86,7 @@ export default function VolunteerReportScreen() {
                     <StatCard
                         value={summary?.volunteerHoursThisWeek ?? 0}
                         label="ORE DONATE"
-                        valueColor="text-indigo-600"
+                        valueColor={colors.primary}
                         icon={<Sparkles size={12} color="#4f46e5" />}
                     />
                 </View>
@@ -97,7 +97,7 @@ export default function VolunteerReportScreen() {
                     <StatCard
                         value={summary?.applicationsThisWeek ?? 0}
                         label="CANDIDATURE"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Heart size={12} color="#db2777" />}
                     />
                 </View>
@@ -105,7 +105,7 @@ export default function VolunteerReportScreen() {
                     <StatCard
                         value={summary?.approvedApplicationsThisWeek ?? 0}
                         label="APPROVATE"
-                        valueColor="text-blue-600"
+                        valueColor={colors.infoStrong}
                         icon={<Award size={12} color="#2563eb" />}
                     />
                 </View>
@@ -118,7 +118,7 @@ export default function VolunteerReportScreen() {
                         <StatCard
                             value={summary?.completedActivitiesThisMonth ?? 0}
                             label="ATTIVITÀ SVOLTE"
-                            valueColor="text-emerald-600"
+                            valueColor={colors.successStrong}
                             icon={<CheckCircle2 size={12} color="#059669" />}
                         />
                     </View>
@@ -126,7 +126,7 @@ export default function VolunteerReportScreen() {
                         <StatCard
                             value={summary?.volunteerHoursThisMonth ?? 0}
                             label="ORE DONATE"
-                            valueColor="text-indigo-600"
+                            valueColor={colors.primary}
                             icon={<Sparkles size={12} color="#4f46e5" />}
                         />
                     </View>
@@ -136,7 +136,7 @@ export default function VolunteerReportScreen() {
                         <StatCard
                             value={summary?.applicationsThisMonth ?? 0}
                             label="CANDIDATURE"
-                            valueColor="text-pink-600"
+                            valueColor={colors.accent}
                             icon={<Heart size={12} color="#db2777" />}
                         />
                     </View>
@@ -144,7 +144,7 @@ export default function VolunteerReportScreen() {
                         <StatCard
                             value={summary?.approvedApplicationsThisMonth ?? 0}
                             label="APPROVATE"
-                            valueColor="text-blue-600"
+                            valueColor={colors.infoStrong}
                             icon={<Award size={12} color="#2563eb" />}
                         />
                     </View>

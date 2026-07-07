@@ -65,13 +65,13 @@ export default function NPOPreviewScreen() {
 
                 <View className="flex-row gap-3 mb-8">
                     <View className="flex-1 h-24">
-                        <StatCard value="0.0" label="RATING" valueColor="text-yellow-500" icon={<Star size={14} color="#eab308" fill="#eab308" />} />
+                        <StatCard value="0.0" label="RATING" valueColor={colors.warningStrong} icon={<Star size={14} color="#eab308" fill="#eab308" />} />
                     </View>
                     <View className="flex-1 h-24">
-                        <StatCard value="0" label="FOLLOWER" valueColor="text-pink-600" icon={<Users size={14} color="#db2777" />} />
+                        <StatCard value="0" label="FOLLOWER" valueColor={colors.accent} icon={<Users size={14} color="#db2777" />} />
                     </View>
                     <View className="flex-1 h-24">
-                        <StatCard value="0" label="ORE DONATE" valueColor="text-indigo-600" icon={<Clock size={14} color="#4f46e5" />} />
+                        <StatCard value="0" label="ORE DONATE" valueColor={colors.primary} icon={<Clock size={14} color="#4f46e5" />} />
                     </View>
                 </View>
 

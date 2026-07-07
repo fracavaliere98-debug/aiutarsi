@@ -221,7 +221,7 @@ export default function NPOProfileScreen() {
                     <StatCard
                         value={averageRating}
                         label="RATING"
-                        valueColor="text-yellow-500"
+                        valueColor={colors.warningStrong}
                         icon={<Star size={14} color="#eab308" fill="#eab308" />}
                         onPress={() => router.push("/(npo)/report" as any)}
                         testID="npo-profile-report-rating"
@@ -231,7 +231,7 @@ export default function NPOProfileScreen() {
                     <StatCard
                         value={followerCount.toString()}
                         label="FOLLOWER"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Users size={14} color="#db2777" />}
                         onPress={() => router.push("/(npo)/report" as any)}
                         testID="npo-profile-report-followers"
@@ -241,7 +241,7 @@ export default function NPOProfileScreen() {
                     <StatCard
                         value={impactHours}
                         label="ORE DONATE"
-                        valueColor="text-indigo-600"
+                        valueColor={colors.primary}
                         icon={<Clock size={14} color="#4f46e5" />}
                         onPress={() => router.push("/(npo)/report" as any)}
                         testID="npo-profile-report-hours"

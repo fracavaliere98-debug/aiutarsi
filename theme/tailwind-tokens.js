@@ -44,7 +44,7 @@ const colors = {
   surfaceMuted: palette.slate75,
   surfaceSubtle: palette.slate100,
   controlSurface: palette.gray90,
-  text: "#333333",
+  text: palette.slate850,
   textStrong: palette.slate850,
   textSecondary: palette.slate550,
   textMuted: palette.slate500,

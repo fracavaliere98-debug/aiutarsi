@@ -7,36 +7,46 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Sparkles, MapPin, Calendar, ChevronRight, Zap, Heart, Bookmark, EyeOff, Flame, RefreshCw } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Sparkles, Calendar, Zap, Heart, Bookmark, EyeOff, Flame, RefreshCw } from 'lucide-react-native';
 import { OldSmartMatchResult } from '../types';
 import { GemmaAvatar } from './GemmaAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useSmartMatchView } from '../hooks/smart-match/useSmartMatchView';
 import { colors } from "@/theme";
 
+// Card sizing shared between the skeleton, the card itself and the carousel scroll math.
+const CARD_WIDTH = 168;
+const CARD_GAP = 12;
+const CARD_SNAP_INTERVAL = CARD_WIDTH + CARD_GAP; // 180
+
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
     return (
         <View
             style={{
-                width: 300,
-                marginRight: 16,
-                backgroundColor: '#f1f5f9',
-                borderRadius: 24,
-                padding: 20,
+                width: CARD_WIDTH,
+                marginRight: CARD_GAP,
+                borderRadius: 20,
+                backgroundColor: '#ffffff',
+                borderWidth: 1,
+                borderColor: '#f1f5f9',
                 overflow: 'hidden',
             }}
         >
-            {/* Badge skeleton */}
-            <View style={{ width: 90, height: 20, backgroundColor: '#e2e8f0', borderRadius: 999, marginBottom: 16 }} />
-            {/* Title skeleton */}
-            <View style={{ width: '85%', height: 18, backgroundColor: '#e2e8f0', borderRadius: 8, marginBottom: 8 }} />
-            <View style={{ width: '60%', height: 18, backgroundColor: '#e2e8f0', borderRadius: 8, marginBottom: 16 }} />
-            {/* Meta skeleton */}
-            <View style={{ width: '70%', height: 12, backgroundColor: '#e2e8f0', borderRadius: 6, marginBottom: 6 }} />
-            <View style={{ width: '55%', height: 12, backgroundColor: '#e2e8f0', borderRadius: 6, marginBottom: 16 }} />
-            {/* Reason badge skeleton */}
-            <View style={{ width: '95%', height: 32, backgroundColor: '#e2e8f0', borderRadius: 12 }} />
+            {/* Banner skeleton */}
+            <View style={{ width: '100%', height: 50, backgroundColor: '#e2e8f0' }} />
+            <View style={{ padding: 12 }}>
+                {/* Reason tag skeleton */}
+                <View style={{ width: '60%', height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, marginBottom: 8 }} />
+                {/* Title skeleton */}
+                <View style={{ width: '90%', height: 12, backgroundColor: '#e2e8f0', borderRadius: 6, marginBottom: 6 }} />
+                <View style={{ width: '70%', height: 12, backgroundColor: '#e2e8f0', borderRadius: 6, marginBottom: 10 }} />
+                {/* Meta skeleton */}
+                <View style={{ width: '50%', height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, marginBottom: 12 }} />
+                {/* Actions skeleton */}
+                <View style={{ width: '100%', height: 28, backgroundColor: '#e2e8f0', borderRadius: 14 }} />
+            </View>
         </View>
     );
 }
@@ -83,206 +93,169 @@ function MatchCard({
             activeOpacity={0.85}
             onPress={onOpen}
             style={{
-                width: 300,
-                marginRight: 16,
-                backgroundColor: isTopMatch ? colors.primary : '#ffffff',
-                borderRadius: 24,
-                padding: 20,
+                width: CARD_WIDTH,
+                marginRight: CARD_GAP,
+                borderRadius: 20,
+                backgroundColor: '#ffffff',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: isTopMatch ? 0.18 : 0.08,
-                shadowRadius: 12,
-                elevation: isTopMatch ? 8 : 3,
-                borderWidth: isTopMatch ? 0 : 1,
-                borderColor: '#f1f5f9',
+                shadowOpacity: isTopMatch ? 0.16 : 0.08,
+                shadowRadius: 10,
+                elevation: isTopMatch ? 6 : 3,
             }}
         >
-            {/* Score Badge */}
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    alignSelf: 'flex-start',
-                    backgroundColor: isTopMatch ? 'rgba(255,255,255,0.15)' : `${scoreColor}15`,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 999,
-                    marginBottom: 14,
-                    gap: 5,
-                }}
-            >
-                <Sparkles size={12} color={isTopMatch ? '#ffffff' : scoreColor} />
-                <Text
-                    style={{
-                        color: isTopMatch ? '#ffffff' : scoreColor,
-                        fontSize: 12,
-                        fontWeight: '800',
-                    }}
-                >
-                    {match.score}%
-                </Text>
-            </View>
-
-            {/* NPO Name */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text
-                    style={{
-                        color: isTopMatch ? 'rgba(255,255,255,0.65)' : colors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: '700',
-                        letterSpacing: 0.5,
-                        textTransform: 'uppercase',
-                        flex: 1,
-                        marginRight: 8,
-                    }}
-                    numberOfLines={1}
-                >
-                    {activity.npoName}
-                </Text>
-                {activity.isUrgent ? (
+            <View style={{ borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9' }}>
+                {/* Top gradient banner */}
+                <View style={{ position: 'relative' }}>
+                    <LinearGradient
+                        colors={isTopMatch ? [colors.primary, colors.accent] : ['#7c3aed', '#a78bfa']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ width: '100%', height: 50 }}
+                    />
+                    {activity.isUrgent ? (
+                        <View
+                            style={{
+                                position: 'absolute',
+                                top: 8,
+                                left: 8,
+                                width: 20,
+                                height: 20,
+                                borderRadius: 999,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'rgba(255,255,255,0.25)',
+                            }}
+                        >
+                            <Flame size={12} color="#ffffff" />
+                        </View>
+                    ) : null}
+                    {/* Floating score badge */}
                     <View
                         style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 999,
+                            position: 'absolute',
+                            bottom: -10,
+                            right: 10,
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: isTopMatch ? 'rgba(255,255,255,0.16)' : '#fff1f2',
+                            gap: 3,
+                            backgroundColor: '#ffffff',
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 999,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.15,
+                            shadowRadius: 4,
+                            elevation: 3,
                         }}
                     >
-                        <Flame size={14} color={isTopMatch ? '#ffffff' : '#ef4444'} />
+                        <Sparkles size={10} color={scoreColor} />
+                        <Text style={{ color: scoreColor, fontSize: 11, fontWeight: '800' }}>
+                            {match.score}%
+                        </Text>
                     </View>
-                ) : null}
-            </View>
+                </View>
 
-            {/* OldActivity Title */}
-            <Text
-                style={{
-                    color: isTopMatch ? '#ffffff' : colors.primary,
-                    fontSize: 17,
-                    fontWeight: '900',
-                    lineHeight: 22,
-                    marginBottom: 12,
-                }}
-                numberOfLines={2}
-            >
-                {activity.title}
-            </Text>
+                {/* Card body */}
+                <View style={{ padding: 12, paddingTop: 16 }}>
+                    {/* Reason tag */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                        <GemmaAvatar size={14} />
+                        <Text
+                            style={{
+                                color: colors.primary,
+                                fontSize: 9,
+                                fontWeight: '800',
+                                letterSpacing: 0.3,
+                                textTransform: 'uppercase',
+                                flex: 1,
+                            }}
+                            numberOfLines={1}
+                        >
+                            {match.confidenceLabel || 'Consiglio di Gemma'}
+                        </Text>
+                    </View>
 
-            {/* Date & Location */}
-            <View style={{ gap: 5, marginBottom: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Calendar size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
+                    {/* OldActivity Title */}
                     <Text
                         style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : colors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: '600',
+                            color: colors.primary,
+                            fontSize: 13,
+                            fontWeight: '800',
+                            lineHeight: 16,
+                            marginBottom: 8,
                         }}
+                        numberOfLines={2}
                     >
-                        {dateStr} · {timeStr}
+                        {activity.title}
                     </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <MapPin size={13} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
-                    <Text
-                        style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.75)' : colors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: '600',
-                        }}
-                        numberOfLines={1}
-                    >
-                        {activity.location.address}
-                    </Text>
-                </View>
-            </View>
 
-            {/* Compact Gemma cue */}
-            <View
-                style={{
-                    backgroundColor: isTopMatch ? 'rgba(255,255,255,0.12)' : '#f8f4ff',
-                    borderRadius: 14,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 7,
-                    borderWidth: isTopMatch ? 1 : 0,
-                    borderColor: 'rgba(255,255,255,0.2)',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <GemmaAvatar size={20} />
-                    <Text
-                        style={{
-                            color: isTopMatch ? 'rgba(255,255,255,0.9)' : colors.primary,
-                            fontSize: 11,
-                            fontWeight: '700',
-                        }}
-                    >
-                        {match.confidenceLabel || 'Consiglio di Gemma'}
-                    </Text>
-                </View>
-                <ChevronRight size={14} color={isTopMatch ? 'rgba(255,255,255,0.7)' : colors.accent} />
-            </View>
+                    {/* Date */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 }}>
+                        <Calendar size={10} color={colors.textSecondary} />
+                        <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '600' }}>
+                            {dateStr} · {timeStr}
+                        </Text>
+                    </View>
 
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <TouchableOpacity
-                    onPress={(event) => {
-                        event.stopPropagation();
-                        onLike(match);
-                    }}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 5,
-                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#fff1f7',
-                        borderRadius: 999,
-                        paddingHorizontal: 10,
-                        paddingVertical: 7,
-                    }}
-                >
-                    <Heart size={13} color={isTopMatch ? '#ffffff' : colors.accent} fill={match.liked ? (isTopMatch ? '#ffffff' : colors.accent) : 'transparent'} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.accent, fontSize: 11, fontWeight: '700' }}>Mi piace</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={(event) => {
-                        event.stopPropagation();
-                        onSave(match);
-                    }}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 5,
-                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#eef2ff',
-                        borderRadius: 999,
-                        paddingHorizontal: 10,
-                        paddingVertical: 7,
-                    }}
-                >
-                    <Bookmark size={13} color={isTopMatch ? '#ffffff' : colors.info} fill={match.saved ? (isTopMatch ? '#ffffff' : colors.info) : 'transparent'} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.info, fontSize: 11, fontWeight: '700' }}>Salva</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={(event) => {
-                        event.stopPropagation();
-                        onHide(match);
-                    }}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 5,
-                        backgroundColor: isTopMatch ? 'rgba(255,255,255,0.14)' : '#f8fafc',
-                        borderRadius: 999,
-                        paddingHorizontal: 10,
-                        paddingVertical: 7,
-                    }}
-                >
-                    <EyeOff size={13} color={isTopMatch ? '#ffffff' : colors.textSecondary} />
-                    <Text style={{ color: isTopMatch ? '#ffffff' : colors.textSecondary, fontSize: 11, fontWeight: '700' }}>Nascondi</Text>
-                </TouchableOpacity>
+                    {/* Actions + CTA */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                            <TouchableOpacity
+                                onPress={(event) => {
+                                    event.stopPropagation();
+                                    onLike(match);
+                                }}
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#fff1f7',
+                                }}
+                            >
+                                <Heart size={14} color={colors.accent} fill={match.liked ? colors.accent : 'transparent'} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={(event) => {
+                                    event.stopPropagation();
+                                    onSave(match);
+                                }}
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#eef2ff',
+                                }}
+                            >
+                                <Bookmark size={14} color={colors.info} fill={match.saved ? colors.info : 'transparent'} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={(event) => {
+                                    event.stopPropagation();
+                                    onHide(match);
+                                }}
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#f8fafc',
+                                }}
+                            >
+                                <EyeOff size={14} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={{ color: colors.accent, fontSize: 11, fontWeight: '700' }}>
+                            Scopri →
+                        </Text>
+                    </View>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -296,7 +269,7 @@ export function SmartMatchCarousel() {
 
     const handleScroll = (event: any) => {
         const x = event.nativeEvent.contentOffset.x;
-        const index = Math.round(x / 316); // card width (300) + gap (16)
+        const index = Math.round(x / CARD_SNAP_INTERVAL); // card width + gap
         if (index !== activeIndex) {
             setActiveIndex(index);
         }
@@ -491,7 +464,7 @@ export function SmartMatchCarousel() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 decelerationRate="fast"
-                snapToInterval={316} // card width + gap
+                snapToInterval={CARD_SNAP_INTERVAL} // card width + gap
                 snapToAlignment="start"
                 onMomentumScrollEnd={handleScroll}
                 scrollEventThrottle={16}

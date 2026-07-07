@@ -274,7 +274,7 @@ export default function NPOProfileScreen() {
                     <StatCard
                         value={averageRating}
                         label="RATING"
-                        valueColor="text-yellow-500"
+                        valueColor={colors.warningStrong}
                         icon={<Star size={14} color="#eab308" fill="#eab308" />}
                     />
                 </TouchableOpacity>
@@ -282,7 +282,7 @@ export default function NPOProfileScreen() {
                     <StatCard
                         value={followerCount.toString()}
                         label="FOLLOWER"
-                        valueColor="text-pink-600"
+                        valueColor={colors.accent}
                         icon={<Users size={14} color="#db2777" />}
                     />
                 </View>
@@ -295,7 +295,7 @@ export default function NPOProfileScreen() {
                             return total + (durationHours * act.iscritti.length);
                         }, 0).toFixed(0)}
                         label="ORE DONATE"
-                        valueColor="text-indigo-600"
+                        valueColor={colors.primary}
                         icon={<Clock size={14} color="#4f46e5" />}
                     />
                 </View>

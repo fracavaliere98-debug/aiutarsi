@@ -34,17 +34,17 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
-                    borderRadius: 24,
-                    padding: 20,
+                    borderRadius: 20,
+                    padding: 14,
                     shadowColor: colors.primary,
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 15,
-                    elevation: 8,
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.22,
+                    shadowRadius: 14,
+                    elevation: 6,
                 }}
             >
                 {/* Header */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <GemmaAvatar size={22} bordered />
                         <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Consiglio di Gemma</Text>
@@ -53,20 +53,20 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                         onPress={() => onDismiss(item.id)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <X size={18} color="white" opacity={0.6} />
+                        <X size={18} color="white" opacity={0.5} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Content */}
-                <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 4 }}>{item.title}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 20, marginBottom: 20, fontWeight: '500' }}>
+                <Text style={{ color: 'white', fontSize: 14, fontWeight: '900', marginBottom: 3 }}>{item.title}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 18, marginBottom: 14, fontWeight: '500' }}>
                     {item.description}
                 </Text>
 
                 {/* Action Button */}
                 <TouchableOpacity
                     onPress={item.onAction}
-                    style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+                    style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
                     activeOpacity={0.7}
                 >
                     <Text style={{ color: 'white', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
