@@ -26,9 +26,6 @@ import Animated, {
     useAnimatedScrollHandler,
     useAnimatedStyle,
     useSharedValue,
-    withRepeat,
-    withSequence,
-    withTiming,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
@@ -37,12 +34,6 @@ import { activityService } from "../services/ActivityService";
 import { AppActivity } from "../types";
 import { Layout } from "../utils/layout";
 import { colors } from "@/theme";
-
-const BACKGROUND_GRADIENTS = [
-    ['#fff7ed', '#ffe4e6', '#fdf2f8'] as const,
-    ['#fff7ed', '#ede9fe', '#eef2ff'] as const,
-    ['#fef2f2', '#fae8ff', '#eff6ff'] as const,
-];
 
 const extractCityFromAddress = (address?: string | null): string | null => {
     if (!address) return null;
@@ -59,59 +50,15 @@ const extractCityFromAddress = (address?: string | null): string | null => {
 };
 
 const MotionBackground = () => {
-    const a = useSharedValue(0);
-    const b = useSharedValue(0);
-    const c = useSharedValue(1);
-
-    useEffect(() => {
-        a.value = withRepeat(
-            withSequence(withTiming(1, { duration: 5000 }), withTiming(0, { duration: 5000 })),
-            -1,
-            false,
-        );
-        b.value = withRepeat(
-            withSequence(withTiming(1, { duration: 6200 }), withTiming(0, { duration: 6200 })),
-            -1,
-            false,
-        );
-        c.value = withRepeat(
-            withSequence(withTiming(1, { duration: 7600 }), withTiming(0, { duration: 7600 })),
-            -1,
-            false,
-        );
-    }, [a, b, c]);
-
-    const s0 = useAnimatedStyle(() => ({ opacity: interpolate(a.value, [0, 1], [0.45, 1]) }));
-    const s1 = useAnimatedStyle(() => ({ opacity: interpolate(b.value, [0, 1], [0.35, 0.85]) }));
-    const s2 = useAnimatedStyle(() => ({ opacity: interpolate(c.value, [0, 1], [0.25, 0.7]) }));
-
     return (
         <View style={StyleSheet.absoluteFill}>
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fffaf7" }]} />
-            <Animated.View style={[StyleSheet.absoluteFill, s0]}>
-                <LinearGradient
-                    colors={BACKGROUND_GRADIENTS[0]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
-            </Animated.View>
-            <Animated.View style={[StyleSheet.absoluteFill, s1]}>
-                <LinearGradient
-                    colors={BACKGROUND_GRADIENTS[1]}
-                    start={{ x: 1, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
-            </Animated.View>
-            <Animated.View style={[StyleSheet.absoluteFill, s2]}>
-                <LinearGradient
-                    colors={BACKGROUND_GRADIENTS[2]}
-                    start={{ x: 0.25, y: 0 }}
-                    end={{ x: 0.75, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
-            </Animated.View>
+            <LinearGradient
+                colors={['#311b92', colors.primary, colors.accent]}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={StyleSheet.absoluteFill}
+            />
             <View style={styles.blobOne} />
             <View style={styles.blobTwo} />
         </View>
@@ -172,16 +119,18 @@ const FeatureCard = ({
     title,
     text,
     accent,
+    iconBg,
     delay,
 }: {
     icon: React.ReactNode;
     title: string;
     text: string;
     accent: string;
+    iconBg: string;
     delay: number;
 }) => (
     <Animated.View entering={FadeInDown.delay(delay).duration(520)} style={styles.featureCard}>
-        <View style={[styles.featureIconWrap, { backgroundColor: `${accent}14` }]}>
+        <View style={[styles.featureIconWrap, { backgroundColor: iconBg }]}>
             {icon}
         </View>
         <Text style={styles.featureTitle}>{title}</Text>
@@ -250,7 +199,7 @@ export default function LandingPage() {
 
     return (
         <View style={styles.root}>
-            <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             <MotionBackground />
 
             <Animated.ScrollView
@@ -311,7 +260,7 @@ export default function LandingPage() {
                             title="Diventa volontario"
                             eyebrow="Per iniziare subito"
                             description="Trova attività compatibili con interessi, zona e tempo disponibile."
-                            colors={["#462282", "#cd057f"]}
+                            colors={[colors.primary, colors.accent]}
                             icon={<HeartHandshake size={22} color="#fff" />}
                             onPress={() => router.push("/register/volunteer")}
                         />
@@ -319,7 +268,7 @@ export default function LandingPage() {
                             title="Registra il tuo ente"
                             eyebrow="Per associazioni e NPO"
                             description="Pubblica iniziative, ricevi candidature e coordina la tua community."
-                            colors={["#1f2a44", "#334155"]}
+                            colors={[colors.accent, "#a3106b"]}
                             icon={<Building2 size={22} color="#fff" />}
                             onPress={() => router.push("/register/npo")}
                         />
@@ -355,6 +304,7 @@ export default function LandingPage() {
                     <FeatureCard
                         delay={120}
                         accent={colors.primary}
+                        iconBg={colors.primarySoft}
                         icon={<MapPin size={22} color={colors.primary} />}
                         title="Scopri attività vicine"
                         text="Le opportunità vengono presentate in modo semplice, con contesto territoriale e priorità leggibili."
@@ -362,14 +312,16 @@ export default function LandingPage() {
                     <FeatureCard
                         delay={220}
                         accent={colors.accent}
+                        iconBg={colors.accentSoft}
                         icon={<CalendarClock size={22} color={colors.accent} />}
                         title="Scegli in base al tuo tempo"
                         text="Non serve stravolgere la giornata: puoi trovare occasioni brevi, urgenti o ricorrenti."
                     />
                     <FeatureCard
                         delay={320}
-                        accent={"#0f766e"}
-                        icon={<ShieldCheck size={22} color="#0f766e" />}
+                        accent={colors.successStrong}
+                        iconBg={colors.successSoft}
+                        icon={<ShieldCheck size={22} color={colors.successStrong} />}
                         title="Aiuta enti reali"
                         text="L’esperienza è costruita per ridurre il rumore e far emergere organizzazioni e richieste concrete."
                     />
@@ -404,7 +356,7 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: "#fffaf7",
+        backgroundColor: colors.primary,
     },
     page: {
         paddingHorizontal: 22,
@@ -437,7 +389,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.2,
     },
     loginLinkTop: {
-        color: colors.primary,
+        color: "white",
         fontSize: 13,
         fontWeight: "800",
     },
@@ -445,7 +397,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     heroHeadline: {
-        color: colors.primary,
+        color: "white",
         fontSize: Math.min(Layout.window.width * 0.094, 37),
         lineHeight: Math.min(Layout.window.width * 0.102, 41),
         fontWeight: "900",
@@ -453,7 +405,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     heroSubheadline: {
-        color: "#5b556b",
+        color: "rgba(255,255,255,0.82)",
         fontSize: 15,
         lineHeight: 22,
         fontWeight: "500",
@@ -488,21 +440,21 @@ const styles = StyleSheet.create({
     },
     heroStat: {
         flex: 1,
-        backgroundColor: "rgba(255,255,255,0.74)",
+        backgroundColor: "rgba(255,255,255,0.12)",
         borderRadius: 20,
         paddingVertical: 14,
         paddingHorizontal: 12,
         borderWidth: 1,
-        borderColor: "rgba(70,34,130,0.08)",
+        borderColor: "rgba(255,255,255,0.18)",
     },
     heroStatValue: {
-        color: "#37245f",
+        color: "white",
         fontSize: 19,
         fontWeight: "900",
         marginBottom: 4,
     },
     heroStatLabel: {
-        color: "#6b647a",
+        color: "rgba(255,255,255,0.65)",
         fontSize: 11,
         fontWeight: "700",
         letterSpacing: 0.2,
@@ -545,7 +497,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     registrationText: {
-        color: "#6b647a",
+        color: colors.textSecondary,
         fontSize: 14,
         lineHeight: 21,
         fontWeight: "600",
@@ -656,7 +608,7 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     conversionPillText: {
-        color: "#4f4861",
+        color: colors.textSecondary,
         fontSize: 13,
         fontWeight: "700",
     },
@@ -685,7 +637,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     sectionSubtitle: {
-        color: "#6b647a",
+        color: colors.textSecondary,
         fontSize: 15,
         lineHeight: 23,
         fontWeight: "500",
@@ -707,13 +659,13 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     featureTitle: {
-        color: "#37245f",
+        color: colors.primary,
         fontSize: 19,
         fontWeight: "900",
         marginBottom: 8,
     },
     featureText: {
-        color: "#625b72",
+        color: colors.textSecondary,
         fontSize: 14,
         lineHeight: 21,
         fontWeight: "500",
@@ -747,7 +699,7 @@ const styles = StyleSheet.create({
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: "#c7c2d3",
+        backgroundColor: colors.borderStrong,
     },
     bottomCtaWrap: {
         paddingHorizontal: 22,
@@ -761,7 +713,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     bottomLoginText: {
-        color: "#726b80",
+        color: colors.textSecondary,
         fontSize: 13,
         fontWeight: "500",
     },
@@ -772,20 +724,20 @@ const styles = StyleSheet.create({
     },
     blobOne: {
         position: "absolute",
-        top: 80,
-        right: -60,
-        width: 220,
-        height: 220,
+        top: 60,
+        right: -50,
+        width: 180,
+        height: 180,
         borderRadius: 999,
-        backgroundColor: "rgba(205,5,127,0.11)",
+        backgroundColor: "rgba(255,255,255,0.08)",
     },
     blobTwo: {
         position: "absolute",
-        bottom: 140,
-        left: -70,
-        width: 250,
-        height: 250,
+        bottom: 120,
+        left: -60,
+        width: 200,
+        height: 200,
         borderRadius: 999,
-        backgroundColor: "rgba(70,34,130,0.08)",
+        backgroundColor: "rgba(255,255,255,0.06)",
     },
 });
