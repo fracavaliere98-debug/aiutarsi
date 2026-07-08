@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '900',
-        color: '#2D2D8A', // Custom purple from mockup
+        color: colors.primary,
     },
     content: {
         flex: 1,
@@ -151,14 +151,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '900',
-        color: '#1A1A40',
+        color: colors.text,
         textAlign: 'center',
         lineHeight: 34,
         marginBottom: 16,
     },
     subtitle: {
         fontSize: 16,
-        color: '#606080',
+        color: colors.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
     },
@@ -175,21 +175,21 @@ const styles = StyleSheet.create({
     },
     dotActive: {
         width: 32,
-        backgroundColor: '#352F8B', // Active dot color
+        backgroundColor: colors.primary,
     },
     footer: {
         paddingHorizontal: 30,
         paddingBottom: 40,
     },
     button: {
-        backgroundColor: '#352F8B',
+        backgroundColor: colors.primary,
         height: 70,
         borderRadius: 35,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
-        shadowColor: '#352F8B',
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 15,

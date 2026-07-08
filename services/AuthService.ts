@@ -723,12 +723,16 @@ export class AuthService {
                 .eq('role', 'VOLUNTEER');
 
             if (error) {
-                console.error("Error counting volunteers:", error);
+                // Non-critical stat used only for marketing copy on the landing page — degrade quietly.
+                // Note: this uses a HEAD request (count-only), so a restricted/blocked Supabase project
+                // often returns an empty error.message here even though the real cause is a service
+                // restriction (e.g. exceed_db_size_quota) visible on other, non-HEAD queries.
+                console.warn("[AuthService] getTotalVolunteersCount unavailable:", error.message || "empty error message (possible Supabase service restriction)");
                 return 0;
             }
             return count || 0;
         } catch (e) {
-            console.error("Exception counting volunteers", e);
+            console.warn("[AuthService] getTotalVolunteersCount exception:", e);
             return 0;
         }
     }

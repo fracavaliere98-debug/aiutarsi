@@ -3,16 +3,17 @@ import { View, Text, TouchableOpacity, Switch, ScrollView, Platform, ActivityInd
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
-import { MapPin, Bell, Shield, Rocket, Heart } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { MapPin, Bell, Rocket } from 'lucide-react-native';
 import { GemmaAvatar } from '../../components/GemmaAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { requestForegroundLocationPermission, requestNotificationPermission } from '../../utils/permissions';
 import { queueIntroVideoTransition } from '../../utils/introVideoTransition';
+import { colors } from "@/theme";
 
 export default function WelcomeScreen() {
     const router = useRouter();
     const { user, updateUserProfile } = useAuth();
+    const isNPO = user?.role === "NPO";
     const [isStartingJourney, setIsStartingJourney] = useState(false);
     
     // Phase 1 States
@@ -81,6 +82,13 @@ export default function WelcomeScreen() {
                     onBack={() => router.back()}
                 />
 
+                <View style={{ flexDirection: 'row', gap: 6, paddingLeft: 24, marginBottom: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border }} />
+                    {isNPO && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border }} />}
+                    <View style={{ width: 24, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
+                </View>
+
                 <View className="px-6">
                     <View 
                         className="mb-4 bg-primary/5 px-4 py-3 rounded-2xl border border-primary/10 flex-row items-center"
@@ -101,54 +109,59 @@ export default function WelcomeScreen() {
                     </View>
 
                     <View className="items-center mb-5">
-                        <View className="w-full h-36 rounded-[32px] overflow-hidden items-center justify-center bg-[#f3f0ff]">
-                            <LinearGradient
-                                colors={['#f3f0ff', '#e9e4ff']}
-                                className="absolute inset-0"
-                            />
-                            <View className="w-16 h-24 bg-[#a78bfa] rounded-2xl items-center justify-center shadow-xl relative">
-                                <Shield size={32} color="white" strokeWidth={2.5} />
-                                <View className="absolute top-1/2 left-1/2 -mt-1.5 -ml-2">
-                                    <Heart size={16} color="white" fill="white" />
-                                </View>
-                            </View>
+                        <View
+                            style={{
+                                width: '100%',
+                                height: 100,
+                                borderRadius: 24,
+                                borderWidth: 2,
+                                borderStyle: 'dashed',
+                                borderColor: colors.primarySoft,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: colors.surfaceSubtle,
+                            }}
+                        >
+                            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>
+                                Illustrazione Gemma — in arrivo
+                            </Text>
                         </View>
                     </View>
 
                     <View className="gap-3">
                         <View className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex-row items-center">
-                            <View className="w-11 h-11 bg-[#f3f0ff] rounded-xl items-center justify-center mr-3">
-                                <MapPin size={20} color="#4c1d95" fill="#4c1d95" fillOpacity={0.1} />
+                            <View className="w-11 h-11 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: colors.primarySoft }}>
+                                <MapPin size={20} color={colors.primary} fill={colors.primary} fillOpacity={0.1} />
                             </View>
                             <View className="flex-1 mr-2">
-                                <Text className="text-sm font-bold text-[#2d1b69]">Localizzazione</Text>
+                                <Text className="text-sm font-bold" style={{ color: colors.text }}>Localizzazione</Text>
                                 <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>
                                     {user?.role === "NPO" ? "Permetti ai volontari di trovarti sulla mappa" : "Trova opportunità vicino a te"}
                                 </Text>
                             </View>
-                            <Switch 
-                                value={locationEnabled} 
+                            <Switch
+                                value={locationEnabled}
                                 onValueChange={toggleLocation}
-                                trackColor={{ false: '#e2e8f0', true: '#4c1d95' }}
+                                trackColor={{ false: colors.border, true: colors.primary }}
                                 thumbColor="white"
                                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                             />
                         </View>
 
                         <View className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex-row items-center">
-                            <View className="w-11 h-11 bg-pink-50 rounded-xl items-center justify-center mr-3">
-                                <Bell size={20} color="#db2777" fill="#db2777" fillOpacity={0.1} />
+                            <View className="w-11 h-11 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: colors.accentSoft }}>
+                                <Bell size={20} color={colors.accent} fill={colors.accent} fillOpacity={0.1} />
                             </View>
                             <View className="flex-1 mr-2">
-                                <Text className="text-sm font-bold text-[#2d1b69]">Notifiche Push</Text>
+                                <Text className="text-sm font-bold" style={{ color: colors.text }}>Notifiche Push</Text>
                                 <Text className="text-[10px] text-secondary leading-tight font-medium" numberOfLines={2}>
                                     {user?.role === "NPO" ? "Ricevi avvisi per nuove candidature" : "Ricevi avvisi per nuovi match"}
                                 </Text>
                             </View>
-                            <Switch 
-                                value={notificationsEnabled} 
+                            <Switch
+                                value={notificationsEnabled}
                                 onValueChange={toggleNotifications}
-                                trackColor={{ false: '#e2e8f0', true: '#4c1d95' }}
+                                trackColor={{ false: colors.border, true: colors.primary }}
                                 thumbColor="white"
                                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                             />
@@ -159,7 +172,8 @@ export default function WelcomeScreen() {
                         <TouchableOpacity
                             onPress={startJourney}
                             disabled={isStartingJourney}
-                            className={`h-16 rounded-2xl flex-row items-center justify-center shadow-xl active:scale-[0.98] bg-[#3b2391] ${isStartingJourney ? 'opacity-70' : ''}`}
+                            className={`h-16 rounded-2xl flex-row items-center justify-center shadow-xl active:scale-[0.98] ${isStartingJourney ? 'opacity-70' : ''}`}
+                            style={{ backgroundColor: colors.primary }}
                         >
                             {isStartingJourney ? (
                                 <ActivityIndicator color="white" />

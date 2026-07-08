@@ -27,7 +27,7 @@ import { useCommunityRealtime } from "../../hooks/community/realtime";
 import { useRecordActivityShareMutation } from "../../hooks/gamification/mutations";
 
 import { SKILLS, getSkillIcon } from "../../constants/Skills";
-import { colors } from "@/theme";
+import { colors, palette } from "@/theme";
 
 // Conditional import for map opening
 const openMapsUrl = (lat: number, lng: number, label?: string) => {
@@ -59,10 +59,10 @@ const getRecurrenceLabel = (recurrence: string | undefined, dateTime: string | u
 };
 
 const STATUS_CONFIG = {
-    APERTA: { label: 'Aperta', bg: '#dcfce7', text: '#16a34a', dot: '#16a34a' },
-    IN_CORSO: { label: 'In Corso', bg: '#fef9c3', text: '#ca8a04', dot: '#ca8a04' },
-    COMPLETATA: { label: 'Completata', bg: '#f1f5f9', text: '#64748b', dot: '#94a3b8' },
-    CANCELLATA: { label: 'Cancellata', bg: '#fee2e2', text: '#dc2626', dot: '#dc2626' },
+    APERTA: { label: 'Aperta', bg: colors.successSoft, text: colors.successStrong, dot: colors.successStrong },
+    IN_CORSO: { label: 'In Corso', bg: colors.warningSoft, text: colors.warningStrong, dot: colors.warningStrong },
+    COMPLETATA: { label: 'Completata', bg: colors.surfaceMuted, text: colors.textSecondary, dot: colors.textMuted },
+    CANCELLATA: { label: 'Cancellata', bg: colors.dangerSoft, text: colors.dangerStrong, dot: colors.dangerStrong },
 };
 
 export default function ActivityDetail() {
@@ -288,9 +288,9 @@ export default function ActivityDetail() {
                             </View>
                         )}
                         {recurrenceLabel && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#eef2ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#c7d2fe' }}>
-                                <RefreshCw size={11} color="#4f46e5" />
-                                <Text style={{ color: '#4338ca', fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.infoSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.info }}>
+                                <RefreshCw size={11} color={colors.infoStrong} />
+                                <Text style={{ color: colors.infoStrong, fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 }}>
                                     {recurrenceLabel}
                                 </Text>
                             </View>
@@ -341,7 +341,7 @@ export default function ActivityDetail() {
                             onPress={handleAddToCalendar}
                             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}
                         >
-                            <View style={{ width: 38, height: 38, backgroundColor: '#ede9fe', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{ width: 38, height: 38, backgroundColor: colors.primarySoft, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
                                 <Calendar size={18} color={colors.primary} />
                             </View>
                             <View style={{ flex: 1 }}>
@@ -372,8 +372,8 @@ export default function ActivityDetail() {
                             }}
                             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}
                         >
-                            <View style={{ width: 38, height: 38, backgroundColor: '#ffe4e6', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                                <MapPin size={18} color="#e11d48" />
+                            <View style={{ width: 38, height: 38, backgroundColor: palette.rose100, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <MapPin size={18} color={palette.rose600} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>LUOGO</Text>
@@ -525,9 +525,9 @@ export default function ActivityDetail() {
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                         <Text style={{ fontSize: 18, fontWeight: '900', color: colors.primary }}>Cosa ne pensa la Community</Text>
                                         {avgStars !== null && (
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#fde68a' }}>
-                                                <Star size={13} color="#f59e0b" fill="#f59e0b" />
-                                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400e' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.warningSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: palette.amber200 }}>
+                                                <Star size={13} color={colors.warning} fill={colors.warning} />
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: palette.amber800 }}>
                                                     {avgStars.toFixed(1)} / 5
                                                 </Text>
                                             </View>
@@ -591,7 +591,7 @@ export default function ActivityDetail() {
                                                         >
                                                             {/* Reviewer info */}
                                                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                                                                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                                                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                                                                     {reviewer?.avatar
                                                                         ? <Image source={{ uri: reviewer.avatar }} style={{ width: 38, height: 38, borderRadius: 19 }} />
                                                                         : <Users size={18} color={colors.primary} />
@@ -607,8 +607,8 @@ export default function ActivityDetail() {
                                                                 <View style={{ flexDirection: 'row', gap: 2 }}>
                                                                     {[1, 2, 3, 4, 5].map(i => (
                                                                         <Star key={i} size={13}
-                                                                            color={i <= review.stars ? '#f59e0b' : '#e2e8f0'}
-                                                                            fill={i <= review.stars ? '#f59e0b' : '#e2e8f0'}
+                                                                            color={i <= review.stars ? colors.warning : colors.border}
+                                                                            fill={i <= review.stars ? colors.warning : colors.border}
                                                                         />
                                                                     ))}
                                                                 </View>
@@ -758,10 +758,10 @@ export default function ActivityDetail() {
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>Recensisci</Text>
                     </TouchableOpacity>
                 ) : isWaitingPresenceConfirmation ? (
-                    <View style={{ backgroundColor: '#fff7ed', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderWidth: 1, borderColor: '#fed7aa', width: '100%' }}>
+                    <View style={{ backgroundColor: palette.amber50, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderWidth: 1, borderColor: palette.orange200, width: '100%' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <AlertTriangle size={14} color="#c2410c" />
-                            <Text style={{ color: '#c2410c', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
+                            <AlertTriangle size={14} color={palette.orange700} />
+                            <Text style={{ color: palette.orange700, fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
                                 In attesa conferma
                             </Text>
                         </View>
@@ -770,7 +770,7 @@ export default function ActivityDetail() {
                         </Text>
                     </View>
                 ) : hasSubmittedReview ? (
-                    <View style={{ backgroundColor: '#f5f3ff', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#ddd6fe', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ backgroundColor: palette.purple50, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.purple100, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <CheckCircle2 size={16} color={colors.primary} />
                         <Text style={{ color: colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
                     </View>
@@ -785,22 +785,22 @@ export default function ActivityDetail() {
                                     catch { setLocalIscrittiOverride(prev); }
                                 }}
                                 style={{
-                                    backgroundColor: '#fff0f0',
+                                    backgroundColor: palette.rose50,
                                     paddingHorizontal: 14,
                                     minHeight: 50,
                                     borderRadius: 28,
                                     borderWidth: 1,
-                                    borderColor: '#fecaca',
+                                    borderColor: palette.red200,
                                     alignItems: 'center',
                                     justifyContent: 'center'
                                 }}
                             >
-                                <Text style={{ color: '#dc2626', fontWeight: '700' }}>Annulla</Text>
+                                <Text style={{ color: colors.dangerStrong, fontWeight: '700' }}>Annulla</Text>
                             </TouchableOpacity>
                         )}
-                        <View style={{ backgroundColor: '#f0fdf4', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: '#bbf7d0', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <CheckCircle2 size={16} color="#16a34a" fill="#16a34a" />
-                            <Text style={{ color: '#16a34a', fontWeight: '800' }}>Iscritto</Text>
+                        <View style={{ backgroundColor: colors.successSoft, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.green75, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <CheckCircle2 size={16} color={colors.successStrong} fill={colors.successStrong} />
+                            <Text style={{ color: colors.successStrong, fontWeight: '800' }}>Iscritto</Text>
                         </View>
                     </View>
                 ) : user?.role === 'VOLUNTEER' ? (

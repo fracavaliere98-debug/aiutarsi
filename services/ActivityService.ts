@@ -792,7 +792,8 @@ export class ActivityService {
                 .maybeSingle();
 
             if (error) {
-                console.error("Error fetching latest activity:", error);
+                // Non-critical, used only for marketing copy on the landing page — degrade quietly.
+                console.warn("[ActivityService] getLatestActivity unavailable:", error.message);
                 return null;
             }
 
@@ -802,7 +803,7 @@ export class ActivityService {
 
             return this._mapDbActivityToApp(data);
         } catch (error) {
-            console.error("Error in getLatestActivity:", error);
+            console.warn("[ActivityService] getLatestActivity exception:", error);
             return null;
         }
     }
@@ -824,7 +825,8 @@ export class ActivityService {
 
             return (data || []).map((row: any) => this._mapDbActivityToApp(row));
         } catch (error) {
-            console.error("Error in getLatestActivities:", error);
+            // Non-critical, used only for marketing copy on the landing page — degrade quietly.
+            console.warn("[ActivityService] getLatestActivities unavailable:", error);
             return [];
         }
     }

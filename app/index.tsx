@@ -130,10 +130,12 @@ const FeatureCard = ({
     delay: number;
 }) => (
     <Animated.View entering={FadeInDown.delay(delay).duration(520)} style={styles.featureCard}>
-        <View style={[styles.featureIconWrap, { backgroundColor: iconBg }]}>
-            {icon}
+        <View style={styles.featureCardRow}>
+            <View style={[styles.featureIconWrap, { backgroundColor: iconBg }]}>
+                {icon}
+            </View>
+            <Text style={styles.featureTitle}>{title}</Text>
         </View>
-        <Text style={styles.featureTitle}>{title}</Text>
         <Text style={styles.featureText}>{text}</Text>
     </Animated.View>
 );
@@ -250,9 +252,6 @@ export default function LandingPage() {
                     <View style={styles.registrationHeader}>
                         <Text style={styles.roleIntroEyebrow}>Scegli come entrare in AiutarSì</Text>
                         <Text style={styles.registrationTitle}>Il percorso giusto, subito.</Text>
-                        <Text style={styles.registrationText}>
-                            Seleziona il tuo profilo e continua con un’iscrizione pensata per quello che vuoi fare.
-                        </Text>
                     </View>
 
                     <View style={styles.ctaStack}>
@@ -309,6 +308,7 @@ export default function LandingPage() {
                         title="Scopri attività vicine"
                         text="Le opportunità vengono presentate in modo semplice, con contesto territoriale e priorità leggibili."
                     />
+                    <View style={styles.featureCardDivider} />
                     <FeatureCard
                         delay={220}
                         accent={colors.accent}
@@ -317,6 +317,7 @@ export default function LandingPage() {
                         title="Scegli in base al tuo tempo"
                         text="Non serve stravolgere la giornata: puoi trovare occasioni brevi, urgenti o ricorrenti."
                     />
+                    <View style={styles.featureCardDivider} />
                     <FeatureCard
                         delay={320}
                         accent={colors.successStrong}
@@ -496,12 +497,6 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
         marginBottom: 8,
     },
-    registrationText: {
-        color: colors.textSecondary,
-        fontSize: 14,
-        lineHeight: 21,
-        fontWeight: "600",
-    },
     roleCardShadow: {
         borderRadius: 30,
         shadowColor: "#150c2a",
@@ -577,8 +572,13 @@ const styles = StyleSheet.create({
         fontWeight: "900",
     },
     section: {
-        paddingHorizontal: 22,
-        paddingTop: 36,
+        marginHorizontal: 22,
+        marginTop: 24,
+        padding: 22,
+        borderRadius: 30,
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "rgba(70,34,130,0.08)",
     },
     conversionStrip: {
         paddingHorizontal: 22,
@@ -643,28 +643,35 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     featureCard: {
-        backgroundColor: "rgba(255,255,255,0.9)",
-        borderRadius: 26,
-        padding: 22,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: "rgba(70,34,130,0.06)",
+        paddingVertical: 10,
+        marginBottom: 6,
+    },
+    featureCardDivider: {
+        height: 1,
+        backgroundColor: "rgba(70,34,130,0.08)",
+        marginBottom: 16,
+    },
+    featureCardRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 6,
     },
     featureIconWrap: {
-        width: 46,
-        height: 46,
-        borderRadius: 16,
+        width: 44,
+        height: 44,
+        borderRadius: 14,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 14,
     },
     featureTitle: {
+        flex: 1,
         color: colors.primary,
-        fontSize: 19,
+        fontSize: 17,
         fontWeight: "900",
-        marginBottom: 8,
     },
     featureText: {
+        paddingLeft: 56,
         color: colors.textSecondary,
         fontSize: 14,
         lineHeight: 21,
@@ -713,14 +720,15 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     bottomLoginText: {
-        color: colors.textSecondary,
+        color: "white",
         fontSize: 13,
         fontWeight: "500",
     },
     bottomLoginLink: {
-        color: colors.primary,
+        color: "white",
         fontSize: 13,
         fontWeight: "900",
+        textDecorationLine: "underline",
     },
     blobOne: {
         position: "absolute",
