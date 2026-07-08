@@ -31,6 +31,10 @@ tsc_output.txt
 # macOS
 .DS_Store
 
+# Editor swap files
+*.swp
+*.swo
+
 # SECRETS - IMPORTANT
 .env
 .env*.local
