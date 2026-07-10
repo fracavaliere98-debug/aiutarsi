@@ -1,9 +1,10 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowRight, CheckCircle2, Clock, Globe, MapPin, MessageCircle, ShieldCheck, Star, Users } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { StandardLayout } from '../../components/StandardLayout';
+import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { SoftCard } from '../../components/SoftCard';
 import { StatCard } from '../../components/StatCard';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -11,20 +12,22 @@ import { colors } from "@/theme";
 
 export default function NPOPreviewScreen() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     const categories = user?.interests || [];
     const soughtSkills = user?.sought_skills || [];
     const verificationStatus = user?.verification_status;
 
     return (
-        <StandardLayout
-            title="Anteprima profilo"
-            label="Onboarding NPO"
-            onBack={() => router.back()}
-            bg="bg-background-light"
-        >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
+        <SafeAreaView style={styles.container}>
+            <OnboardingStepHeader
+                title="Anteprima profilo"
+                subtitle="Ecco come i volontari vedranno il tuo ente. Controlla i dati prima di continuare."
+                onBack={() => router.back()}
+                onClose={() => logout()}
+            />
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 <View className="items-center mb-6">
                     <View className="relative mb-3">
                         <UserAvatar
@@ -156,16 +159,57 @@ export default function NPOPreviewScreen() {
                         </View>
                     </View>
                 </SoftCard>
+            </ScrollView>
 
+            <View style={styles.footer}>
                 <TouchableOpacity
                     onPress={() => router.push('/onboarding/welcome')}
-                    className="bg-primary py-4 rounded-2xl items-center justify-center flex-row"
-                    style={{ gap: 10 }}
+                    style={styles.button}
+                    activeOpacity={0.9}
                 >
-                    <Text className="text-white text-lg font-bold">Continua</Text>
-                    <ArrowRight size={20} color="white" />
+                    <Text style={styles.buttonText}>Continua</Text>
+                    <ArrowRight size={20} color="white" strokeWidth={2.5} />
                 </TouchableOpacity>
-            </ScrollView>
-        </StandardLayout>
+            </View>
+        </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F8F9FB',
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingBottom: 120,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 20,
+        paddingBottom: 30,
+        backgroundColor: 'rgba(248,249,251,0.9)',
+    },
+    button: {
+        backgroundColor: '#352F8B',
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        elevation: 5,
+        shadowColor: '#352F8B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+});

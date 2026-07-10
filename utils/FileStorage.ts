@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Moves a file from a temporary location (e.g. cache) to the app's permanent document storage.
