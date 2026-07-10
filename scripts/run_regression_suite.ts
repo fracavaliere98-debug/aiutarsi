@@ -7,6 +7,7 @@ const suite = [
   { label: "chat-ux-contract", path: "scripts/test_chat_ux_contract.ts" },
   { label: "gemma-invocation-guard-contract", path: "scripts/test_gemma_invocation_guard_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
+  { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },
   { label: "gamification-contract", path: "scripts/test_gamification_contract.ts" },
