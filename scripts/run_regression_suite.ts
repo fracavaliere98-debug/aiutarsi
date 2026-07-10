@@ -11,8 +11,15 @@ const suite = [
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },
   { label: "gamification-contract", path: "scripts/test_gamification_contract.ts" },
   { label: "gamification-report", path: "scripts/test_volunteer_report.ts" },
+  { label: "npo-report-quick-wins", path: "scripts/test_npo_report_quick_wins.ts" },
   { label: "smart-match-compatibility", path: "scripts/test_smart_match_compatibility_contract.ts" },
   { label: "unit-logic", path: "scripts/test_unit_logic.ts" },
+  { label: "bootstrap-runtime-settings", path: "scripts/test_bootstrap_runtime_settings.ts" },
+  { label: "gemma-help-local", path: "scripts/test_gemma_help_local.ts" },
+  { label: "gemma-help-massive", path: "scripts/test_gemma_help_massive.ts" },
+  { label: "profile-demographics", path: "scripts/test_profile_demographics.ts" },
+  { label: "password-validation-contract", path: "scripts/test_password_validation_contract.ts" },
+  { label: "gamification-legacy-consistency", path: "scripts/test_gamification_legacy_consistency_contract.ts" },
 ];
 
 for (const test of suite) {
