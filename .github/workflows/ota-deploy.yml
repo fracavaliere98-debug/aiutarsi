@@ -1,5 +1,5 @@
 # Trigger: ogni push su main
-# Flusso: lint + regression suite (18 contract test a logica pura) + prod migration
+# Flusso: lint + regression suite (22 contract test a logica pura) + prod migration
 # readiness -> OTA automatico su preview (staging) -> OTA su production solo dopo
 # approvazione manuale (GitHub Environment "production" con required reviewers)
 name: OTA Deploy (Fast)

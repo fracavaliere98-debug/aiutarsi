@@ -8,6 +8,16 @@ import { supabase } from "../utils/supabase";
 import { profileService } from "../services/ProfileService";
 import { getSupabaseProjectRef } from "../utils/runtimeConfig";
 import { isExpectedUserInputError, setMonitoringUser, trackError, trackEvent } from "../utils/monitoring";
+import {
+    buildAuthErrorTelemetryOptions,
+    computeNextProfileRealtimeState,
+    extractReferralCodeFromPath,
+    getAuthStorageKeysToClear,
+    hasRelevantProfileRealtimeChange,
+    hasRequiredRegistrationFields,
+    isEmailChangeConfirmedByRealtime,
+    shouldSkipSignInEvent,
+} from "./authLogic";
 
 interface AuthContextType {
     user: AppUser | null;
@@ -104,11 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             const keys = await AsyncStorage.getAllKeys();
             const supabaseProjectRef = getSupabaseProjectRef();
-            const authKeys = keys.filter((key) => (
-                key.includes('supabase')
-                || (supabaseProjectRef ? key.includes(supabaseProjectRef) : false)
-                || key === 'auth_user'
-            ));
+            const authKeys = getAuthStorageKeysToClear(keys as string[], supabaseProjectRef);
             if (authKeys.length > 0) {
                 await AsyncStorage.multiRemove(authKeys);
             }
@@ -292,11 +298,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                 if (session?.user) {
                     authService.setCachedAccessToken(session.access_token);
-                    const recentManualLogin = recentManualLoginRef.current;
                     if (
                         event === 'SIGNED_IN' &&
-                        recentManualLogin?.userId === session.user.id &&
-                        Date.now() - recentManualLogin.at < 5000
+                        shouldSkipSignInEvent(recentManualLoginRef.current, session.user.id, Date.now())
                     ) {
                         return;
                     }
@@ -319,13 +323,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.log("AuthContext: Received Deep Link URL:", url, "path:", path);
 
             // Referral link handling: aiutarsiapp://referral/[CODE] or https://aiutarsi.app/referral/[CODE]
-            if (path && path.includes('referral/')) {
-                const code = path.split('referral/')[1];
-                if (code) {
-                    console.log("AuthContext: Detected referral code:", code);
-                    trackEvent("referral_link_detected", { codeLength: code.length });
-                    await AsyncStorage.setItem('@pending_referral_code', code);
-                }
+            const code = extractReferralCodeFromPath(path);
+            if (code) {
+                console.log("AuthContext: Detected referral code:", code);
+                trackEvent("referral_link_detected", { codeLength: code.length });
+                await AsyncStorage.setItem('@pending_referral_code', code);
             }
         };
 
@@ -400,15 +402,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 filter: `id=eq.${user.id}` 
             }, async (payload) => {
                 if (payload.new) {
-                    const nextEmail = payload.new.email || user.email;
-                    const hasRelevantChange =
-                        user.is_banned !== !!payload.new.is_banned ||
-                        user.ban_reason !== payload.new.ban_reason ||
-                        user.ban_report_id !== payload.new.ban_report_id ||
-                        user.email !== nextEmail ||
-                        user.email_confirmed !== payload.new.email_confirmed;
+                    const nextProfileState = computeNextProfileRealtimeState(user, payload.new);
 
-                    if (!hasRelevantChange) {
+                    if (!hasRelevantProfileRealtimeChange(user, nextProfileState)) {
                         return;
                     }
 
@@ -419,32 +415,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     });
 
                     const pendingEmail = await authService.getPendingEmailChange();
-                    const normalizedPendingEmail = pendingEmail?.trim().toLowerCase();
-                    const normalizedPayloadEmail = typeof payload.new.email === 'string'
-                        ? payload.new.email.trim().toLowerCase()
-                        : null;
-                    const emailChangeConfirmed = !!normalizedPendingEmail
-                        && !!normalizedPayloadEmail
-                        && normalizedPayloadEmail === normalizedPendingEmail;
+                    const emailChangeConfirmed = isEmailChangeConfirmedByRealtime(pendingEmail, payload.new.email);
 
                     setUser(prev => {
                         if (!prev) return null;
 
-                        const nextBanState = {
-                            is_banned: !!payload.new.is_banned,
-                            ban_reason: payload.new.ban_reason,
-                            ban_report_id: payload.new.ban_report_id,
-                            email: payload.new.email || prev.email,
-                            email_confirmed: payload.new.email_confirmed,
-                        };
+                        const nextBanState = computeNextProfileRealtimeState(prev, payload.new);
 
-                        if (
-                            prev.is_banned === nextBanState.is_banned &&
-                            prev.ban_reason === nextBanState.ban_reason &&
-                            prev.ban_report_id === nextBanState.ban_report_id &&
-                            prev.email === nextBanState.email &&
-                            prev.email_confirmed === nextBanState.email_confirmed
-                        ) {
+                        if (!hasRelevantProfileRealtimeChange(prev, nextBanState)) {
                             return prev;
                         }
 
@@ -503,10 +481,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 emailDomain: email.split("@")[1] || "unknown",
             }, {
                 source: "auth_login",
-                priority: expected ? "low" : "high",
-                classification: expected ? "expected_user" : "error_technical",
                 issueName: "auth_login_failed",
-                expected,
+                ...buildAuthErrorTelemetryOptions(expected),
             });
             throw error;
         } finally {
@@ -518,13 +494,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // setIsLoading(true); // Don't trigger global loading
         try {
             // Check required fields (basic validation)
-            if (!userData.email || !userData.password || (!userData.full_name && !userData.name)) {
+            if (!hasRequiredRegistrationFields(userData)) {
                 throw new Error("Missing required fields");
             }
 
             trackEvent("auth_register_started", {
                 role: userData.role || "unknown",
-                emailDomain: userData.email.split("@")[1] || "unknown",
+                emailDomain: userData.email?.split("@")[1] || "unknown",
             });
             const result = await authService.register(userData as any);
 
@@ -554,10 +530,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 emailDomain: userData.email?.split("@")[1] || "unknown",
             }, {
                 source: "auth_register",
-                priority: expected ? "low" : "high",
-                classification: expected ? "expected_user" : "error_technical",
                 issueName: "auth_register_failed",
-                expected,
+                ...buildAuthErrorTelemetryOptions(expected),
             });
             throw error;
         } finally {

@@ -21,6 +21,10 @@ const suite = [
   { label: "profile-demographics", path: "scripts/test_profile_demographics.ts" },
   { label: "password-validation-contract", path: "scripts/test_password_validation_contract.ts" },
   { label: "gamification-legacy-consistency", path: "scripts/test_gamification_legacy_consistency_contract.ts" },
+  { label: "monitoring-contract", path: "scripts/test_monitoring_contract.ts" },
+  { label: "community-moderation-contract", path: "scripts/test_community_moderation_contract.ts" },
+  { label: "auth-contract", path: "scripts/test_auth_contract.ts" },
+  { label: "activities-selectors-contract", path: "scripts/test_activities_selectors_contract.ts" },
 ];
 
 for (const test of suite) {

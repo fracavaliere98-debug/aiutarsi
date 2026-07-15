@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { supabase } from "./supabase";
+import { buildFailOpenResult, mapModerationResponse, type ModerationResult } from "./communityModerationLogic";
 
 type ModerationInput = {
     caption?: string;
@@ -10,12 +11,6 @@ type ChatModerationInput = {
     message: string;
     userId?: string;
     conversationId?: string;
-};
-
-type ModerationResult = {
-    safe: boolean;
-    reason?: string;
-    category?: string;
 };
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
@@ -89,18 +84,10 @@ export async function moderateCommunityContent({ caption, imageUrl }: Moderation
             throw result.error;
         }
 
-        return {
-            safe: result.data?.analysis?.safe !== false,
-            reason: result.data?.analysis?.reason,
-            category: result.data?.analysis?.category,
-        };
+        return mapModerationResponse(result.data);
     } catch (error) {
         console.warn("[CommunityModeration] unavailable, allowing content", error);
-        return {
-            safe: true,
-            reason: "Moderazione temporaneamente non disponibile.",
-            category: "none",
-        };
+        return buildFailOpenResult();
     }
 }
 
@@ -122,17 +109,9 @@ export async function moderateChatMessage({ message, userId, conversationId }: C
             throw result.error;
         }
 
-        return {
-            safe: result.data?.analysis?.safe !== false,
-            reason: result.data?.analysis?.reason,
-            category: result.data?.analysis?.category,
-        };
+        return mapModerationResponse(result.data);
     } catch (error) {
         console.warn("[ChatModeration] unavailable, allowing content", error);
-        return {
-            safe: true,
-            reason: "Moderazione temporaneamente non disponibile.",
-            category: "none",
-        };
+        return buildFailOpenResult();
     }
 }
