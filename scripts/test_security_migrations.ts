@@ -1,9 +1,16 @@
 /**
  * Security migration validation suite.
  *
- * Verifies that the 5 security migrations applied on 2026-05-19 both:
+ * Verifies that the security migrations applied on 2026-05-19 and 2026-07-15
+ * both:
  *   a) block what they are supposed to block
  *   b) do not break legitimate authenticated usage
+ *
+ * The 2026-07-15 additions specifically cover the authenticated-but-wrong-user
+ * (IDOR) class of bug: a logged-in user calling a SECURITY DEFINER RPC with
+ * someone ELSE's id, or with a privileged field they shouldn't be able to
+ * set on their own row. These are the checks the original 2026-05-19 suite
+ * did not cover (it only tested anon rejection, not authenticated misuse).
  *
  * Run against staging:
  *   STAGING_SUPABASE_URL=https://pavnfiladmnwbptwlwpr.supabase.co \
@@ -266,6 +273,82 @@ async function testLevelsRLS(jwt: string) {
 }
 
 // ---------------------------------------------------------------------------
+// 7. 2026-07-15 hardening: IDOR / self-escalation checks on SECURITY DEFINER
+//    functions found during the targeted review of that date.
+// ---------------------------------------------------------------------------
+
+async function testDefinerFunctionHardening(jwt: string, ownId: string) {
+  console.log("\n[7] SECURITY DEFINER functions hardened on 2026-07-15");
+
+  // 7a. Internal-only helper RPCs must be entirely unreachable now, even for
+  // an authenticated caller (they were previously callable by anyone with
+  // an arbitrary p_user_id, allowing unlimited self-awarded XP/points).
+  const internalRpcs = [
+    { name: "award_gamification_xp", body: { p_user_id: ownId, p_xp: 1000, p_metadata: {} } },
+    { name: "get_report_count", body: { p_user_id: ownId, p_days: 30 } },
+  ];
+  for (const rpc of internalRpcs) {
+    const res = await fetch(`${RPC}/${rpc.name}`, {
+      method: "POST",
+      headers: authHeaders(jwt),
+      body: JSON.stringify(rpc.body),
+    });
+    assert(
+      res.status === 401 || res.status === 403 || res.status === 404,
+      `${rpc.name} should be unreachable for an authenticated caller after the 2026-07-15 revoke, got ${res.status}`,
+    );
+    pass(`${rpc.name} blocked for authenticated caller (HTTP ${res.status})`);
+  }
+
+  // 7b. start_private_conversation_between must reject a caller who is
+  // neither of the two parties passed in (previously let anyone force two
+  // arbitrary OTHER users into a private conversation).
+  const fakeA = "11111111-1111-1111-1111-111111111111";
+  const fakeB = "22222222-2222-2222-2222-222222222222";
+  const convRes = await fetch(`${RPC}/start_private_conversation_between`, {
+    method: "POST",
+    headers: authHeaders(jwt),
+    body: JSON.stringify({ p_user_id_1: fakeA, p_user_id_2: fakeB }),
+  });
+  assert(
+    !convRes.ok,
+    `start_private_conversation_between should reject a caller who is not one of the two parties, got ${convRes.status}`,
+  );
+  pass(`start_private_conversation_between rejects impersonation of two other users (HTTP ${convRes.status})`);
+
+  // 7c. update_my_profile_core must silently ignore privileged fields
+  // (is_verified, impact_points, verification_status) even though the rest
+  // of the payload still applies to the caller's own row.
+  const beforeRes = await fetch(
+    `${REST}/profiles?select=id,is_verified,impact_points,verification_status&id=eq.${ownId}`,
+    { headers: authHeaders(jwt) },
+  );
+  type ProfileGuardedFields = { id: string; is_verified: boolean; impact_points: number; verification_status: string | null };
+  const [before] = (await beforeRes.json()) as ProfileGuardedFields[];
+  assert(before, "could not read own profile before the privilege-escalation check");
+
+  const escalateRes = await fetch(`${RPC}/update_my_profile_core`, {
+    method: "POST",
+    headers: authHeaders(jwt),
+    body: JSON.stringify({ p_payload: { is_verified: true, impact_points: 999999, verification_status: "approved" } }),
+  });
+  assert(escalateRes.ok || escalateRes.status === 204, `update_my_profile_core call failed: ${escalateRes.status}`);
+
+  const afterRes = await fetch(
+    `${REST}/profiles?select=id,is_verified,impact_points,verification_status&id=eq.${ownId}`,
+    { headers: authHeaders(jwt) },
+  );
+  const [after] = (await afterRes.json()) as ProfileGuardedFields[];
+  assert(
+    after.is_verified === before.is_verified &&
+      after.impact_points === before.impact_points &&
+      after.verification_status === before.verification_status,
+    `update_my_profile_core allowed self privilege escalation: before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+  );
+  pass("update_my_profile_core ignores is_verified/impact_points/verification_status in the payload");
+}
+
+// ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
@@ -296,6 +379,9 @@ async function run() {
   await testGamificationStateIsolation(jwt);
   await testAuthenticatedRpcsStillWork(jwt);
   await testLevelsRLS(jwt);
+
+  const ownId = JSON.parse(Buffer.from(jwt.split(".")[1], "base64").toString()).sub as string;
+  await testDefinerFunctionHardening(jwt, ownId);
 
   console.log("\n" + "─".repeat(60));
   console.log("All security checks passed ✓");

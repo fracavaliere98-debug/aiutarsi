@@ -37,6 +37,7 @@
     "test:activities-selectors-contract": "npx -y tsx scripts/test_activities_selectors_contract.ts",
     "test:regression": "npx -y tsx scripts/run_regression_suite.ts",
     "test:prod-migration-readiness": "npx -y tsx scripts/test_prod_migration_readiness.ts",
+    "test:security-migrations": "npx -y tsx scripts/test_security_migrations.ts",
     "validate:env-contract": "npx -y tsx scripts/validate_env_contract.ts",
     "release:smoke": "npx -y tsx scripts/run_release_smoke.ts",
     "smoke:chat:staging": "npx -y tsx scripts/run_staging_chat_smoke.ts full",

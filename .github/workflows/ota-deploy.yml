@@ -1,7 +1,8 @@
 # Trigger: ogni push su main
 # Flusso: lint + regression suite (22 contract test a logica pura) + prod migration
-# readiness -> OTA automatico su preview (staging) -> OTA su production solo dopo
-# approvazione manuale (GitHub Environment "production" con required reviewers)
+# readiness + security-rls-check (RLS/RPC live contro staging) -> OTA automatico
+# su preview (staging) -> OTA su production solo dopo approvazione manuale
+# (GitHub Environment "production" con required reviewers)
 name: OTA Deploy (Fast)
 
 on:
@@ -68,10 +69,38 @@ jobs:
       - name: Run prod migration readiness checks
         run: npm run test:prod-migration-readiness
 
+  security-rls-check:
+    name: Security RLS / RPC Check (live, staging)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run live security migration suite against staging
+        run: npm run test:security-migrations
+        env:
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          STAGING_TEST_EMAIL: ${{ secrets.STAGING_TEST_EMAIL }}
+          STAGING_TEST_PASSWORD: ${{ secrets.STAGING_TEST_PASSWORD }}
+
   ota-update:
     name: Fast OTA Deploy
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests]
+    needs: [lint, unit-tests, security-rls-check]
     timeout-minutes: 30
 
     steps:
