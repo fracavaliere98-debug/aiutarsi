@@ -4,7 +4,7 @@ import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-f
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
-import { ToastProvider } from "../context/ToastContext";
+import { ToastProvider, useToast } from "../context/ToastContext";
 import { ToastContainer } from "../components/Toast";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { NotificationsRuntimeBridge } from "../components/notifications/NotificationsRuntimeBridge";
@@ -49,6 +49,7 @@ if (Platform.OS !== "web") {
 
 function RootLayoutNav() {
   const { user, isLoaded, isLoading: isAuthLoading, isLoggingOut, logout } = useAuth();
+  const { showToast } = useToast();
   const segments = useSegments();
   const router = useRouter();
   const isRedirecting = useRef(false);
@@ -154,10 +155,11 @@ function RootLayoutNav() {
         })
         .catch((error) => {
           console.warn("[Updates] Check/fetch failed:", error);
+          showToast("error", `Controllo aggiornamenti fallito: ${error?.message || error}`);
         });
     }
 
-    }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister]);
+    }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister, showToast]);
 
   useEffect(() => {
     if (!isLoaded || isAuthLoading || isLoggingOut || !showStartupVideo) return;

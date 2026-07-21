@@ -128,6 +128,7 @@ jobs:
           CI=1 eas update --branch preview --environment preview --message "Fast OTA: ${{ github.sha }}"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: preview
 
   ota-deploy-production:
     name: OTA Deploy to Production (on request)
@@ -161,3 +162,4 @@ jobs:
           CI=1 eas update --branch production --environment production --message "Prod OTA: ${{ github.sha }}"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: production
