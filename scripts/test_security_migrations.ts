@@ -197,14 +197,17 @@ async function testAnonCannotCallRpcs() {
 // 5. Authenticated user can still call legitimate RPCs
 // ---------------------------------------------------------------------------
 
-async function testAuthenticatedRpcsStillWork(jwt: string) {
+async function testAuthenticatedRpcsStillWork(jwt: string, ownId: string) {
   console.log("\n[5] Authenticated RPCs must still work after revoke");
 
-  // get_unread_messages_count — should work and return a number
+  // get_unread_messages_count takes an explicit p_user_id (no parameterless overload exists) —
+  // calling it with an empty body 404s at the PostgREST level (function-not-found-for-signature),
+  // not a security rejection. Pass the signed-in user's own id, exactly like the real callers
+  // (supabase/functions/notify-user, push-notifications) do.
   const inboxRes = await fetch(`${RPC}/get_unread_messages_count`, {
     method: "POST",
     headers: authHeaders(jwt),
-    body: JSON.stringify({}),
+    body: JSON.stringify({ p_user_id: ownId }),
   });
   assert(
     inboxRes.ok || inboxRes.status === 406, // 406 = no rows, also valid
@@ -225,7 +228,7 @@ async function testAuthenticatedRpcsStillWork(jwt: string) {
   pass("get_my_blocked_users works for authenticated user");
 
   // gamification_state table read
-  const gamRes = await fetch(`${REST}/gamification_state?select=user_id,total_xp,level`, {
+  const gamRes = await fetch(`${REST}/gamification_state?select=user_id,xp,level`, {
     headers: authHeaders(jwt),
   });
   assert(gamRes.ok, `gamification_state read failed for authenticated user: ${gamRes.status}`);
@@ -376,11 +379,11 @@ async function run() {
     return;
   }
 
-  await testGamificationStateIsolation(jwt);
-  await testAuthenticatedRpcsStillWork(jwt);
-  await testLevelsRLS(jwt);
-
   const ownId = JSON.parse(Buffer.from(jwt.split(".")[1], "base64").toString()).sub as string;
+
+  await testGamificationStateIsolation(jwt);
+  await testAuthenticatedRpcsStillWork(jwt, ownId);
+  await testLevelsRLS(jwt);
   await testDefinerFunctionHardening(jwt, ownId);
 
   console.log("\n" + "─".repeat(60));
