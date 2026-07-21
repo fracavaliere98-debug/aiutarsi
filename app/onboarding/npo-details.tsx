@@ -34,7 +34,7 @@ export default function NPODetailsScreen() {
     const [website, setWebsite] = useState(user?.website || "");
     const [vatId, setVatId] = useState(user?.npo_vat_id || "");
     const [phone, setPhone] = useState(user?.phone || "");
-    const [publicEmail, setPublicEmail] = useState(user?.public_email || user?.publicEmail || "");
+    const [publicEmail, setPublicEmail] = useState(user?.public_email || user?.publicEmail || user?.email || "");
     const [address, setAddress] = useState(user?.address_full || "");
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(
         user?.location_lat && user?.location_lng 
@@ -159,15 +159,19 @@ export default function NPODetailsScreen() {
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>P.IVA / CODICE FISCALE *</Text>
-                            <View style={styles.inputContainer}>
+                            <View style={[styles.inputContainer, !!vatId && styles.inputContainerDisabled]}>
                                 <Globe size={20} color={colors.primary} style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.input}
+                                <TextInput
+                                    style={[styles.input, !!vatId && styles.inputDisabled]}
                                     placeholder="Es. 12345678901"
                                     value={vatId}
                                     onChangeText={setVatId}
+                                    editable={!vatId}
                                 />
                             </View>
+                            {!!vatId && (
+                                <Text style={styles.inputHint}>Inserito in fase di registrazione, non modificabile.</Text>
+                            )}
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -311,6 +315,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#1A1A40',
         fontWeight: '500',
+    },
+    inputContainerDisabled: {
+        backgroundColor: '#F1F1F6',
+    },
+    inputDisabled: {
+        color: '#8A8A9C',
+    },
+    inputHint: {
+        fontSize: 12,
+        color: '#A0A0B0',
+        marginLeft: 4,
+        marginTop: 2,
     },
     textAreaContainer: {
         alignItems: 'flex-start',

@@ -70,21 +70,32 @@ export function ActivityForm({
     autoCurateOnLoad = false,
 }: Props) {
     const { showToast } = useToast();
-    const [formData, setFormData] = useState<ActivityFormValues>(initialValues);
+    const [formDataState, setFormData] = useState<ActivityFormValues>(initialValues);
     // L'indirizzo arriva già confermato quando il form si popola con dati esistenti (edit, duplicazione,
     // bozza AI riuscita); parte da confermare solo quando il campo indirizzo è davvero vuoto (creazione da zero,
     // o fallback generico della bozza AI che non porta un indirizzo). Vedi nota sotto per il gating in submit.
-    const [coordsConfirmed, setCoordsConfirmed] = useState(getInitialCoordsConfirmed(initialValues.address));
+    const [coordsConfirmedState, setCoordsConfirmed] = useState(getInitialCoordsConfirmed(initialValues.address));
     const [showCalendar, setShowCalendar] = useState(false);
     const [isCuratingDraft, setIsCuratingDraft] = useState(false);
     const [hasAutoCuratedDraft, setHasAutoCuratedDraft] = useState(false);
 
-    // Re-seed form when the async source of truth changes (activity loaded, AI draft applied, duplicate source picked).
-    useEffect(() => {
+    // Re-seed form when the async source of truth changes (activity loaded, AI draft applied, duplicate source
+    // picked). Aggiornato durante il render (pattern React "adjusting state when a prop changes"), non in un
+    // useEffect: un useEffect scatta dopo il commit, quindi per un render intero "isLoading" sarebbe già false
+    // (l'attività è arrivata) ma "formData" conterrebbe ancora il valore vuoto iniziale — crash su
+    // formData.skills.includes(...) più sotto. Le variabili locali "formData"/"coordsConfirmed" (non lo state
+    // grezzo) vengono usate nel resto del render proprio per riflettere subito il nuovo valore in questo stesso
+    // giro, invece di aspettare il render successivo innescato dalle setFormData/setCoordsConfirmed qui sotto.
+    const [prevResetKey, setPrevResetKey] = useState(resetKey);
+    let formData = formDataState;
+    let coordsConfirmed = coordsConfirmedState;
+    if (resetKey !== prevResetKey) {
+        setPrevResetKey(resetKey);
         setFormData(initialValues);
         setCoordsConfirmed(getInitialCoordsConfirmed(initialValues.address));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resetKey]);
+        formData = initialValues;
+        coordsConfirmed = getInitialCoordsConfirmed(initialValues.address);
+    }
 
     const pickImage = async () => {
         const granted = await requestMediaLibraryPermission({

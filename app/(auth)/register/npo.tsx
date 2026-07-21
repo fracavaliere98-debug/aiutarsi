@@ -45,6 +45,7 @@ export default function NPORegister() {
                 password: formData.password,
                 role: "NPO",
                 profile_completed: false,
+                npo_vat_id: formData.taxId.trim(),
             });
 
             if (result.requiresEmailConfirmation) {

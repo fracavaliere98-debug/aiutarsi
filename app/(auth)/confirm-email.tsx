@@ -36,6 +36,18 @@ export default function ConfirmEmailScreen() {
 
     useEffect(() => {
         if (!isLoaded || isLoading || !user || isEmailChangeFlow) return;
+        // Users who still need to complete onboarding must be routed to
+        // /onboarding/intro, not to "/". The central navigation guard in
+        // app/_layout.tsx already does this (same condition it uses to force
+        // onboarding). Redirecting to "/" here unconditionally used to race
+        // with that guard: both effects fired off the same `user` update,
+        // "/onboarding/intro" would flash for a moment and then this effect's
+        // router.replace("/") won, stranding the user on the landing page
+        // until they manually navigated again (e.g. tapping "Accedi").
+        // Only take over navigation here for users who do NOT need forced
+        // onboarding, so there is a single source of truth for where they go.
+        const needsForcedOnboarding = (user.role === "VOLUNTEER" || user.role === "NPO") && !user.profile_completed;
+        if (needsForcedOnboarding) return;
         router.replace("/");
     }, [user, isLoaded, isLoading, router, isEmailChangeFlow]);
 
