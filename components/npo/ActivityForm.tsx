@@ -250,7 +250,7 @@ export function ActivityForm({
                             {/* Competenze */}
                             <View>
                                 <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Competenze Richieste (Opzionale)</Text>
-                                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                                <View className="flex-row flex-wrap gap-2">
                                     {SKILLS.map((skill) => {
                                         const isSelected = formData.skills.includes(skill.id);
                                         const SkillIcon = skill.icon;
@@ -263,22 +263,10 @@ export function ActivityForm({
                                                         skills: isSelected ? prev.skills.filter((id) => id !== skill.id) : [...prev.skills, skill.id],
                                                     }))
                                                 }
-                                                style={{
-                                                    width: "30.5%",
-                                                    paddingVertical: 10,
-                                                    paddingHorizontal: 4,
-                                                    borderRadius: 14,
-                                                    borderWidth: 1,
-                                                    alignItems: "center",
-                                                    flexDirection: "row",
-                                                    justifyContent: "center",
-                                                    gap: 4,
-                                                    backgroundColor: isSelected ? colors.primary : "white",
-                                                    borderColor: isSelected ? colors.primary : "#ede9fe",
-                                                }}
+                                                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
                                             >
-                                                <SkillIcon size={11} color={isSelected ? "white" : colors.primary} />
-                                                <Text style={{ fontWeight: "800", fontSize: 10, color: isSelected ? "white" : colors.primary }}>{skill.label}</Text>
+                                                <SkillIcon size={13} color={isSelected ? "white" : colors.primary} />
+                                                <Text className={`font-bold text-xs ${isSelected ? "text-white" : "text-primary"}`}>{skill.label}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}

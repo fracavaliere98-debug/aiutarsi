@@ -66,10 +66,10 @@ export function InsightCarousel({ insights, onDismiss }: InsightCarouselProps) {
                 {/* Action Button */}
                 <TouchableOpacity
                     onPress={item.onAction}
-                    style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
-                    activeOpacity={0.7}
+                    style={{ backgroundColor: 'white', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
+                    activeOpacity={0.85}
                 >
-                    <Text style={{ color: 'white', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
                         {item.actionLabel}
                     </Text>
                 </TouchableOpacity>
