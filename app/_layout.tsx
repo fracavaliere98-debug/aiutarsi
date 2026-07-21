@@ -137,17 +137,24 @@ function RootLayoutNav() {
       return;
     }
 
-    // 6. OTA Update Check (Once per session-ish)
+    // 6. OTA Update Check (Once per session-ish): download automatically, then force a restart
     if (!__DEV__ && !hasCheckedForUpdates.current) {
       hasCheckedForUpdates.current = true;
-      Updates.checkForUpdateAsync().then(update => {
-        if (update.isAvailable) {
-          Alert.alert("Nuovo Aggiornamento", "È disponibile una nuova versione. Installa ora?", [
-            { text: "Più tardi", style: "cancel" },
-            { text: "Installa ora", onPress: async () => { await Updates.fetchUpdateAsync(); await Updates.reloadAsync(); } }
-          ]);
-        }
-      });
+      Updates.checkForUpdateAsync()
+        .then(async (update) => {
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync();
+            Alert.alert(
+              "Aggiornamento necessario",
+              "È stato scaricato un aggiornamento dell'app. Riavvia per applicarlo.",
+              [{ text: "Riavvia ora", onPress: () => Updates.reloadAsync() }],
+              { cancelable: false }
+            );
+          }
+        })
+        .catch((error) => {
+          console.warn("[Updates] Check/fetch failed:", error);
+        });
     }
 
     }, [user, isLoaded, isLoggingOut, segmentKey, inProtectedGroup, onLandingPage, router, logout, corporateEnabled, inCorporateRegister]);
