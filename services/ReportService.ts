@@ -134,12 +134,15 @@ export function computeNPOReportSummary(params: {
         return !!endDate && endDate >= monthStart;
     }).length;
 
-    const threeDaysAhead = new Date();
-    threeDaysAhead.setDate(threeDaysAhead.getDate() + 3);
+    // Finestra allargata da 3 a 7 giorni: con soli 3 giorni il banner "copertura bassa"
+    // restava quasi sempre nascosto anche per attività con 0 iscritti, perché la maggior
+    // parte delle attività aperte viene pubblicata con più di 3 giorni di anticipo.
+    const sevenDaysAhead = new Date();
+    sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
     const lowCoverageActivities = npoActivities.filter((activity) => {
         if (!(activity.status === 'APERTA' || activity.status === 'IN_CORSO')) return false;
         const startDate = new Date(activity.dateTime);
-        if (Number.isNaN(startDate.getTime()) || startDate > threeDaysAhead) return false;
+        if (Number.isNaN(startDate.getTime()) || startDate > sevenDaysAhead) return false;
         const coverage = activity.slots > 0 ? activity.iscritti.length / activity.slots : 1;
         return coverage < 0.5;
     });

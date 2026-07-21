@@ -43,8 +43,9 @@ async function run() {
   const withinWeek = hoursFrom(weekStart, 1);
   const withinMonth = hoursFrom(monthStart, 2);
   const longAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString(); // always outside week & month
-  const soon = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(); // within the 3-day low-coverage window
-  const farFuture = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(); // beyond the 3-day window
+  const soon = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(); // within the 7-day low-coverage window
+  const midWindow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(); // beyond the old 3-day cutoff, within the new 7-day one
+  const farFuture = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(); // beyond the 7-day window
 
   const npoActivities = [
     // Open, low coverage (1/6), starting soon -> must appear in lowCoverageActivities.
@@ -52,13 +53,16 @@ async function run() {
     // Completed, ends just after month start -> always counts this month; week
     // membership is derived below from the boundary comparison.
     { id: "a2", npoId: "npo-1", status: "COMPLETATA", iscritti: ["u1", "u2"], slots: 4, dateTime: hoursFrom(monthStart, -3), endDateTime: withinMonth, created_at: longAgo },
-    // Open, low coverage (1/10) but starting beyond the 3-day window -> must be
+    // Open, low coverage (1/10) but starting beyond the 7-day window -> must be
     // excluded from lowCoverageActivities by the date cutoff, not by coverage.
     { id: "a3", npoId: "npo-1", status: "APERTA", iscritti: ["u1"], slots: 10, dateTime: farFuture, endDateTime: farFuture, created_at: withinWeek },
     // Open, full coverage, starting soon -> must be excluded by coverage, not by date.
     { id: "a4", npoId: "npo-1", status: "APERTA", iscritti: ["u1", "u2"], slots: 2, dateTime: soon, endDateTime: soon, created_at: withinWeek },
     // Belongs to a different NPO entirely -> must never leak into npo-1's aggregates.
     { id: "a5", npoId: "npo-2", status: "APERTA", iscritti: ["u1"], slots: 10, dateTime: soon, endDateTime: soon, created_at: withinWeek },
+    // Open, low coverage (0/8), starting 5 days out -> past the old 3-day cutoff but
+    // inside the new 7-day one: must now appear in lowCoverageActivities.
+    { id: "a6", npoId: "npo-1", status: "APERTA", iscritti: [], slots: 8, dateTime: midWindow, endDateTime: midWindow, created_at: withinWeek },
   ];
 
   const summary = computeNPOReportSummary({
@@ -125,8 +129,8 @@ async function run() {
   );
 
   // ── Published / completed activities ────────────────────────────────────────
-  assert(summary.publishedActivitiesThisWeek === 3, "publishedActivitiesThisWeek must count a1, a3, a4 (a2 is old, a5 is another NPO)");
-  assert(summary.publishedActivitiesThisMonth === 3, "publishedActivitiesThisMonth must count a1, a3, a4 (a2's created_at is 60 days old)");
+  assert(summary.publishedActivitiesThisWeek === 4, "publishedActivitiesThisWeek must count a1, a3, a4, a6 (a2 is old, a5 is another NPO)");
+  assert(summary.publishedActivitiesThisMonth === 4, "publishedActivitiesThisMonth must count a1, a3, a4, a6 (a2's created_at is 60 days old)");
   const expectedCompletedWeek = withinMonth >= weekStartIso ? 1 : 0;
   assert(
     summary.completedActivitiesThisWeek === expectedCompletedWeek,
@@ -135,9 +139,10 @@ async function run() {
   assert(summary.completedActivitiesThisMonth === 1, "completedActivitiesThisMonth must count a2 only");
 
   // ── Low coverage: date-window and coverage-ratio must each be enforced independently ──
+  const lowCoverageIds = summary.lowCoverageActivities.map((a) => a.id).sort();
   assert(
-    summary.lowCoverageActivities.length === 1 && summary.lowCoverageActivities[0].id === "a1",
-    `lowCoverageActivities must contain only a1, got [${summary.lowCoverageActivities.map((a) => a.id).join(", ")}]`
+    lowCoverageIds.length === 2 && lowCoverageIds[0] === "a1" && lowCoverageIds[1] === "a6",
+    `lowCoverageActivities must contain exactly a1 and a6, got [${summary.lowCoverageActivities.map((a) => a.id).join(", ")}]`
   );
 
   // ── Posts, stories, reactions ────────────────────────────────────────────────
