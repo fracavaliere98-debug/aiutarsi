@@ -46,7 +46,7 @@ appId: ${APP_ID}
     timeout: 20000
 
 - tapOn:
-    text: "Assistenza e Compagnia"
+    text: "Assistenza"
 
 - tapOn:
     text: "Continua"

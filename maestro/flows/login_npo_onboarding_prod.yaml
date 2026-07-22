@@ -57,7 +57,7 @@ appId: ${APP_ID}
     timeout: 20000
 
 - tapOn:
-    text: "Amministrazione e Gestione"
+    text: "Amministrazione"
 
 - tapOn:
     text: "Continua"

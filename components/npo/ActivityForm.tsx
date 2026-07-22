@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAvoidingView, Platform, ActivityIndicator, Modal } from "react-native";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import { Calendar, Users, Send, Clock, CheckCircle2, AlertCircle, RefreshCw, Trash2, ChevronDown, Check } from "lucide-react-native";
+import { Calendar, Users, ArrowRight, Clock, CheckCircle2, AlertCircle, RefreshCw, Trash2, ChevronDown, Check, Camera, Sparkles } from "lucide-react-native";
 import { StandardLayout } from "../StandardLayout";
 import { AddressAutocomplete } from "../AddressAutocomplete";
 import { CalendarPicker } from "../CalendarPicker";
@@ -30,6 +31,18 @@ export type ActivityFormValues = {
     imageUrl?: string;
     recurrence: "NONE" | "WEEKLY" | "MONTHLY";
 };
+
+const RECURRENCE_LABELS: Record<ActivityFormValues["recurrence"], string> = {
+    NONE: "Nessuna ricorrenza",
+    WEEKLY: "Ogni settimana",
+    MONTHLY: "Ogni mese",
+};
+
+const RECURRENCE_OPTIONS: { value: ActivityFormValues["recurrence"]; label: string; description: string }[] = [
+    { value: "NONE", label: "Nessuna ricorrenza", description: "L'attività si svolge una volta sola." },
+    { value: "WEEKLY", label: "Ogni settimana", description: "Si ripete automaticamente ogni settimana." },
+    { value: "MONTHLY", label: "Ogni mese", description: "Si ripete automaticamente ogni mese." },
+];
 
 type Props = {
     mode: "create" | "edit";
@@ -187,27 +200,50 @@ export function ActivityForm({
     return (
         <>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }} keyboardVerticalOffset={0}>
-                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }}>
                     <StandardLayout label={headerLabel} title={headerTitle} bg="bg-background-light" onBack={onBack} noScroll>
-                        <View className="gap-5 pb-12">
-                            {/* Foto — opzionale, in cima come da mockup */}
-                            <TouchableOpacity
-                                onPress={pickImage}
-                                activeOpacity={0.8}
-                                className="flex-row items-center gap-3 bg-white p-3 rounded-2xl border border-primary/5 shadow-sm"
-                            >
-                                <View className="w-14 h-14 rounded-xl overflow-hidden bg-primary/5 items-center justify-center">
-                                    {formData.imageUrl ? (
-                                        <Image source={{ uri: formData.imageUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
-                                    ) : (
-                                        <RefreshCw size={20} color={colors.primary} />
-                                    )}
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-primary font-bold text-sm">{formData.imageUrl ? "Cambia foto" : "Aggiungi una foto"}</Text>
-                                    <Text className="text-secondary text-[11px] mt-0.5">Facoltativa, migliora la visibilità dell&apos;attività.</Text>
-                                </View>
-                            </TouchableOpacity>
+                        <View className="gap-5">
+                            {/* Foto — opzionale, in cima come da mockup. In modifica con foto già presente: banner
+                                a piena larghezza con overlay "Cambia foto" (handoff design ActivityForm.tsx §3.1). */}
+                            {mode === "edit" && formData.imageUrl ? (
+                                <TouchableOpacity onPress={pickImage} activeOpacity={0.85} className="rounded-2xl overflow-hidden" style={{ height: 76 }}>
+                                    <Image source={{ uri: formData.imageUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                                    <View
+                                        className="absolute inset-0 flex-row items-center justify-center gap-2"
+                                        style={{ backgroundColor: "rgba(0,0,0,0.32)" }}
+                                    >
+                                        <RefreshCw size={16} color="white" />
+                                        <Text className="text-white font-extrabold text-xs">Cambia foto</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ) : mode === "edit" ? (
+                                <TouchableOpacity onPress={pickImage} activeOpacity={0.85} className="rounded-2xl overflow-hidden" style={{ height: 76 }}>
+                                    <LinearGradient colors={[colors.accent, colors.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+                                        <View className="flex-1 flex-row items-center justify-center gap-2" style={{ backgroundColor: "rgba(0,0,0,0.32)" }}>
+                                            <Camera size={16} color="white" />
+                                            <Text className="text-white font-extrabold text-xs">Aggiungi una foto</Text>
+                                        </View>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={pickImage}
+                                    activeOpacity={0.8}
+                                    className="flex-row items-center gap-3 bg-white p-3 rounded-2xl border border-primary/5 shadow-sm"
+                                >
+                                    <View className="w-11 h-11 rounded-xl overflow-hidden bg-primary/5 items-center justify-center">
+                                        {formData.imageUrl ? (
+                                            <Image source={{ uri: formData.imageUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                                        ) : (
+                                            <Camera size={18} color={colors.primary} />
+                                        )}
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-primary font-bold text-sm">{formData.imageUrl ? "Cambia foto" : "Aggiungi una foto"}</Text>
+                                        <Text className="text-secondary text-[11px] mt-0.5">Facoltativo, consigliato.</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
 
                             {/* Sezione 1: identità dell'attività — massima priorità */}
                             <View className="gap-3">
@@ -231,7 +267,7 @@ export function ActivityForm({
                                             <TouchableOpacity
                                                 key={cat}
                                                 onPress={() => setFormData({ ...formData, category: cat })}
-                                                className={`px-4 py-2 rounded-full border ${formData.category === cat ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+                                                className={`px-4 py-2 rounded-xl border ${formData.category === cat ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
                                             >
                                                 <Text className={`font-bold text-xs ${formData.category === cat ? "text-white" : "text-primary"}`}>{cat}</Text>
                                             </TouchableOpacity>
@@ -244,25 +280,49 @@ export function ActivityForm({
                             <View className="gap-3">
                                 <Text className="text-primary font-black text-base">Quando e dove</Text>
 
-                                <View>
-                                    <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Data</Text>
-                                    <TouchableOpacity
-                                        onPress={() => setShowCalendar(true)}
-                                        activeOpacity={0.8}
-                                        style={{
-                                            backgroundColor: "white", padding: 14, borderRadius: 16,
-                                            flexDirection: "row", alignItems: "center", gap: 10,
-                                            borderWidth: 1, borderColor: formData.date ? colors.primary + "40" : "#ede9fe",
-                                            shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
-                                        }}
-                                    >
-                                        <Calendar size={18} color={formData.date ? colors.primary : colors.textSecondary} />
-                                        <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: formData.date ? colors.primary : "#94a3b8" }}>
-                                            {formData.date
-                                                ? new Date(formData.date).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long" })
-                                                : "Scegli data"}
-                                        </Text>
-                                    </TouchableOpacity>
+                                <View style={{ flexDirection: "row", gap: 8 }}>
+                                    <View style={{ flex: 1.7 }}>
+                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Data</Text>
+                                        <TouchableOpacity
+                                            onPress={() => setShowCalendar(true)}
+                                            activeOpacity={0.8}
+                                            style={{
+                                                backgroundColor: "white", padding: 14, borderRadius: 16,
+                                                flexDirection: "row", alignItems: "center", gap: 10,
+                                                borderWidth: 1, borderColor: formData.date ? colors.primary + "40" : "#ede9fe",
+                                                shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
+                                            }}
+                                        >
+                                            <Calendar size={18} color={formData.date ? colors.primary : colors.textSecondary} />
+                                            <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: formData.date ? colors.primary : "#94a3b8" }}>
+                                                {formData.date
+                                                    ? new Date(formData.date).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long" })
+                                                    : "Scegli data"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Volontari</Text>
+                                        <View
+                                            style={{
+                                                backgroundColor: "white", paddingHorizontal: 12, height: 48, borderRadius: 16,
+                                                flexDirection: "row", alignItems: "center", gap: 8,
+                                                borderWidth: 1, borderColor: "#ede9fe",
+                                                shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
+                                            }}
+                                        >
+                                            <Users size={16} color={colors.textSecondary} />
+                                            <TextInput
+                                                placeholder="10"
+                                                placeholderTextColor="#94a3b8"
+                                                keyboardType="number-pad"
+                                                maxLength={3}
+                                                value={formData.slots}
+                                                onChangeText={(t) => setFormData({ ...formData, slots: t })}
+                                                style={{ flex: 1, color: colors.primary, fontWeight: "700", fontSize: 14 }}
+                                            />
+                                        </View>
+                                    </View>
                                 </View>
 
                                 <View style={{ flexDirection: "row", gap: 12 }}>
@@ -315,7 +375,11 @@ export function ActivityForm({
                                             ) : (
                                                 <>
                                                     <AlertCircle size={14} color="#f59e0b" />
-                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#f59e0b" }}>Seleziona un suggerimento per confermare le coordinate</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#f59e0b" }}>
+                                                        {mode === "edit"
+                                                            ? "Da confermare — non blocca il salvataggio in modifica"
+                                                            : "Seleziona un suggerimento per confermare le coordinate"}
+                                                    </Text>
                                                 </>
                                             )}
                                         </View>
@@ -332,7 +396,7 @@ export function ActivityForm({
                                         disabled={isCuratingDraft}
                                         className={`px-3 py-1.5 rounded-full border flex-row items-center gap-1.5 ${isCuratingDraft ? "bg-slate-100 border-slate-200" : "bg-white border-primary/10"}`}
                                     >
-                                        <RefreshCw size={13} color={isCuratingDraft ? "#94a3b8" : colors.primary} />
+                                        <Sparkles size={13} color={isCuratingDraft ? "#94a3b8" : colors.primary} />
                                         <Text className={`font-bold text-[11px] ${isCuratingDraft ? "text-slate-400" : "text-primary"}`}>
                                             {isCuratingDraft ? "Gemma al lavoro..." : "Migliora con AI"}
                                         </Text>
@@ -348,21 +412,6 @@ export function ActivityForm({
                                         onChangeText={(t) => setFormData({ ...formData, description: t })}
                                         className="text-primary font-medium text-base min-h-[90px]"
                                     />
-                                </View>
-                                <View>
-                                    <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Quanti volontari serviranno?</Text>
-                                    <View className="bg-white p-3.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center self-start pr-5">
-                                        <Users size={18} color={colors.textSecondary} style={{ marginRight: 8, marginLeft: 4 }} />
-                                        <TextInput
-                                            placeholder="10"
-                                            placeholderTextColor="#94a3b8"
-                                            keyboardType="number-pad"
-                                            maxLength={3}
-                                            value={formData.slots}
-                                            onChangeText={(t) => setFormData({ ...formData, slots: t })}
-                                            style={{ color: colors.primary, fontWeight: "700", fontSize: 16, minWidth: 40 }}
-                                        />
-                                    </View>
                                 </View>
                             </View>
 
@@ -382,7 +431,7 @@ export function ActivityForm({
                                                         skills: isSelected ? prev.skills.filter((id) => id !== skill.id) : [...prev.skills, skill.id],
                                                     }))
                                                 }
-                                                className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+                                                className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-xl border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
                                             >
                                                 <SkillIcon size={12} color={isSelected ? "white" : colors.primary} />
                                                 <Text className={`font-bold text-[11px] ${isSelected ? "text-white" : "text-primary"}`}>{skill.label}</Text>
@@ -439,20 +488,33 @@ export function ActivityForm({
                     </StandardLayout>
                 </ScrollView>
 
-                {/* Footer CTA sticky — identico per create ed edit */}
-                <View className="absolute bottom-0 left-0 right-0 bg-white/95 py-6 border-t border-slate-50 flex-row justify-center px-6">
+                {/* Footer CTA sticky — identico per create ed edit. Dimensioni esatte da handoff design
+                    ActivityForm.tsx §4: contenitore 14/20/28px, bottone altezza fissa 56px, radius 20px. */}
+                <View
+                    style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0,
+                        backgroundColor: "rgba(248,249,251,0.97)",
+                        borderTopWidth: 1, borderTopColor: "rgba(70,34,130,0.06)",
+                        paddingTop: 14, paddingHorizontal: 20, paddingBottom: 28,
+                    }}
+                >
                     <TouchableOpacity
                         onPress={handleSubmit}
                         disabled={isSubmitting}
                         activeOpacity={0.9}
-                        className="bg-accent w-full py-5 rounded-[24px] shadow-xl shadow-accent/40 items-center justify-center flex-row gap-3"
+                        style={{
+                            height: 56, borderRadius: 20, alignSelf: "stretch",
+                            backgroundColor: colors.accent,
+                            shadowColor: colors.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
+                            alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8,
+                        }}
                     >
                         {isSubmitting ? (
                             <ActivityIndicator color="white" />
                         ) : (
                             <View className="flex-row items-center gap-3">
                                 <Text className="text-white font-black text-lg">{submitLabel}</Text>
-                                <Send size={20} color="white" />
+                                <ArrowRight size={20} color="white" />
                             </View>
                         )}
                     </TouchableOpacity>
@@ -465,6 +527,44 @@ export function ActivityForm({
                 onSelect={(d) => setFormData((prev) => ({ ...prev, date: d }))}
                 onClose={() => setShowCalendar(false)}
             />
+
+            <Modal visible={showRecurrencePicker} animationType="slide" transparent onRequestClose={() => setShowRecurrencePicker(false)}>
+                <TouchableOpacity
+                    style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}
+                    activeOpacity={1}
+                    onPress={() => setShowRecurrencePicker(false)}
+                >
+                    <View style={{ backgroundColor: "white", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: Platform.OS === "ios" ? 40 : 28 }}>
+                        <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}>
+                            <Text style={{ fontSize: 18, fontWeight: "900", color: colors.primary }}>Ricorrenza</Text>
+                            <Text style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Scegli se e con che frequenza si ripete l&apos;attività.</Text>
+                        </View>
+                        {RECURRENCE_OPTIONS.map((opt) => {
+                            const selected = formData.recurrence === opt.value;
+                            return (
+                                <TouchableOpacity
+                                    key={opt.value}
+                                    onPress={() => {
+                                        setFormData((prev) => ({ ...prev, recurrence: opt.value }));
+                                        setShowRecurrencePicker(false);
+                                    }}
+                                    style={{
+                                        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                                        paddingHorizontal: 20, paddingVertical: 16,
+                                        borderBottomWidth: 1, borderBottomColor: "#f8fafc",
+                                    }}
+                                >
+                                    <View>
+                                        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>{opt.label}</Text>
+                                        <Text style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{opt.description}</Text>
+                                    </View>
+                                    {selected && <Check size={20} color={colors.primary} />}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </>
     );
 }

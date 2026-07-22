@@ -61,6 +61,7 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
     const visibleAvatars = iscritti.slice(0, MAX_AVATARS);
     const overflowCount = iscritti.length - MAX_AVATARS;
     const isVolunteerEnrolled = user?.role === 'VOLUNTEER' && !!user?.id && iscritti.includes(user.id);
+    const isOwnNpoActivity = user?.role === 'NPO' && npoId === user.id;
 
     return (
         <SoftCard
@@ -128,14 +129,16 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
                             </View>
                         </View>
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <View style={{ backgroundColor: '#f8fafc', padding: 5, borderRadius: 8 }}>
-                                <Building2 size={12} color="#64748b" />
+                        {!isOwnNpoActivity && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <View style={{ backgroundColor: '#f8fafc', padding: 5, borderRadius: 8 }}>
+                                    <Building2 size={12} color="#64748b" />
+                                </View>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
+                                    {npoName}
+                                </Text>
                             </View>
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
-                                {npoName}
-                            </Text>
-                        </View>
+                        )}
                     </View>
                 </View>
 
@@ -194,7 +197,7 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
                     <View style={{ flexShrink: 0 }}>
                         {user?.role === 'VOLUNTEER' ? (
                             <Text className="text-accent font-bold text-xs">{isVolunteerEnrolled ? 'DETTAGLI →' : 'ISCRIVITI →'}</Text>
-                        ) : user?.role === 'NPO' && npoId === user.id ? (
+                        ) : isOwnNpoActivity ? (
                             <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
                         ) : (
                             <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
