@@ -104,20 +104,14 @@ export default function AdminVerificationDetail() {
       if (requestError) throw requestError;
 
       // 2. Update profile verification status
-      const profileUpdates: any = {
-        verification_status: action === 'approved' ? 'verified' : 'rejected'
-      };
-
-      if (action === 'approved') {
-        profileUpdates.is_verified = true;
-      } else {
-        profileUpdates.is_verified = false;
-      }
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update(profileUpdates)
-        .eq('id', request.user_id);
+      // Via RPC (non una PATCH diretta su profiles): la RLS su profiles permette scritture
+      // solo sulla propria riga (id = auth.uid()), e qui l'admin scrive sulla riga di un
+      // altro utente (la NPO). Una .update() diretta non tocca nessuna riga, senza errore.
+      const { error: profileError } = await supabase.rpc('admin_set_npo_verification', {
+        p_user_id: request.user_id,
+        p_is_verified: action === 'approved',
+        p_verification_status: action === 'approved' ? 'verified' : 'rejected',
+      });
 
       if (profileError) throw profileError;
 
