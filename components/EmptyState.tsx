@@ -25,7 +25,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     return (
         <View className="flex-1 items-center justify-center px-8 py-12">
             {emoji ? (
-                <Text className="text-7xl mb-6">{emoji}</Text>
+                <Text className="text-7xl mb-6" style={{ lineHeight: 84 }}>{emoji}</Text>
             ) : (
                 <View className="bg-indigo-50 rounded-full p-6 mb-6">
                     {Icon && <Icon size={64} color={resolvedIconColor} strokeWidth={1.5} />}

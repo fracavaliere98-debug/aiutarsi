@@ -53,7 +53,7 @@ export function SegmentedControl<T extends string>({
             style={{
               flex: 1,
               minWidth: 0,
-              minHeight: 48,
+              minHeight: 40,
               paddingHorizontal: 8,
               paddingVertical: 0,
               borderRadius: radius.pill,

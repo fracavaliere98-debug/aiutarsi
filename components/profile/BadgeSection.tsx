@@ -212,7 +212,7 @@ export function BadgeSection({ badges, gamificationState: state }: BadgeSectionP
                     {selectedBadge && (
                         <View className="items-center">
                             <View className={`${selectedBadge.color || 'bg-indigo-50'} w-32 h-32 rounded-[40px] items-center justify-center mb-6 shadow-xl border border-indigo-100`}>
-                                <Text className="text-7xl">{selectedBadge.icon}</Text>
+                                <Text className="text-7xl" style={{ lineHeight: 84 }}>{selectedBadge.icon}</Text>
                             </View>
 
                             <Text className="text-3xl font-black text-primary mb-2">{selectedBadge.name}</Text>
