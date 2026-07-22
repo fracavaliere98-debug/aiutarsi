@@ -11,7 +11,7 @@ import {
     Mail,
     Phone,
 } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { StatCard } from "../../../components/StatCard";
@@ -26,7 +26,20 @@ export default function NPOProfileScreen() {
     const { user, getNPOFollowers, fetchUserById, setUser } = useAuth();
     const { activities, reviews, loadData } = useActivitiesDomain(user);
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">("attivita");
+    const params = useLocalSearchParams();
+    const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">(() => {
+        const t = params.tab as string;
+        if (t === "info" || t === "attivita" || t === "recensioni" || t === "referente") return t;
+        return "attivita";
+    });
+
+    // Cambia tab se arriviamo da un link con ?tab=... (es. dalla dashboard, stat card Rating)
+    useEffect(() => {
+        const t = params.tab as string;
+        if (t === "info" || t === "attivita" || t === "recensioni" || t === "referente") {
+            setActiveTab(t);
+        }
+    }, [params.tab]);
     const [refreshing, setRefreshing] = useState(false);
     const [hasPendingVerificationRequest, setHasPendingVerificationRequest] = useState(false);
 

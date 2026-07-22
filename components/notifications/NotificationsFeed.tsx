@@ -141,7 +141,7 @@ export function NotificationsFeed({
                     <View className="flex-1">
                       <View className="flex-row items-start justify-between gap-3">
                         <View className="flex-1">
-                          <Text className="text-primary text-[15px] font-black leading-5" numberOfLines={2}>
+                          <Text className="text-primary text-[13px] font-black leading-[18px]" numberOfLines={1}>
                             {notification.title}
                           </Text>
                         </View>
@@ -152,7 +152,7 @@ export function NotificationsFeed({
                         </View>
                       </View>
 
-                      <Text className="mt-2 text-[14px] leading-5 text-secondary/80">
+                      <Text className="mt-2 text-[13px] leading-[18px] text-secondary/80">
                         {notification.message}
                       </Text>
 

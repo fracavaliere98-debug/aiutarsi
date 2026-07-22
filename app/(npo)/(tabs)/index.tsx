@@ -115,7 +115,7 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/report" as any)}
+                    onPress={() => router.push("/(npo)/(tabs)/profile?tab=recensioni" as any)}
                     testID="npo-dashboard-report-rating"
                 >
                     <StatCard
@@ -144,20 +144,6 @@ export default function NPODashboard() {
                     className="flex-1 mx-1"
                     activeOpacity={0.7}
                     onPress={() => router.push("/(npo)/report" as any)}
-                    testID="npo-dashboard-report-followers"
-                >
-                    <StatCard
-                        value={followerCount}
-                        label="FOLLOWERS"
-                        valueColor={colors.infoStrong}
-                        icon={<Users size={12} color="#2563eb" />}
-                        compact
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    className="flex-1 mx-1"
-                    activeOpacity={0.7}
-                    onPress={() => router.push("/(npo)/report" as any)}
                     testID="npo-dashboard-report-volunteers"
                 >
                     <StatCard
@@ -165,6 +151,20 @@ export default function NPODashboard() {
                         label="VOLONTARI"
                         valueColor={colors.accent}
                         icon={<Users size={12} color="#db2777" />}
+                        compact
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    className="flex-1 mx-1"
+                    activeOpacity={0.7}
+                    onPress={() => router.push("/(npo)/report" as any)}
+                    testID="npo-dashboard-report-followers"
+                >
+                    <StatCard
+                        value={followerCount}
+                        label="FOLLOWERS"
+                        valueColor={colors.infoStrong}
+                        icon={<Users size={12} color="#2563eb" />}
                         compact
                     />
                 </TouchableOpacity>

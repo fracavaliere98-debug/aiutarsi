@@ -108,6 +108,10 @@ export function computeNPOReportSummary(params: {
         return !!activity && !!application.appliedDate && application.appliedDate >= monthStart;
     }).length;
 
+    // "APPROVATI" conta solo le candidature per diventare volontari dell'ente (applications) —
+    // non le iscrizioni a una singola attività (activityApplications, già contate a parte in
+    // registrationsThisWeek/Month). Sono due cose concettualmente diverse: qui "quanti hanno
+    // chiesto di entrare come volontari dell'associazione e sono stati approvati".
     const approvedThisWeek = params.applications.filter(
         (application) => application.npoId === params.npoId && application.status === 'APPROVED' && !!application.reviewedDate && application.reviewedDate >= weekStart
     ).length;

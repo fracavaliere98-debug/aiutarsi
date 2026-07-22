@@ -7,6 +7,7 @@ import { Calendar, Users, ArrowRight, Clock, CheckCircle2, AlertCircle, RefreshC
 import { StandardLayout } from "../StandardLayout";
 import { AddressAutocomplete } from "../AddressAutocomplete";
 import { CalendarPicker } from "../CalendarPicker";
+import { SelectableChip } from "../ui/SelectableChip";
 import { SKILLS } from "../../constants/Skills";
 import { ACTIVITY_CATEGORIES } from "../../constants/Interests";
 import { gemmaService } from "../../services/GemmaService";
@@ -267,13 +268,12 @@ export function ActivityForm({
                                     <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
                                     <View className="flex-row flex-wrap gap-2">
                                         {ACTIVITY_CATEGORIES.map((cat) => (
-                                            <TouchableOpacity
+                                            <SelectableChip
                                                 key={cat}
+                                                label={cat}
+                                                selected={formData.category === cat}
                                                 onPress={() => setFormData({ ...formData, category: cat })}
-                                                className={`px-4 py-2 rounded-xl border ${formData.category === cat ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
-                                            >
-                                                <Text className={`font-bold text-xs ${formData.category === cat ? "text-white" : "text-primary"}`}>{cat}</Text>
-                                            </TouchableOpacity>
+                                            />
                                         ))}
                                     </View>
                                 </View>
@@ -424,21 +424,19 @@ export function ActivityForm({
                                 <View className="flex-row flex-wrap gap-2">
                                     {SKILLS.map((skill) => {
                                         const isSelected = formData.skills.includes(skill.id);
-                                        const SkillIcon = skill.icon;
                                         return (
-                                            <TouchableOpacity
+                                            <SelectableChip
                                                 key={skill.id}
+                                                label={skill.label}
+                                                icon={skill.icon}
+                                                selected={isSelected}
                                                 onPress={() =>
                                                     setFormData((prev) => ({
                                                         ...prev,
                                                         skills: isSelected ? prev.skills.filter((id) => id !== skill.id) : [...prev.skills, skill.id],
                                                     }))
                                                 }
-                                                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-xl border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
-                                            >
-                                                <SkillIcon size={12} color={isSelected ? "white" : colors.primary} />
-                                                <Text className={`font-bold text-[11px] ${isSelected ? "text-white" : "text-primary"}`}>{skill.label}</Text>
-                                            </TouchableOpacity>
+                                            />
                                         );
                                     })}
                                 </View>
