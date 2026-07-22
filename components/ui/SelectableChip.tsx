@@ -43,7 +43,9 @@ export function SelectableChip({ label, selected, onPress, variant, emoji, testI
                 }}
             >
                 {!!emoji && <Text style={{ fontSize: 10, marginTop: 1 }}>{emoji}</Text>}
-                <Text style={{ fontSize: 10.5, fontWeight, color: textColor, flex: 1 }}>{label}</Text>
+                {/* flex:1 qui collasserebbe il testo a larghezza zero: il chip si dimensiona sul
+                    contenuto (nessuna larghezza fissa nel flex-wrap), quindi niente flex-basis:0. */}
+                <Text style={{ fontSize: 10.5, fontWeight, color: textColor, flexShrink: 1 }}>{label}</Text>
             </TouchableOpacity>
         );
     }
