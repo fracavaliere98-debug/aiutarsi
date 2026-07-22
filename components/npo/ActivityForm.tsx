@@ -200,7 +200,10 @@ export function ActivityForm({
     return (
         <>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }} keyboardVerticalOffset={0}>
-                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }}>
+                {/* paddingBottom qui è solo il margine oltre a quanto StandardLayout aggiunge già di suo
+                    (bottomInset, safe-area + spacing) sulla View interna: la somma deve bastare per liberare
+                    il footer CTA sticky (~98px), non sommarsi a un altro valore già capiente da solo. */}
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: 48 }}>
                     <StandardLayout label={headerLabel} title={headerTitle} bg="bg-background-light" onBack={onBack} noScroll>
                         <View className="gap-5">
                             {/* Foto — opzionale, in cima come da mockup. In modifica con foto già presente: banner
@@ -431,7 +434,7 @@ export function ActivityForm({
                                                         skills: isSelected ? prev.skills.filter((id) => id !== skill.id) : [...prev.skills, skill.id],
                                                     }))
                                                 }
-                                                className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-xl border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+                                                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-xl border ${isSelected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
                                             >
                                                 <SkillIcon size={12} color={isSelected ? "white" : colors.primary} />
                                                 <Text className={`font-bold text-[11px] ${isSelected ? "text-white" : "text-primary"}`}>{skill.label}</Text>
