@@ -266,10 +266,11 @@ export function ActivityForm({
                                 </View>
                                 <View>
                                     <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
-                                    <View className="flex-row flex-wrap gap-2">
+                                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                                         {ACTIVITY_CATEGORIES.map((cat) => (
                                             <SelectableChip
                                                 key={cat}
+                                                variant="category"
                                                 label={cat}
                                                 selected={formData.category === cat}
                                                 onPress={() => setFormData({ ...formData, category: cat })}
@@ -421,14 +422,15 @@ export function ActivityForm({
                             {/* Sezione 4: competenze, opzionale — chip più piccole, peso visivo minore della categoria */}
                             <View className="gap-3">
                                 <Text className="text-secondary/70 font-bold uppercase tracking-widest text-[10px]">Competenze richieste (opzionale)</Text>
-                                <View className="flex-row flex-wrap gap-2">
+                                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
                                     {SKILLS.map((skill) => {
                                         const isSelected = formData.skills.includes(skill.id);
                                         return (
                                             <SelectableChip
                                                 key={skill.id}
+                                                variant="skill"
                                                 label={skill.label}
-                                                icon={skill.icon}
+                                                emoji={skill.emoji}
                                                 selected={isSelected}
                                                 onPress={() =>
                                                     setFormData((prev) => ({

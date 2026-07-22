@@ -1,35 +1,67 @@
 import { TouchableOpacity, Text } from "react-native";
-import type { LucideIcon } from "lucide-react-native";
 import { colors } from "@/theme";
 
 type SelectableChipProps = {
     label: string;
     selected: boolean;
     onPress: () => void;
-    /** Opzionale: se presente, il chip mostra l'icona a sinistra del testo (es. competenze vs categoria). */
-    icon?: LucideIcon;
+    /** "category" = solo testo, centrato (Categoria). "skill" = emoji + testo, allineati in alto a sinistra (Competenze). */
+    variant: "category" | "skill";
+    /** Solo per variant="skill": emoji piena (stile mockup approvato), non un'icona Lucide. */
+    emoji?: string;
     testID?: string;
 };
 
+const BORDER_INACTIVE = "rgba(70, 34, 130, 0.1)"; // border-primary/10
+
 /**
- * Chip di selezione condiviso (bordo + sfondo pieno quando selezionato). Usato per Categoria e
- * Competenze in ActivityForm: un solo componente evita che le due sezioni tornino a divergere
- * su padding/font-size come già successo due volte con className duplicate a mano.
+ * Chip di selezione condiviso (bordo + sfondo pieno quando selezionato), usato per Categoria e
+ * Competenze in ActivityForm. Dimensioni esatte da spec approvata (px, non scala Tailwind) per
+ * evitare che le due sezioni divergano di nuovo come già successo più volte con className a mano.
  */
-export function SelectableChip({ label, selected, onPress, icon: Icon, testID }: SelectableChipProps) {
+export function SelectableChip({ label, selected, onPress, variant, emoji, testID }: SelectableChipProps) {
+    const borderColor = selected ? colors.primary : BORDER_INACTIVE;
+    const backgroundColor = selected ? colors.primary : "white";
+    const textColor = selected ? "white" : colors.primary;
+    const fontWeight = selected ? "800" : "700";
+
+    if (variant === "skill") {
+        return (
+            <TouchableOpacity
+                onPress={onPress}
+                testID={testID}
+                style={{
+                    borderRadius: 12,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderColor,
+                    backgroundColor,
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 6,
+                }}
+            >
+                {!!emoji && <Text style={{ fontSize: 10, marginTop: 1 }}>{emoji}</Text>}
+                <Text style={{ fontSize: 10.5, fontWeight, color: textColor, flex: 1 }}>{label}</Text>
+            </TouchableOpacity>
+        );
+    }
+
     return (
         <TouchableOpacity
             onPress={onPress}
             testID={testID}
-            // px-4 py-2/rounded-xl/border/colori sono identici con o senza icona: quello è "il box".
-            // flex-row/items-center/gap si aggiungono SOLO se c'è un'icona da affiancare al testo —
-            // altrimenti (Categoria) il TouchableOpacity non li aveva mai avuti, e items-center
-            // (che sovrascrive lo stretch di default di RN sull'asse trasversale) cambiava la resa
-            // del box anche nel caso senza icona.
-            className={`px-4 py-2 rounded-xl border ${Icon ? "flex-row items-center gap-1.5" : ""} ${selected ? "bg-primary border-primary" : "bg-white border-primary/10"}`}
+            style={{
+                borderRadius: 12,
+                paddingVertical: 8,
+                paddingHorizontal: 13,
+                borderWidth: 1,
+                borderColor,
+                backgroundColor,
+            }}
         >
-            {Icon && <Icon size={12} color={selected ? "white" : colors.primary} />}
-            <Text className={`font-bold text-xs ${selected ? "text-white" : "text-primary"}`}>{label}</Text>
+            <Text style={{ fontSize: 11, fontWeight, color: textColor, textAlign: "center" }}>{label}</Text>
         </TouchableOpacity>
     );
 }
