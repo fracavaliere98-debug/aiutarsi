@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-
 import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
-import { Sparkles, Star, Users, Plus, ArrowRight } from "lucide-react-native";
+import { Sparkles, Star, Users, Plus, ArrowRight, Clock } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatCard } from "../../../components/StatCard";
 import { ActivityCard } from "../../../components/ActivityCard";
@@ -28,6 +28,7 @@ export default function NPODashboard() {
 
     const { insights, dismissInsight } = useNPOInsights();
     const [lowCoverageCount, setLowCoverageCount] = useState(0);
+    const [overdueCount, setOverdueCount] = useState(0);
 
     // Refresh followers when screen gains focus to update "online" status
     useFocusEffect(
@@ -69,6 +70,7 @@ export default function NPODashboard() {
             });
             if (cancelled) return;
             setLowCoverageCount(summary.lowCoverageActivities.length);
+            setOverdueCount(summary.overdueActivities.length);
         }
 
         void evaluateCoverage();
@@ -196,6 +198,39 @@ export default function NPODashboard() {
                         </View>
                         <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
                             <ArrowRight size={16} color="white" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            )}
+
+            {overdueCount > 0 && (
+                <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => router.push("/(npo)/projects" as any)}
+                    style={{
+                        height: 92,
+                        borderRadius: 22,
+                        overflow: 'hidden',
+                        marginBottom: 20,
+                    }}
+                    testID="npo-dashboard-overdue"
+                >
+                    <LinearGradient
+                        colors={[colors.info, colors.infoStrong]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}
+                    >
+                        <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>DA VERIFICARE</Text>
+                            </View>
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }} numberOfLines={1}>
+                                {overdueCount} {overdueCount === 1 ? 'attività risulta ancora aperta' : 'attività risultano ancora aperte'} da oltre 24 ore dalla fine prevista.
+                            </Text>
+                        </View>
+                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                            <Clock size={16} color="white" />
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>

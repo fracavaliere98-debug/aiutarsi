@@ -46,6 +46,8 @@ async function run() {
   const soon = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(); // within the 7-day low-coverage window
   const midWindow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(); // beyond the old 3-day cutoff, within the new 7-day one
   const farFuture = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(); // beyond the 7-day window
+  const wayOverdue = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(); // ended 2 days ago -> beyond the 24h overdue grace period
+  const recentlyEnded = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(); // ended 2 hours ago -> within the 24h grace period, normal cron latency
 
   const npoActivities = [
     // Open, low coverage (1/6), starting soon -> must appear in lowCoverageActivities.
@@ -63,6 +65,12 @@ async function run() {
     // Open, low coverage (0/8), starting 5 days out -> past the old 3-day cutoff but
     // inside the new 7-day one: must now appear in lowCoverageActivities.
     { id: "a6", npoId: "npo-1", status: "APERTA", iscritti: [], slots: 8, dateTime: midWindow, endDateTime: midWindow, created_at: withinWeek },
+    // Open, ended 2 days ago -> well past the cron's normal latency: must appear in overdueActivities.
+    { id: "a7", npoId: "npo-1", status: "APERTA", iscritti: [], slots: 10, dateTime: wayOverdue, endDateTime: wayOverdue, created_at: longAgo },
+    // Open, ended 2 hours ago -> inside the 24h grace period, not yet an anomaly: must be excluded.
+    { id: "a8", npoId: "npo-1", status: "IN_CORSO", iscritti: [], slots: 10, dateTime: recentlyEnded, endDateTime: recentlyEnded, created_at: longAgo },
+    // Overdue but belongs to a different NPO -> must never leak into npo-1's overdueActivities.
+    { id: "a9", npoId: "npo-2", status: "APERTA", iscritti: [], slots: 10, dateTime: wayOverdue, endDateTime: wayOverdue, created_at: longAgo },
   ];
 
   const summary = computeNPOReportSummary({
@@ -139,10 +147,20 @@ async function run() {
   assert(summary.completedActivitiesThisMonth === 1, "completedActivitiesThisMonth must count a2 only");
 
   // ── Low coverage: date-window and coverage-ratio must each be enforced independently ──
+  // Note: the date check is only an upper bound (dateTime <= 7 days from now), so a7/a8
+  // (already-past, 0-coverage, still open) match it too -- they're not excluded by being
+  // in the past, only by being too far in the future. That's pre-existing behavior, not
+  // something introduced by the overdueActivities addition below.
   const lowCoverageIds = summary.lowCoverageActivities.map((a) => a.id).sort();
   assert(
-    lowCoverageIds.length === 2 && lowCoverageIds[0] === "a1" && lowCoverageIds[1] === "a6",
-    `lowCoverageActivities must contain exactly a1 and a6, got [${summary.lowCoverageActivities.map((a) => a.id).join(", ")}]`
+    lowCoverageIds.length === 4 && lowCoverageIds.join(",") === "a1,a6,a7,a8",
+    `lowCoverageActivities must contain exactly a1, a6, a7, a8, got [${summary.lowCoverageActivities.map((a) => a.id).join(", ")}]`
+  );
+
+  // ── Overdue: only activities stuck open more than 24h past their end, own NPO only ──
+  assert(
+    summary.overdueActivities.length === 1 && summary.overdueActivities[0].id === "a7",
+    `overdueActivities must contain only a7, got [${summary.overdueActivities.map((a) => a.id).join(", ")}]`
   );
 
   // ── Posts, stories, reactions ────────────────────────────────────────────────

@@ -15,6 +15,7 @@ export type NPOReportSummary = {
     completedActivitiesThisWeek: number;
     completedActivitiesThisMonth: number;
     lowCoverageActivities: AppActivity[];
+    overdueActivities: AppActivity[];
     postsThisWeek: number;
     postsThisMonth: number;
     storiesThisWeek: number;
@@ -147,6 +148,17 @@ export function computeNPOReportSummary(params: {
         return coverage < 0.5;
     });
 
+    // Il cron "auto-update-activity-statuses" chiude le attività passando a COMPLETATA
+    // ogni 15 minuti in base a date_end. Se una attività risulta ancora APERTA/IN_CORSO
+    // da più di 24 ore dopo la sua fine, non è normale latenza del cron: è un'anomalia
+    // (es. date_end mai valorizzata, o il cron è fermo) che l'ente deve poter notare.
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const overdueActivities = npoActivities.filter((activity) => {
+        if (!(activity.status === 'APERTA' || activity.status === 'IN_CORSO')) return false;
+        const endDate = new Date(activity.endDateTime || activity.dateTime);
+        return !Number.isNaN(endDate.getTime()) && endDate < oneDayAgo;
+    });
+
     return {
         followerCount: followerRows.length,
         newFollowersThisWeek,
@@ -162,6 +174,7 @@ export function computeNPOReportSummary(params: {
         completedActivitiesThisWeek,
         completedActivitiesThisMonth,
         lowCoverageActivities,
+        overdueActivities,
         postsThisWeek,
         postsThisMonth,
         storiesThisWeek,
