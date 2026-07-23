@@ -23,11 +23,11 @@ export default function NPOSkillsScreen() {
     const { updateUserProfile, logout } = useAuth();
     const [selected, setSelected] = useState<string[]>([]);
 
-    const toggleSkill = (label: string) => {
-        if (selected.includes(label)) {
-            setSelected(selected.filter((i) => i !== label));
+    const toggleSkill = (id: string) => {
+        if (selected.includes(id)) {
+            setSelected(selected.filter((i) => i !== id));
         } else {
-            setSelected([...selected, label]);
+            setSelected([...selected, id]);
         }
     };
 
@@ -57,16 +57,16 @@ export default function NPOSkillsScreen() {
             >
                 <View style={styles.grid}>
                     {SKILLS.map((item, index) => {
-                        const isSelected = selected.includes(item.label);
+                        const isSelected = selected.includes(item.id);
                         const Icon = item.icon;
                         return (
-                            <Animated.View 
+                            <Animated.View
                                 key={item.id}
                                 entering={FadeInDown.delay(index * 50).springify()}
                                 style={styles.cardWrapper}
                             >
-                                <TouchableOpacity 
-                                    onPress={() => toggleSkill(item.label)}
+                                <TouchableOpacity
+                                    onPress={() => toggleSkill(item.id)}
                                     activeOpacity={0.7}
                                     style={[
                                         styles.card,

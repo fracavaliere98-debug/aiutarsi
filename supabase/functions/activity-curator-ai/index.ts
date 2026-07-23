@@ -13,6 +13,20 @@ interface CuratedActivity {
     suggestedCategory: string;
 }
 
+// Tenute in sync a mano con constants/Skills.ts e constants/Interests.ts (questa edge function
+// gira su Deno, non può importare i moduli RN dell'app). Prima del 2026-07-23 il prompt chiedeva
+// competenze/categorie a testo libero non vincolate a nessuna lista reale (es. "Lavoro di
+// squadra", "Cultura", "Emergenza") — non corrispondevano MAI a un id/label valido, quindi il
+// filtro lato client (components/npo/ActivityForm.tsx, applyCuratedDraft) scartava sempre il
+// suggerimento e faceva fallback silenzioso ai valori precedenti. Il fix vincola l'AI a
+// scegliere solo tra le competenze/categorie che esistono davvero nell'app.
+const SKILL_IDS = [
+    "assistenza-persona", "primo-soccorso", "insegnamento", "manualita", "cura-animali",
+    "cucina", "comunicazione-digitale", "informatica", "creativita", "ascolto-compagnia",
+    "lingue", "sport",
+];
+const CATEGORY_LABELS = ["Ambiente", "Sociale", "Educazione", "Animali", "Arte & Cultura", "Salute"];
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -38,8 +52,8 @@ Dato il titolo e la descrizione di un'attività di volontariato, restituisci SOL
 
 Regole:
 - expandedDescription: rendi la descrizione coinvolgente e professionale (max 150 parole), mantieni il tono caldo e motivante.
-- suggestedSkills: 3-5 competenze in italiano pertinenti all'attività (es. "Comunicazione", "Primo soccorso", "Lavoro di squadra").
-- suggestedCategory: conferma o correggi la categoria tra: Sociale, Ambiente, Educazione, Salute, Cultura, Sport, Animali, Emergenza.
+- suggestedSkills: 2-4 valori scelti SOLO tra questi id, quelli più pertinenti all'attività (nessun altro testo, solo id da questo elenco): ${SKILL_IDS.join(", ")}.
+- suggestedCategory: scegli SOLO una tra queste categorie (esattamente come scritta, nessuna variante): ${CATEGORY_LABELS.join(", ")}.
 
 Titolo: ${activity.title}
 Descrizione attuale: ${activity.description || "Nessuna"}
@@ -49,8 +63,11 @@ Categoria attuale: ${activity.category || "Sociale"}`;
 function fallbackCuration(activity: ActivityDraft): CuratedActivity {
     return {
         expandedDescription: activity.description || activity.title,
-        suggestedSkills: ["Lavoro di squadra", "Comunicazione", "Flessibilità"],
-        suggestedCategory: activity.category || "Sociale",
+        // Nessun segnale affidabile senza chiamata AI riuscita: meglio non suggerire nulla
+        // (components/npo/ActivityForm.tsx mantiene la selezione precedente quando l'array è vuoto)
+        // piuttosto che inventare competenze a caso che non corrispondono a nessun id reale.
+        suggestedSkills: [],
+        suggestedCategory: CATEGORY_LABELS.includes(activity.category || "") ? (activity.category as string) : "Sociale",
     };
 }
 
@@ -101,6 +118,15 @@ Deno.serve(async (req) => {
         } catch {
             console.error("[Curator] Non-JSON response from AI, using fallback", raw);
             curatedData = fallbackCuration(activity);
+        }
+
+        // Il modello a volte non rispetta l'elenco chiuso richiesto nel prompt: filtriamo/validiamo
+        // qui invece di fidarci ciecamente, così il client riceve sempre e solo id/categorie reali.
+        curatedData.suggestedSkills = (curatedData.suggestedSkills || []).filter((id) => SKILL_IDS.includes(id));
+        if (!CATEGORY_LABELS.includes(curatedData.suggestedCategory)) {
+            curatedData.suggestedCategory = CATEGORY_LABELS.includes(activity.category || "")
+                ? (activity.category as string)
+                : "Sociale";
         }
 
         return new Response(

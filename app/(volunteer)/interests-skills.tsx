@@ -32,9 +32,9 @@ export default function VolunteerInterestsSkillsSettings() {
         );
     };
 
-    const toggleSkill = (label: string) => {
+    const toggleSkill = (id: string) => {
         setSelectedSkills((prev) =>
-            prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
         );
     };
 
@@ -134,7 +134,7 @@ export default function VolunteerInterestsSkillsSettings() {
 
                     <View className="flex-row flex-wrap justify-between gap-y-3">
                         {SKILLS.map((item, index) => {
-                            const isSelected = selectedSkills.includes(item.label);
+                            const isSelected = selectedSkills.includes(item.id);
                             const Icon = item.icon;
                             return (
                                 <Animated.View
@@ -143,7 +143,7 @@ export default function VolunteerInterestsSkillsSettings() {
                                     style={{ width: (width - 48) / 3 - 6 }}
                                 >
                                     <TouchableOpacity
-                                        onPress={() => toggleSkill(item.label)}
+                                        onPress={() => toggleSkill(item.id)}
                                         className={`flex-col items-center justify-center px-1 py-4 rounded-2xl border ${isSelected
                                             ? "bg-primary/10 border-primary/20"
                                             : "bg-white border-slate-200 shadow-sm"

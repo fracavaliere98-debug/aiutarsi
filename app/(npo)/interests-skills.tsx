@@ -27,9 +27,9 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
         );
     };
 
-    const toggleSkill = (label: string) => {
+    const toggleSkill = (id: string) => {
         setSelectedSkills(prev =>
-            prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
 
@@ -119,16 +119,16 @@ export default function NPOInterestsSkillsSettings({ onClose }: { onClose?: () =
 
                     <View className="flex-row flex-wrap justify-between gap-y-3">
                         {SKILLS.map((item, index) => {
-                            const isSelected = selectedSkills.includes(item.label);
+                            const isSelected = selectedSkills.includes(item.id);
                             const Icon = item.icon;
                             return (
-                                <Animated.View 
-                                    key={item.id} 
+                                <Animated.View
+                                    key={item.id}
                                     entering={FadeInDown.delay(index * 30).springify()}
                                     style={{ width: (width - 48) / 3 - 6 }}
                                 >
                                     <TouchableOpacity
-                                        onPress={() => toggleSkill(item.label)}
+                                        onPress={() => toggleSkill(item.id)}
                                         className={`flex-col items-center justify-center px-1 py-4 rounded-2xl border ${isSelected
                                             ? "bg-accent/10 border-accent/20"
                                             : "bg-white border-slate-200 shadow-sm"

@@ -8,6 +8,7 @@ import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStep
 import { SoftCard } from '../../components/SoftCard';
 import { StatCard } from '../../components/StatCard';
 import { UserAvatar } from '../../components/UserAvatar';
+import { getSkillLabel } from '../../constants/Skills';
 import { colors } from "@/theme";
 
 export default function NPOPreviewScreen() {
@@ -131,7 +132,7 @@ export default function NPOPreviewScreen() {
                         {soughtSkills.length > 0 ? soughtSkills.map((skill, index) => (
                             <View key={`${skill}_${index}`} className="flex-row items-center gap-2">
                                 <CheckCircle2 size={14} color={colors.accent} />
-                                <Text className="text-secondary text-sm">{skill}</Text>
+                                <Text className="text-secondary text-sm">{getSkillLabel(skill)}</Text>
                             </View>
                         )) : (
                             <Text className="text-secondary text-sm">Nessuna skill selezionata</Text>

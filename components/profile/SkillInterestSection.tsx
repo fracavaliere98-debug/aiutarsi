@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { Heart, Hand } from "lucide-react-native";
 import { SoftCard } from "../SoftCard";
+import { getSkillLabel } from "../../constants/Skills";
 import { colors } from "@/theme";
 
 interface SkillInterestSectionProps {
@@ -45,7 +46,7 @@ export function SkillInterestSection({ skills = [], interests = [] }: SkillInter
                         <View className="flex-row flex-wrap gap-2">
                             {skills.map((skill, i) => (
                                 <View key={`skill-${i}-${skill}`} className="bg-primary/10 px-3 py-2 rounded-xl border border-primary/10">
-                                    <Text className="text-primary font-bold text-xs">{skill}</Text>
+                                    <Text className="text-primary font-bold text-xs">{getSkillLabel(skill)}</Text>
                                 </View>
                             ))}
                         </View>

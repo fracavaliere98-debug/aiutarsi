@@ -27,6 +27,7 @@ const suite = [
   { label: "activities-selectors-contract", path: "scripts/test_activities_selectors_contract.ts" },
   { label: "settings-structure-contract", path: "scripts/test_settings_structure_contract.ts" },
   { label: "cron-invoke-auth-contract", path: "scripts/test_cron_invoke_auth_contract.ts" },
+  { label: "skills-taxonomy-contract", path: "scripts/test_skills_taxonomy_contract.ts" },
 ];
 
 for (const test of suite) {

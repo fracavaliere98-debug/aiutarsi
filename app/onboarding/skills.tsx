@@ -25,11 +25,11 @@ export default function OnboardingSkills() {
     const interestsJson = (params.interests as string) || '[]';
     const [selected, setSelected] = useState<string[]>(user?.skills || []);
 
-    const toggleSkill = (label: string) => {
-        if (selected.includes(label)) {
-            setSelected(selected.filter((item) => item !== label));
+    const toggleSkill = (id: string) => {
+        if (selected.includes(id)) {
+            setSelected(selected.filter((item) => item !== id));
         } else {
-            setSelected([...selected, label]);
+            setSelected([...selected, id]);
         }
     };
 
@@ -58,7 +58,7 @@ export default function OnboardingSkills() {
             >
                 <View style={styles.grid}>
                     {SKILLS.map((item, index) => {
-                        const isSelected = selected.includes(item.label);
+                        const isSelected = selected.includes(item.id);
                         const Icon = item.icon;
                         return (
                             <Animated.View
@@ -67,7 +67,7 @@ export default function OnboardingSkills() {
                                 style={styles.cardWrapper}
                             >
                                 <TouchableOpacity
-                                    onPress={() => toggleSkill(item.label)}
+                                    onPress={() => toggleSkill(item.id)}
                                     activeOpacity={0.7}
                                     style={[
                                         styles.card,
