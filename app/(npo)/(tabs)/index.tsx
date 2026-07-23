@@ -17,6 +17,7 @@ import { reportService } from "../../../services/ReportService";
 import { useActivitiesDomain, useNPORating } from "../../../hooks/activities/selectors";
 import { useApplicationsDomain, useNPOApplications } from "../../../hooks/applications/selectors";
 import { colors } from "@/theme";
+import { AppActivity } from "../../../types";
 
 export default function NPODashboard() {
     const { user, getNPOFollowers, refreshUsers } = useAuth();
@@ -27,8 +28,10 @@ export default function NPODashboard() {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { insights, dismissInsight } = useNPOInsights();
-    const [lowCoverageCount, setLowCoverageCount] = useState(0);
-    const [overdueCount, setOverdueCount] = useState(0);
+    const [lowCoverageActivities, setLowCoverageActivities] = useState<AppActivity[]>([]);
+    const [overdueActivities, setOverdueActivities] = useState<AppActivity[]>([]);
+    const lowCoverageCount = lowCoverageActivities.length;
+    const overdueCount = overdueActivities.length;
 
     // Refresh followers when screen gains focus to update "online" status
     useFocusEffect(
@@ -69,8 +72,8 @@ export default function NPODashboard() {
                 activityApplications,
             });
             if (cancelled) return;
-            setLowCoverageCount(summary.lowCoverageActivities.length);
-            setOverdueCount(summary.overdueActivities.length);
+            setLowCoverageActivities(summary.lowCoverageActivities);
+            setOverdueActivities(summary.overdueActivities);
         }
 
         void evaluateCoverage();
@@ -173,9 +176,17 @@ export default function NPODashboard() {
             {lowCoverageCount > 0 && (
                 <TouchableOpacity
                     activeOpacity={0.85}
-                    onPress={() => router.push("/(npo)/report" as any)}
+                    onPress={() => {
+                        // Con una sola attività coinvolta portiamo l'ente dritto lì (è quella "su cui
+                        // si sta ponendo attenzione"); con più di una l'elenco puntuale resta il report.
+                        if (lowCoverageActivities.length === 1) {
+                            router.push(`/activity/${lowCoverageActivities[0].id}` as any);
+                        } else {
+                            router.push("/(npo)/report" as any);
+                        }
+                    }}
                     style={{
-                        height: 92,
+                        minHeight: 92,
                         borderRadius: 22,
                         overflow: 'hidden',
                         marginBottom: 20,
@@ -186,17 +197,17 @@ export default function NPODashboard() {
                         colors={[colors.warning, colors.warningStrong]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 18, gap: 12 }}
                     >
-                        <View>
+                        <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                                 <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>ATTENZIONE</Text>
                             </View>
-                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }} numberOfLines={1}>
-                                Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per vedere il report.
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white', lineHeight: 17 }} numberOfLines={2} ellipsizeMode="tail">
+                                Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per {lowCoverageActivities.length === 1 ? "vederla" : "vedere il report"}.
                             </Text>
                         </View>
-                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <ArrowRight size={16} color="white" />
                         </View>
                     </LinearGradient>
@@ -208,7 +219,7 @@ export default function NPODashboard() {
                     activeOpacity={0.85}
                     onPress={() => router.push("/(npo)/projects" as any)}
                     style={{
-                        height: 92,
+                        minHeight: 92,
                         borderRadius: 22,
                         overflow: 'hidden',
                         marginBottom: 20,
@@ -219,17 +230,17 @@ export default function NPODashboard() {
                         colors={[colors.info, colors.infoStrong]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 18, gap: 12 }}
                     >
-                        <View>
+                        <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                                 <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>DA VERIFICARE</Text>
                             </View>
-                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white' }} numberOfLines={1}>
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: 'white', lineHeight: 17 }} numberOfLines={2} ellipsizeMode="tail">
                                 {overdueCount} {overdueCount === 1 ? 'attività risulta ancora aperta' : 'attività risultano ancora aperte'} da oltre 24 ore dalla fine prevista.
                             </Text>
                         </View>
-                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Clock size={16} color="white" />
                         </View>
                     </LinearGradient>
