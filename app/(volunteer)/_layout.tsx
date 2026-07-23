@@ -8,7 +8,7 @@ export default function VolunteerStackLayout() {
             <Stack.Screen name="notifications" options={STACK_TRANSITIONS.modal} />
             <Stack.Screen name="report" options={STACK_TRANSITIONS.push} />
             <Stack.Screen name="interests-skills" options={STACK_TRANSITIONS.modal} />
-            <Stack.Screen name="privacy" options={STACK_TRANSITIONS.modal} />
+            <Stack.Screen name="settings/edit-profile" options={{ ...STACK_TRANSITIONS.modal, title: 'Modifica Profilo' }} />
             <Stack.Screen name="referral" options={STACK_TRANSITIONS.push} />
             <Stack.Screen name="smart-match" options={STACK_TRANSITIONS.push} />
         </Stack>

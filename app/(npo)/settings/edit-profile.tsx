@@ -11,7 +11,7 @@ import { useToast } from "../../../context/ToastContext";
 import { requestMediaLibraryPermission } from "../../../utils/permissions";
 import { colors } from "@/theme";
 
-export default function EditProfileScreen() {
+export default function EditProfileScreen({ onClose }: { onClose?: () => void }) {
     const { user, updateUserProfile } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
@@ -19,11 +19,12 @@ export default function EditProfileScreen() {
 
     // Form State
     const [name, setName] = useState(user?.npoName || user?.name || "");
-    const [publicEmail, setPublicEmail] = useState(user?.publicEmail || "");
+    const [publicEmail, setPublicEmail] = useState(user?.public_email || user?.publicEmail || "");
     const [website, setWebsite] = useState(user?.website || "");
     const [phone, setPhone] = useState(user?.phone || "");
     const [bio, setBio] = useState(user?.bio || "");
-    const [location, setLocation] = useState(user?.locationString || "");
+    const [location, setLocation] = useState(user?.address_full || user?.locationString || "");
+    const [vatId, setVatId] = useState(user?.npo_vat_id || "");
     const [avatar, setAvatar] = useState(user?.avatar || "");
 
     const pickImage = async () => {
@@ -52,75 +53,30 @@ export default function EditProfileScreen() {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const success = await updateUserProfile({
+            await updateUserProfile({
+                npo_vat_id: vatId,
                 npoName: name,
                 name: name,
                 publicEmail,
                 website,
                 phone,
                 bio,
-                locationString: location,
+                locationString: location, // Legacy
+                address_full: location, // Standard
                 avatar
             });
-
-            if (success) {
-                showToast("success", "Profilo aggiornato con successo!");
-                router.back();
-            } else {
-                throw new Error("Salvataggio fallito. Riprova.");
-            }
-        } catch (error: any) {
-            showToast("error", error.message || "Errore durante il salvataggio.");
+            showToast("success", "Profilo aggiornato con successo!");
+            if (onClose) onClose();
+            else router.back();
+        } catch {
+            showToast("error", "Errore durante il salvataggio.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    interface InputFieldProps {
-        label: string;
-        value: string;
-        onChangeText: (text: string) => void;
-        placeholder: string;
-        icon: any;
-        multiline?: boolean;
-        keyboardType?: "default" | "email-address" | "numeric" | "phone-pad" | "url";
-    }
-
-    const InputField = ({
-        label,
-        value,
-        onChangeText,
-        placeholder,
-        icon: Icon,
-        multiline = false,
-        keyboardType = "default"
-    }: InputFieldProps) => (
-        <View className="mb-4">
-            <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-2 ml-1">{label}</Text>
-            <View className={`bg-white border border-gray-200 rounded-2xl flex-row items-${multiline ? 'start' : 'center'} px-4 py-3 focus:border-primary`}>
-                <View className={`mr-3 ${multiline ? 'mt-1' : ''}`}>
-                    <Icon size={20} color={colors.textSecondary} />
-                </View>
-                <TextInput
-                    className={`flex-1 text-primary font-medium text-base ${multiline ? 'h-24 pb-2' : ''}`}
-                    value={value}
-                    onChangeText={onChangeText}
-                    placeholder={placeholder}
-                    placeholderTextColor="#94a3b8"
-                    multiline={multiline}
-                    textAlignVertical={multiline ? "top" : "center"}
-                    keyboardType={keyboardType}
-                />
-            </View>
-        </View>
-    );
-
     return (
-        <StandardLayout
-            title="Modifica Profilo"
-            label="Impostazioni"
-            onBack={() => router.back()}
-        >
+        <StandardLayout title="Modifica Profilo" label="Impostazioni" onBack={onClose || (() => router.back())}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
                 {/* Avatar Section */}
                 <View className="items-center mb-8 mt-2">
@@ -176,6 +132,14 @@ export default function EditProfileScreen() {
                     />
 
                     <InputField
+                        label="P.IVA / Codice Fiscale"
+                        value={vatId}
+                        onChangeText={setVatId}
+                        placeholder="Es. 12345678901"
+                        icon={Globe}
+                    />
+
+                    <InputField
                         label="Descrizione / Mission"
                         value={bio}
                         onChangeText={setBio}
@@ -210,3 +174,40 @@ export default function EditProfileScreen() {
         </StandardLayout>
     );
 }
+
+const InputField = ({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    icon: Icon,
+    multiline = false,
+    keyboardType = "default" as any
+}: {
+    label: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    placeholder: string,
+    icon: any,
+    multiline?: boolean,
+    keyboardType?: any
+}) => (
+    <View className="mb-4">
+        <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-2 ml-1">{label}</Text>
+        <View className={`bg-white border border-gray-200 rounded-2xl flex-row items-${multiline ? 'start' : 'center'} px-4 py-3 focus:border-primary`}>
+            <View className={`mr-3 ${multiline ? 'mt-1' : ''}`}>
+                <Icon size={20} color={colors.textSecondary} />
+            </View>
+            <TextInput
+                className={`flex-1 text-primary font-medium text-base ${multiline ? 'h-24 pb-2' : ''}`}
+                value={value}
+                onChangeText={onChangeText}
+                placeholder={placeholder}
+                placeholderTextColor="#94a3b8"
+                multiline={multiline}
+                textAlignVertical={multiline ? "top" : "center"}
+                keyboardType={keyboardType}
+            />
+        </View>
+    </View>
+);

@@ -54,6 +54,34 @@ async function run() {
       body: {},
     },
     {
+      name: "invoke_notification_review_backfill rpc",
+      path: "/rest/v1/rpc/invoke_notification_review_backfill",
+      method: "POST",
+      body: {},
+    },
+    {
+      name: "invoke_notification_weekly_recaps rpc",
+      path: "/rest/v1/rpc/invoke_notification_weekly_recaps",
+      method: "POST",
+      body: {},
+    },
+    {
+      name: "invoke_notification_retention_cleanup rpc",
+      path: "/rest/v1/rpc/invoke_notification_retention_cleanup",
+      method: "POST",
+      body: {},
+    },
+    {
+      // Guards the 2026-07-22 account-deletion fix: this RPC wraps
+      // internal_secrets.service_role_key into an Authorization header, so it
+      // must stay unreachable for anon/authenticated, same as the
+      // notification invoke_* functions above.
+      name: "invoke_process_account_deletions rpc",
+      path: "/rest/v1/rpc/invoke_process_account_deletions",
+      method: "POST",
+      body: {},
+    },
+    {
       name: "build_edge_function_url rpc",
       path: "/rest/v1/rpc/build_edge_function_url",
       method: "POST",

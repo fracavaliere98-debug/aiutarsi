@@ -15,14 +15,11 @@ import { AppNotification } from "./types";
 
 const QUIET_ROUTES = [
   "(volunteer)/settings",
-  "(volunteer)/privacy",
   "(volunteer)/interests-skills",
   "blocked-users",
   "(volunteer)/referral",
   "help-center",
   "(npo)/settings",
-  "(npo)/settings/privacy",
-  "(npo)/edit-profile",
 ];
 
 export function useNotificationsRuntimeEnabled() {

@@ -2,7 +2,7 @@ import React from "react";
 import { Alert, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Target, UserCircle, Users, Building2, ChartColumnIncreasing, Mail } from "lucide-react-native";
+import { ChevronRight, Eye, FileText, Key, LifeBuoy, LogOut, ShieldBan, Users, User, Heart, ChartColumnIncreasing, Mail } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { AccountDeletionAlert } from "../../../components/AccountDeletionAlert";
@@ -10,7 +10,6 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { reportIssue } from "../../../utils/monitoring";
-import { useNPOApplications } from "../../../hooks/applications/selectors";
 import { colors } from "@/theme";
 
 const SectionHeader = ({ title }: { title: string }) => (
@@ -25,7 +24,6 @@ const MenuItem = ({
     description,
     color,
     onPress,
-    badge,
     last = false,
     testID,
 }: {
@@ -34,7 +32,6 @@ const MenuItem = ({
     description?: string;
     color: string;
     onPress?: () => void;
-    badge?: string | number;
     last?: boolean;
     testID?: string;
 }) => (
@@ -55,25 +52,15 @@ const MenuItem = ({
                 )}
             </View>
         </View>
-        <View className="flex-row items-center gap-2">
-            {badge !== undefined && (
-                <View className="bg-gray-100 px-2.5 py-1 rounded-lg">
-                    <Text className="text-secondary font-bold text-xs">{badge}</Text>
-                </View>
-            )}
-            <ChevronRight size={18} color="#cbd5e1" />
-        </View>
+        <ChevronRight size={18} color="#cbd5e1" />
     </TouchableOpacity>
 );
 
-export default function NPOSettingsScreen() {
+export default function VolunteerSettingsScreen() {
     const { user, logout, isLoading: isAuthLoading, requestAccountDeletion } = useAuth();
     const { showToast } = useToast();
     const router = useRouter();
     const appVersion = Constants.expoConfig?.version || "1.0.0";
-
-    const applications = useNPOApplications(user, user?.id);
-    const teamCount = applications.filter((a) => a.status === "APPROVED").length;
 
     return (
         <StandardLayout
@@ -88,15 +75,13 @@ export default function NPOSettingsScreen() {
                 <UserAvatar
                     size={100}
                     fontSize={32}
-                    name={user?.npoName || user?.name || "Ente"}
+                    name={user?.name || "Utente"}
                     avatarUrl={user?.avatar || user?.avatar_url || undefined}
-                    role="NPO"
-                    isVerified={!!(user?.isVerified || user?.is_verified)}
-                    verificationStatus={user?.verification_status}
+                    useAuthFallback
                 />
 
                 <Text className="text-primary font-black text-2xl mt-4 text-center">
-                    {user?.npoName || user?.name || "Il tuo ente"}
+                    {user?.name || "Utente"}
                 </Text>
                 <Text className="text-secondary font-bold text-sm mt-1 text-center">
                     ID: #{user?.shortId || user?.id?.substring(0, 8).toUpperCase() || "N/A"}
@@ -106,69 +91,76 @@ export default function NPOSettingsScreen() {
                     className="mt-6 px-8 py-3 rounded-2xl"
                     activeOpacity={0.7}
                     style={{ backgroundColor: colors.primary + '10' }}
-                    onPress={() => router.push("/(npo)/settings/edit-profile" as any)}
+                    onPress={() => router.push("/(volunteer)/settings/edit-profile" as any)}
                 >
                     <Text className="font-black text-sm" style={{ color: colors.primary }}>
-                        Modifica profilo ente
+                        Modifica profilo
                     </Text>
                 </TouchableOpacity>
             </SoftCard>
 
-            <SectionHeader title="Profilo ente" />
+            <SectionHeader title="Account" />
             <SoftCard className="mb-8 px-5">
                 <MenuItem
-                    icon={Building2}
-                    label="Modifica profilo"
-                    description="Logo, missione, contatti e sede operativa"
+                    icon={User}
+                    label="Dati personali"
+                    description="Nome, foto, biografia e contatti"
                     color={colors.primary}
-                    onPress={() => router.push("/(npo)/settings/edit-profile" as any)}
+                    onPress={() => router.push("/(volunteer)/settings/edit-profile" as any)}
                 />
                 <MenuItem
-                    icon={Target}
-                    label="Settori e competenze"
-                    description="Aree di intervento e skill che cercate nei volontari"
-                    color={colors.primary}
-                    onPress={() => router.push("/(npo)/interests-skills" as any)}
+                    icon={Heart}
+                    label="Interessi e competenze"
+                    description="Aree di interesse e skill che vuoi mettere a disposizione"
+                    color="#ec4899"
+                    onPress={() => router.push("/(volunteer)/interests-skills" as any)}
                 />
-                <MenuItem
-                    icon={UserCircle}
-                    label="Referente principale"
-                    description="Persona di riferimento visibile sul profilo pubblico"
-                    color={colors.primary}
-                    onPress={() => router.push("/(npo)/referent-details" as any)}
-                    last
-                />
-            </SoftCard>
-
-            <SectionHeader title="Gestione e sicurezza" />
-            <SoftCard className="mb-8 px-5">
                 <MenuItem
                     icon={Users}
-                    label="Membri del team"
-                    description="Gestisci iscritti e candidature ricevute"
+                    label="Porta un amico"
+                    description="Invita altri volontari su AiutarSi"
                     color={colors.primary}
-                    badge={teamCount}
-                    onPress={() => router.push("/(npo)/volunteers?tab=ISCRITTI" as any)}
+                    onPress={() => router.push("/(volunteer)/referral" as any)}
                 />
                 <MenuItem
                     icon={ChartColumnIncreasing}
                     label="Report"
-                    description="Follower, crescita, iscritti e attività da attenzionare"
+                    description="Il tuo impatto e la tua attività sulla piattaforma"
                     color={colors.accent}
-                    onPress={() => router.push("/(npo)/report" as any)}
-                    testID="npo-settings-report"
+                    onPress={() => router.push("/(volunteer)/report" as any)}
+                    testID="volunteer-settings-report"
+                    last
                 />
+            </SoftCard>
+
+            {user && (user.role as string) === 'ADMIN' && (
+                <>
+                    <SectionHeader title="Amministrazione" />
+                    <SoftCard className="mb-8 px-5">
+                        <MenuItem
+                            icon={ShieldBan}
+                            label="Area Admin"
+                            color="#8B5CF6"
+                            onPress={() => router.push("/admin" as any)}
+                            last
+                        />
+                    </SoftCard>
+                </>
+            )}
+
+            <SectionHeader title="Sicurezza" />
+            <SoftCard className="mb-8 px-5">
                 <MenuItem
                     icon={Eye}
                     label="Privacy e visibilità"
-                    description="Controlla cosa è visibile agli utenti"
+                    description="Controlla cosa è visibile agli altri utenti"
                     color={colors.success}
-                    onPress={() => router.push("/(npo)/settings/privacy" as any)}
+                    onPress={() => router.push("/(volunteer)/settings/privacy" as any)}
                 />
                 <MenuItem
                     icon={ShieldBan}
                     label="Account bloccati"
-                    description="Gestisci i profili che non possono interagire"
+                    description="Gestisci i profili che non possono interagire con te"
                     color={colors.accent}
                     onPress={() => router.push("/blocked-users" as any)}
                 />
@@ -177,7 +169,7 @@ export default function NPOSettingsScreen() {
                     label="Credenziali accesso"
                     description="Email, password e sicurezza"
                     color={colors.primary}
-                    onPress={() => router.push("/(npo)/settings/security" as any)}
+                    onPress={() => router.push("/(volunteer)/settings/security" as any)}
                     last
                 />
             </SoftCard>
@@ -189,7 +181,7 @@ export default function NPOSettingsScreen() {
                     label="Centro assistenza"
                     description="FAQ e supporto con Gemma"
                     color="#ef4444"
-                    onPress={() => router.push("/help-center" as any)}
+                    onPress={() => router.push('/help-center' as any)}
                 />
                 <MenuItem
                     icon={Mail}
@@ -199,7 +191,7 @@ export default function NPOSettingsScreen() {
                     onPress={() => {
                         void reportIssue({
                             user,
-                            screen: "npo_settings",
+                            screen: "volunteer_settings",
                         });
                     }}
                 />
@@ -239,7 +231,7 @@ export default function NPOSettingsScreen() {
                 onPress={() => {
                     Alert.alert(
                         "Elimina account",
-                        "Sei sicuro di voler eliminare il tuo account? Avrai 30 giorni per annullare la richiesta dal profilo.",
+                        "Sei sicuro di voler eliminare il tuo account? Avrai 30 giorni per cambiare idea e annullare la richiesta dal tuo profilo.",
                         [
                             { text: "Annulla", style: "cancel" },
                             {
@@ -248,12 +240,12 @@ export default function NPOSettingsScreen() {
                                 onPress: async () => {
                                     try {
                                         await requestAccountDeletion();
-                                        showToast("success", "Richiesta di eliminazione inviata correttamente.");
+                                        showToast('success', 'Richiesta di eliminazione inviata correttamente.');
                                     } catch (error: any) {
                                         Alert.alert("Errore", error.message);
                                     }
-                                },
-                            },
+                                }
+                            }
                         ]
                     );
                 }}

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Switch, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Phone, Save } from "lucide-react-native";
-import { StandardLayout } from "../../components/StandardLayout";
-import { SoftCard } from "../../components/SoftCard";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { StandardLayout } from "../../../components/StandardLayout";
+import { SoftCard } from "../../../components/SoftCard";
+import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { colors } from "@/theme";
 
 export default function VolunteerPrivacyScreen() {
@@ -36,18 +36,12 @@ export default function VolunteerPrivacyScreen() {
         if (!user) return;
         setIsLoading(true);
         try {
-            console.log("[DEBUG] VolunteerPrivacy: saving", {
-                userId: user.id,
-                allowCalls,
-            });
             await updateUserProfile({
                 allow_calls: allowCalls,
             });
-            console.log("[DEBUG] VolunteerPrivacy: save completed");
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
         } catch (e: any) {
-            console.error("[DEBUG] VolunteerPrivacy: save failed", e);
             showToast("error", e.message || "Errore durante il salvataggio.");
         } finally {
             setIsLoading(false);

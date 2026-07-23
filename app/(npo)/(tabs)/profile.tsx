@@ -181,7 +181,7 @@ export default function NPOProfileScreen() {
 
                 {shouldShowProfilePrompt && (
                     <TouchableOpacity
-                        onPress={() => router.push("/(npo)/edit-profile" as any)}
+                        onPress={() => router.push("/(npo)/settings/edit-profile" as any)}
                         activeOpacity={0.85}
                         className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-4 py-4"
                     >
