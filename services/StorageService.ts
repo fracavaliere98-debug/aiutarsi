@@ -1,6 +1,7 @@
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../utils/supabase';
+import { withTimeout } from '../utils/withTimeout';
 
 export class StorageService {
     /**
@@ -70,9 +71,14 @@ export class StorageService {
             console.log(`Uploading to bucket: ${bucket}, path: ${fileName}`);
 
             // 1. Read file as Base64 string using Expo FileSystem
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: 'base64',
-            });
+            // Con timeout: senza, un problema di I/O silenzioso lascerebbe il chiamante
+            // (es. il pulsante "Salva Modifiche" del profilo) bloccato in caricamento
+            // a tempo indefinito, senza nessun errore mostrato all'utente.
+            const base64 = await withTimeout(
+                FileSystem.readAsStringAsync(uri, { encoding: 'base64' }),
+                `${bucket}: lettura file`,
+                15000
+            );
 
             // 2. Convert Base64 to ArrayBuffer
             const arrayBuffer = decode(base64);
@@ -84,12 +90,14 @@ export class StorageService {
             }
 
             // 3. Upload ArrayBuffer to Supabase
-            const { data, error } = await supabase.storage
-                .from(bucket)
-                .upload(fileName, arrayBuffer, {
+            const { data, error } = await withTimeout(
+                supabase.storage.from(bucket).upload(fileName, arrayBuffer, {
                     contentType: contentType,
                     upsert: true
-                });
+                }),
+                `${bucket}: upload`,
+                25000
+            );
 
             if (error || !data) {
                 console.error("Supabase Storage error details:", JSON.stringify(error, null, 2));

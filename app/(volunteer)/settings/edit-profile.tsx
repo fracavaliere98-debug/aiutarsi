@@ -127,7 +127,10 @@ export default function VolunteerEditProfileScreen({ onClose }: { onClose?: () =
             mediaTypes: IMAGE_PICKER_MEDIA_TYPES as any,
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.8,
+            // 0.5 basta per un avatar mostrato piccolo e circolare: qualità più alta produce
+            // file da diversi MB la cui codifica base64 (sincrona, sul thread JS) può richiedere
+            // decine di secondi su device meno potenti, dando l'impressione di un blocco.
+            quality: 0.5,
         });
 
         if (!result.canceled) {

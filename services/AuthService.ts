@@ -5,12 +5,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageService } from './StorageService';
 import { getAuthScheme, getSupabaseProjectRef, isPreviewRuntime } from '../utils/runtimeConfig';
 import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
+import { withTimeout } from '../utils/withTimeout';
 
 export type EmailConfirmationState = {
     exists: boolean;
     confirmed: boolean;
     role?: string | null;
 };
+
+// Tutte le colonne di public.profiles TRANNE `embedding` (vector pgvector usato solo lato
+// server da get_matching_volunteers/Smart Match, mai letto dal client). Prima del 2026-07-24
+// ogni select('*') su profiles scaricava anche questo vettore da ~1536 dimensioni — payload
+// inutile su ogni fetch profilo (login, getCurrentUser ad ogni avvio app, getProfileById,
+// getUsers su liste paginate), che su una rete mobile lenta poteva far percepire un fetch
+// come bloccato/interminabile. Aggiornare questa lista se si aggiungono nuove colonne a
+// profiles che il client deve poter leggere.
+const PROFILE_COLUMNS_NO_EMBEDDING = `
+    id, role, full_name, email, avatar_url, bio, impact_points, location_string, location_lat,
+    location_lng, is_verified, profile_completed, npo_name, phone, website, public_email,
+    company_name, created_at, updated_at, last_seen_at, location_coords, expo_push_token,
+    allow_calls, profile_public, show_email, volunteer_list_visible, show_volunteering_history,
+    badges, deletion_requested_at, is_banned, ban_reason, ban_report_id, npo_vat_id, npo_website,
+    referent_name, referent_role, referent_avatar_url, auto_welcome_message, address_full,
+    sought_skills, verification_doc_url, location, verification_status, referral_code, referred_by,
+    gender, date_of_birth, email_confirmed
+`;
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
@@ -49,18 +68,7 @@ export class AuthService {
     }
 
     private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs = 8000): Promise<T> {
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-        try {
-            return await Promise.race([
-                promise,
-                new Promise<T>((_, reject) => {
-                    timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
-                }),
-            ]);
-        } finally {
-            if (timeoutId) clearTimeout(timeoutId);
-        }
+        return withTimeout(promise, label, timeoutMs);
     }
 
     private async _awaitQuery<T>(promise: PromiseLike<T>, label: string): Promise<T> {
@@ -405,7 +413,7 @@ export class AuthService {
         try {
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('*')
+                .select(PROFILE_COLUMNS_NO_EMBEDDING)
                 .eq('id', user.id)
                 .single();
 
@@ -614,7 +622,7 @@ export class AuthService {
             let query = supabase
                 .from('profiles')
                 .select(`
-                    *,
+                    ${PROFILE_COLUMNS_NO_EMBEDDING},
                     user_skills (skill),
                     user_interests (interest),
                     followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
@@ -650,7 +658,7 @@ export class AuthService {
             const { data, error } = await supabase
                 .from('profiles')
                 .select(`
-                    *,
+                    ${PROFILE_COLUMNS_NO_EMBEDDING},
                     user_skills (skill),
                     user_interests (interest),
                     followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
@@ -749,7 +757,7 @@ export class AuthService {
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select(`
-                    *,
+                    ${PROFILE_COLUMNS_NO_EMBEDDING},
                     user_skills (skill),
                     user_interests (interest),
                     followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)

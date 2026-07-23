@@ -42,7 +42,9 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.7,
+            // Vedi nota in app/(volunteer)/settings/edit-profile.tsx: 0.5 basta per un
+            // logo/avatar mostrato piccolo, evitando codifiche base64 lente su file da più MB.
+            quality: 0.5,
         });
 
         if (!result.canceled) {
