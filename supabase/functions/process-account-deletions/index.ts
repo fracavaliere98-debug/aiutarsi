@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      (Deno.env.get("LEGACY_SERVICE_ROLE_JWT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "",
     );
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};

@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
     const mode = ((await req.json().catch(() => ({})))?.mode || "full") as Mode;
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      (Deno.env.get("LEGACY_SERVICE_ROLE_JWT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "",
     );
 
     const runOne = async (target: Exclude<Mode, "full">) => {

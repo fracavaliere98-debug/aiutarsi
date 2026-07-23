@@ -205,8 +205,18 @@ async function runPipelineTest(admin: ReturnType<typeof createClient>) {
 async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
   const localMarker = marker("ROUTE");
   const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Routing Volunteer" });
+  const npo = await createProfile(admin, { role: "NPO", fullName: "Routing NPO", npoName: "Routing NPO" });
+  let conversationId = "";
 
   try {
+    const { data: conversationRow, error: conversationError } = await admin
+      .from("conversations")
+      .insert({ type: "PRIVATE", created_by: volunteer.id })
+      .select("id")
+      .single();
+    if (conversationError) throw conversationError;
+    conversationId = conversationRow.id;
+
     const { error: insertError } = await admin.from("notifications").insert([
       {
         user_id: volunteer.id,
@@ -214,7 +224,7 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
         title: `${localMarker} chat`,
         message: `${localMarker} chat payload`,
         read: false,
-        related_conversation_id: crypto.randomUUID(),
+        related_conversation_id: conversationId,
         payload: { route: "messages", scope: "conversation" },
       },
       {
@@ -223,7 +233,7 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
         title: `${localMarker} community`,
         message: `${localMarker} community payload`,
         read: false,
-        related_npo_id: crypto.randomUUID(),
+        related_npo_id: npo.id,
         payload: { route: "community", source: "followed_post" },
       },
     ]);
@@ -251,7 +261,9 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
     ];
   } finally {
     await admin.from("notifications").delete().ilike("title", `%${localMarker}%`);
+    if (conversationId) await admin.from("conversations").delete().eq("id", conversationId);
     await deleteProfile(admin, volunteer.id);
+    await deleteProfile(admin, npo.id);
   }
 }
 
@@ -867,7 +879,7 @@ Deno.serve(async (req) => {
     const mode = ((await req.json().catch(() => ({})))?.mode || "full") as Mode;
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      (Deno.env.get("LEGACY_SERVICE_ROLE_JWT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "",
     );
 
     const runOne = async (target: Exclude<Mode, "full">) => {

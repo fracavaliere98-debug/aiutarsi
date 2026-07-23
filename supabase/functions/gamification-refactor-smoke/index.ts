@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
   try {
     const mode = ((await req.json().catch(() => ({}))) as { mode?: Mode }).mode || "full";
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey = (Deno.env.get("LEGACY_SERVICE_ROLE_JWT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
 
     assert(supabaseUrl, "Missing SUPABASE_URL");
