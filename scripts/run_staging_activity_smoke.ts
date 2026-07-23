@@ -1,4 +1,5 @@
 import { buildStagingSupabaseHeaders, requireStagingSupabaseEnv } from "./lib/stagingSmokeEnv";
+import { isMainModule } from "./lib/isMainModule";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -8,7 +9,7 @@ export async function runStagingActivitySmoke(mode: "query_consistency" | "state
   const { supabaseUrl, anonKey } = requireStagingSupabaseEnv("activity");
   const response = await fetch(`${supabaseUrl}/functions/v1/activity-refactor-smoke`, {
     method: "POST",
-    headers: buildStagingSupabaseHeaders(anonKey),
+    headers: buildStagingSupabaseHeaders(anonKey, true),
     body: JSON.stringify({ mode }),
   });
 
@@ -19,7 +20,7 @@ export async function runStagingActivitySmoke(mode: "query_consistency" | "state
   return payload.results?.[mode] || payload.results;
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const modeArg = (process.argv[2] as "query_consistency" | "state_transitions" | "full" | undefined) || "full";
   runStagingActivitySmoke(modeArg)
     .then((result) => {

@@ -1,4 +1,5 @@
 import { buildStagingSupabaseHeaders, requireStagingSupabaseEnv } from "./lib/stagingSmokeEnv";
+import { isMainModule } from "./lib/isMainModule";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -27,7 +28,7 @@ export async function runStagingChatSmoke(
   return payload.results?.[mode] || payload.results;
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const modeArg =
     (process.argv[2] as "query_consistency" | "state_transitions" | "inbox_visibility" | "full" | undefined) || "full";
   runStagingChatSmoke(modeArg)

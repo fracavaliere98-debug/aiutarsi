@@ -16,7 +16,10 @@ export default function OnboardingLayout() {
     const isNPO = user?.role === "NPO";
 
     // Define steps for each flow
-    const volunteerSteps = ["intro", "interests", "skills", "profile", "welcome"];
+    // "invite-friend" viene dopo "welcome": ultimo step del flusso volontario, pensato per
+    // suggerire la condivisione del codice amico nel momento di massimo entusiasmo (appena
+    // il volontario ha finito l'onboarding), prima di entrare davvero nell'app.
+    const volunteerSteps = ["intro", "interests", "skills", "profile", "welcome", "invite-friend"];
     const npoSteps = [
         "intro",
         "npo-category",
@@ -38,7 +41,7 @@ export default function OnboardingLayout() {
 
     return (
         <View style={styles.container}>
-            {currentIndex >= 0 && currentPath !== "welcome" && (
+            {currentIndex >= 0 && currentPath !== "welcome" && currentPath !== "invite-friend" && (
                 <View style={[styles.progressContainer, { top: insets.top }]}>
                     <Animated.View style={[styles.progressBar, progressStyle]} />
                 </View>
@@ -57,6 +60,7 @@ export default function OnboardingLayout() {
                 <Stack.Screen name="interests" />
                 <Stack.Screen name="skills" />
                 <Stack.Screen name="profile" />
+                <Stack.Screen name="invite-friend" />
 
                 {/* NPO Only */}
                 <Stack.Screen name="npo-category" />

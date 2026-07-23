@@ -28,6 +28,8 @@ const suite = [
   { label: "settings-structure-contract", path: "scripts/test_settings_structure_contract.ts" },
   { label: "cron-invoke-auth-contract", path: "scripts/test_cron_invoke_auth_contract.ts" },
   { label: "skills-taxonomy-contract", path: "scripts/test_skills_taxonomy_contract.ts" },
+  { label: "activity-organizer-onboarding-contract", path: "scripts/test_activity_organizer_and_onboarding_contract.ts" },
+  { label: "application-success-contract", path: "scripts/test_application_success_contract.ts" },
 ];
 
 for (const test of suite) {

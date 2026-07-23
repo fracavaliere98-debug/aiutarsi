@@ -634,7 +634,7 @@ export class AuthService {
                 query = query.eq('role', role);
             }
 
-            const { data, error } = await query;
+            const { data, error } = await this._withTimeout(query, 'profiles.getUsers', 8000);
 
             if (error) {
                 console.error("Error fetching users:", error);
@@ -655,16 +655,29 @@ export class AuthService {
 
     async getProfileById(userId: string): Promise<AppUser | null> {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select(`
-                    ${PROFILE_COLUMNS_NO_EMBEDDING},
-                    user_skills (skill),
-                    user_interests (interest),
-                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                `)
-                .eq('id', userId)
-                .single();
+            // Avvolto in withTimeout: la query supabase-js può restare bloccata a tempo
+            // indefinito (mai errore, mai risposta) se il lock interno di rinnovo sessione del
+            // client resta "impegnato" — es. refresh token partito e mai completato/rilasciato
+            // (app in background durante il refresh, connessione persa a metà chiamata). È la
+            // stessa classe di bug già affrontata per il salvataggio profilo (vedi
+            // profileRest.ensureVolunteerProfile via _withTimeout) e per _getAccessTokenForRest.
+            // Prima di questo fix, un volontario che apriva il profilo di un ente rimaneva su
+            // uno spinner "in caricamento continuo" a tempo indefinito perché nessun livello
+            // della catena (qui, non nella sola UI) faceva mai scadere la richiesta.
+            const { data, error } = await this._withTimeout(
+                supabase
+                    .from('profiles')
+                    .select(`
+                        ${PROFILE_COLUMNS_NO_EMBEDDING},
+                        user_skills (skill),
+                        user_interests (interest),
+                        followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+                    `)
+                    .eq('id', userId)
+                    .single(),
+                'profiles.getById',
+                8000
+            );
 
             if (error) {
                 if (error.code !== 'PGRST116') { // Not found is fine
@@ -747,23 +760,41 @@ export class AuthService {
 
     async getCurrentUser(): Promise<AppUser | null> {
         // 1. Check Session (Basic Auth)
-        const { data: { session } } = await supabase.auth.getSession();
+        // getSession() può restare bloccato a tempo indefinito se il lock interno di rinnovo
+        // sessione del client resta "impegnato" (refresh mai completato/rilasciato) — stesso
+        // motivo per cui _getAccessTokenForRest la avvolge già in un timeout. Qui gira ad ogni
+        // avvio dell'app: senza timeout, quel bug bloccherebbe l'intero avvio, non solo una
+        // schermata. Il timeout è gestito qui (non lasciato propagare): diversi chiamanti in
+        // AuthContext.tsx fanno `await authService.getCurrentUser()` senza try/catch, quindi
+        // deve fallire in modo sicuro restituendo null, coerente con la firma del metodo.
+        let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
+        try {
+            const result = await this._withTimeout(supabase.auth.getSession(), 'auth.getSession.currentUser', 5000);
+            session = result.data.session;
+        } catch (e) {
+            console.error("getCurrentUser: auth.getSession timed out or failed", e);
+            return null;
+        }
         if (!session?.user) return null;
 
         let user: AppUser | null = null;
 
         // 2. FETCH PROFILE FROM DB (Primary Source of Truth)
         try {
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select(`
-                    ${PROFILE_COLUMNS_NO_EMBEDDING},
-                    user_skills (skill),
-                    user_interests (interest),
-                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                `)
-                .eq('id', session.user.id)
-                .single();
+            const { data: profile, error } = await this._withTimeout(
+                supabase
+                    .from('profiles')
+                    .select(`
+                        ${PROFILE_COLUMNS_NO_EMBEDDING},
+                        user_skills (skill),
+                        user_interests (interest),
+                        followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
+                    `)
+                    .eq('id', session.user.id)
+                    .single(),
+                'profiles.getCurrentUser',
+                8000
+            );
 
             if (profile && !error) {
                 user = this._mapProfileToUser(profile);

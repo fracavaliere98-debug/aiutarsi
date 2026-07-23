@@ -38,6 +38,8 @@
     "test:settings-structure-contract": "npx -y tsx scripts/test_settings_structure_contract.ts",
     "test:cron-invoke-auth-contract": "npx -y tsx scripts/test_cron_invoke_auth_contract.ts",
     "test:skills-taxonomy-contract": "npx -y tsx scripts/test_skills_taxonomy_contract.ts",
+    "test:activity-organizer-onboarding-contract": "npx -y tsx scripts/test_activity_organizer_and_onboarding_contract.ts",
+    "test:application-success-contract": "npx -y tsx scripts/test_application_success_contract.ts",
     "test:regression": "npx -y tsx scripts/run_regression_suite.ts",
     "test:prod-migration-readiness": "npx -y tsx scripts/test_prod_migration_readiness.ts",
     "test:security-migrations": "npx -y tsx scripts/test_security_migrations.ts",

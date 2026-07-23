@@ -129,7 +129,10 @@ function RootLayoutNav() {
     }
 
     // 5. Stuck in Onboarding: Escape to app
-    if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding && !segmentKey.includes("welcome")) {
+    // "invite-friend" è escluso come "welcome": è lo step che imposta profile_completed=true
+    // e naviga da sé subito dopo — escluderlo evita una doppia navigazione in corsa con questa
+    // guardia nell'istante in cui hasCompletedOnboarding passa a true ma il segmento è ancora questo.
+    if ((hasCompletedOnboarding || user.role === "ADMIN") && inOnboarding && !segmentKey.includes("welcome") && !segmentKey.includes("invite-friend")) {
       const dest = user.role === "ADMIN" ? "/admin" :
                    user.role === "VOLUNTEER" ? "/(volunteer)/(tabs)/community" :
                    user.role === "NPO" ? "/(npo)/(tabs)/community" :

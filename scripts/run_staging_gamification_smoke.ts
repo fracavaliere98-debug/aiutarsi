@@ -1,4 +1,5 @@
 import { buildStagingSupabaseHeaders, requireStagingSupabaseEnv } from "./lib/stagingSmokeEnv";
+import { isMainModule } from "./lib/isMainModule";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -8,7 +9,7 @@ export async function runStagingGamificationSmoke(mode: "state_consistency" | "s
   const { supabaseUrl, anonKey } = requireStagingSupabaseEnv("gamification");
   const response = await fetch(`${supabaseUrl}/functions/v1/gamification-refactor-smoke`, {
     method: "POST",
-    headers: buildStagingSupabaseHeaders(anonKey),
+    headers: buildStagingSupabaseHeaders(anonKey, true),
     body: JSON.stringify({ mode }),
   });
 
@@ -19,7 +20,7 @@ export async function runStagingGamificationSmoke(mode: "state_consistency" | "s
   return payload.results?.[mode] || payload.results;
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const modeArg = (process.argv[2] as "state_consistency" | "share_invalidation" | "full" | undefined) || "full";
   runStagingGamificationSmoke(modeArg)
     .then((result) => {

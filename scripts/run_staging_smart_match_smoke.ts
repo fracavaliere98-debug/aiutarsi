@@ -1,4 +1,5 @@
 import { buildStagingSupabaseHeaders, requireStagingSupabaseEnv } from "./lib/stagingSmokeEnv";
+import { isMainModule } from "./lib/isMainModule";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -8,7 +9,7 @@ export async function runStagingSmartMatchSmoke(mode: "query_consistency" | "sta
   const { supabaseUrl, anonKey } = requireStagingSupabaseEnv("smart-match");
   const response = await fetch(`${supabaseUrl}/functions/v1/smart-match-refactor-smoke`, {
     method: "POST",
-    headers: buildStagingSupabaseHeaders(anonKey),
+    headers: buildStagingSupabaseHeaders(anonKey, true),
     body: JSON.stringify({ mode }),
   });
 
@@ -19,7 +20,7 @@ export async function runStagingSmartMatchSmoke(mode: "query_consistency" | "sta
   return payload.results?.[mode] || payload.results;
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const modeArg = (process.argv[2] as "query_consistency" | "state_transitions" | "full" | undefined) || "full";
   runStagingSmartMatchSmoke(modeArg)
     .then((result) => {

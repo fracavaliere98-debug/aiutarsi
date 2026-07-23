@@ -55,12 +55,17 @@ export default function WelcomeScreen() {
         if (isStartingJourney) return;
         setIsStartingJourney(true);
         try {
-            await updateUserProfile({ profile_completed: true });
-            queueIntroVideoTransition();
             if (user?.role === "NPO") {
+                // Flusso NPO invariato: nessuno step aggiuntivo dopo "welcome".
+                await updateUserProfile({ profile_completed: true });
+                queueIntroVideoTransition();
                 router.replace("/(npo)/(tabs)/community" as any);
             } else {
-                router.replace("/(volunteer)/(tabs)/community" as any);
+                // Flusso volontario: prima di finalizzare l'onboarding (profile_completed),
+                // passa dallo step "invite-friend" — è quello step a chiamare updateUserProfile
+                // e a navigare davvero nell'app, così un volontario che chiude l'app qui in
+                // mezzo può sempre riprendere l'onboarding da dove l'aveva lasciato.
+                router.push("/onboarding/invite-friend" as any);
             }
         } finally {
             setIsStartingJourney(false);

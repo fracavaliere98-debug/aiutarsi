@@ -693,6 +693,15 @@ export default function ActivityDetail() {
                         <ArrowLeft size={20} color="white" />
                     </TouchableOpacity>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
+                        {isEnrolled && user?.role === 'VOLUNTEER' && (
+                            <TouchableOpacity
+                                onPress={handleAddToCalendar}
+                                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' }}
+                                testID="activity-header-add-to-calendar"
+                            >
+                                <Calendar size={20} color="white" />
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             onPress={handleShare}
                             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' }}

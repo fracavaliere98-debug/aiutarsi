@@ -33,27 +33,44 @@ export default function NPOProfileScreen() {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
     const [fetchedNpo, setFetchedNpo] = useState<AppUser | null>(null);
     const [isFetching, setIsFetching] = useState(false);
+    const [fetchFailed, setFetchFailed] = useState(false);
+    const [retryToken, setRetryToken] = useState(0);
 
     // Get NPO data
     // Fetch the exact NPO profile on demand when it is missing from the lightweight cache.
+    // Il fetch è avvolto in un timeout esplicito (stesso pattern di useNPOFollow.withTimeout):
+    // senza, una richiesta di rete che non risponde mai (token da rinnovare, connessione
+    // instabile) lasciava isFetching bloccato a true per sempre, mostrando uno spinner
+    // "in caricamento continuo" senza mai arrivare né al profilo né a un errore recuperabile.
     useEffect(() => {
         const existing = users.find(u => u.id === npoId && u.role === "NPO");
         if (!existing && npoId) {
+            let cancelled = false;
             const fetchNpo = async () => {
                 setIsFetching(true);
+                setFetchFailed(false);
                 try {
-                    const profile = await fetchUserById(npoId);
+                    const profile = await Promise.race([
+                        fetchUserById(npoId),
+                        new Promise<never>((_, reject) =>
+                            setTimeout(() => reject(new Error("npo profile fetch timeout")), 10000)
+                        ),
+                    ]);
+                    if (cancelled) return;
                     setFetchedNpo(profile);
+                    if (!profile) setFetchFailed(true);
                 } catch (err) {
                     console.error("Error fetching NPO:", err);
+                    if (!cancelled) setFetchFailed(true);
                 } finally {
-                    setIsFetching(false);
+                    if (!cancelled) setIsFetching(false);
                 }
             };
 
             fetchNpo();
+            return () => { cancelled = true; };
         }
-    }, [npoId, users, fetchUserById]);
+    }, [npoId, users, fetchUserById, retryToken]);
 
     const npoUser = users.find(u => u.id === npoId && u.role === "NPO") || fetchedNpo;
 
@@ -99,17 +116,33 @@ export default function NPOProfileScreen() {
     }
 
     if (!npoUser) {
+        // fetchFailed distingue un errore/timeout di rete (recuperabile con "Riprova") da un
+        // ente che davvero non esiste più (id inesistente/cancellato, dove riprovare non serve).
         return (
             <StandardLayout title="Ente Non Trovato" label="Profilo Non Trovato" onBack={() => router.back()}>
                 <View className="flex-1 items-center justify-center p-10">
                     <AlertTriangle size={48} color={colors.accent} style={{ marginBottom: 16 }} />
-                    <Text className="text-primary font-bold text-lg mb-2">Ops! Profilo non trovato</Text>
-                    <Text className="text-secondary text-center mb-6">Non siamo riusciti a trovare le informazioni per questo ente.</Text>
-                    <TouchableOpacity 
+                    <Text className="text-primary font-bold text-lg mb-2">
+                        {fetchFailed ? "Impossibile caricare il profilo" : "Ops! Profilo non trovato"}
+                    </Text>
+                    <Text className="text-secondary text-center mb-6">
+                        {fetchFailed
+                            ? "Problema di connessione durante il caricamento. Riprova tra poco."
+                            : "Non siamo riusciti a trovare le informazioni per questo ente."}
+                    </Text>
+                    {fetchFailed && (
+                        <TouchableOpacity
+                            onPress={() => setRetryToken((t) => t + 1)}
+                            className="bg-primary px-6 py-3 rounded-full mb-3"
+                        >
+                            <Text className="text-white font-bold">Riprova</Text>
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
                         onPress={() => router.back()}
-                        className="bg-primary px-6 py-3 rounded-full"
+                        className={fetchFailed ? "px-6 py-3 rounded-full border border-primary/20" : "bg-primary px-6 py-3 rounded-full"}
                     >
-                        <Text className="text-white font-bold">Torna Indietro</Text>
+                        <Text className={fetchFailed ? "text-primary font-bold" : "text-white font-bold"}>Torna Indietro</Text>
                     </TouchableOpacity>
                 </View>
             </StandardLayout>

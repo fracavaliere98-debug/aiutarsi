@@ -46,7 +46,7 @@ export default function ApplicationSuccess() {
                     {isActivity ? (
                         <>Puoi vedere i dettagli in{"\n"}<Text className="font-bold">&quot;Calendar&quot;</Text> o <Text className="font-bold">&quot;Le Mie Attività&quot;</Text>.</>
                     ) : (
-                        <>Puoi monitorare lo stato in{"\n"}<Text className="font-bold">&quot;Le Mie Attività&quot;</Text>.</>
+                        <>Puoi monitorare lo stato in{"\n"}<Text className="font-bold">&quot;Le Mie Candidature&quot;</Text>.</>
                     )}
                 </Animated.Text>
 
@@ -67,10 +67,16 @@ export default function ApplicationSuccess() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    onPress={() => router.replace("/(volunteer)/(tabs)/calendar" as any)}
+                    onPress={() => router.replace(
+                        isActivity
+                            ? "/(volunteer)/(tabs)/calendar" as any
+                            : "/(volunteer)/(tabs)/profile" as any
+                    )}
                     className="bg-white border-2 border-gray-100 rounded-full py-4 items-center"
                 >
-                    <Text className="text-primary font-bold text-lg">Vedi le mie attività</Text>
+                    <Text className="text-primary font-bold text-lg">
+                        {isActivity ? "Vedi le mie attività" : "Vedi le mie candidature"}
+                    </Text>
                 </TouchableOpacity>
             </Animated.View>
         </SafeAreaView>

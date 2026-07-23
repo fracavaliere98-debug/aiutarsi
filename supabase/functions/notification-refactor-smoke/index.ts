@@ -223,7 +223,7 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
         title: `${localMarker} community`,
         message: `${localMarker} community payload`,
         read: false,
-        npo_id: crypto.randomUUID(),
+        related_npo_id: crypto.randomUUID(),
         payload: { route: "community", source: "followed_post" },
       },
     ]);
@@ -231,7 +231,7 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
 
     const { data, error } = await admin
       .from("notifications")
-      .select("type,related_conversation_id,npo_id,payload")
+      .select("type,related_conversation_id,related_npo_id,payload")
       .eq("user_id", volunteer.id)
       .ilike("title", `%${localMarker}%`)
       .order("created_at", { ascending: false });
@@ -242,7 +242,7 @@ async function runRoutingPayloadsTest(admin: ReturnType<typeof createClient>) {
 
     assert(chatRow?.related_conversation_id, "Chat notifications must persist route-critical conversation ids");
     assert(chatRow?.payload?.route === "messages", "Chat notifications must retain payload routing hints");
-    assert(communityRow?.npo_id, "Community notifications must persist route-critical npo ids");
+    assert(communityRow?.related_npo_id, "Community notifications must persist route-critical npo ids");
     assert(communityRow?.payload?.route === "community", "Community notifications must retain payload routing hints");
 
     return [
