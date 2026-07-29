@@ -14,7 +14,7 @@ export class ChatFilterError extends Error {
 }
 
 class ChatService {
-    private async _withTimeout<T>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> {
+    private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs: number): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
         try {
             return await Promise.race([
@@ -227,11 +227,15 @@ class ChatService {
     /** Delete a single message. Only the sender can delete. Enforces a 2-minute window. */
     async deleteMessage(messageId: string, senderId: string) {
         // First verify ownership and time constraint client-side
-        const { data: msg, error: fetchErr } = await supabase
-            .from('messages')
-            .select('id, sender_id, created_at')
-            .eq('id', messageId)
-            .single();
+        const { data: msg, error: fetchErr } = await this._withTimeout(
+            supabase
+                .from('messages')
+                .select('id, sender_id, created_at')
+                .eq('id', messageId)
+                .single(),
+            'chat.deleteMessage.lookup',
+            8000
+        );
 
         if (fetchErr || !msg) throw new Error('Messaggio non trovato');
         if (msg.sender_id !== senderId) throw new Error('Non puoi eliminare messaggi altrui');
@@ -239,10 +243,11 @@ class ChatService {
         const ageMs = Date.now() - new Date(msg.created_at).getTime();
         if (ageMs > 2 * 60 * 1000) throw new Error('Puoi eliminare solo messaggi inviati negli ultimi 2 minuti');
 
-        const { error } = await supabase
-            .from('messages')
-            .delete()
-            .eq('id', messageId);
+        const { error } = await this._withTimeout(
+            supabase.from('messages').delete().eq('id', messageId),
+            'chat.deleteMessage.delete',
+            8000
+        );
 
         if (error) throw error;
     }
@@ -335,32 +340,44 @@ class ChatService {
         // ... (existing implementation)
         let convId: string;
 
-        const { data: existing } = await supabase
-            .from('conversations')
-            .select('id')
-            .eq('type', 'ACTIVITY_GROUP')
-            .eq('activity_id', activityId)
-            .single();
+        const { data: existing } = await this._withTimeout(
+            supabase
+                .from('conversations')
+                .select('id')
+                .eq('type', 'ACTIVITY_GROUP')
+                .eq('activity_id', activityId)
+                .single(),
+            'chat.groupConversation.lookup',
+            8000
+        );
 
         if (existing) {
             convId = existing.id;
         } else {
-            const { data: conversation, error: cErr } = await supabase
-                .from('conversations')
-                .insert({
-                    type: 'ACTIVITY_GROUP',
-                    activity_id: activityId
-                })
-                .select()
-                .single();
+            const { data: conversation, error: cErr } = await this._withTimeout(
+                supabase
+                    .from('conversations')
+                    .insert({
+                        type: 'ACTIVITY_GROUP',
+                        activity_id: activityId
+                    })
+                    .select()
+                    .single(),
+                'chat.groupConversation.create',
+                8000
+            );
 
             if (cErr) {
-                const { data: fallbackExisting, error: fallbackErr } = await supabase
-                    .from('conversations')
-                    .select('id')
-                    .eq('type', 'ACTIVITY_GROUP')
-                    .eq('activity_id', activityId)
-                    .single();
+                const { data: fallbackExisting, error: fallbackErr } = await this._withTimeout(
+                    supabase
+                        .from('conversations')
+                        .select('id')
+                        .eq('type', 'ACTIVITY_GROUP')
+                        .eq('activity_id', activityId)
+                        .single(),
+                    'chat.groupConversation.createFallbackLookup',
+                    8000
+                );
 
                 if (fallbackErr || !fallbackExisting) throw cErr;
                 convId = fallbackExisting.id;
@@ -369,21 +386,29 @@ class ChatService {
             }
         }
 
-        const { data: activityParts } = await supabase
-            .from('activity_participants')
-            .select('user_id')
-            .eq('activity_id', activityId)
-            .in('status', ['APPROVED', 'REGISTERED']);
+        const { data: activityParts } = await this._withTimeout(
+            supabase
+                .from('activity_participants')
+                .select('user_id')
+                .eq('activity_id', activityId)
+                .in('status', ['APPROVED', 'REGISTERED']),
+            'chat.groupConversation.participants',
+            8000
+        );
 
         const participantIds = new Set((activityParts || []).map((p: any) => p.user_id));
         if (initiatorId) participantIds.add(initiatorId);
 
         if (participantIds.size > 0) {
-            const { error: pErr } = await supabase.rpc('sync_group_conversation_participants', {
-                p_conversation_id: convId,
-                p_activity_id: activityId,
-                p_initiator_id: initiatorId || null
-            });
+            const { error: pErr } = await this._withTimeout(
+                supabase.rpc('sync_group_conversation_participants', {
+                    p_conversation_id: convId,
+                    p_activity_id: activityId,
+                    p_initiator_id: initiatorId || null
+                }),
+                'chat.groupConversation.syncParticipantsRpc',
+                8000
+            );
 
             if (pErr) console.error("Error syncing participants to group conversation via RPC:", pErr);
         }
@@ -395,11 +420,15 @@ class ChatService {
      * Toggle notification muting for a specific conversation
      */
     async toggleNotifications(conversationId: string, userId: string, muted: boolean) {
-        const { error } = await supabase
-            .from('conversation_participants')
-            .update({ notifications_muted: muted })
-            .eq('conversation_id', conversationId)
-            .eq('user_id', userId);
+        const { error } = await this._withTimeout(
+            supabase
+                .from('conversation_participants')
+                .update({ notifications_muted: muted })
+                .eq('conversation_id', conversationId)
+                .eq('user_id', userId),
+            'chat.toggleNotifications',
+            8000
+        );
 
         if (error) throw error;
         return true;
@@ -407,28 +436,38 @@ class ChatService {
 
     /** Block a user. Inserts into blocked_users. */
     async blockUser(blockerId: string, targetId: string) {
-        const { data: existing, error: existingError } = await supabase
-            .from('blocked_users')
-            .select('blocked_id')
-            .eq('blocker_id', blockerId)
-            .eq('blocked_id', targetId)
-            .maybeSingle();
+        const { data: existing, error: existingError } = await this._withTimeout(
+            supabase
+                .from('blocked_users')
+                .select('blocked_id')
+                .eq('blocker_id', blockerId)
+                .eq('blocked_id', targetId)
+                .maybeSingle(),
+            'chat.blockUser.lookup',
+            8000
+        );
         if (existingError) throw existingError;
         if (existing?.blocked_id) return;
 
-        const { error } = await supabase
-            .from('blocked_users')
-            .insert({ blocker_id: blockerId, blocked_id: targetId });
+        const { error } = await this._withTimeout(
+            supabase.from('blocked_users').insert({ blocker_id: blockerId, blocked_id: targetId }),
+            'chat.blockUser.insert',
+            8000
+        );
         if (error) throw error;
     }
 
     /** Unblock a user. */
     async unblockUser(blockerId: string, targetId: string) {
-        const { error } = await supabase
-            .from('blocked_users')
-            .delete()
-            .eq('blocker_id', blockerId)
-            .eq('blocked_id', targetId);
+        const { error } = await this._withTimeout(
+            supabase
+                .from('blocked_users')
+                .delete()
+                .eq('blocker_id', blockerId)
+                .eq('blocked_id', targetId),
+            'chat.unblockUser',
+            8000
+        );
         if (error) throw error;
     }
 
@@ -438,10 +477,14 @@ class ChatService {
      * - users who blocked me (they don't see me)
      */
     async getBlockedUserIds(userId: string): Promise<string[]> {
-        const [{ data: iBlocked }, { data: blockedMe }] = await Promise.all([
-            supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId),
-            supabase.from('blocked_users').select('blocker_id').eq('blocked_id', userId),
-        ]);
+        const [{ data: iBlocked }, { data: blockedMe }] = await this._withTimeout(
+            Promise.all([
+                supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId),
+                supabase.from('blocked_users').select('blocker_id').eq('blocked_id', userId),
+            ]),
+            'chat.getBlockedUserIds',
+            8000
+        );
         const ids = new Set<string>();
         iBlocked?.forEach((r: any) => ids.add(r.blocked_id));
         blockedMe?.forEach((r: any) => ids.add(r.blocker_id));

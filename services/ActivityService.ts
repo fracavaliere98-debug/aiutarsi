@@ -6,7 +6,7 @@ import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
 export class ActivityService {
-    private async _withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+    private async _withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, label: string): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
         try {
             return await Promise.race([
@@ -92,22 +92,30 @@ export class ActivityService {
     }
 
     async getActivitiesByRadius(userLat: number, userLng: number, radiusKm: number): Promise<(AppActivity & { distanceMeters: number })[]> {
-        const { data, error } = await supabase.rpc('get_activities_near_me', {
-            user_lat: userLat,
-            user_lng: userLng,
-            radius_meters: radiusKm * 1000
-        });
+        const { data, error } = await this._withTimeout(
+            supabase.rpc('get_activities_near_me', {
+                user_lat: userLat,
+                user_lng: userLng,
+                radius_meters: radiusKm * 1000
+            }),
+            8000,
+            'activities.getByRadius.rpc'
+        );
         if (error) throw new Error(error.message);
 
         // Enrich with skills & participants in one go
         const ids: string[] = (data || []).map((r: any) => r.id);
         if (ids.length === 0) return [];
 
-        const [{ data: skillRows }, { data: partRows }, { data: profiles }] = await Promise.all([
-            supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
-            supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
-            supabase.from('profiles').select('id, npo_name, full_name, public_email, email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
-        ]);
+        const [{ data: skillRows }, { data: partRows }, { data: profiles }] = await this._withTimeout(
+            Promise.all([
+                supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
+                supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
+                supabase.from('profiles').select('id, npo_name, full_name, public_email, email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
+            ]),
+            8000,
+            'activities.getByRadius.hydration'
+        );
 
         const skillsMap: Record<string, string[]> = {};
         for (const r of skillRows || []) {
@@ -317,16 +325,20 @@ export class ActivityService {
 
     async getActivityById(id: string): Promise<AppActivity | null> {
         try {
-            const { data, error } = await supabase
-                .from('activities')
-                .select(`
-                    *,
-                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
-                    activity_skills (skill),
-                    activity_participants (user_id, status)
-                `)
-                .eq('id', id)
-                .single();
+            const { data, error } = await this._withTimeout(
+                supabase
+                    .from('activities')
+                    .select(`
+                        *,
+                        profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
+                        activity_skills (skill),
+                        activity_participants (user_id, status)
+                    `)
+                    .eq('id', id)
+                    .single(),
+                8000,
+                'activities.getById'
+            );
 
             if (error) return null;
 
@@ -348,26 +360,30 @@ export class ActivityService {
             }
 
             // 1. Insert AppActivity
-            const { data: activity, error } = await supabase
-                .from('activities')
-                .insert({
-                    npo_id: activityData.npoId,
-                    title: activityData.title,
-                    description: activityData.description,
-                    date_start: activityData.dateTime,
-                    date_end: activityData.endDateTime,
-                    location_address: activityData.location.address,
-                    location_lat: activityData.location.coords.lat,
-                    location_lng: activityData.location.coords.lng,
-                    slots_total: activityData.slots,
-                    category: activityData.category,
-                    status: activityData.status || 'APERTA',
-                    is_urgent: activityData.isUrgent || false,
-                    image_url: activityData.imageUrl,
-                    recurrence: activityData.recurrence || null,
-                })
-                .select()
-                .single();
+            const { data: activity, error } = await this._withTimeout(
+                supabase
+                    .from('activities')
+                    .insert({
+                        npo_id: activityData.npoId,
+                        title: activityData.title,
+                        description: activityData.description,
+                        date_start: activityData.dateTime,
+                        date_end: activityData.endDateTime,
+                        location_address: activityData.location.address,
+                        location_lat: activityData.location.coords.lat,
+                        location_lng: activityData.location.coords.lng,
+                        slots_total: activityData.slots,
+                        category: activityData.category,
+                        status: activityData.status || 'APERTA',
+                        is_urgent: activityData.isUrgent || false,
+                        image_url: activityData.imageUrl,
+                        recurrence: activityData.recurrence || null,
+                    })
+                    .select()
+                    .single(),
+                8000,
+                'activities.create'
+            );
 
             if (error) throw error;
 
@@ -377,9 +393,11 @@ export class ActivityService {
                     activity_id: activity.id,
                     skill: s
                 }));
-                const { error: skillsError } = await supabase
-                    .from('activity_skills')
-                    .insert(skillsToInsert);
+                const { error: skillsError } = await this._withTimeout(
+                    supabase.from('activity_skills').insert(skillsToInsert),
+                    8000,
+                    'activities.create.skills'
+                );
 
                 if (skillsError) console.error("Error inserting skills:", skillsError);
             }
@@ -409,34 +427,42 @@ export class ActivityService {
         }
 
         // Defines partial updates to avoid overwriting everything if not needed
-        const { error } = await supabase
-            .from('activities')
-            .update({
-                title: activity.title,
-                description: activity.description,
-                date_start: activity.dateTime,
-                date_end: activity.endDateTime,
-                location_address: activity.location.address,
-                location_lat: activity.location.coords.lat,
-                location_lng: activity.location.coords.lng,
-                slots_total: activity.slots,
-                category: activity.category,
-                status: activity.status,
-                is_urgent: activity.isUrgent,
-                image_url: activity.imageUrl,
-                recurrence: activity.recurrence || null,
-            })
-            .eq('id', activity.id);
+        const { error } = await this._withTimeout(
+            supabase
+                .from('activities')
+                .update({
+                    title: activity.title,
+                    description: activity.description,
+                    date_start: activity.dateTime,
+                    date_end: activity.endDateTime,
+                    location_address: activity.location.address,
+                    location_lat: activity.location.coords.lat,
+                    location_lng: activity.location.coords.lng,
+                    slots_total: activity.slots,
+                    category: activity.category,
+                    status: activity.status,
+                    is_urgent: activity.isUrgent,
+                    image_url: activity.imageUrl,
+                    recurrence: activity.recurrence || null,
+                })
+                .eq('id', activity.id),
+            8000,
+            'activities.update'
+        );
 
         if (error) throw error;
 
         // --- NOTIFICATIONS: Notify enrolled volunteers ---
         // 1. Fetch participants
-        const { data: participants, error: partError } = await supabase
-            .from('activity_participants')
-            .select('user_id')
-            .eq('activity_id', activity.id)
-            .in('status', ['APPROVED', 'REGISTERED']);
+        const { data: participants, error: partError } = await this._withTimeout(
+            supabase
+                .from('activity_participants')
+                .select('user_id')
+                .eq('activity_id', activity.id)
+                .in('status', ['APPROVED', 'REGISTERED']),
+            8000,
+            'activities.update.participants'
+        );
 
         if (!partError && participants && participants.length > 0) {
             const notifications = participants.map((p: any) => ({
@@ -448,9 +474,11 @@ export class ActivityService {
                 read: false
             }));
 
-            const { error: notifError } = await supabase
-                .from('notifications')
-                .insert(notifications);
+            const { error: notifError } = await this._withTimeout(
+                supabase.from('notifications').insert(notifications),
+                8000,
+                'activities.update.notifications'
+            );
 
             if (notifError) console.error("Error sending update notifications:", notifError);
         }
@@ -459,10 +487,14 @@ export class ActivityService {
         // --- SKILLS UPDATE (Diff Logic) ---
         if (activity.skills) {
             // 1. Fetch current skills
-            const { data: currentSkillsData, error: fetchError } = await supabase
-                .from('activity_skills')
-                .select('skill')
-                .eq('activity_id', activity.id);
+            const { data: currentSkillsData, error: fetchError } = await this._withTimeout(
+                supabase
+                    .from('activity_skills')
+                    .select('skill')
+                    .eq('activity_id', activity.id),
+                8000,
+                'activities.update.currentSkills'
+            );
 
             if (fetchError) {
                 console.error("Error fetching current skills for update:", fetchError);
@@ -476,11 +508,15 @@ export class ActivityService {
 
                 // 3. Remove Old
                 if (skillsToRemove.length > 0) {
-                    const { error: deleteError } = await supabase
-                        .from('activity_skills')
-                        .delete()
-                        .eq('activity_id', activity.id)
-                        .in('skill', skillsToRemove);
+                    const { error: deleteError } = await this._withTimeout(
+                        supabase
+                            .from('activity_skills')
+                            .delete()
+                            .eq('activity_id', activity.id)
+                            .in('skill', skillsToRemove),
+                        8000,
+                        'activities.update.removeSkills'
+                    );
                     if (deleteError) console.error("Error deleting old skills:", deleteError);
                 }
 
@@ -490,9 +526,11 @@ export class ActivityService {
                         activity_id: activity.id,
                         skill: s
                     }));
-                    const { error: insertError } = await supabase
-                        .from('activity_skills')
-                        .insert(toInsert);
+                    const { error: insertError } = await this._withTimeout(
+                        supabase.from('activity_skills').insert(toInsert),
+                        8000,
+                        'activities.update.addSkills'
+                    );
                     if (insertError) console.error("Error inserting new skills:", insertError);
                 }
             }
@@ -505,10 +543,14 @@ export class ActivityService {
 
     async deleteActivity(id: string): Promise<void> {
         // Soft delete
-        const { error } = await supabase
-            .from('activities')
-            .update({ status: 'CANCELLATA' })
-            .eq('id', id);
+        const { error } = await this._withTimeout(
+            supabase
+                .from('activities')
+                .update({ status: 'CANCELLATA' })
+                .eq('id', id),
+            8000,
+            'activities.delete'
+        );
 
         if (error) throw error;
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
@@ -598,10 +640,14 @@ export class ActivityService {
 
     // --- Reviews ---
     async getReviews(): Promise<OldReview[]> {
-        const { data, error } = await supabase
-            .from('reviews')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const { data, error } = await this._withTimeout(
+            supabase
+                .from('reviews')
+                .select('*')
+                .order('created_at', { ascending: false }),
+            8000,
+            'reviews.getAll'
+        );
 
         if (error) {
             console.error("Error fetching reviews:", error);
@@ -621,18 +667,22 @@ export class ActivityService {
     }
 
     async submitReview(reviewData: Omit<OldReview, 'id'>): Promise<OldReview> {
-        const { data, error } = await supabase
-            .from('reviews')
-            .insert({
-                activity_id: reviewData.activityId,
-                npo_id: reviewData.npoId,
-                volunteer_id: reviewData.volunteerId,
-                stars: reviewData.stars,
-                comment: reviewData.comment,
-                feelings: reviewData.feelings
-            })
-            .select()
-            .single();
+        const { data, error } = await this._withTimeout(
+            supabase
+                .from('reviews')
+                .insert({
+                    activity_id: reviewData.activityId,
+                    npo_id: reviewData.npoId,
+                    volunteer_id: reviewData.volunteerId,
+                    stars: reviewData.stars,
+                    comment: reviewData.comment,
+                    feelings: reviewData.feelings
+                })
+                .select()
+                .single(),
+            8000,
+            'reviews.submit'
+        );
 
         if (error) throw error;
 
@@ -702,12 +752,16 @@ export class ActivityService {
         // If approved, sync with group chat
         if (status === 'APPROVED') {
             try {
-                const { data: conv } = await supabase
-                    .from('conversations')
-                    .select('id, title')
-                    .eq('type', 'ACTIVITY_GROUP')
-                    .eq('activity_id', activityId)
-                    .single();
+                const { data: conv } = await this._withTimeout(
+                    supabase
+                        .from('conversations')
+                        .select('id, title')
+                        .eq('type', 'ACTIVITY_GROUP')
+                        .eq('activity_id', activityId)
+                        .single(),
+                    8000,
+                    'activities.applicationStatus.conversationLookup'
+                );
 
                 if (conv) {
                     const ChatServiceModule = require('./ChatService').default;
@@ -723,10 +777,14 @@ export class ActivityService {
 
     // --- Volunteer Reviews (NPO -> Volunteer) ---
     async getVolunteerReviews(): Promise<OldVolunteerReview[]> {
-        const { data, error } = await supabase
-            .from('volunteer_reviews')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const { data, error } = await this._withTimeout(
+            supabase
+                .from('volunteer_reviews')
+                .select('*')
+                .order('created_at', { ascending: false }),
+            8000,
+            'volunteerReviews.getAll'
+        );
 
         if (error) {
             console.error("Error fetching volunteer reviews:", error);
@@ -755,10 +813,14 @@ export class ActivityService {
             comment: r.comment
         }));
 
-        const { data, error } = await supabase
-            .from('volunteer_reviews')
-            .upsert(payloads, { onConflict: 'activity_id,npo_id,volunteer_id' })
-            .select();
+        const { data, error } = await this._withTimeout(
+            supabase
+                .from('volunteer_reviews')
+                .upsert(payloads, { onConflict: 'activity_id,npo_id,volunteer_id' })
+                .select(),
+            8000,
+            'volunteerReviews.submit'
+        );
 
         if (error) throw error;
 
@@ -778,18 +840,22 @@ export class ActivityService {
 
     async getLatestActivity(): Promise<AppActivity | null> {
         try {
-            const { data, error } = await supabase
-                .from('activities')
-                .select(`
-                    *,
-                    profiles:npo_id (npo_name, full_name, public_email, email),
-                    activity_skills (skill),
-                    activity_participants (user_id)
-                `)
-                .eq('status', 'APERTA')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+            const { data, error } = await this._withTimeout(
+                supabase
+                    .from('activities')
+                    .select(`
+                        *,
+                        profiles:npo_id (npo_name, full_name, public_email, email),
+                        activity_skills (skill),
+                        activity_participants (user_id)
+                    `)
+                    .eq('status', 'APERTA')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle(),
+                8000,
+                'activities.getLatest'
+            );
 
             if (error) {
                 // Non-critical, used only for marketing copy on the landing page — degrade quietly.
@@ -810,16 +876,20 @@ export class ActivityService {
 
     async getLatestActivities(limit = 10): Promise<AppActivity[]> {
         try {
-            const { data, error } = await supabase
-                .from('activities')
-                .select(`
-                    *,
-                    profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
-                    activity_skills (skill),
-                    activity_participants (user_id, status)
-                `)
-                .order('created_at', { ascending: false })
-                .limit(limit);
+            const { data, error } = await this._withTimeout(
+                supabase
+                    .from('activities')
+                    .select(`
+                        *,
+                        profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
+                        activity_skills (skill),
+                        activity_participants (user_id, status)
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(limit),
+                8000,
+                'activities.getLatestMany'
+            );
 
             if (error) throw error;
 
@@ -835,7 +905,11 @@ export class ActivityService {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER
             // Bypasses RLS issues where Volunteers couldn't update NPO activities.
-            const { data: actuallyUpdated, error: rpcError } = await supabase.rpc('update_expired_activities');
+            const { data: actuallyUpdated, error: rpcError } = await this._withTimeout(
+                supabase.rpc('update_expired_activities'),
+                8000,
+                'activities.refreshStates.rpc'
+            );
 
             if (rpcError) {
                 console.error("RPC Error updating activities:", rpcError);
@@ -846,11 +920,15 @@ export class ActivityService {
 
             if (updatedIds.length > 0) {
                 // NOTIFY enrolled volunteers
-                const { data: participants } = await supabase
-                    .from('activity_participants')
-                    .select('user_id, activity_id')
-                    .in('activity_id', updatedIds)
-                    .in('status', ['APPROVED', 'REGISTERED']);
+                const { data: participants } = await this._withTimeout(
+                    supabase
+                        .from('activity_participants')
+                        .select('user_id, activity_id')
+                        .in('activity_id', updatedIds)
+                        .in('status', ['APPROVED', 'REGISTERED']),
+                    8000,
+                    'activities.refreshStates.participants'
+                );
 
                 if (participants && participants.length > 0) {
                     const notifications = participants.map((p: any) => {
@@ -865,9 +943,11 @@ export class ActivityService {
                         };
                     });
 
-                    const { error: notifError } = await supabase
-                        .from('notifications')
-                        .insert(notifications);
+                    const { error: notifError } = await this._withTimeout(
+                        supabase.from('notifications').insert(notifications),
+                        8000,
+                        'activities.refreshStates.notifications'
+                    );
 
                     if (notifError) console.error("Error sending completion notifications:", notifError);
                 }

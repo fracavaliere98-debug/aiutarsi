@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, MapPin, Calendar, CheckCircle2, Building2 } from 'lucide-react-native';
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { useActivityDetailQuery } from "../../hooks/activities/queries";
 import { useEnrollInActivityMutation } from "../../hooks/activities/mutations";
 import { useApplyToNPOMutation } from "../../hooks/applications/mutations";
@@ -13,6 +14,7 @@ export default function ReviewApplication() {
     const router = useRouter();
     const { activityId, npoId, type } = useLocalSearchParams<{ activityId: string, npoId: string, type: "ACTIVITY" | "NPO" }>();
     const { user, users } = useAuth();
+    const { showToast } = useToast();
     const enrollInActivityMutation = useEnrollInActivityMutation(user?.id);
     const applyToNPOMutation = useApplyToNPOMutation(user);
 
@@ -39,13 +41,6 @@ export default function ReviewApplication() {
         setIsSubmitting(true);
         try {
             let success = false;
-            console.log("[DEBUG] ReviewApplication: handleConfirm start", {
-                type,
-                isActivity,
-                activityId,
-                npoId,
-                userId: user?.id,
-            });
 
             if (isActivity && activity) {
                 // IMMEDIATE Enrollment for OldActivity
@@ -53,10 +48,8 @@ export default function ReviewApplication() {
                 success = true;
             } else if (npoUser) {
                 // Apply to NPO
-                console.log("[DEBUG] ReviewApplication: applyToNPO start", { npoId: npoUser.id });
                 await applyToNPOMutation.mutateAsync({ npoId: npoUser.id, npoName: npoUser.npoName || "NPO", message: notes });
                 success = true;
-                console.log("[DEBUG] ReviewApplication: applyToNPO resolved", { success, npoId: npoUser.id });
             }
 
             if (success) {
@@ -69,12 +62,12 @@ export default function ReviewApplication() {
                     }
                 } as any);
             } else {
-                console.warn("[DEBUG] ReviewApplication: submission returned false", { type, isActivity, activityId, npoId });
-                alert("Errore durante l'invio. Potresti aver già inviato una candidatura.");
+                console.warn("[ReviewApplication] submission returned false", { type, isActivity, activityId, npoId });
+                showToast("error", "Errore durante l'invio. Potresti aver già inviato una candidatura.");
             }
         } catch (error) {
-            console.error("[DEBUG] ReviewApplication: handleConfirm failed", error);
-            alert("Si è verificato un errore tecnico.");
+            console.error("[ReviewApplication] handleConfirm failed", error);
+            showToast("error", "Si è verificato un errore tecnico.");
         } finally {
             setIsSubmitting(false);
         }
@@ -93,15 +86,6 @@ export default function ReviewApplication() {
             </View>
 
             <ScrollView className="flex-1 px-6 pt-6">
-                {/* Step Indicator */}
-                <View className="flex-row items-center justify-between mb-8">
-                    <Text className="text-accent font-bold">Passo 1 di 2</Text>
-                    <View className="flex-row gap-2">
-                        <View className="h-2 w-16 bg-accent rounded-full" />
-                        <View className="h-2 w-16 bg-gray-200 rounded-full" />
-                    </View>
-                </View>
-
                 {/* Summary Card */}
                 <View className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8">
                     <View className="flex-row items-center gap-4 mb-4">
@@ -166,7 +150,7 @@ export default function ReviewApplication() {
 
                 <View className="mb-8">
                     <Text className="text-primary font-bold mb-2 text-base">
-                        {isActivity ? "Note per l'Ente" : "Presentati (Opzionale)"}
+                        {isActivity ? "Note per l'Ente" : "Presentati"}
                         <Text className="text-gray-400 font-normal"> (Opzionale)</Text>
                     </Text>
                     <TextInput

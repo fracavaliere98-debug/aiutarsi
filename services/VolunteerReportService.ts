@@ -1,6 +1,7 @@
 import { AppActivity, AppUser, OldApplication, OldReview } from '../types';
 import { GamificationState } from '../hooks/gamification/types';
 import { getLevelName } from '../hooks/gamification/logic';
+import { withTimeout } from '../utils/withTimeout';
 
 export type VolunteerReportSummary = {
     totalXP: number;
@@ -129,10 +130,14 @@ export class VolunteerReportService {
         let followerRows = params.followerRows;
         if (!followerRows) {
             const { supabase } = await import('../utils/supabase');
-            const { data, error } = await supabase
-                .from('npo_followers')
-                .select('created_at')
-                .eq('follower_id', params.user.id);
+            const { data, error } = await withTimeout(
+                supabase
+                    .from('npo_followers')
+                    .select('created_at')
+                    .eq('follower_id', params.user.id),
+                'volunteerReport.followers',
+                8000
+            );
 
             if (error) {
                 console.error('[VolunteerReportService] follower rows error', error);

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Lock, Mail, Save } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
@@ -32,15 +32,15 @@ export default function VolunteerSecurityScreen() {
 
         if (wantsPasswordChange) {
             if (!currentPassword || !newPassword) {
-                Alert.alert("Errore", "Per cambiare la password compila tutti i campi.");
+                showToast("error", "Per cambiare la password compila tutti i campi.");
                 return;
             }
             if (newPassword !== confirmNewPassword) {
-                Alert.alert("Errore", "Le nuove password non coincidono.");
+                showToast("error", "Le nuove password non coincidono.");
                 return;
             }
             if (!isPasswordStrongEnough(newPassword)) {
-                Alert.alert("Errore", getPasswordRequirementsText());
+                showToast("error", getPasswordRequirementsText());
                 return;
             }
         }
@@ -49,7 +49,7 @@ export default function VolunteerSecurityScreen() {
         try {
             if (wantsEmailChange) {
                 if (!newEmail.includes("@")) {
-                    Alert.alert("Errore", "Inserisci un indirizzo email valido.");
+                    showToast("error", "Inserisci un indirizzo email valido.");
                     setIsSaving(false);
                     return;
                 }
@@ -72,7 +72,7 @@ export default function VolunteerSecurityScreen() {
                 router.back();
             }
         } catch (error: any) {
-            Alert.alert("Errore", error.message || "Errore durante l'aggiornamento.");
+            showToast("error", error.message || "Errore durante l'aggiornamento.");
         } finally {
             setIsSaving(false);
         }

@@ -3,6 +3,7 @@ import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { authService } from './AuthService';
 import { profileRest } from '../utils/profileRest';
 import { supabase } from '../utils/supabase';
+import { withTimeout } from '../utils/withTimeout';
 
 export class NPOService {
     private async _getAccessToken(): Promise<string> {
@@ -71,29 +72,17 @@ export class NPOService {
         };
     }
 
-    async getNPOProfile(npoId: string): Promise<AppUser | null> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select(`
-                *,
-                user_skills (skill),
-                user_interests (interest)
-            `)
-            .eq('id', npoId)
-            .eq('role', 'NPO')
-            .single();
-
-        if (error || !data) return null;
-        return this._mapProfileToUser(data);
-    }
-
     async followNPO(npoId: string, userId: string): Promise<void> {
-        const { error } = await supabase
-            .from('npo_followers')
-            .insert({
-                npo_id: npoId,
-                follower_id: userId
-            });
+        const { error } = await withTimeout(
+            supabase
+                .from('npo_followers')
+                .insert({
+                    npo_id: npoId,
+                    follower_id: userId
+                }),
+            'npo.follow',
+            8000
+        );
 
         if (error) {
             if (error.code === '23505') return; // Already following
@@ -102,37 +91,49 @@ export class NPOService {
     }
 
     async unfollowNPO(npoId: string, userId: string): Promise<void> {
-        const { error } = await supabase
-            .from('npo_followers')
-            .delete()
-            .eq('npo_id', npoId)
-            .eq('follower_id', userId);
+        const { error } = await withTimeout(
+            supabase
+                .from('npo_followers')
+                .delete()
+                .eq('npo_id', npoId)
+                .eq('follower_id', userId),
+            'npo.unfollow',
+            8000
+        );
 
         if (error) throw error;
     }
 
     async isFollowing(npoId: string, userId: string): Promise<boolean> {
-        const { data } = await supabase
-            .from('npo_followers')
-            .select('*')
-            .eq('npo_id', npoId)
-            .eq('follower_id', userId)
-            .maybeSingle();
+        const { data } = await withTimeout(
+            supabase
+                .from('npo_followers')
+                .select('*')
+                .eq('npo_id', npoId)
+                .eq('follower_id', userId)
+                .maybeSingle(),
+            'npo.isFollowing',
+            8000
+        );
 
         return !!data;
     }
 
     async getFollowers(npoId: string): Promise<AppUser[]> {
-        const { data, error } = await supabase
-            .from('npo_followers')
-            .select(`
-                follower:follower_id (
-                    *,
-                    user_skills (skill),
-                    user_interests (interest)
-                )
-            `)
-            .eq('npo_id', npoId);
+        const { data, error } = await withTimeout(
+            supabase
+                .from('npo_followers')
+                .select(`
+                    follower:follower_id (
+                        *,
+                        user_skills (skill),
+                        user_interests (interest)
+                    )
+                `)
+                .eq('npo_id', npoId),
+            'npo.getFollowers',
+            8000
+        );
 
         if (error) {
             console.error("Error fetching NPO followers:", error);

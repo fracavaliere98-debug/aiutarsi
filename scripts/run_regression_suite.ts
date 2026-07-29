@@ -30,6 +30,9 @@ const suite = [
   { label: "skills-taxonomy-contract", path: "scripts/test_skills_taxonomy_contract.ts" },
   { label: "activity-organizer-onboarding-contract", path: "scripts/test_activity_organizer_and_onboarding_contract.ts" },
   { label: "application-success-contract", path: "scripts/test_application_success_contract.ts" },
+  { label: "review-application-contract", path: "scripts/test_review_application_contract.ts" },
+  { label: "service-query-timeout-contract", path: "scripts/test_service_query_timeout_contract.ts" },
+  { label: "feedback-ui-convention-contract", path: "scripts/test_feedback_ui_convention_contract.ts" },
 ];
 
 for (const test of suite) {

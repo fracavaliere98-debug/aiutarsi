@@ -155,7 +155,7 @@ export default function OnboardingProfile() {
                 classification: "error_technical",
                 issueName: "onboarding_profile_submit_failed",
             });
-            alert("Errore salvataggio profilo: " + error.message);
+            showToast('error', "Errore salvataggio profilo: " + error.message);
         } finally {
             setIsUploading(false);
         }

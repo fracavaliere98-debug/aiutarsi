@@ -1,4 +1,5 @@
 import { AppActivity, OldApplication } from '../types';
+import { withTimeout } from '../utils/withTimeout';
 
 export type NPOReportSummary = {
     followerCount: number;
@@ -212,20 +213,28 @@ export class ReportService {
         if (!followerRows) {
             const { supabase } = await import('../utils/supabase');
             const supabaseAny = supabase as any;
-            const { data, error: followerError } = await supabase
-                .from('npo_followers')
-                .select('created_at, follower_id')
-                .eq('npo_id', params.npoId);
+            const { data, error: followerError } = await withTimeout(
+                supabase
+                    .from('npo_followers')
+                    .select('created_at, follower_id')
+                    .eq('npo_id', params.npoId),
+                'npoReport.followers',
+                8000
+            );
 
             if (followerError) {
                 console.error('[ReportService] follower rows error', followerError);
             }
             followerRows = data || [];
 
-            const { data: postData, error: postError } = await supabase
-                .from('community_posts')
-                .select('id, created_at')
-                .eq('author_id', params.npoId);
+            const { data: postData, error: postError } = await withTimeout(
+                supabase
+                    .from('community_posts')
+                    .select('id, created_at')
+                    .eq('author_id', params.npoId),
+                'npoReport.posts',
+                8000
+            );
 
             if (postError) {
                 console.error('[ReportService] post rows error', postError);
@@ -233,11 +242,15 @@ export class ReportService {
             postRows = postData || [];
 
             const monthStart = startOfMonth().slice(0, 10);
-            const { data: storyData, error: storyError } = await supabaseAny
-                .from('story_metrics_daily')
-                .select('metric_date, stories_count')
-                .eq('author_id', params.npoId)
-                .gte('metric_date', monthStart);
+            const { data: storyData, error: storyError } = await withTimeout<{ data: any[] | null; error: any }>(
+                supabaseAny
+                    .from('story_metrics_daily')
+                    .select('metric_date, stories_count')
+                    .eq('author_id', params.npoId)
+                    .gte('metric_date', monthStart),
+                'npoReport.storyMetrics',
+                8000
+            );
 
             if (storyError) {
                 console.error('[ReportService] story rows error', storyError);
@@ -246,10 +259,14 @@ export class ReportService {
 
             const postIds = (postRows || []).map((row) => row.id).filter(Boolean);
             if (postIds.length > 0) {
-                const { data: reactionData, error: reactionError } = await supabase
-                    .from('post_reactions')
-                    .select('user_id, created_at')
-                    .in('post_id', postIds);
+                const { data: reactionData, error: reactionError } = await withTimeout(
+                    supabase
+                        .from('post_reactions')
+                        .select('user_id, created_at')
+                        .in('post_id', postIds),
+                    'npoReport.reactions',
+                    8000
+                );
 
                 if (reactionError) {
                     console.error('[ReportService] reaction rows error', reactionError);

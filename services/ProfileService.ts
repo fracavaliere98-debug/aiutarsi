@@ -1,15 +1,20 @@
 import { supabase } from '../utils/supabase';
 import { authService } from './AuthService';
+import { withTimeout } from '../utils/withTimeout';
 
 export class ProfileService {
     /**
      * Request account deletion (sets deletion_requested_at to now)
      */
     async requestAccountDeletion(userId: string): Promise<void> {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ deletion_requested_at: new Date().toISOString() })
-            .eq('id', userId);
+        const { error } = await withTimeout(
+            supabase
+                .from('profiles')
+                .update({ deletion_requested_at: new Date().toISOString() })
+                .eq('id', userId),
+            'profile.requestAccountDeletion',
+            8000
+        );
 
         if (error) {
             console.error('Error requesting account deletion:', error);
@@ -24,10 +29,14 @@ export class ProfileService {
      * Cancel account deletion (sets deletion_requested_at to null)
      */
     async cancelAccountDeletion(userId: string): Promise<void> {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ deletion_requested_at: null })
-            .eq('id', userId);
+        const { error } = await withTimeout(
+            supabase
+                .from('profiles')
+                .update({ deletion_requested_at: null })
+                .eq('id', userId),
+            'profile.cancelAccountDeletion',
+            8000
+        );
 
         if (error) {
             console.error('Error cancelling account deletion:', error);

@@ -34,7 +34,7 @@ export default function EditProfileScreen({ onClose }: { onClose?: () => void })
             settingsLabel: "la galleria",
         });
         if (!granted) {
-            alert('Permesso galleria necessario.');
+            showToast('error', 'Permesso galleria necessario.');
             return;
         }
 
