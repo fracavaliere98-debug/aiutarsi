@@ -47,7 +47,10 @@ export class NPOService {
             publicEmail: profile.public_email,
             public_email: profile.public_email,
             profile_completed: profile.profile_completed || false,
-            followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || []
+            followedNPOs: profile.followed_entities?.map((f: any) => f.npo_id) || [],
+            lastSeenAt: profile.last_seen_at,
+            impactPoints: profile.impact_points || 0,
+            badges: profile.badges || [],
         } as AppUser;
     }
 
@@ -204,6 +207,29 @@ export class NPOService {
             accessToken
         );
         eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
+    }
+
+    /**
+     * Invito NPO → volontario. Testo e destinatario sono validati lato server (RPC
+     * send_npo_invite): il client sceglie solo il tipo di invito.
+     * Ritorna true se inviato, false se già invitato nelle ultime 24h o se c'è un blocco.
+     */
+    async sendInvite(
+        volunteerId: string,
+        kind: 'OPEN_ACTIVITIES' | 'APPLY' | 'ACTIVITY',
+        activityId?: string
+    ): Promise<boolean> {
+        const { data, error } = await withTimeout(
+            supabase.rpc('send_npo_invite', {
+                p_volunteer_id: volunteerId,
+                p_kind: kind,
+                p_activity_id: activityId ?? null,
+            }),
+            'npo.sendInvite',
+            8000
+        );
+        if (error) throw error;
+        return data === true;
     }
 }
 

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -21,13 +22,12 @@ assert(!/deleteActivity/.test(service + hooks + editScreen), "deleteActivity non
 assert(!/\.from\('activities'\)\s*\.delete\(/.test(service), "Nessun DELETE fisico su activities dal service");
 assert(!/Elimina/.test(editScreen + form), "Nessuna azione 'Elimina' nel flusso attività: solo 'Annulla attività'");
 
-// 2. cancelActivity: soft cancel condizionato allo stato + notifica una sola volta agli iscritti.
+// 2. cancelActivity: soft cancel condizionato allo stato (la notifica agli iscritti è generata dal trigger DB, vedi punto 7).
 const cancelBody = service.slice(service.indexOf("async cancelActivity("), service.indexOf("async joinActivity("));
 assert(/status: 'CANCELLATA'/.test(cancelBody), "cancelActivity deve impostare status CANCELLATA");
 assert(/\.in\('status', \['APERTA', 'IN_CORSO'\]\)/.test(cancelBody), "L'update deve essere condizionato a APERTA/IN_CORSO (idempotenza, niente doppie notifiche)");
 assert(/ACTIVITY_NOT_CANCELLABLE/.test(cancelBody), "Se nessuna riga è aggiornata deve fallire esplicitamente, non notificare");
-assert(/type: 'ACTIVITY_UPDATE'/.test(cancelBody) && /related_activity_id: id/.test(cancelBody), "Deve notificare gli iscritti con ACTIVITY_UPDATE mirato all'attività");
-assert(/\['APPROVED', 'REGISTERED'\]/.test(cancelBody), "Destinatari: solo iscritti attivi (APPROVED/REGISTERED)");
+assert(!/from\('notifications'\)/.test(service), "ActivityService non deve inserire notifiche dal client (generate dal trigger DB)");
 
 // 3. UI ente: azione visibile solo su attività annullabili, storico 'Annullate', edit bloccato.
 assert(/isCancellable/.test(editScreen) && /onCancelActivity=\{isCancellable/.test(editScreen), "L'azione di annullo deve comparire solo se APERTA/IN_CORSO");
@@ -62,5 +62,20 @@ assert(/ACTIVITY_CANCELLED/.test(reviewApplication), "review-application deve ge
 const mappers = readRepoFile("hooks", "notifications", "mappers.ts");
 const resolver = readRepoFile("hooks", "notifications", "routeResolver.ts");
 assert(/"VOLUNTEER_WITHDRAWN"/.test(mappers) && /case "VOLUNTEER_WITHDRAWN"/.test(resolver), "VOLUNTEER_WITHDRAWN deve essere un tipo noto con routing esplicito");
+
+// 7) Notifiche generate lato server: nessun INSERT client, policy INSERT rimossa.
+const ns = migrations.find((f) => f.endsWith("_notifications_server_side.sql"));
+assert(ns, "Migration notifications_server_side mancante");
+const nsSql = readRepoFile("supabase", "migrations", ns);
+assert(/drop policy[^;]*"System\/Trigger insert"/i.test(nsSql), "Deve rimuovere la policy INSERT permissiva su notifications");
+assert(/revoke insert on public\.notifications from anon, authenticated/i.test(nsSql), "Deve revocare INSERT su notifications a anon/authenticated");
+assert(/create or replace function public\.send_npo_invite\(/i.test(nsSql) && /create or replace function public\.admin_send_notification\(/i.test(nsSql), "RPC send_npo_invite e admin_send_notification");
+assert(/notify_participants_on_activity_change/.test(nsSql) && /notify_on_application_change/.test(nsSql), "Trigger per attività e candidature");
+const clientFiles = ["services", "hooks", "app", "components", "context", "utils"];
+
+const offenders = execSync(`grep -rlE "from\\(['\\"]notifications['\\"]\\)\\s*\\.insert" ${clientFiles.join(" ")} || true`, { cwd: process.cwd() }).toString().trim();
+assert(!offenders, `INSERT client su notifications non ammesso: ${offenders}`);
+assert(/send_npo_invite/.test(readRepoFile("services", "NPOService.ts")), "NPOService.sendInvite deve usare la RPC");
+assert(/admin_send_notification/.test(readRepoFile("services", "AdminNotificationService.ts")), "AdminNotificationService deve usare la RPC");
 
 console.log("PASS activity cancel contract: annullo soft, storico visibile, nessuna eliminazione fisica");

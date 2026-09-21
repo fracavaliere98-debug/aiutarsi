@@ -12,6 +12,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.aiutarsi.app",
       "buildNumber": "1",
+      "associatedDomains": ["applinks:aiutarsi.app"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "AiutarSì ha bisogno di accedere alla tua fotocamera per permetterti di scattare e caricare una foto profilo.",
@@ -36,6 +37,19 @@
       },
       "package": "com.aiutarsi.app",
       "versionCode": 2,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "aiutarsi.app", "pathPrefix": "/activity" },
+            { "scheme": "https", "host": "aiutarsi.app", "pathPrefix": "/npo-profile" },
+            { "scheme": "https", "host": "aiutarsi.app", "pathPrefix": "/volunteer-profile" },
+            { "scheme": "https", "host": "aiutarsi.app", "pathPrefix": "/referral" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [

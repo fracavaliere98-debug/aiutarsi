@@ -54,11 +54,20 @@ export function resolveNotificationRoute(
     case "VOLUNTEER_ENROLLED":
     case "VOLUNTEER_WITHDRAWN":
     case "SKILL_MATCH":
-    case "ACTIVITY_UPDATE":
     case "ACTIVITY_REMINDER":
     case "REVIEW_REMINDER":
     case "FOLLOWED_NPO_ACTIVITY":
       return notif.activityId ? `/activity/${notif.activityId}` : getCommunityRoute(role);
+    case "ACTIVITY_UPDATE":
+      // Invito NPO->volontario (generico o a un'attività specifica, vedi
+      // app/(npo)/(tabs)/volunteers.tsx handleInviteFollower/handleInviteToActivity).
+      // Con activityId (invito mirato) va sulla scheda attività; senza (invito generico
+      // "attività aperte") va sul profilo dell'ente per mostrare tutte le prossime
+      // attività, invece della community feed generica: sappiamo già quale ente ha
+      // invitato, non serve far ricercare l'utente.
+      if (notif.activityId) return `/activity/${notif.activityId}`;
+      if (notif.npoId) return `/npo-profile/${notif.npoId}`;
+      return getCommunityRoute(role);
     case "APPLICATION_APPROVED":
     case "APPLICATION_REJECTED":
       if (notif.activityId) return `/activity/${notif.activityId}`;

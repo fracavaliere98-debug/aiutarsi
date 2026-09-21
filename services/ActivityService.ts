@@ -452,37 +452,8 @@ export class ActivityService {
 
         if (error) throw error;
 
-        // --- NOTIFICATIONS: Notify enrolled volunteers ---
-        // 1. Fetch participants
-        const { data: participants, error: partError } = await this._withTimeout(
-            supabase
-                .from('activity_participants')
-                .select('user_id')
-                .eq('activity_id', activity.id)
-                .in('status', ['APPROVED', 'REGISTERED']),
-            8000,
-            'activities.update.participants'
-        );
-
-        if (!partError && participants && participants.length > 0) {
-            const notifications = participants.map((p: any) => ({
-                user_id: p.user_id,
-                type: 'ACTIVITY_UPDATE',
-                title: 'Attività Aggiornata',
-                message: `L'attività "${activity.title}" a cui sei iscritto ha subito delle modifiche. Controlla i dettagli.`,
-                related_activity_id: activity.id,
-                read: false
-            }));
-
-            const { error: notifError } = await this._withTimeout(
-                supabase.from('notifications').insert(notifications),
-                8000,
-                'activities.update.notifications'
-            );
-
-            if (notifError) console.error("Error sending update notifications:", notifError);
-        }
-
+        // Le notifiche agli iscritti (modifica sostanziale / annullo / completamento) nascono dal
+        // trigger DB notify_participants_on_activity_change: nessun insert lato client.
 
         // --- SKILLS UPDATE (Diff Logic) ---
         if (activity.skills) {
@@ -544,8 +515,8 @@ export class ActivityService {
     /**
      * Annulla un'attività (soft, irreversibile lato app): resta nello storico con status
      * CANCELLATA e badge "Cancellata". Non esiste alcun percorso di cancellazione fisica.
-     * Notifica una sola volta i volontari iscritti: l'update è condizionato allo stato
-     * corrente, quindi un secondo tap / retry non rimanda le notifiche.
+     * L'update è condizionato allo stato corrente (un secondo tap / retry non ha effetto);
+     * la notifica agli iscritti è generata dal trigger DB, non dal client.
      */
     async cancelActivity(id: string): Promise<void> {
         const { data: updatedRows, error } = await this._withTimeout(
@@ -554,7 +525,7 @@ export class ActivityService {
                 .update({ status: 'CANCELLATA' })
                 .eq('id', id)
                 .in('status', ['APERTA', 'IN_CORSO'])
-                .select('id, title'),
+                .select('id'),
             8000,
             'activities.cancel'
         );
@@ -566,37 +537,8 @@ export class ActivityService {
             throw new Error('ACTIVITY_NOT_CANCELLABLE');
         }
 
-        const title = updatedRows[0]?.title || 'Attività';
-
-        const { data: participants, error: partError } = await this._withTimeout(
-            supabase
-                .from('activity_participants')
-                .select('user_id')
-                .eq('activity_id', id)
-                .in('status', ['APPROVED', 'REGISTERED']),
-            8000,
-            'activities.cancel.participants'
-        );
-
-        if (!partError && participants && participants.length > 0) {
-            const notifications = participants.map((p: any) => ({
-                user_id: p.user_id,
-                type: 'ACTIVITY_UPDATE',
-                title: 'Attività annullata',
-                message: `L'attività "${title}" a cui eri iscritto è stata annullata dall'ente.`,
-                related_activity_id: id,
-                read: false
-            }));
-
-            const { error: notifError } = await this._withTimeout(
-                supabase.from('notifications').insert(notifications),
-                8000,
-                'activities.cancel.notifications'
-            );
-
-            if (notifError) console.error("Error sending cancellation notifications:", notifError);
-        }
-
+        // Gli iscritti vengono avvisati dal trigger DB notify_participants_on_activity_change
+        // (transizione APERTA/IN_CORSO → CANCELLATA), una sola volta per annullo.
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
     }
 
@@ -949,7 +891,7 @@ export class ActivityService {
         try {
             // Call the RPC defined via migration to handle updates with SECURITY DEFINER
             // Bypasses RLS issues where Volunteers couldn't update NPO activities.
-            const { data: actuallyUpdated, error: rpcError } = await this._withTimeout(
+            const { error: rpcError } = await this._withTimeout(
                 supabase.rpc('update_expired_activities'),
                 8000,
                 'activities.refreshStates.rpc'
@@ -959,43 +901,9 @@ export class ActivityService {
                 console.error("RPC Error updating activities:", rpcError);
             }
 
-            const toComplete = actuallyUpdated || [];
-            const updatedIds = toComplete.map((r: any) => r.updated_id) || [];
-
-            if (updatedIds.length > 0) {
-                // NOTIFY enrolled volunteers
-                const { data: participants } = await this._withTimeout(
-                    supabase
-                        .from('activity_participants')
-                        .select('user_id, activity_id')
-                        .in('activity_id', updatedIds)
-                        .in('status', ['APPROVED', 'REGISTERED']),
-                    8000,
-                    'activities.refreshStates.participants'
-                );
-
-                if (participants && participants.length > 0) {
-                    const notifications = participants.map((p: any) => {
-                        const act = toComplete.find((a: any) => a.id === p.activity_id);
-                        return {
-                            user_id: p.user_id,
-                            type: 'ACTIVITY_COMPLETED',
-                            title: 'Missione Compiuta! 🎉',
-                            message: `L'attività "${act?.title || 'Attività'}" è terminata. Grazie per il tuo contributo! Controlla il tuo profilo per i punti XP.`,
-                            related_activity_id: p.activity_id,
-                            read: false
-                        };
-                    });
-
-                    const { error: notifError } = await this._withTimeout(
-                        supabase.from('notifications').insert(notifications),
-                        8000,
-                        'activities.refreshStates.notifications'
-                    );
-
-                    if (notifError) console.error("Error sending completion notifications:", notifError);
-                }
-            }
+            // Il completamento notifica gli iscritti dal trigger DB
+            // notify_participants_on_activity_change (transizione → COMPLETATA), anche quando
+            // lo stato è aggiornato da cron o da un altro client: niente duplicati lato client.
 
             // 3. Emit sync
             eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);

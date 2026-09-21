@@ -1,36 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../utils/supabase";
 import { notificationKeys } from "./keys";
-import { AppNotification } from "./types";
 
 async function invalidateNotificationQueries(queryClient: ReturnType<typeof useQueryClient>, userId: string) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: notificationKeys.list(userId) }),
     queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount(userId) }),
   ]);
-}
-
-export function useAddNotificationMutation() {
-  return useMutation({
-    mutationFn: async (notification: Omit<AppNotification, "id" | "timestamp" | "read">) => {
-      const payload = {
-        user_id: notification.userId,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        related_activity_id: notification.activityId,
-        related_application_id: notification.applicationId,
-        related_npo_id: notification.npoId,
-        related_conversation_id: notification.conversationId,
-        match_score: notification.matchScore,
-        payload: notification.payload ?? {},
-        read: false,
-      };
-
-      const { error } = await supabase.from("notifications").insert(payload);
-      if (error) throw error;
-    },
-  });
 }
 
 export function useMarkNotificationReadMutation(userId?: string) {

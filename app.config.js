@@ -9,10 +9,13 @@ module.exports = ({ config }) => {
     scheme: isPreview ? previewScheme : config.scheme,
     ios: {
       ...config.ios,
+      // La variante preview ha un altro bundle id: non deve rivendicare i link https di aiutarsi.app.
+      associatedDomains: isPreview ? undefined : config.ios?.associatedDomains,
       bundleIdentifier: isPreview ? "com.aiutarsi.app.preview" : config.ios?.bundleIdentifier,
     },
     android: {
       ...config.android,
+      intentFilters: isPreview ? undefined : config.android?.intentFilters,
       package: isPreview ? "com.aiutarsi.app.preview" : config.android?.package,
     },
     extra: {

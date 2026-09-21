@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { notificationKeys } from "./keys";
 import {
-  useAddNotificationMutation,
   useClearNotificationsMutation,
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
@@ -39,7 +38,6 @@ export function useNotificationsDomain() {
   const { user, enabled } = useNotificationsRuntimeEnabled();
   const notificationsQuery = useNotificationsQuery(user?.id, enabled);
   const unreadCountQuery = useNotificationsUnreadCountQuery(user?.id, enabled);
-  const addNotificationMutation = useAddNotificationMutation();
   const markNotificationReadMutation = useMarkNotificationReadMutation(user?.id);
   const markAllNotificationsReadMutation = useMarkAllNotificationsReadMutation(user?.id);
   const clearNotificationsMutation = useClearNotificationsMutation(user?.id);
@@ -82,12 +80,6 @@ export function useNotificationsDomain() {
       notifications: notificationsQuery.data ?? [],
       unreadCount: unreadCountQuery.data ?? 0,
       getUnreadCount: () => unreadCountQuery.data ?? 0,
-      addNotification: async (notification: Omit<AppNotification, "id" | "timestamp" | "read">) => {
-        await addNotificationMutation.mutateAsync(notification);
-        if (notification.userId && notification.userId === user?.id) {
-          await refreshNotifications();
-        }
-      },
       markAsRead,
       markAllAsRead: async () => {
         await markAllNotificationsReadMutation.mutateAsync();
@@ -101,7 +93,6 @@ export function useNotificationsDomain() {
     [
       notificationsQuery.data,
       unreadCountQuery.data,
-      addNotificationMutation,
       user?.id,
       refreshNotifications,
       markAsRead,

@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppUser, OldApplication } from "../../types";
 import { npoService } from "../../services/NPOService";
 import { applicationKeys } from "./keys";
-import { useAddNotificationMutation } from "../notifications/mutations";
 
 async function invalidateApplicationQueries(
     queryClient: ReturnType<typeof useQueryClient>,
@@ -18,7 +17,6 @@ async function invalidateApplicationQueries(
 
 export function useApplyToNPOMutation(user?: AppUser | null) {
     const queryClient = useQueryClient();
-    const addNotificationMutation = useAddNotificationMutation();
 
     return useMutation({
         mutationFn: async ({ npoId, npoName, message }: { npoId: string; npoName: string; message: string }) => {
@@ -26,6 +24,8 @@ export function useApplyToNPOMutation(user?: AppUser | null) {
                 throw new Error("Unauthorized");
             }
 
+            // Le notifiche (candidatura ricevuta / approvata / rifiutata) nascono dai trigger DB
+            // (notify_on_application_change): il client non inserisce più su notifications.
             const application = await npoService.submitApplication({
                 npoId,
                 npoName,
@@ -38,14 +38,6 @@ export function useApplyToNPOMutation(user?: AppUser | null) {
                 appliedDate: new Date().toISOString(),
             });
 
-            await addNotificationMutation.mutateAsync({
-                userId: npoId,
-                type: "APPLICATION_RECEIVED",
-                title: "Nuova Candidatura! 📋",
-                message: `${user.name} si è candidato come volontario`,
-                applicationId: application.id,
-                npoId,
-            });
 
             return application;
         },
@@ -57,7 +49,6 @@ export function useApplyToNPOMutation(user?: AppUser | null) {
 
 export function useApproveApplicationMutation(user?: AppUser | null) {
     const queryClient = useQueryClient();
-    const addNotificationMutation = useAddNotificationMutation();
 
     return useMutation({
         mutationFn: async (application: OldApplication) => {
@@ -66,14 +57,6 @@ export function useApproveApplicationMutation(user?: AppUser | null) {
             }
 
             await npoService.updateApplicationStatus(application.id, "APPROVED");
-            await addNotificationMutation.mutateAsync({
-                userId: application.volunteerId,
-                type: "APPLICATION_APPROVED",
-                title: "Candidatura Approvata! 🎉",
-                message: `${application.npoName} ha approvato la tua candidatura`,
-                applicationId: application.id,
-                npoId: application.npoId,
-            });
 
             return true;
         },
@@ -85,7 +68,6 @@ export function useApproveApplicationMutation(user?: AppUser | null) {
 
 export function useRejectApplicationMutation(user?: AppUser | null) {
     const queryClient = useQueryClient();
-    const addNotificationMutation = useAddNotificationMutation();
 
     return useMutation({
         mutationFn: async (application: OldApplication) => {
@@ -94,14 +76,6 @@ export function useRejectApplicationMutation(user?: AppUser | null) {
             }
 
             await npoService.updateApplicationStatus(application.id, "REJECTED");
-            await addNotificationMutation.mutateAsync({
-                userId: application.volunteerId,
-                type: "APPLICATION_REJECTED",
-                title: "Candidatura Rifiutata",
-                message: `${application.npoName} ha rifiutato la tua candidatura`,
-                applicationId: application.id,
-                npoId: application.npoId,
-            });
 
             return true;
         },

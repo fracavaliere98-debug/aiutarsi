@@ -9,7 +9,7 @@ import {
   MapPin, Globe, Mail, Info, ExternalLink, Phone
 } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useNotificationsDomain } from '../../../hooks/notifications/useNotificationsDomain';
+import { adminNotificationService } from '../../../services/AdminNotificationService';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -28,7 +28,6 @@ const formatDate = (dateString: string, includeYear = false) => {
 export default function AdminVerificationDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
-  const { addNotification } = useNotificationsDomain();
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -118,15 +117,18 @@ export default function AdminVerificationDetail() {
       // 3. Notify user
       const rejectionReasonSuffix = cleanedNotes ? ` Motivo: ${cleanedNotes}` : '';
 
-      if (addNotification) {
-        addNotification({
-          userId: request.user_id,
-          type: action === 'approved' ? 'SUCCESS' : 'INFO',
-          title: action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
-          message: action === 'approved' 
+      // L'esito della verifica è già registrato: un errore di notifica non deve far fallire l'azione.
+      try {
+        await adminNotificationService.notifyUser(
+          request.user_id,
+          action === 'approved' ? 'SUCCESS' : 'INFO',
+          action === 'approved' ? 'Profilo Verificato! 🎉' : 'Richiesta di Verifica Respinta',
+          action === 'approved'
             ? `Congratulazioni! ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'Il tuo ente'} ha ottenuto il Bollino Viola.`
             : `La tua richiesta di verifica per ${request.npo_details?.npo_name || request.profiles?.npo_name || request.profiles?.full_name || 'il tuo ente'} non è stata approvata.${rejectionReasonSuffix}`
-        });
+        );
+      } catch (notifyError) {
+        console.error('Admin notification failed', notifyError);
       }
 
       Alert.alert('Successo', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);

@@ -94,7 +94,7 @@ Quando si formalizza una nuova regola in questo documento, il passo successivo n
 ## 6b. Attività: si annullano, non si eliminano (deciso 21/09/2026)
 
 - Un'attività non viene mai eliminata fisicamente: l'ente la **annulla** (`ActivityService.cancelActivity` → `status = 'CANCELLATA'`), resta nello storico (tab "Annullate" dell'ente) con la scheda visibile e il badge "Cancellata".
-- L'annullo notifica una sola volta i volontari iscritti (`ACTIVITY_UPDATE` con `activityId`); è ammesso solo da `APERTA`/`IN_CORSO`, e un'attività annullata non è più modificabile né riattivabile dall'app.
+- L'annullo notifica una sola volta i volontari iscritti (`ACTIVITY_UPDATE` con `activityId`, generata dal trigger `notify_participants_on_activity_change`, non dal client); è ammesso solo da `APERTA`/`IN_CORSO`, e un'attività annullata non è più modificabile né riattivabile dall'app.
 - Lato DB, dopo la migration `20260921120000_activities_no_hard_delete.sql`, `activities` non ha policy DELETE (INSERT/UPDATE espliciti per l'ente proprietario). Il cascade da cancellazione account passa dal service role e non è toccato.
 - Lato DB (migration `20260921130000_participation_guard_and_npo_notifications.sql`): il trigger `block_join_cancelled_activity` rifiuta con `ACTIVITY_CANCELLED` ogni iscrizione (nuova o riattivata, anche via upsert) a un'attività `CANCELLATA`; la UI mostra un messaggio dedicato in `review-application.tsx`.
 - Iscrizione/ritiro di un volontario → notifica all'ente proprietario, generata dal trigger `notify_npo_on_participation_change` (non dal client): tipi `VOLUNTEER_ENROLLED` / `VOLUNTEER_WITHDRAWN`, solo per azioni del volontario stesso su attività `APERTA`/`IN_CORSO`, con dedup di 10 minuti per (volontario, attività, tipo).
@@ -102,7 +102,7 @@ Quando si formalizza una nuova regola in questo documento, il passo successivo n
 
 ## 7. Violazioni note da correggere (stato: 24/07/2026)
 
-- **Verificato 21/09/2026 su staging**: la policy `System/Trigger insert` su `notifications` è `WITH CHECK (true)` per il ruolo `authenticated`, quindi qualunque utente autenticato può inserire notifiche per qualunque altro utente (spam/spoofing). Il client inserisce ancora da sé le notifiche `APPLICATION_*`, `ACTIVITY_UPDATE`, `ACTIVITY_COMPLETED`, inviti: stringere la policy richiede prima di spostarle in trigger/RPC. Non ancora corretto.
+- ~~Spoofing notifiche~~ **Corretto 21/09/2026** (migration `20260921140000_notifications_server_side.sql`, staging + prod): il client non inserisce più in `notifications` (INSERT revocato ad `anon`/`authenticated`, policy `System/Trigger insert` rimossa). Le notifiche nascono da trigger (`notify_on_application_change`, `notify_participants_on_activity_change`) o dalle RPC `send_npo_invite` (inviti NPO→volontario, con verifica di ruolo/dedup) e `admin_send_notification` (solo ADMIN; service `AdminNotificationService`). Regola permanente: nuove notifiche = trigger/RPC/edge function, mai `.from('notifications').insert` dal client (coperto da `test_activity_cancel_contract.ts`).
 
 - `app/(npo)/settings/privacy.tsx`: fetch/update `profiles` diretti, bypassa Sezione 2 e Sezione 3 — non ancora corretto.
 - `app/(npo)/settings/security.tsx`: toggle "Autenticazione a due fattori" senza alcuna persistenza reale (fuori scope di queste linee guida, ma segnalato: è un problema di fiducia utente, non di data access).

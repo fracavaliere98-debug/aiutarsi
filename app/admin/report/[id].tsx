@@ -7,7 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { 
   ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
 } from 'lucide-react-native';
-import { useNotificationsDomain } from '../../../hooks/notifications/useNotificationsDomain';
+import { adminNotificationService } from '../../../services/AdminNotificationService';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -33,7 +33,6 @@ interface AuditLog {
 export default function AdminReportDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
-  const { addNotification } = useNotificationsDomain();
   const [report, setReport] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,12 +115,16 @@ export default function AdminReportDetail() {
 
       // Invia notifica al segnalatore (reporter)
       if (report?.reporter_id) {
-        addNotification({
-          userId: report.reporter_id,
-          type: 'SUCCESS',
-          title: 'Aggiornamento Segnalazione',
-          message: 'Abbiamo gestito la tua segnalazione.'
-        });
+        try {
+          await adminNotificationService.notifyUser(
+            report.reporter_id,
+            'SUCCESS',
+            'Aggiornamento Segnalazione',
+            'Abbiamo gestito la tua segnalazione.'
+          );
+        } catch (notifyError) {
+          console.error('Admin notification failed', notifyError);
+        }
       }
 
       router.back();

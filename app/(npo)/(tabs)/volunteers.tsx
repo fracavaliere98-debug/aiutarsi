@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -9,32 +9,37 @@ import { useState, useMemo, useEffect } from "react";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 
-import { VolunteerCard } from "../../../components/VolunteerCard";
+import { CandidacyCard } from "../../../components/npo/CandidacyCard";
+import { VolunteerRelationCard } from "../../../components/npo/VolunteerRelationCard";
+import { InviteToActivityModal } from "../../../components/npo/InviteToActivityModal";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { SectionHeader, SegmentedControl, type SegmentedControlItem } from "../../../components/ui";
-import { useNotificationsDomain } from "../../../hooks/notifications/useNotificationsDomain";
 import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
+import { useSendNpoInviteMutation } from "../../../hooks/npo/mutations";
 import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
+import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
+import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { useNPOApplications } from "../../../hooks/applications/selectors";
 import { colors, palette } from "../../../theme";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
 
 export default function VolunteersScreen() {
-    const { user, getNPOFollowers, getUserById } = useAuth();
+    const { user, getUserById } = useAuth();
     const npoApplications = useNPOApplications(user, user?.id);
     const approveApplicationMutation = useApproveApplicationMutation(user);
     const rejectApplicationMutation = useRejectApplicationMutation(user);
     const { showToast } = useToast();
-    const { addNotification } = useNotificationsDomain();
+    const sendInviteMutation = useSendNpoInviteMutation();
     const params = useLocalSearchParams();
     const router = useRouter();
     const { data: activities = [], isError: activitiesError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
     const { data: activityApplications = [], refetch: refetchActivityApplications } = useActivityApplicationsQuery(user?.id, !!user && user.role === "NPO");
     const approveActivityApplicationMutation = useApproveActivityApplicationMutation();
     const rejectActivityApplicationMutation = useRejectActivityApplicationMutation();
+    const startPrivateConversationMutation = useStartPrivateConversationMutation(user?.id);
 
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -44,8 +49,16 @@ export default function VolunteersScreen() {
         return "CANDIDATURE";
     });
 
-    // Track when a volunteer was last invited { [volunteerId]: 'YYYY-MM-DD' }
+    // Track when a volunteer was last invited { [chiave]: 'YYYY-MM-DD' }. Chiave per coppia
+    // volontario+attività (non solo volontario): un invito mirato a un'attività urgente non
+    // deve essere bloccato da un invito generico (o viceversa) mandato allo stesso volontario
+    // in precedenza nella stessa giornata — sono intenti diversi, non vanno nello stesso bucket.
     const [invitedVolunteers, setInvitedVolunteers] = useState<Record<string, string>>({});
+    const inviteKey = (volunteerId: string, activityId?: string) => `${volunteerId}:${activityId || 'generic'}`;
+
+    // Target del modal "Invita ad attività" (generico vs attività specifica), aperto dal
+    // tab Volontari (STORICO). null = modal chiuso.
+    const [inviteActivityTarget, setInviteActivityTarget] = useState<{ id: string; name: string } | null>(null);
 
     // Update tab if params change (e.g. navigation from dashboard)
     useEffect(() => {
@@ -97,16 +110,23 @@ export default function VolunteersScreen() {
             return dateB.getTime() - dateA.getTime();
         });
 
-    const followers = getNPOFollowers(user?.id || "");
+    const { data: followers = [] } = useNPOFollowersQuery(user?.id);
+
+    // Attività dietro l'insight "Salvataggio Last Minute" (hooks/useNPOInsights.ts), se la
+    // schermata è stata aperta da lì con ?activityMatch=<id>. Esposta separatamente (non solo
+    // dentro matchedFollowers) perché serve anche per mandare un invito MIRATO a quell'attività,
+    // non generico — è l'intero scopo per cui l'NPO è arrivata su questa schermata.
+    const smartMatchActivity = useMemo(() => {
+        if (!params.activityMatch) return null;
+        return activities.find(a => a.id === params.activityMatch) || null;
+    }, [activities, params.activityMatch]);
 
     // Smart Match Logic
     const matchedFollowers = useMemo(() => {
-        if (!params.activityMatch) return [];
-        const activity = activities.find(a => a.id === params.activityMatch);
-        if (!activity) return [];
+        if (!smartMatchActivity) return [];
 
         return followers.map((f: any) => {
-            const matchingSkills = f.skills.filter((s: string) => activity.skills.includes(s));
+            const matchingSkills = f.skills.filter((s: string) => smartMatchActivity.skills.includes(s));
             return {
                 ...f,
                 matchScore: matchingSkills.length,
@@ -116,7 +136,15 @@ export default function VolunteersScreen() {
             .filter((f: any) => f.matchScore > 0)
             .sort((a: any, b: any) => b.matchScore - a.matchScore)
             .slice(0, 5);
-    }, [followers, params.activityMatch, activities]);
+    }, [followers, smartMatchActivity]);
+
+    // Prossime attività aperte di questa NPO, offerte come scelta nel modal "Invita ad
+    // attività" (stesso concetto di "Prossime Attività" mostrato in app/npo-profile/[id].tsx).
+    const upcomingOpenActivities = useMemo(() => {
+        return activities
+            .filter(a => a.status === "APERTA")
+            .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    }, [activities]);
 
     // Global filtering based on search query
     const searchFilter = (item: any) => {
@@ -161,6 +189,23 @@ export default function VolunteersScreen() {
         }
     };
 
+    const handleMessageVolunteer = async (volunteerId: string, volunteerName: string, volunteerAvatar?: string) => {
+        try {
+            const convId = await startPrivateConversationMutation.mutateAsync(volunteerId);
+            router.push({
+                pathname: `/messages/${convId}` as any,
+                params: {
+                    targetUserId: volunteerId,
+                    targetName: volunteerName || 'Volontario',
+                    targetRole: 'VOLUNTEER',
+                    targetAvatar: volunteerAvatar || '',
+                }
+            } as any);
+        } catch (error) {
+            console.error("Error starting chat with volunteer:", error);
+        }
+    };
+
     const displayPending = pendingApplications.filter(searchFilter);
     const displayApproved = approvedVolunteers.filter(searchFilter);
     const displayFollowers = followers.filter(searchFilter);
@@ -188,29 +233,50 @@ export default function VolunteersScreen() {
         },
     ]), [approvedVolunteers.length, followers.length, pendingApplications.length]);
 
-    const handleInviteFollower = (volunteerId: string) => {
+    // Invii NPO → volontario: passano dalla RPC server-side send_npo_invite (titolo/testo e
+    // destinatario validati dal DB; dedup 24h e blocchi applicati lato server). Il guard
+    // locale sotto serve solo a evitare una chiamata inutile nella stessa sessione.
+    const sendInvite = async (
+        kind: "OPEN_ACTIVITIES" | "APPLY" | "ACTIVITY",
+        volunteerId: string,
+        options: { activityId?: string; alreadySentMessage: string }
+    ) => {
         const today = new Date().toISOString().split('T')[0];
+        const key = inviteKey(volunteerId, options.activityId);
 
-        if (invitedVolunteers[volunteerId] === today) {
-            showToast("error", "Hai già invitato questo volontario oggi.");
+        if (invitedVolunteers[key] === today) {
+            showToast("error", options.alreadySentMessage);
             return;
         }
 
-        // Simula invio invito
-        addNotification({
-            type: "ACTIVITY_UPDATE",
-            title: "Invito Attività 🤝",
-            message: `${user?.npoName || 'Una NPO'} ti invita a partecipare alle proprie attività aperte!`,
-            userId: volunteerId
-        });
-
-        setInvitedVolunteers(prev => ({
-            ...prev,
-            [volunteerId]: today
-        }));
-
-        showToast("success", "Invito inviato con successo!");
+        try {
+            const sent = await sendInviteMutation.mutateAsync({ volunteerId, kind, activityId: options.activityId });
+            if (!sent) {
+                showToast("error", options.alreadySentMessage);
+                return;
+            }
+            setInvitedVolunteers(prev => ({ ...prev, [key]: today }));
+            showToast("success", "Invito inviato con successo!");
+        } catch (error) {
+            console.error("Error sending invite:", error);
+            showToast("error", "Non è stato possibile inviare l'invito. Riprova.");
+        }
     };
+
+    // Invito generico "attività aperte": porta sul profilo dell'ente (npoId, senza activityId).
+    const handleInviteFollower = (volunteerId: string) =>
+        sendInvite("OPEN_ACTIVITIES", volunteerId, { alreadySentMessage: "Hai già invitato questo volontario oggi." });
+
+    const handleInviteToVolunteer = (volunteerId: string) =>
+        sendInvite("APPLY", volunteerId, { alreadySentMessage: "Hai già invitato questo volontario oggi." });
+
+    // Invito mirato a una singola attività (modal "Invita ad attività", oppure dal match
+    // "Invita a questa attività" nel tab Follower): la notifica apre direttamente quella scheda.
+    const handleInviteToActivity = (volunteerId: string, activityId: string, _activityTitle: string) =>
+        sendInvite("ACTIVITY", volunteerId, {
+            activityId,
+            alreadySentMessage: "Hai già invitato questo volontario oggi per questa attività.",
+        });
 
     // If no tabs available, show empty state (Optional: could also just show empty list under tabs)
     // but preserving "empty state if NOTHING at all" is okay.
@@ -234,8 +300,8 @@ export default function VolunteersScreen() {
 
     return (
         <StandardLayout
-            label="ATTIVITÀ"
-            title="Volontari"
+            label="Volontari"
+            title={npoDisplayName}
             rightElement={HeaderActions}
             noScroll={true}
             bg="bg-[#f0f2f5]"
@@ -296,7 +362,7 @@ export default function VolunteersScreen() {
                             data={displayPending as any[]}
                             keyExtractor={item => item.id}
                             // @ts-ignore
-                            estimatedItemSize={100}
+                            estimatedItemSize={230}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: 20 }}
                             renderItem={({ item }) => {
@@ -314,25 +380,14 @@ export default function VolunteersScreen() {
                                     deletionRequestedAt: null
                                 }) as any;
                                 return (
-                                    <VolunteerCard
+                                    <CandidacyCard
                                         volunteer={enrichedVolunteer}
+                                        appliedDate={(item as any).appliedDate}
+                                        applicationMessage={(item as any).message}
                                         onPress={() => router.push(`/(npo)/volunteer-profile/${item.volunteerId}`)}
-                                        actions={
-                                            <View className="flex-row gap-2">
-                                                <TouchableOpacity
-                                                    onPress={() => handleReject(item.id)}
-                                                    className="px-4 py-2 rounded-lg bg-gray-100"
-                                                >
-                                                    <Text className="text-gray-600 font-bold text-xs">Rifiuta</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => handleApprove(item.id)}
-                                                    className="px-4 py-2 rounded-lg bg-primary"
-                                                >
-                                                    <Text className="text-white font-bold text-xs">Approva</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        }
+                                        onMessage={() => handleMessageVolunteer(item.volunteerId, enrichedVolunteer.name, enrichedVolunteer.avatar)}
+                                        onReject={() => handleReject(item.id)}
+                                        onApprove={() => handleApprove(item.id)}
                                     />
                                 );
                             }}
@@ -364,17 +419,13 @@ export default function VolunteersScreen() {
                             </View>
                             {matchedFollowers.map((f) => (
                                 <View key={`match-${f.id}`} className="mb-4">
-                                    <VolunteerCard
+                                    <VolunteerRelationCard
                                         volunteer={f}
                                         onPress={() => router.push(`/(npo)/volunteer-profile/${f.id}`)}
-                                        actions={
-                                            <TouchableOpacity
-                                                onPress={() => handleInviteFollower(f.id)}
-                                                className="px-4 py-2 rounded-lg bg-accent"
-                                            >
-                                                <Text className="text-white font-bold text-xs">Invita Ora</Text>
-                                            </TouchableOpacity>
-                                        }
+                                        primaryActionLabel="Invita a questa attività"
+                                        onPrimaryAction={() => smartMatchActivity && handleInviteToActivity(f.id, smartMatchActivity.id, smartMatchActivity.title)}
+                                        primaryActionStyle="solid"
+                                        primaryActionColor={colors.accent}
                                     />
                                 </View>
                             ))}
@@ -387,11 +438,15 @@ export default function VolunteersScreen() {
                         <FlashList
                             data={displayFollowers.filter((f: any) => !matchedFollowers.find((m: any) => m.id === f.id)) as any[]}
                             // @ts-ignore
-                            estimatedItemSize={100}
+                            estimatedItemSize={200}
                             renderItem={({ item }) => (
-                                <VolunteerCard
+                                <VolunteerRelationCard
                                     volunteer={item}
                                     onPress={() => router.push(`/(npo)/volunteer-profile/${item.id}`)}
+                                    primaryActionLabel="Invita a diventare volontario"
+                                    onPrimaryAction={() => handleInviteToVolunteer(item.id)}
+                                    primaryActionStyle="outline"
+                                    showActionIcon
                                 />
                             )}
                             keyExtractor={(item) => item.id}
@@ -422,7 +477,7 @@ export default function VolunteersScreen() {
                             data={displayApproved as any[]}
                             keyExtractor={item => item.id}
                             // @ts-ignore
-                            estimatedItemSize={100}
+                            estimatedItemSize={230}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: 20 }}
                             renderItem={({ item }) => {
@@ -440,17 +495,14 @@ export default function VolunteersScreen() {
                                     deletionRequestedAt: null
                                 }) as any;
                                 return (
-                                    <VolunteerCard
+                                    <VolunteerRelationCard
                                         volunteer={enrichedVolunteer}
+                                        applicationMessage={(item as any).message}
                                         onPress={() => router.push(`/(npo)/volunteer-profile/${item.volunteerId}`)}
-                                        actions={
-                                            <TouchableOpacity
-                                                onPress={() => handleInviteFollower(enrichedVolunteer.id)}
-                                                className="px-4 py-2 rounded-lg bg-primary"
-                                            >
-                                                <Text className="text-white font-bold text-xs">Invita ad attività</Text>
-                                            </TouchableOpacity>
-                                        }
+                                        onMessage={() => handleMessageVolunteer(enrichedVolunteer.id, enrichedVolunteer.name, enrichedVolunteer.avatar)}
+                                        primaryActionLabel="Invita ad attività"
+                                        onPrimaryAction={() => setInviteActivityTarget({ id: enrichedVolunteer.id, name: enrichedVolunteer.name })}
+                                        primaryActionStyle="solid"
                                     />
                                 );
                             }}
@@ -464,6 +516,21 @@ export default function VolunteersScreen() {
                     )}
                 </View>
             )}
+
+            <InviteToActivityModal
+                visible={!!inviteActivityTarget}
+                volunteerName={inviteActivityTarget?.name || ''}
+                activities={upcomingOpenActivities.map(a => ({ id: a.id, title: a.title, dateTime: a.dateTime }))}
+                onClose={() => setInviteActivityTarget(null)}
+                onInviteGeneric={() => {
+                    if (inviteActivityTarget) handleInviteFollower(inviteActivityTarget.id);
+                    setInviteActivityTarget(null);
+                }}
+                onInviteToActivity={(activityId, activityTitle) => {
+                    if (inviteActivityTarget) handleInviteToActivity(inviteActivityTarget.id, activityId, activityTitle);
+                    setInviteActivityTarget(null);
+                }}
+            />
         </StandardLayout>
     );
 }

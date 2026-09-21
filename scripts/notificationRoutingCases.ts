@@ -107,6 +107,18 @@ export const notificationRoutingCases: RoutingCase[] = [
     expected: "/(volunteer)/(tabs)/community",
   },
   {
+    label: "Activity invite targeted at a specific activity routes to activity detail",
+    role: "VOLUNTEER",
+    notification: { type: "ACTIVITY_UPDATE", title: "Invito ad attività", message: "", activityId: "activity-9", npoId: "npo-1" },
+    expected: "/activity/activity-9",
+  },
+  {
+    label: "Generic activity invite without a specific activity routes to the NPO profile",
+    role: "VOLUNTEER",
+    notification: { type: "ACTIVITY_UPDATE", title: "Invito Attività", message: "", npoId: "npo-1" },
+    expected: "/npo-profile/npo-1",
+  },
+  {
     label: "Volunteer enrolled routes the NPO to the activity detail",
     role: "NPO",
     notification: { type: "VOLUNTEER_ENROLLED", title: "Nuova iscrizione", message: "", activityId: "activity-3", payload: { volunteerId: "vol-1" } },
@@ -123,5 +135,11 @@ export const notificationRoutingCases: RoutingCase[] = [
     role: "NPO",
     notification: { type: "VOLUNTEER_WITHDRAWN", title: "Iscrizione ritirata", message: "" },
     expected: "/(npo)/(tabs)/community",
+  },
+  {
+    label: "Activity update with neither activity nor NPO target falls back to community",
+    role: "VOLUNTEER",
+    notification: { type: "ACTIVITY_UPDATE", title: "Invito Attività", message: "" },
+    expected: "/(volunteer)/(tabs)/community",
   },
 ];
