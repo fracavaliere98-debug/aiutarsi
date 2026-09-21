@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, Touchabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Bell, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react-native';
-import { supabase } from '../../utils/supabase';
+import { adminNotificationService } from '../../services/AdminNotificationService';
 import { useAuth } from '../../context/AuthContext';
 
 type AdminInboxItem = {
@@ -35,34 +35,9 @@ export default function AdminNotificationsScreen() {
 
   const loadInbox = useCallback(async () => {
     try {
-      const [reportsRes, verificationsRes, personalNotificationsRes] = await Promise.all([
-        supabase
-          .from('reports')
-          .select('id, reason, report_category, created_at, status, reporter:profiles!reports_reporter_id_fkey(full_name), reported:profiles!reports_reported_id_fkey(full_name)')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
-          .limit(8),
-        supabase
-          .from('verification_requests')
-          .select('id, created_at, status, npo_details, profiles:user_id(full_name, npo_name)')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
-          .limit(8),
-        user?.id
-          ? supabase
-              .from('notifications')
-              .select('id, title, message, created_at, is_read')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
-              .limit(10)
-          : Promise.resolve({ data: [], error: null } as any),
-      ]);
+      const { reports, verifications, personalNotifications } = await adminNotificationService.fetchInboxSources(user?.id);
 
-      if (reportsRes.error) throw reportsRes.error;
-      if (verificationsRes.error) throw verificationsRes.error;
-      if (personalNotificationsRes.error) throw personalNotificationsRes.error;
-
-      const reportItems: AdminInboxItem[] = (reportsRes.data || []).map((report: any) => ({
+      const reportItems: AdminInboxItem[] = reports.map((report: any) => ({
         id: `report-${report.id}`,
         kind: 'report',
         title: 'Nuova segnalazione da gestire',
@@ -72,7 +47,7 @@ export default function AdminNotificationsScreen() {
         href: `/admin/report/${report.id}`,
       }));
 
-      const verificationItems: AdminInboxItem[] = (verificationsRes.data || []).map((request: any) => ({
+      const verificationItems: AdminInboxItem[] = verifications.map((request: any) => ({
         id: `verification-${request.id}`,
         kind: 'verification',
         title: 'Nuova verifica ente in attesa',
@@ -82,7 +57,7 @@ export default function AdminNotificationsScreen() {
         href: `/admin/verification/${request.id}`,
       }));
 
-      const personalItems: AdminInboxItem[] = (personalNotificationsRes.data || []).map((notification: any) => ({
+      const personalItems: AdminInboxItem[] = personalNotifications.map((notification: any) => ({
         id: `personal-${notification.id}`,
         kind: 'personal',
         title: notification.title || 'Notifica amministratore',
