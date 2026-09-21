@@ -712,55 +712,6 @@ export class ActivityService {
         }
     }
 
-    async submitActivityApplication(appData: Omit<AppActivityApplication, 'id'>): Promise<AppActivityApplication> {
-        const accessToken = await this._getAccessToken();
-        await profileRest.submitActivityApplication({
-                activity_id: appData.activityId,
-                user_id: appData.volunteerId,
-                status: 'PENDING',
-                message: appData.message
-            },
-            accessToken
-        );
-        eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
-
-        return {
-            ...appData,
-            status: 'PENDING',
-            id: `${appData.activityId}_${appData.volunteerId}`
-        };
-    }
-
-    async updateActivityApplicationStatus(activityId: string, volunteerId: string, status: 'APPROVED' | 'REJECTED'): Promise<void> {
-        const accessToken = await this._getAccessToken();
-        await profileRest.updateActivityApplicationStatus(activityId, volunteerId, { status }, accessToken);
-
-        // If approved, sync with group chat
-        if (status === 'APPROVED') {
-            try {
-                const { data: conv } = await this._withTimeout(
-                    supabase
-                        .from('conversations')
-                        .select('id, title')
-                        .eq('type', 'ACTIVITY_GROUP')
-                        .eq('activity_id', activityId)
-                        .single(),
-                    8000,
-                    'activities.applicationStatus.conversationLookup'
-                );
-
-                if (conv) {
-                    const ChatServiceModule = require('./ChatService').default;
-                    await ChatServiceModule.startGroupConversation(activityId, conv.title || '', volunteerId);
-                }
-            } catch (e) {
-                // Ignore
-            }
-        }
-
-        eventEmitter.emit(SyncEvents.SYNC_APPLICATIONS);
-    }
-
     // --- Volunteer Reviews (NPO -> Volunteer) ---
     async getVolunteerReviews(): Promise<OldVolunteerReview[]> {
         const { data, error } = await this._withTimeout(

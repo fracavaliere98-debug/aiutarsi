@@ -447,32 +447,6 @@ export const profileRest = {
       accessToken
     );
   },
-  submitActivityApplication: async (
-    payload: { activity_id: string; user_id: string; status: "PENDING"; message?: string },
-    accessToken?: string
-  ) => {
-    return request(
-      "POST",
-      `/rest/v1/activity_participants?on_conflict=activity_id,user_id`,
-      payload,
-      accessToken,
-      { Prefer: "resolution=merge-duplicates,return=minimal" }
-    );
-  },
-  updateActivityApplicationStatus: async (
-    activityId: string,
-    userId: string,
-    payload: { status: "APPROVED" | "REJECTED" },
-    accessToken?: string
-  ) => {
-    return request(
-      "PATCH",
-      `/rest/v1/activity_participants?activity_id=eq.${activityId}&user_id=eq.${userId}`,
-      payload,
-      accessToken,
-      { Prefer: "return=minimal" }
-    );
-  },
   submitApplication: async (
     payload: { npo_id: string; volunteer_id: string; message?: string | null; status?: string },
     accessToken?: string

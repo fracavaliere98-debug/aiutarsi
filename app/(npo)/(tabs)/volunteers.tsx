@@ -15,9 +15,8 @@ import { InviteToActivityModal } from "../../../components/npo/InviteToActivityM
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { SectionHeader, SegmentedControl, type SegmentedControlItem } from "../../../components/ui";
-import { useActivitiesListQuery, useActivityApplicationsQuery } from "../../../hooks/activities/queries";
+import { useActivitiesListQuery } from "../../../hooks/activities/queries";
 import { useSendNpoInviteMutation } from "../../../hooks/npo/mutations";
-import { useApproveActivityApplicationMutation, useRejectActivityApplicationMutation } from "../../../hooks/activities/mutations";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
 import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
 import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
@@ -36,9 +35,6 @@ export default function VolunteersScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { data: activities = [], isError: activitiesError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
-    const { data: activityApplications = [], refetch: refetchActivityApplications } = useActivityApplicationsQuery(user?.id, !!user && user.role === "NPO");
-    const approveActivityApplicationMutation = useApproveActivityApplicationMutation();
-    const rejectActivityApplicationMutation = useRejectActivityApplicationMutation();
     const startPrivateConversationMutation = useStartPrivateConversationMutation(user?.id);
 
 
@@ -67,35 +63,9 @@ export default function VolunteersScreen() {
         }
     }, [params.tab]);
 
-    const formattedActivityApps = useMemo(() => {
-        // Only include applications for activities that belong to this NPO
-        const myActivityIds = new Set(activities.map(a => a.id));
-
-        return activityApplications
-            .filter(app => myActivityIds.has(app.activityId))
-            .map(app => {
-                const act = activities.find(a => a.id === app.activityId);
-                return {
-                    id: app.id,
-                    isActivity: true, // Marker for handlers
-                    activityId: app.activityId,
-                    embedding: user?.embedding ?? undefined,
-                    npoId: user?.id || "",
-                    npoName: act ? `Attività: ${act.title}` : "Attività",
-                    volunteerId: app.volunteerId,
-                    volunteerName: app.volunteerName,
-                    volunteerAvatar: app.volunteerAvatar,
-                    message: app.message || "",
-                    skills: [],
-                    status: app.status,
-                    appliedDate: app.appliedDate
-                };
-            });
-    }, [activityApplications, activities, user]);
-
-    const allApplications = useMemo(() => {
-        return [...npoApplications, ...formattedActivityApps];
-    }, [npoApplications, formattedActivityApps]);
+    // Candidature all'ente (con approvazione). L'iscrizione a una singola attività è immediata
+    // e non passa da qui: nessuna candidatura ad attività da approvare.
+    const allApplications = npoApplications;
 
     // Sort by date descending (newest first)
     const pendingApplications = allApplications
@@ -159,13 +129,7 @@ export default function VolunteersScreen() {
         const app = allApplications.find(a => a.id === applicationId);
         if (!app) return;
 
-        let success = false;
-        if ((app as any).isActivity) {
-            await approveActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
-            success = true;
-        } else {
-            success = await approveApplicationMutation.mutateAsync(app as any);
-        }
+        const success = await approveApplicationMutation.mutateAsync(app as any);
 
         if (success) {
             showToast("success", "Candidatura approvata!");
@@ -176,13 +140,7 @@ export default function VolunteersScreen() {
         const app = allApplications.find(a => a.id === applicationId);
         if (!app) return;
 
-        let success = false;
-        if ((app as any).isActivity) {
-            await rejectActivityApplicationMutation.mutateAsync({ activityId: (app as any).activityId, volunteerId: app.volunteerId });
-            success = true;
-        } else {
-            success = await rejectApplicationMutation.mutateAsync(app as any);
-        }
+        const success = await rejectApplicationMutation.mutateAsync(app as any);
 
         if (success) {
             showToast("info", "Candidatura rifiutata");
@@ -289,7 +247,7 @@ export default function VolunteersScreen() {
                 <ErrorState
                     title="Errore applicazioni"
                     description="Impossibile caricare l'elenco dei volontari."
-                    onRetry={() => Promise.all([refetchActivities(), refetchActivityApplications()]).then(() => undefined)}
+                    onRetry={() => refetchActivities().then(() => undefined)}
                 />
             </View>
         );

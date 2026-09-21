@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { activityKeys } from "./keys";
-import { AppActivity, AppActivityApplication, OldReview, OldVolunteerReview } from "../../types";
+import { AppActivity, OldReview, OldVolunteerReview } from "../../types";
 import { activityService } from "../../services/ActivityService";
 
 async function invalidateActivityQueries(
@@ -94,26 +94,6 @@ export function useUnenrollFromActivityMutation(userId?: string) {
     });
 }
 
-export function useApplyToActivityMutation(userId?: string) {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (applicationData: Omit<AppActivityApplication, "id">) => {
-            const targetUserId = userId ?? applicationData.volunteerId;
-            if (!targetUserId) {
-                throw new Error("Missing user id");
-            }
-            return activityService.submitActivityApplication({
-                ...applicationData,
-                volunteerId: targetUserId,
-            });
-        },
-        onSuccess: async (_, applicationData) => {
-            await invalidateActivityQueries(queryClient, { activityId: applicationData.activityId, userId: userId ?? applicationData.volunteerId });
-        },
-    });
-}
-
 export function useSubmitReviewMutation() {
     const queryClient = useQueryClient();
 
@@ -132,30 +112,6 @@ export function useSubmitVolunteerReviewsMutation() {
         mutationFn: (reviewsData: Omit<OldVolunteerReview, "id" | "date">[]) => activityService.submitVolunteerReviews(reviewsData),
         onSuccess: async () => {
             await invalidateActivityQueries(queryClient);
-        },
-    });
-}
-
-export function useApproveActivityApplicationMutation() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ activityId, volunteerId }: { activityId: string; volunteerId: string }) =>
-            activityService.updateActivityApplicationStatus(activityId, volunteerId, "APPROVED"),
-        onSuccess: async (_, variables) => {
-            await invalidateActivityQueries(queryClient, { activityId: variables.activityId });
-        },
-    });
-}
-
-export function useRejectActivityApplicationMutation() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ activityId, volunteerId }: { activityId: string; volunteerId: string }) =>
-            activityService.updateActivityApplicationStatus(activityId, volunteerId, "REJECTED"),
-        onSuccess: async (_, variables) => {
-            await invalidateActivityQueries(queryClient, { activityId: variables.activityId });
         },
     });
 }

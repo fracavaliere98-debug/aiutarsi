@@ -46,10 +46,9 @@ assert(
   "ActivityService._withTimeout deve accettare PromiseLike<T> (i query builder Supabase non sono Promise nativi)"
 );
 
-// [ChatService] il caso concreto trovato: approvare una candidatura ad attività
-// chiama updateActivityApplicationStatus -> startGroupConversation, e se una
-// query Supabase lì dentro resta bloccata, l'intera approvazione non risolve mai
-// (anche se la scrittura REST principale era già andata a buon fine).
+// [ChatService] il caso concreto trovato: l'iscrizione a un'attività (joinActivity) chiama
+// startGroupConversation, e se una query Supabase lì dentro resta bloccata non deve mai
+// bloccare la sequenza di iscrizione (già andata a buon fine sulla scrittura REST principale).
 const chatWithTimeoutCalls = countOccurrences(chatService, /this\._withTimeout\(/g);
 assert(
   chatWithTimeoutCalls >= 8,
