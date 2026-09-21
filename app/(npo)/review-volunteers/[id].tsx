@@ -117,7 +117,13 @@ export default function ReviewVolunteersScreen() {
         setIsSubmitting(true);
         try {
             await submitVolunteerReviewsMutation.mutateAsync(reviewsToSave);
-            showToast("success", "Valutazioni salvate con successo!");
+            const confirmed = reviewsToSave.filter(r => r.isPresent).length;
+            showToast(
+                "success",
+                confirmed > 0
+                    ? `Presenze salvate: ${confirmed} volontari riceveranno XP e potranno recensire.`
+                    : "Valutazioni salvate con successo!"
+            );
 
             // Re-check how many left to process
             const leftToSave = Object.values(drafts).filter(d => !d.isProcessed && d.isPresent === null).length;
@@ -137,7 +143,14 @@ export default function ReviewVolunteersScreen() {
             }
         } catch (error) {
             console.error(error);
-            showToast("error", "Errore durante il salvataggio.");
+            const raw = String((error as any)?.message ?? error ?? "");
+            const friendly =
+                raw.includes("ACTIVITY_NOT_COMPLETED") ? "Puoi confermare le presenze solo a attività conclusa."
+                : raw.includes("NOT_A_PARTICIPANT") ? "Uno dei volontari non risulta iscritto a questa attività."
+                : raw.includes("NOT_ACTIVITY_OWNER") ? "Solo l'ente che ha creato l'attività può confermare le presenze."
+                : raw.includes("ATTENDANCE_LOCKED") ? "Una presenza già confermata non può essere revocata."
+                : "Errore durante il salvataggio.";
+            showToast("error", friendly);
         } finally {
             setIsSubmitting(false);
         }

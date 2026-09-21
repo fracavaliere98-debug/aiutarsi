@@ -6,8 +6,9 @@ import { gemmaService } from "../services/GemmaService";
 import { useActivitiesDomain } from "./activities/selectors";
 import { useNPOApplications } from "./applications/selectors";
 import { useNPOFollowersQuery } from "./npo/queries";
+import { useVolunteerReviewsQuery } from "./activities/queries";
 
-export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE' | 'OVERVIEW';
+export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE' | 'OVERVIEW' | 'ATTENDANCE';
 
 export interface NPOInsight {
     id: string;
@@ -25,6 +26,7 @@ export const useNPOInsights = () => {
     const { activities, activityApplications } = useActivitiesDomain(user);
     const npoApplications = useNPOApplications(user, user?.id);
     const { data: followers = [] } = useNPOFollowersQuery(user?.role === 'NPO' ? user.id : undefined);
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
     const router = useRouter();
 
     const [mutedIds, setMutedIds] = useState<string[]>([]);
@@ -68,6 +70,31 @@ export const useNPOInsights = () => {
             nextActivityDate: nextActivity?.dateTime,
         };
         const foundInsights: NPOInsight[] = [];
+
+        // 0. Presenze da confermare (Priority 1): l'XP dei volontari parte solo dalla conferma dell'ente.
+        const confirmedActivityIds = new Set(
+            volunteerReviews.filter(r => r.isPresent).map(r => r.activityId)
+        );
+        const toConfirm = myActivities.filter(a =>
+            a.status === 'COMPLETATA' && a.iscritti.length > 0 && !confirmedActivityIds.has(a.id)
+        );
+        if (toConfirm.length > 0) {
+            const first = toConfirm[0];
+            foundInsights.push({
+                id: `attendance_${first.id}`,
+                type: 'ATTENDANCE',
+                priority: 1,
+                title: "Conferma le presenze ✅",
+                description: toConfirm.length === 1
+                    ? `"${first.title}" è terminata: conferma chi ha partecipato, così i volontari ricevono XP e possono recensire.`
+                    : `Hai ${toConfirm.length} attività concluse con presenze da confermare: i volontari aspettano i loro XP.`,
+                actionLabel: "Conferma presenze",
+                onAction: () => {
+                    router.push(`/(npo)/review-volunteers/${first.id}` as any);
+                },
+                data: { activityId: first.id, metrics: sharedMetrics }
+            });
+        }
 
         // 1. Smart-Match (Priority 1)
         const urgentGapActivity = myActivities.find(a => {
@@ -182,7 +209,7 @@ export const useNPOInsights = () => {
             .filter(i => !mutedIds.includes(i.id))
             .sort((a, b) => a.priority - b.priority);
 
-    }, [activities, activityApplications, npoApplications, user, mutedIds, router, followers]);
+    }, [activities, activityApplications, npoApplications, user, mutedIds, router, followers, volunteerReviews]);
 
     useEffect(() => {
         const activeIds = new Set(baseInsights.map((insight) => insight.id));

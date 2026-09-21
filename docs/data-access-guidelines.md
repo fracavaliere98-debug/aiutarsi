@@ -112,3 +112,9 @@ Quando si formalizza una nuova regola in questo documento, il passo successivo n
 Corrette in questa sessione (non più in lista): `alert()` nativo in `review-application.tsx`/`(npo)/settings/edit-profile.tsx`/`onboarding/profile.tsx`; `Alert.alert` a un bottone senza continuazione in `(volunteer)/settings/security.tsx`.
 
 Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il documento resta uno specchio dello stato reale e non una lista aspirazionale.
+
+### Conferma presenze e XP (decisione 21/09/2026)
+- Iscrizione = `activity_participants` REGISTERED (il volontario non può scrivere APPROVED/CHECKED_IN: RLS).
+- XP, ore, livelli e badge si assegnano solo quando l'ente proprietario conferma la presenza (`volunteer_reviews.is_present = true`, attività COMPLETATA, volontario iscritto) tramite il trigger `on_volunteer_attendance_confirmed`; idempotente via `processed_activity_ids`. Lo stato del partecipante non cambia.
+- La recensione dell'attività da parte del volontario resta condizionata alla presenza confermata; i promemoria (`REVIEW_REMINDER`) partono solo per chi è stato confermato.
+- Notifiche (tutte server-side): fine attività → volontari ("riceverai XP alla conferma") e ente ("Conferma le presenze"); conferma → volontario ("hai guadagnato N XP", livello raggiunto); badge → `BADGE_UNLOCKED`.

@@ -419,7 +419,7 @@ export const profileRest = {
     return typeof conversationId === 'string' ? conversationId : null;
   },
   joinActivity: async (
-    payload: { activity_id: string; user_id: string; status: "REGISTERED" | "PENDING"; message?: string; phone?: string },
+    payload: { activity_id: string; user_id: string; status: "REGISTERED"; message?: string; phone?: string },
     accessToken?: string
   ) => {
     return request(

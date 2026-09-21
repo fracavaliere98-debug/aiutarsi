@@ -113,10 +113,18 @@ export async function queueReviewReminderFallbackJobs(supabase: any, now: Date) 
       .select("volunteer_id")
       .eq("activity_id", activity.id);
     const reviewedIds = new Set((reviews || []).map((review: any) => review.volunteer_id));
+    // Il promemoria recensione vale solo per chi ha la presenza confermata dall'ente.
+    const { data: presences } = await supabase
+      .from("volunteer_reviews")
+      .select("volunteer_id")
+      .eq("activity_id", activity.id)
+      .eq("is_present", true);
+    const presentIds = new Set((presences || []).map((row: any) => row.volunteer_id));
 
     for (const participant of activity.activity_participants || []) {
       if (!["APPROVED", "REGISTERED"].includes(participant.status)) continue;
       if (reviewedIds.has(participant.user_id)) continue;
+      if (!presentIds.has(participant.user_id)) continue;
       await insertJob(supabase, {
         user_id: participant.user_id,
         type: "REVIEW_REMINDER",
@@ -298,7 +306,15 @@ async function shouldSendJob(supabase: any, job: NotificationJob) {
       .eq("activity_id", job.related_activity_id)
       .eq("volunteer_id", job.user_id)
       .maybeSingle();
-    return !review;
+    if (review) return false;
+    const { data: presence } = await supabase
+      .from("volunteer_reviews")
+      .select("id")
+      .eq("activity_id", job.related_activity_id)
+      .eq("volunteer_id", job.user_id)
+      .eq("is_present", true)
+      .maybeSingle();
+    return !!presence;
   }
 
   if (job.type === "NPO_LOW_COVERAGE") {
