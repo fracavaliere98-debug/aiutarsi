@@ -8,6 +8,7 @@ const suite = [
   { label: "gemma-invocation-guard-contract", path: "scripts/test_gemma_invocation_guard_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
   { label: "attendance-confirmation-contract", path: "scripts/test_attendance_confirmation_contract.ts" },
+  { label: "reports-admin-contract", path: "scripts/test_reports_admin_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },

@@ -118,3 +118,9 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - XP, ore, livelli e badge si assegnano solo quando l'ente proprietario conferma la presenza (`volunteer_reviews.is_present = true`, attività COMPLETATA, volontario iscritto) tramite il trigger `on_volunteer_attendance_confirmed`; idempotente via `processed_activity_ids`. Lo stato del partecipante non cambia.
 - La recensione dell'attività da parte del volontario resta condizionata alla presenza confermata; i promemoria (`REVIEW_REMINDER`) partono solo per chi è stato confermato.
 - Notifiche (tutte server-side): fine attività → volontari ("riceverai XP alla conferma") e ente ("Conferma le presenze"); conferma → volontario ("hai guadagnato N XP", livello raggiunto); badge → `BADGE_UNLOCKED`.
+
+### Segnalazioni (decisione 21/09/2026)
+- Tabella unica letta dagli admin: `reports` (`content_type` = message | profile | community_post, `evidence_snapshot`, `is_ai_generated`). Il motivo è salvato come "<Categoria>: <testo>" e la categoria si ricava con `utils/reportCategory.ts` (la tabella non ha una colonna categoria).
+- `community_reports` è legacy: nessun client né edge function deve più scriverci (nessun admin la legge). Da rimuovere in una migration dedicata dopo verifica.
+- Il moderatore AI scrive in `reports` con `reporter_id` NULL e `is_ai_generated = true` (prima usava un reporter inesistente e il flag andava perso).
+- L'ammonimento ("warned") notifica l'utente segnalato via `admin_send_notification`.

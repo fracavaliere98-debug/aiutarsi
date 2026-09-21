@@ -13,7 +13,7 @@ class AdminNotificationService {
             Promise.all([
                 supabase
                     .from('reports')
-                    .select('id, reason, report_category, created_at, status, reporter:profiles!reports_reporter_id_fkey(full_name), reported:profiles!reports_reported_id_fkey(full_name)')
+                    .select('id, reason, content_type, created_at, status, reporter:profiles!reports_reporter_id_fkey(full_name), reported:profiles!reports_reported_id_fkey(full_name)')
                     .eq('status', 'pending')
                     .order('created_at', { ascending: false })
                     .limit(8),

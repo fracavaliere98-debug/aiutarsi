@@ -126,13 +126,29 @@ export function useDeleteCommunityPostMutation(user?: AppUser | null) {
 
 export function useReportCommunityPostMutation(user?: AppUser | null) {
     return useMutation({
-        mutationFn: async ({ postId, reason }: { postId: string; reason: string }) => {
+        // Le segnalazioni dei post finiscono in `reports` (la tabella che gli admin leggono):
+        // `community_reports` non era letta da nessuno.
+        mutationFn: async ({
+            postId,
+            reportedUserId,
+            reason,
+            snapshot,
+        }: {
+            postId: string;
+            reportedUserId: string;
+            reason: string;
+            snapshot?: { caption?: string | null; imageUrl?: string | null };
+        }) => {
             if (!user) throw new Error("Missing user");
+            if (user.id === reportedUserId) throw new Error("Cannot report own post");
 
-            const { error } = await supabase.from("community_reports").insert({
-                post_id: postId,
+            const { error } = await supabase.from("reports").insert({
                 reporter_id: user.id,
+                reported_id: reportedUserId,
+                content_type: "community_post",
+                content_id: postId,
                 reason,
+                evidence_snapshot: snapshot ? { post_id: postId, caption: snapshot.caption ?? null, image_url: snapshot.imageUrl ?? null } : { post_id: postId },
                 status: "pending",
             });
 

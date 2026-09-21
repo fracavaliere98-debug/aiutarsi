@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Bell, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react-native';
 import { adminNotificationService } from '../../services/AdminNotificationService';
 import { useAuth } from '../../context/AuthContext';
+import { describeReportTarget, getReportCategory } from '../../utils/reportCategory';
 
 type AdminInboxItem = {
   id: string;
@@ -41,7 +42,7 @@ export default function AdminNotificationsScreen() {
         id: `report-${report.id}`,
         kind: 'report',
         title: 'Nuova segnalazione da gestire',
-        message: `${report.reported?.full_name || 'Utente'} segnalato da ${report.reporter?.full_name || 'utente'} · ${report.report_category || report.reason}`,
+        message: `${report.reported?.full_name || 'Utente'} segnalato da ${report.reporter?.full_name || 'utente'} · ${getReportCategory(report)} · ${describeReportTarget(report.content_type)}`,
         created_at: report.created_at,
         unread: true,
         href: `/admin/report/${report.id}`,

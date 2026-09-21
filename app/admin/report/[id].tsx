@@ -8,6 +8,7 @@ import {
   ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
 } from 'lucide-react-native';
 import { adminNotificationService } from '../../../services/AdminNotificationService';
+import { describeReportTarget } from '../../../utils/reportCategory';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -113,6 +114,20 @@ export default function AdminReportDetail() {
 
       Alert.alert('Successo', `Azione "${action}" completata.`);
 
+      // Ammonimento: l'utente segnalato deve sapere che c'è stato un intervento.
+      if (action === 'warned' && report?.reported_id) {
+        try {
+          await adminNotificationService.notifyUser(
+            report.reported_id,
+            'URGENT',
+            'Avviso dalla moderazione',
+            'Un tuo contenuto è stato segnalato e la moderazione ha rilevato una violazione delle regole della community. Ti chiediamo di rispettarle: ulteriori violazioni possono portare alla sospensione dell\'account.'
+          );
+        } catch (notifyError) {
+          console.error('Warn notification failed', notifyError);
+        }
+      }
+
       // Invia notifica al segnalatore (reporter)
       if (report?.reporter_id) {
         try {
@@ -207,16 +222,28 @@ export default function AdminReportDetail() {
 
         {/* Content Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>CONTENUTO SEGNALATO</Text>
+          <Text style={styles.sectionLabel}>CONTENUTO SEGNALATO · {describeReportTarget(report.content_type).toUpperCase()}</Text>
           <View style={styles.evidenceBubble}>
              <Text style={styles.evidenceText}>{report.description || report.reason}</Text>
           </View>
         </View>
 
         {/* Evidence Snapshot (Chat) */}
-        {report.evidence_snapshot && (
+        {report.content_type === 'community_post' && report.evidence_snapshot && !Array.isArray(report.evidence_snapshot) && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>CHAT EVIDENCE (SNAOPSHOT)</Text>
+            <Text style={styles.sectionLabel}>TESTO DEL POST (SNAPSHOT)</Text>
+            <View style={styles.evidenceBubble}>
+              <Text style={styles.evidenceText}>{report.evidence_snapshot.caption || '(post senza testo)'}</Text>
+              {report.evidence_snapshot.image_url ? (
+                <Text style={styles.noEvidenceText}>Il post contiene un&apos;immagine.</Text>
+              ) : null}
+            </View>
+          </View>
+        )}
+
+        {report.content_type !== 'community_post' && report.evidence_snapshot && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>CHAT EVIDENCE (SNAPSHOT)</Text>
             <View style={styles.chatContainer}>
               {Array.isArray(report.evidence_snapshot) ? report.evidence_snapshot.map((msg: any, idx: number) => (
                 <View key={idx} style={[

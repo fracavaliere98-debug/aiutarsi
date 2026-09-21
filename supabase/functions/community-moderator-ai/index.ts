@@ -283,12 +283,19 @@ async function handleRejectedPost(
     supabase: ReturnType<typeof createClient>,
 ): Promise<void> {
     console.warn(`[Moderator] Post ${record.id} rejected (${analysis.category}/${analysis.source}): ${analysis.reason}`);
-    await supabase.from('community_reports').insert({
-        post_id: record.id,
-        reporter_id: '00000000-0000-0000-0000-000000000000',
-        reason: `AI Auto-moderation [${analysis.source}]: ${analysis.reason}`,
+    // `reports` è la tabella letta dagli admin. Il vecchio insert in community_reports usava un
+    // reporter inesistente (violava la FK) e l'errore veniva ignorato: i flag AI andavano persi.
+    const { error } = await supabase.from('reports').insert({
+        reporter_id: null,
+        reported_id: record.author_id,
+        content_type: 'community_post',
+        content_id: record.id,
+        reason: `Contenuto Inappropriato: AI Auto-moderation [${analysis.source}] ${analysis.reason}`,
+        evidence_snapshot: { post_id: record.id, caption: record.caption ?? null },
+        is_ai_generated: true,
         status: 'pending',
     });
+    if (error) console.error('[Moderator] Could not record AI report', error);
 }
 
 // --------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { Shield, ChevronRight, Search, Bell, Menu, Filter, Bot } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { getReportCategory } from '../../../utils/reportCategory';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '';
@@ -80,7 +81,7 @@ export default function AdminDashboard() {
   const reportCategories = useMemo(() => (
     Array.from(new Set(
       reports
-        .map((report) => (report.report_category || 'ALTRO').toUpperCase())
+        .map((report) => getReportCategory(report))
         .filter(Boolean)
     ))
   ), [reports]);
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
   const filteredReports = useMemo(() => (
     reports.filter((report) => {
       const term = search.toLowerCase();
-      const reportCategory = (report.report_category || 'ALTRO').toUpperCase();
+      const reportCategory = getReportCategory(report);
       const matchesSearch =
         report.reason.toLowerCase().includes(term)
         || report.reporter?.full_name?.toLowerCase().includes(term)
@@ -191,8 +192,8 @@ export default function AdminDashboard() {
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.reportCard} onPress={() => router.push(`/admin/report/${item.id}`)}>
               <View style={styles.cardHeader}>
-                <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.report_category || 'ALTRO') }]}>
-                  <Text style={styles.categoryText}>{(item.report_category || 'ALTRO').toUpperCase()}</Text>
+                <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(getReportCategory(item)) }]}>
+                  <Text style={styles.categoryText}>{getReportCategory(item).toUpperCase()}</Text>
                 </View>
                 <Text style={styles.timestamp}>{formatDate(item.created_at)}</Text>
               </View>

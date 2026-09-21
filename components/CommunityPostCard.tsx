@@ -60,7 +60,12 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
         } else {
             const handleReport = async (reason: string) => {
                 try {
-                    await reportPostMutation.mutateAsync({ postId: post.id, reason });
+                    await reportPostMutation.mutateAsync({
+                        postId: post.id,
+                        reportedUserId: post.author_id,
+                        reason,
+                        snapshot: { caption: post.caption, imageUrl: post.image_url },
+                    });
                     showToast('success', 'Segnalazione inviata! Grazie per il tuo feedback.');
                 } catch {
                     showToast('error', 'Impossibile inviare la segnalazione. Riprova più tardi.');
@@ -68,8 +73,8 @@ export const CommunityPostCard = React.memo(({ post, npoRelation }: CommunityPos
             };
 
             Alert.alert('Segnala Post', 'Scegli il motivo della segnalazione:', [
-                { text: 'Contenuto offensivo o inappropriato', onPress: () => handleReport('Inappropriato') },
-                { text: 'Spam o pubblicità', onPress: () => handleReport('Spam') },
+                { text: 'Contenuto offensivo o inappropriato', onPress: () => handleReport('Contenuto Inappropriato: segnalato dal feed') },
+                { text: 'Spam o pubblicità', onPress: () => handleReport('Spam: segnalato dal feed') },
                 { text: 'Annulla', style: 'cancel' }
             ]);
         }
