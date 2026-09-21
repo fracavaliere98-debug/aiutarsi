@@ -3,10 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAv
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import { Calendar, Users, ArrowRight, Clock, CheckCircle2, AlertCircle, RefreshCw, Trash2, ChevronDown, Check, Camera, Sparkles } from "lucide-react-native";
+import { Calendar, Users, ArrowRight, Clock, CheckCircle2, AlertCircle, RefreshCw, Trash2, ChevronDown, Check, Camera, Sparkles, Zap, ChevronUp } from "lucide-react-native";
 import { StandardLayout } from "../StandardLayout";
 import { AddressAutocomplete } from "../AddressAutocomplete";
 import { CalendarPicker } from "../CalendarPicker";
+import { TimePicker } from "../TimePicker";
 import { SelectableChip } from "../ui/SelectableChip";
 import { SKILLS } from "../../constants/Skills";
 import { ACTIVITY_CATEGORIES } from "../../constants/Interests";
@@ -14,7 +15,7 @@ import { gemmaService } from "../../services/GemmaService";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
 import { useToast } from "../../context/ToastContext";
 import { colors } from "@/theme";
-import { getInitialCoordsConfirmed, shouldAutoCurateDraft, validateActivityFormSubmit } from "./activityFormLogic";
+import { getInitialCoordsConfirmed, isEndBeforeOrEqualStart, shouldAutoCurateDraft, validateActivityFormSubmit } from "./activityFormLogic";
 
 export type ActivityFormValues = {
     title: string;
@@ -44,6 +45,20 @@ const RECURRENCE_OPTIONS: { value: ActivityFormValues["recurrence"]; label: stri
     { value: "WEEKLY", label: "Ogni settimana", description: "Si ripete automaticamente ogni settimana." },
     { value: "MONTHLY", label: "Ogni mese", description: "Si ripete automaticamente ogni mese." },
 ];
+
+// Unica convenzione tipografica per le etichette di campo (Titolo/Categoria/Data/Volontari/
+// Inizio/Fine/Indirizzo) — prima coesistevano due stili diversi per lo stesso livello gerarchico
+// (uppercase+tracking vs minuscolo) con colore a opacità ridotta (/60, /70) su testo 10px, a rischio
+// di contrasto WCAG AA. Vedi docs/design/activity-form-design-critique.md, raccomandazione #1.
+const FIELD_LABEL_CLASS = "text-secondary font-bold uppercase tracking-wide text-[11px] mb-2 ml-1";
+// Variante per intestazioni di gruppo (Competenze, Altre opzioni) già dentro un contenitore con gap:
+// stesso colore/peso/dimensione del token sopra, senza margine proprio per non raddoppiare lo spazio.
+const GROUP_LABEL_CLASS = "text-secondary font-bold uppercase tracking-wide text-[11px]";
+// Bordo/ombra card campo unificati: prima Data/Volontari usavano uno style inline con bordo
+// letterale (#ede9fe) e ombra manuale, diverso da tutte le altre card che usano la classe NativeWind
+// "shadow-sm border border-primary/5". Raccomandazione #4 (consistency) del critique.
+const FIELD_CARD_BORDER_INACTIVE = "rgba(70, 34, 130, 0.05)"; // equivalente a border-primary/5
+const SKILLS_COLLAPSED_COUNT = 6;
 
 type Props = {
     mode: "create" | "edit";
@@ -91,8 +106,16 @@ export function ActivityForm({
     const [coordsConfirmedState, setCoordsConfirmed] = useState(getInitialCoordsConfirmed(initialValues.address));
     const [showCalendar, setShowCalendar] = useState(false);
     const [showRecurrencePicker, setShowRecurrencePicker] = useState(false);
+    const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
     const [isCuratingDraft, setIsCuratingDraft] = useState(false);
     const [hasAutoCuratedDraft, setHasAutoCuratedDraft] = useState(false);
+    // Trasparenza verso l'utente quando la descrizione è stata scritta/riscritta dall'AI (pulsante
+    // "Migliora con AI" o rifinitura automatica silenziosa da "Rilancia con AI") — si azzera appena
+    // l'utente modifica il testo a mano, perché a quel punto non è più "solo" testo generato.
+    // Vedi docs/design/activity-form-design-critique.md, raccomandazione (Usability, AI feedback).
+    const [aiGeneratedDescription, setAiGeneratedDescription] = useState(false);
+    const [skillsExpanded, setSkillsExpanded] = useState(false);
 
     // Re-seed form when the async source of truth changes (activity loaded, AI draft applied, duplicate source
     // picked). Aggiornato durante il render (pattern React "adjusting state when a prop changes"), non in un
@@ -108,6 +131,7 @@ export function ActivityForm({
         setPrevResetKey(resetKey);
         setFormData(initialValues);
         setCoordsConfirmed(getInitialCoordsConfirmed(initialValues.address));
+        setAiGeneratedDescription(false);
         formData = initialValues;
         coordsConfirmed = getInitialCoordsConfirmed(initialValues.address);
     }
@@ -154,6 +178,9 @@ export function ActivityForm({
                 category: curated.suggestedCategory || prev.category,
                 skills: suggestedSkills.length > 0 ? suggestedSkills : prev.skills,
             }));
+            if (curated.expandedDescription) {
+                setAiGeneratedDescription(true);
+            }
             if (source === "auto") {
                 setHasAutoCuratedDraft(true);
             }
@@ -253,7 +280,7 @@ export function ActivityForm({
                             <View className="gap-3">
                                 <Text className="text-primary font-black text-base">Cosa organizzi</Text>
                                 <View>
-                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Titolo attività</Text>
+                                    <Text className={FIELD_LABEL_CLASS}>Titolo attività</Text>
                                     <View className="bg-white p-4 rounded-2xl shadow-sm border border-primary/5">
                                         <TextInput
                                             placeholder="es. Distribuzione Pasti"
@@ -265,7 +292,7 @@ export function ActivityForm({
                                     </View>
                                 </View>
                                 <View>
-                                    <Text className="text-secondary/60 font-bold uppercase tracking-widest text-[10px] mb-2 ml-1">Categoria</Text>
+                                    <Text className={FIELD_LABEL_CLASS}>Categoria</Text>
                                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                                         {ACTIVITY_CATEGORIES.map((cat) => (
                                             <SelectableChip
@@ -286,15 +313,15 @@ export function ActivityForm({
 
                                 <View style={{ flexDirection: "row", gap: 8 }}>
                                     <View style={{ flex: 1.7 }}>
-                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Data</Text>
+                                        <Text className={FIELD_LABEL_CLASS}>Data</Text>
                                         <TouchableOpacity
                                             onPress={() => setShowCalendar(true)}
                                             activeOpacity={0.8}
+                                            className="bg-white rounded-2xl shadow-sm"
                                             style={{
-                                                backgroundColor: "white", padding: 14, borderRadius: 16,
+                                                padding: 14,
                                                 flexDirection: "row", alignItems: "center", gap: 10,
-                                                borderWidth: 1, borderColor: formData.date ? colors.primary + "40" : "#ede9fe",
-                                                shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
+                                                borderWidth: 1, borderColor: formData.date ? colors.primary + "40" : FIELD_CARD_BORDER_INACTIVE,
                                             }}
                                         >
                                             <Calendar size={18} color={formData.date ? colors.primary : colors.textSecondary} />
@@ -306,13 +333,12 @@ export function ActivityForm({
                                         </TouchableOpacity>
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Volontari</Text>
+                                        <Text className={FIELD_LABEL_CLASS}>Volontari</Text>
                                         <View
+                                            className="bg-white rounded-2xl shadow-sm border border-primary/5"
                                             style={{
-                                                backgroundColor: "white", paddingHorizontal: 12, height: 48, borderRadius: 16,
+                                                paddingHorizontal: 12, height: 48,
                                                 flexDirection: "row", alignItems: "center", gap: 8,
-                                                borderWidth: 1, borderColor: "#ede9fe",
-                                                shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
                                             }}
                                         >
                                             <Users size={16} color={colors.textSecondary} />
@@ -331,35 +357,44 @@ export function ActivityForm({
 
                                 <View style={{ flexDirection: "row", gap: 12 }}>
                                     <View style={{ flex: 1 }}>
-                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Inizio</Text>
-                                        <View className="bg-white p-3.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                            <Clock size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                                            <TextInput
-                                                placeholder="10:00"
-                                                placeholderTextColor="#94a3b8"
-                                                value={formData.startTime}
-                                                onChangeText={(t) => setFormData({ ...formData, startTime: t })}
-                                                style={{ flex: 1, color: colors.primary, fontWeight: "600", fontSize: 14 }}
-                                            />
-                                        </View>
+                                        <Text className={FIELD_LABEL_CLASS}>Inizio</Text>
+                                        <TouchableOpacity
+                                            onPress={() => setShowStartTimePicker(true)}
+                                            activeOpacity={0.8}
+                                            className="bg-white p-3.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center"
+                                        >
+                                            <Clock size={16} color={formData.startTime ? colors.primary : colors.textSecondary} style={{ marginRight: 8 }} />
+                                            <Text style={{ flex: 1, color: formData.startTime ? colors.primary : "#94a3b8", fontWeight: "600", fontSize: 14 }}>
+                                                {formData.startTime || "10:00"}
+                                            </Text>
+                                        </TouchableOpacity>
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Fine</Text>
-                                        <View className="bg-white p-3.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                                            <Clock size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                                            <TextInput
-                                                placeholder="12:00"
-                                                placeholderTextColor="#94a3b8"
-                                                value={formData.endTime}
-                                                onChangeText={(t) => setFormData({ ...formData, endTime: t })}
-                                                style={{ flex: 1, color: colors.primary, fontWeight: "600", fontSize: 14 }}
-                                            />
-                                        </View>
+                                        <Text className={FIELD_LABEL_CLASS}>Fine</Text>
+                                        <TouchableOpacity
+                                            onPress={() => setShowEndTimePicker(true)}
+                                            activeOpacity={0.8}
+                                            className="bg-white p-3.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center"
+                                        >
+                                            <Clock size={16} color={formData.endTime ? colors.primary : colors.textSecondary} style={{ marginRight: 8 }} />
+                                            <Text style={{ flex: 1, color: formData.endTime ? colors.primary : "#94a3b8", fontWeight: "600", fontSize: 14 }}>
+                                                {formData.endTime || "12:00"}
+                                            </Text>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
+                                {!!(formData.date && formData.startTime && formData.endTime) &&
+                                    isEndBeforeOrEqualStart(formData.date, formData.startTime, formData.endTime) && (
+                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4 }}>
+                                            <AlertCircle size={14} color="#f59e0b" />
+                                            <Text style={{ fontSize: 12, fontWeight: "600", color: "#f59e0b" }}>
+                                                L&apos;orario di fine deve essere successivo a quello di inizio
+                                            </Text>
+                                        </View>
+                                    )}
 
                                 <View>
-                                    <Text className="text-secondary/60 text-[10px] font-semibold mb-1 ml-1">Indirizzo</Text>
+                                    <Text className={FIELD_LABEL_CLASS}>Indirizzo</Text>
                                     <AddressAutocomplete
                                         initialValue={formData.address}
                                         onSelect={(addr, lat, lng) => {
@@ -413,17 +448,35 @@ export function ActivityForm({
                                         numberOfLines={4}
                                         textAlignVertical="top"
                                         value={formData.description}
-                                        onChangeText={(t) => setFormData({ ...formData, description: t })}
+                                        onChangeText={(t) => {
+                                            // Modificare a mano il testo invalida il badge "generato con AI": non è più
+                                            // solo testo dell'AI, quindi non va più presentato come tale.
+                                            if (aiGeneratedDescription) setAiGeneratedDescription(false);
+                                            setFormData({ ...formData, description: t });
+                                        }}
                                         className="text-primary font-medium text-base min-h-[90px]"
                                     />
                                 </View>
+                                {aiGeneratedDescription && (
+                                    <View className="flex-row items-center gap-1.5 ml-1">
+                                        <Sparkles size={12} color={colors.primary} />
+                                        <Text className="text-primary/70 font-semibold text-[11px]">Testo generato con AI</Text>
+                                    </View>
+                                )}
                             </View>
 
-                            {/* Sezione 4: competenze, opzionale — chip più piccole, peso visivo minore della categoria */}
+                            {/* Sezione 4: competenze, opzionale — chip più piccole, peso visivo minore della categoria.
+                                Mostra solo le prime SKILLS_COLLAPSED_COUNT + qualunque competenza già selezionata oltre
+                                quella soglia (così aprendo il form in modifica non "sparisce" mai una scelta esistente),
+                                con un link per espandere — evita 4-5 righe di chip sempre visibili (critique raccomandazione,
+                                Usability: densità competenze). */}
                             <View className="gap-3">
-                                <Text className="text-secondary/70 font-bold uppercase tracking-widest text-[10px]">Competenze richieste (opzionale)</Text>
+                                <Text className={GROUP_LABEL_CLASS}>Competenze richieste (opzionale)</Text>
                                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-                                    {SKILLS.map((skill) => {
+                                    {(skillsExpanded
+                                        ? SKILLS
+                                        : SKILLS.filter((skill, idx) => idx < SKILLS_COLLAPSED_COUNT || formData.skills.includes(skill.id))
+                                    ).map((skill) => {
                                         const isSelected = formData.skills.includes(skill.id);
                                         return (
                                             <SelectableChip
@@ -442,41 +495,86 @@ export function ActivityForm({
                                         );
                                     })}
                                 </View>
+                                {SKILLS.length > SKILLS_COLLAPSED_COUNT && (
+                                    <TouchableOpacity
+                                        onPress={() => setSkillsExpanded((v) => !v)}
+                                        activeOpacity={0.7}
+                                        className="flex-row items-center gap-1 self-start"
+                                    >
+                                        <Text className="text-primary font-bold text-xs">
+                                            {skillsExpanded ? "Mostra meno" : `Mostra altre ${SKILLS.length - SKILLS_COLLAPSED_COUNT} competenze`}
+                                        </Text>
+                                        {skillsExpanded ? (
+                                            <ChevronUp size={14} color={colors.primary} />
+                                        ) : (
+                                            <ChevronDown size={14} color={colors.primary} />
+                                        )}
+                                    </TouchableOpacity>
+                                )}
                             </View>
 
-                            {/* Sezione 5: altre opzioni — ricorrenza + urgente, raggruppate in un unico blocco a bassa priorità visiva */}
-                            <View className="bg-white/60 p-4 rounded-2xl border border-primary/5 gap-4">
-                                <Text className="text-secondary/70 font-bold uppercase tracking-widest text-[10px]">Altre opzioni</Text>
-
-                                <View className="gap-1.5">
-                                    <Text className="text-secondary text-xs font-semibold">Questa attività si ripete?</Text>
-                                    <TouchableOpacity
-                                        onPress={() => setShowRecurrencePicker(true)}
-                                        activeOpacity={0.8}
-                                        className="bg-white p-3.5 rounded-2xl border border-primary/10 flex-row items-center justify-between"
-                                    >
-                                        <Text className="text-primary font-bold text-sm">{RECURRENCE_LABELS[formData.recurrence]}</Text>
-                                        <ChevronDown size={18} color={colors.textSecondary} />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View className="flex-row items-center justify-between pt-3 border-t border-primary/5">
+                            {/* "Segnala come urgente" ha impatto diretto sul matching con i volontari — merita una
+                                card propria con accento visivo quando attivo, non lo stesso peso di "Ricorrenza"
+                                (critique raccomandazione #3, Visual Hierarchy). */}
+                            <View
+                                className="p-4 rounded-2xl gap-1"
+                                style={{
+                                    borderWidth: 1.5,
+                                    borderColor: formData.isUrgent ? colors.accent : FIELD_CARD_BORDER_INACTIVE,
+                                    backgroundColor: formData.isUrgent ? colors.accent + "0D" : "white",
+                                }}
+                            >
+                                <View className="flex-row items-center justify-between">
                                     <View className="flex-1 pr-3">
-                                        <Text className="text-secondary text-xs font-semibold">Segnala come urgente</Text>
-                                        <Text className="text-secondary/70 text-[10px] mt-0.5">Priorità nel match, max 3 attive.</Text>
+                                        <View className="flex-row items-center gap-1.5">
+                                            <Zap size={14} color={formData.isUrgent ? colors.accent : colors.textSecondary} />
+                                            <Text className="text-primary font-black text-sm">Segnala come urgente</Text>
+                                        </View>
+                                        <Text className="text-secondary text-[11px] mt-1">
+                                            Priorità nel match con i volontari. Massimo 3 attività urgenti attive per ente.
+                                        </Text>
                                     </View>
-                                    <Switch
-                                        value={formData.isUrgent}
-                                        onValueChange={(v) => {
-                                            if (v && !canEnableUrgent()) {
-                                                showToast("error", "Puoi avere al massimo 3 attività urgenti contemporaneamente.");
-                                                return;
-                                            }
-                                            setFormData({ ...formData, isUrgent: v });
+                                    {/* Contorno colorato attorno allo switch: senza, il toggle si perdeva contro lo
+                                        sfondo chiaro della card (bianco/rosa pallido) in entrambi gli stati — segnalato
+                                        dall'utente come "si vede poco". Bordo grigio più deciso da spento, accent da acceso. */}
+                                    <View
+                                        style={{
+                                            borderWidth: 1.5,
+                                            borderColor: formData.isUrgent ? colors.accent : colors.textSecondary + "66",
+                                            borderRadius: 18,
+                                            padding: 2,
                                         }}
-                                        trackColor={{ false: "#e2e8f0", true: colors.accent }}
-                                    />
+                                    >
+                                        <Switch
+                                            value={formData.isUrgent}
+                                            onValueChange={(v) => {
+                                                if (v && !canEnableUrgent()) {
+                                                    showToast("error", "Puoi avere al massimo 3 attività urgenti contemporaneamente.");
+                                                    return;
+                                                }
+                                                setFormData({ ...formData, isUrgent: v });
+                                            }}
+                                            trackColor={{ false: "#e2e8f0", true: colors.accent }}
+                                            thumbColor="#ffffff"
+                                            ios_backgroundColor="#e2e8f0"
+                                        />
+                                    </View>
                                 </View>
+                            </View>
+
+                            {/* Sezione 5: altre opzioni — solo ricorrenza, priorità visiva bassa (urgente ora ha una
+                                card propria sopra, vedi nota) */}
+                            <View className="bg-white/60 p-4 rounded-2xl border border-primary/5 gap-1.5">
+                                <Text className={GROUP_LABEL_CLASS}>Altre opzioni</Text>
+                                <Text className="text-secondary text-xs font-semibold mt-1.5">Questa attività si ripete?</Text>
+                                <TouchableOpacity
+                                    onPress={() => setShowRecurrencePicker(true)}
+                                    activeOpacity={0.8}
+                                    className="bg-white p-3.5 rounded-2xl border border-primary/10 flex-row items-center justify-between"
+                                >
+                                    <Text className="text-primary font-bold text-sm">{RECURRENCE_LABELS[formData.recurrence]}</Text>
+                                    <ChevronDown size={18} color={colors.textSecondary} />
+                                </TouchableOpacity>
                             </View>
 
                             {mode === "edit" && onCancelActivity && (
@@ -529,6 +627,22 @@ export function ActivityForm({
                 value={formData.date}
                 onSelect={(d) => setFormData((prev) => ({ ...prev, date: d }))}
                 onClose={() => setShowCalendar(false)}
+            />
+
+            <TimePicker
+                visible={showStartTimePicker}
+                value={formData.startTime}
+                label="Orario di inizio"
+                onSelect={(t) => setFormData((prev) => ({ ...prev, startTime: t }))}
+                onClose={() => setShowStartTimePicker(false)}
+            />
+
+            <TimePicker
+                visible={showEndTimePicker}
+                value={formData.endTime}
+                label="Orario di fine"
+                onSelect={(t) => setFormData((prev) => ({ ...prev, endTime: t }))}
+                onClose={() => setShowEndTimePicker(false)}
             />
 
             <Modal visible={showRecurrencePicker} animationType="slide" transparent onRequestClose={() => setShowRecurrencePicker(false)}>

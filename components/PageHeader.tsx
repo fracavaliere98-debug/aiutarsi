@@ -13,7 +13,7 @@ interface PageHeaderProps {
 export function PageHeader({ label, title, rightElement, subtitle, containerStyle }: PageHeaderProps) {
     return (
         <View
-            className="bg-primary pt-6 pb-4 px-6 rounded-b-[32px] shadow-lg mb-4 justify-center"
+            className="bg-primary pt-4 pb-3 px-6 rounded-b-[32px] shadow-lg mb-3 justify-center"
             style={[{ height: Layout.headerHeight }, containerStyle]}
         >
             <View className="flex-row justify-between items-center">

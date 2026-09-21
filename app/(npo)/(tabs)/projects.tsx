@@ -21,6 +21,7 @@ export default function NPOCalendarScreen() {
     const { activities, error, loadData } = useActivitiesDomain(user);
     const router = useRouter();
     const { showToast } = useToast();
+    const npoDisplayName = user?.npoName || user?.name || "il tuo ente";
 
     const [viewMode, setViewMode] = useState<ViewMode>("calendar");
     const [listFilter, setListFilter] = useState<"aperte" | "completate" | "annullate">("aperte");
@@ -77,7 +78,7 @@ export default function NPOCalendarScreen() {
 
     if (error) {
         return (
-            <StandardLayout label="Attività" title="Calendario">
+            <StandardLayout label="Calendario" title={npoDisplayName}>
                 <ErrorState
                     title="Errore caricamento"
                     description="Impossibile recuperare i tuoi progetti."
@@ -89,8 +90,8 @@ export default function NPOCalendarScreen() {
 
     return (
         <StandardLayout
-            label="ATTIVITÀ"
-            title="Calendario"
+            label="Calendario"
+            title={npoDisplayName}
             rightElement={HeaderActions}
             hideBack={true}
             refreshControl={

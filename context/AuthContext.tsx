@@ -44,7 +44,6 @@ interface AuthContextType {
     checkEmailConfirmationStatus: (email: string) => Promise<boolean>;
     requestPasswordReset: (email: string) => Promise<void>;
     completePasswordRecovery: (newPassword: string) => Promise<void>;
-    getNPOFollowers: (npoId: string) => AppUser[];
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -72,7 +71,6 @@ const AuthContext = createContext<AuthContextType>({
     checkEmailConfirmationStatus: async () => false,
     requestPasswordReset: async () => { },
     completePasswordRecovery: async () => { },
-    getNPOFollowers: () => [],
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -591,13 +589,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user, refreshUsers]);
 
-    const getNPOFollowers = useCallback((npoId: string): AppUser[] => {
-        return usersDB.filter(u =>
-            u.role === "VOLUNTEER" &&
-            u.followed_entities?.some(e => e.npo_id === npoId)
-        );
-    }, [usersDB]);
-
     const getUserById = useCallback((id: string) => {
         return usersDB.find(u => u.id === id);
     }, [usersDB]);
@@ -718,7 +709,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoggingOut,
         isLoaded,
         updateUserProfile,
-        getNPOFollowers,
         getUserById,
         fetchUserById,
         setUser,
@@ -733,7 +723,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         checkEmailConfirmationStatus,
         requestPasswordReset,
         completePasswordRecovery
-    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getNPOFollowers, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation, checkEmailConfirmationStatus, requestPasswordReset, completePasswordRecovery]);
+    }), [user, usersDB, login, register, logout, isLoading, isLoggingOut, isLoaded, updateUserProfile, getUserById, fetchUserById, setUser, resetUsers, refreshUsers, requestAccountDeletion, cancelAccountDeletion, getReferralCount, updateEmail, updatePassword, resendSignupConfirmation, checkEmailConfirmationStatus, requestPasswordReset, completePasswordRecovery]);
 
     return (
         <AuthContext.Provider value={value}>

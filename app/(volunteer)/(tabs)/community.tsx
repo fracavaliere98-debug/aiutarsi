@@ -182,11 +182,12 @@ export default function CommunityScreen() {
     }, [isLoadingMore, loadMoreFeed, posts.length]);
 
     const rightElement = isNPO ? <NPOHeaderActions showAddPost={true} /> : <VolunteerHeaderActions showAddPost={true} />;
+    const npoDisplayName = user?.npoName || user?.name || "il tuo ente";
 
     return (
         <StandardLayout
-            label="Storie di impatto"
-            title="Community"
+            label={isNPO ? "Community" : "Storie di impatto"}
+            title={isNPO ? npoDisplayName : "Community"}
             bg="bg-slate-50"
             noScroll={true}
             noPadding={true}

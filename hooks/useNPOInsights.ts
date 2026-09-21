@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { gemmaService } from "../services/GemmaService";
 import { useActivitiesDomain } from "./activities/selectors";
 import { useNPOApplications } from "./applications/selectors";
+import { useNPOFollowersQuery } from "./npo/queries";
 
 export type InsightType = 'SMART_MATCH' | 'PENDING' | 'DROUGHT' | 'STABILITY' | 'MILESTONE' | 'OVERVIEW';
 
@@ -20,9 +21,10 @@ export interface NPOInsight {
 }
 
 export const useNPOInsights = () => {
-    const { user, getNPOFollowers } = useAuth();
+    const { user } = useAuth();
     const { activities, activityApplications } = useActivitiesDomain(user);
     const npoApplications = useNPOApplications(user, user?.id);
+    const { data: followers = [] } = useNPOFollowersQuery(user?.role === 'NPO' ? user.id : undefined);
     const router = useRouter();
 
     const [mutedIds, setMutedIds] = useState<string[]>([]);
@@ -39,7 +41,6 @@ export const useNPOInsights = () => {
         });
         const myNPOApps = npoApplications.filter(app => app.npoId === user.id);
         const now = new Date();
-        const followers = getNPOFollowers(user.id);
         const allPending = [
             ...myActivityApps.filter(a => a.status === 'PENDING'),
             ...myNPOApps.filter(a => a.status === 'PENDING')
@@ -181,7 +182,7 @@ export const useNPOInsights = () => {
             .filter(i => !mutedIds.includes(i.id))
             .sort((a, b) => a.priority - b.priority);
 
-    }, [activities, activityApplications, npoApplications, user, mutedIds, router, getNPOFollowers]);
+    }, [activities, activityApplications, npoApplications, user, mutedIds, router, followers]);
 
     useEffect(() => {
         const activeIds = new Set(baseInsights.map((insight) => insight.id));

@@ -16,11 +16,12 @@ import { InsightCarousel } from "../../../components/InsightCarousel";
 import { reportService } from "../../../services/ReportService";
 import { useActivitiesDomain, useNPORating } from "../../../hooks/activities/selectors";
 import { useApplicationsDomain, useNPOApplications } from "../../../hooks/applications/selectors";
+import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { colors } from "@/theme";
 import { AppActivity } from "../../../types";
 
 export default function NPODashboard() {
-    const { user, getNPOFollowers, refreshUsers } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const { activities, activityApplications, loadData } = useActivitiesDomain(user);
     const { refreshApplications } = useApplicationsDomain(user);
@@ -33,11 +34,13 @@ export default function NPODashboard() {
     const lowCoverageCount = lowCoverageActivities.length;
     const overdueCount = overdueActivities.length;
 
+    const { data: followers = [], refetch: refetchFollowers } = useNPOFollowersQuery(user?.id);
+
     // Refresh followers when screen gains focus to update "online" status
     useFocusEffect(
         useCallback(() => {
-            refreshUsers();
-        }, [refreshUsers])
+            refetchFollowers();
+        }, [refetchFollowers])
     );
 
     // Filter activities created by this NPO
@@ -52,7 +55,6 @@ export default function NPODashboard() {
     const npoRating = useNPORating(user?.id);
 
     // Calculate followers (volunteers following the NPO)
-    const followers = getNPOFollowers(user?.id || "");
     const followerCount = followers.length;
 
     // Sincronizzazione "Iscrizioni" con numero reale di volontari approvati (APPROVED)
@@ -86,20 +88,20 @@ export default function NPODashboard() {
         setIsRefreshing(true);
         try {
             await Promise.all([
-                refreshUsers(),
+                refetchFollowers(),
                 loadData(),
                 refreshApplications(),
             ]);
         } finally {
             setIsRefreshing(false);
         }
-    }, [loadData, refreshApplications, refreshUsers]);
+    }, [loadData, refreshApplications, refetchFollowers]);
 
     const HeaderActions = <NPOHeaderActions />;
 
     return (
         <StandardLayout
-            label="Panoramica Ente"
+            label="Panoramica"
             title={user?.npoName || "La Tua NPO"}
             rightElement={HeaderActions}
             bg="bg-[#f6f6f8]"
@@ -190,6 +192,7 @@ export default function NPODashboard() {
                         borderRadius: 22,
                         overflow: 'hidden',
                         marginBottom: 20,
+                        marginHorizontal: -8,
                     }}
                     testID="npo-dashboard-low-coverage"
                 >
@@ -223,6 +226,7 @@ export default function NPODashboard() {
                         borderRadius: 22,
                         overflow: 'hidden',
                         marginBottom: 20,
+                        marginHorizontal: -8,
                     }}
                     testID="npo-dashboard-overdue"
                 >

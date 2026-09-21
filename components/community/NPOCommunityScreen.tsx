@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { CommunityHero } from './CommunityHero';
 import { CommunityCompactPostCard } from './CommunityCompactPostCard';
 import { useNPOApplications } from '../../hooks/applications/selectors';
+import { useNPOFollowersQuery } from '../../hooks/npo/queries';
 import { StoryAuthorGroup } from '../../hooks/stories/types';
 import { colors, palette, spacing } from "@/theme";
 
@@ -41,8 +42,9 @@ export function NPOCommunityScreen({
     onStoryPress,
 }: NPOCommunityScreenProps) {
     const router = useRouter();
-    const { user, getNPOFollowers } = useAuth();
+    const { user } = useAuth();
     const applications = useNPOApplications(user, user?.id);
+    const { data: followers = [] } = useNPOFollowersQuery(user?.id);
     const [draftLoadingId, setDraftLoadingId] = useState<string | null>(null);
     const [showHero, setShowHero] = useState(true);
 
@@ -83,12 +85,12 @@ export function NPOCommunityScreen({
 
         return {
             npoName: user?.npoName || user?.name || 'Ente',
-            followerCount: user ? getNPOFollowers(user.id).length : 0,
+            followerCount: followers.length,
             openActivitiesCount: myOpenActivities.length,
             pendingApplicationsCount: applications.filter((application) => application.npoId === user?.id && application.status === 'PENDING').length,
             totalImpactHours: Math.floor(totalDonatedHours),
         };
-    }, [activities, applications, getNPOFollowers, myOpenActivities.length, user]);
+    }, [activities, applications, followers, myOpenActivities.length, user]);
 
     const openDraftScreen = (draft: CommunityPostDraftResult, params: {
         label: string;

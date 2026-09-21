@@ -18,7 +18,7 @@ export const VolunteerHeaderActions = ({ showAddPost }: { showAddPost?: boolean 
     const iconSize = avatarSize > 44 ? 22 : 20;
 
     return (
-        <View className="flex-row items-center gap-2" style={{ marginTop: 5 }}>
+        <View className="flex-row items-center gap-2">
             <TouchableOpacity
                 onPress={() => router.push("/(volunteer)/notifications" as any)}
                 className="bg-white/10 rounded-2xl border border-white/20 relative items-center justify-center"

@@ -38,7 +38,7 @@ export const Layout = {
     },
     isSmallDevice: SCREEN_WIDTH < 375,
     isTablet: SCREEN_WIDTH > 600,
-    headerHeight: verticalScale(104),
+    headerHeight: verticalScale(84),
     // Standard font sizes that scale nicely
     fontSize: {
         xs: moderateScale(11),

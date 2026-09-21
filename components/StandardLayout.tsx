@@ -1,6 +1,7 @@
 import { ScrollView, View, TouchableOpacity, Text } from "react-native";
 import { ReactNode } from "react";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenWrapper } from "./ScreenWrapper";
 import { ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
@@ -42,6 +43,7 @@ export function StandardLayout({
 }: StandardLayoutProps) {
     const { user } = useAuth();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const Content = noScroll ? View : ScrollView;
     const bottomInset = useBottomScreenInset(24);
 
@@ -65,10 +67,10 @@ export function StandardLayout({
     };
 
     return (
-        <ScreenWrapper bg={bg} className="px-0" withPadding={false} edges={["top"]}>
+        <ScreenWrapper bg={bg} className="px-0" withPadding={false} edges={[]} statusBarStyle="light">
             <View
-                className={`${getHeaderColor()} pt-6 pb-4 px-6 rounded-b-[32px] shadow-lg mb-4 justify-center`}
-                style={{ minHeight: Layout.headerHeight }}
+                className={`${getHeaderColor()} pb-3 px-6 rounded-b-[32px] shadow-lg mb-3 justify-center`}
+                style={{ height: Layout.headerHeight + insets.top, paddingTop: insets.top + 8 }}
             >
                 {headerContent ? (
                     headerContent
@@ -88,12 +90,11 @@ export function StandardLayout({
                                 >
                                     {label}
                                 </Text>
-                                <Text 
-                                    className="text-white font-black" 
+                                <Text
+                                    className="text-white font-black"
                                     style={{ fontSize: Layout.fontSize['2xl'] }}
                                     numberOfLines={1}
-                                    adjustsFontSizeToFit={true}
-                                    minimumFontScale={0.7}
+                                    ellipsizeMode="tail"
                                 >
                                     {title}
                                 </Text>

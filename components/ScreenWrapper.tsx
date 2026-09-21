@@ -8,6 +8,7 @@ interface ScreenWrapperProps {
     bg?: string;
     withPadding?: boolean;
     edges?: Edge[];
+    statusBarStyle?: "dark" | "light";
 }
 
 export function ScreenWrapper({
@@ -15,11 +16,12 @@ export function ScreenWrapper({
     className,
     bg = "bg-background-light",
     withPadding = true,
-    edges
+    edges,
+    statusBarStyle = "dark"
 }: ScreenWrapperProps) {
     return (
         <SafeAreaView edges={edges} className={`flex-1 ${bg}`}>
-            <StatusBar style="dark" />
+            <StatusBar style={statusBarStyle} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={0}

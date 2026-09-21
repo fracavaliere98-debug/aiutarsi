@@ -19,12 +19,14 @@ import { UserAvatar } from "../../../components/UserAvatar";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
+import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { supabase } from "../../../utils/supabase";
 import { colors } from "@/theme";
 
 export default function NPOProfileScreen() {
-    const { user, getNPOFollowers, fetchUserById, setUser } = useAuth();
+    const { user, fetchUserById, setUser } = useAuth();
     const { activities, reviews, loadData } = useActivitiesDomain(user);
+    const { data: followers = [] } = useNPOFollowersQuery(user?.id);
     const router = useRouter();
     const params = useLocalSearchParams();
     const [activeTab, setActiveTab] = useState<"info" | "attivita" | "recensioni" | "referente">(() => {
@@ -46,7 +48,7 @@ export default function NPOProfileScreen() {
     const npoActivities = (activities || []).filter((a: any) => a.npoId === user?.id);
     const openActivities = npoActivities.filter((a: any) => a.status === "APERTA");
     const pastActivities = npoActivities.filter((a: any) => a.status === "COMPLETATA");
-    const followerCount = user?.id ? getNPOFollowers(user.id).length : 0;
+    const followerCount = followers.length;
     const npoReviews = (reviews || []).filter((r: any) => {
         const activity = (activities || []).find((a: any) => a.id === r.activityId);
         return activity?.npoId === user?.id;

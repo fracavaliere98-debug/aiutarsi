@@ -50,6 +50,7 @@ L'app usa tre ambienti distinti gestiti da EAS:
 | **Development** | `development` | — | manuale (`expo start`) |
 | **Preview** | `preview` | `preview` | push su `main` → GitHub Actions |
 | **Production** | `production` | `production` | tag `v*.*.*` → GitHub Actions |
+| **Production (APK demo/test)** | `production-apk` | `production` | manuale (`eas build --profile production-apk --platform android`) — APK a distribuzione interna, stesso backend di produzione, nessuna review store. Utile per test rapidi o demo prima della submission ufficiale. |
 
 ### Configurare EAS Secrets (primo deploy)
 
@@ -158,3 +159,4 @@ maestro test maestro/flows/
 - Design system: [docs/design-system.md](./docs/design-system.md)
 - Contratto ambienti: [docs/env-contract.md](./docs/env-contract.md)
 - Checklist release breve: [docs/prod-migration-checklist.md](./docs/prod-migration-checklist.md)
+- Piano go-to-market / lancio pilota: [docs/go-to-market-pilot.md](./docs/go-to-market-pilot.md)

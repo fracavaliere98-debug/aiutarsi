@@ -19,7 +19,7 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
     const iconSize = avatarSize > 44 ? 22 : 20;
 
     return (
-        <View className="flex-row items-center gap-2.5 h-full" style={{ marginTop: 5 }}>
+        <View className="flex-row items-center gap-2.5 h-full">
             <TouchableOpacity
                 onPress={() => router.push("/(npo)/notifications" as any)}
                 className="relative bg-white/10 rounded-2xl active:scale-90 items-center justify-center"
