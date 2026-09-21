@@ -59,7 +59,7 @@ type Props = {
     isLoading?: boolean;
     /** Ritorna false se l'ente ha già 3 attività urgenti attive (escludendo quella corrente in edit). */
     canEnableUrgent: () => boolean;
-    onDelete?: () => void;
+    onCancelActivity?: () => void;
     /**
      * Se true, appena il titolo è valorizzato dopo un reset (tipicamente arrivando da "Rilancia con AI"),
      * lancia in automatico una rifinitura AI della descrizione, una sola volta.
@@ -80,7 +80,7 @@ export function ActivityForm({
     isSubmitting = false,
     isLoading = false,
     canEnableUrgent,
-    onDelete,
+    onCancelActivity,
     autoCurateOnLoad = false,
 }: Props) {
     const { showToast } = useToast();
@@ -479,11 +479,11 @@ export function ActivityForm({
                                 </View>
                             </View>
 
-                            {mode === "edit" && onDelete && (
-                                <TouchableOpacity onPress={onDelete} disabled={isSubmitting} className="mt-2 items-center active:opacity-50">
+                            {mode === "edit" && onCancelActivity && (
+                                <TouchableOpacity onPress={onCancelActivity} disabled={isSubmitting} className="mt-2 items-center active:opacity-50">
                                     <View className="flex-row items-center gap-2">
                                         <Trash2 size={14} color="#EF4444" />
-                                        <Text className="text-red-500 font-bold text-sm underline">Elimina questa attività</Text>
+                                        <Text className="text-red-500 font-bold text-sm underline">Annulla questa attività</Text>
                                     </View>
                                 </TouchableOpacity>
                             )}

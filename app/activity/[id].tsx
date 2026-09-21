@@ -111,6 +111,7 @@ export default function ActivityDetail() {
     const currentIscritti = localIscrittiOverride ?? activity?.iscritti ?? [];
     const isEnrolled = !!user && currentIscritti.includes(user.id);
     const isFull = activity ? currentIscritti.length >= activity.slots : false;
+    const isClosed = activity?.status === 'COMPLETATA' || activity?.status === 'CANCELLATA';
 
     const [npoUser, setNpoUser] = useState<AppUser | null>(null);
 
@@ -783,6 +784,10 @@ export default function ActivityDetail() {
                         <CheckCircle2 size={16} color={colors.primary} />
                         <Text style={{ color: colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
                     </View>
+                ) : activity.status === 'CANCELLATA' && user?.role === 'VOLUNTEER' ? (
+                    <View style={{ backgroundColor: colors.dangerSoft, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.red200 }}>
+                        <Text style={{ color: colors.dangerStrong, fontWeight: '800' }}>Attività annullata</Text>
+                    </View>
                 ) : isEnrolled ? (
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                         {activity.status !== 'COMPLETATA' && (
@@ -804,7 +809,7 @@ export default function ActivityDetail() {
                                     justifyContent: 'center'
                                 }}
                             >
-                                <Text style={{ color: colors.dangerStrong, fontWeight: '700' }}>Annulla</Text>
+                                <Text style={{ color: colors.dangerStrong, fontWeight: '700' }}>Disiscriviti</Text>
                             </TouchableOpacity>
                         )}
                         <View style={{ backgroundColor: colors.successSoft, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.green75, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -814,19 +819,19 @@ export default function ActivityDetail() {
                     </View>
                 ) : user?.role === 'VOLUNTEER' ? (
                     <TouchableOpacity
-                        onPress={() => !isFull && activity.status !== 'COMPLETATA' && router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
-                        disabled={isFull || activity.status === 'COMPLETATA'}
+                        onPress={() => !isFull && !isClosed && router.push({ pathname: "/(volunteer)/review-application", params: { activityId: activity.id, type: "ACTIVITY" } } as any)}
+                        disabled={isFull || isClosed}
                         testID="btn-activity-apply"
                         style={{
-                            backgroundColor: (isFull || activity.status === 'COMPLETATA') ? '#e2e8f0' : colors.accent,
+                            backgroundColor: (isFull || isClosed) ? '#e2e8f0' : colors.accent,
                             paddingHorizontal: 26, paddingVertical: 16, borderRadius: 28,
                             flexDirection: 'row', alignItems: 'center', gap: 8
                         }}
                     >
-                        <Text style={{ color: (isFull || activity.status === 'COMPLETATA') ? '#94a3b8' : 'white', fontWeight: '900', fontSize: 16 }}>
-                            {isFull ? 'Pieno' : activity.status === 'COMPLETATA' ? 'Chiusa' : 'ISCRIVITI ORA'}
+                        <Text style={{ color: (isFull || isClosed) ? '#94a3b8' : 'white', fontWeight: '900', fontSize: 16 }}>
+                            {isFull ? 'Pieno' : isClosed ? 'Chiusa' : 'ISCRIVITI ORA'}
                         </Text>
-                        {!isFull && activity.status !== 'COMPLETATA' && <ChevronRight size={18} color="white" />}
+                        {!isFull && !isClosed && <ChevronRight size={18} color="white" />}
                     </TouchableOpacity>
                 ) : null}
             </View>

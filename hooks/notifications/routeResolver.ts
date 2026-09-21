@@ -52,6 +52,7 @@ export function resolveNotificationRoute(
       return "/(npo)/volunteers?tab=CANDIDATURE";
     case "ACTIVITY_COMPLETED":
     case "VOLUNTEER_ENROLLED":
+    case "VOLUNTEER_WITHDRAWN":
     case "SKILL_MATCH":
     case "ACTIVITY_UPDATE":
     case "ACTIVITY_REMINDER":

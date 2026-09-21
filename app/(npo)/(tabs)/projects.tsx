@@ -23,7 +23,13 @@ export default function NPOCalendarScreen() {
     const { showToast } = useToast();
 
     const [viewMode, setViewMode] = useState<ViewMode>("calendar");
-    const [listFilter, setListFilter] = useState<"aperte" | "completate">("aperte");
+    const [listFilter, setListFilter] = useState<"aperte" | "completate" | "annullate">("aperte");
+    const matchesListFilter = (p: { status: string }) =>
+        listFilter === "aperte"
+            ? p.status === "APERTA" || p.status === "IN_CORSO"
+            : listFilter === "annullate"
+                ? p.status === "CANCELLATA"
+                : p.status === "COMPLETATA";
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -159,7 +165,7 @@ export default function NPOCalendarScreen() {
                 /* List View */
                 <View>
                     {/* List Filter Toggle */}
-                    <View className="flex-row gap-4 mb-6">
+                    <View className="flex-row flex-wrap gap-x-4 gap-y-2 mb-6">
                         <TouchableOpacity onPress={() => setListFilter("aperte")}>
                             <View className="flex-row items-center gap-2">
                                 <Text className={`font-black text-base ${listFilter === "aperte" ? "text-primary" : "text-secondary/40"}`}>
@@ -187,20 +193,34 @@ export default function NPOCalendarScreen() {
                                 <View className="h-1 bg-accent rounded-full mt-1" />
                             )}
                         </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setListFilter("annullate")}>
+                            <View className="flex-row items-center gap-2">
+                                <Text className={`font-black text-base ${listFilter === "annullate" ? "text-primary" : "text-secondary/40"}`}>
+                                    Annullate
+                                </Text>
+                                {listFilter === "annullate" && (
+                                    <View className="w-2 h-2 bg-accent rounded-full" />
+                                )}
+                            </View>
+                            {listFilter === "annullate" && (
+                                <View className="h-1 bg-accent rounded-full mt-1" />
+                            )}
+                        </TouchableOpacity>
                     </View>
 
-                    {filteredProjects.filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA").length === 0 ? (
+                    {filteredProjects.filter(matchesListFilter).length === 0 ? (
                         <EmptyState
-                            emoji={listFilter === "aperte" ? "📋" : "✅"}
-                            title={listFilter === "aperte" ? "Nessun Progetto Aperto" : "Nessun Progetto Completato"}
-                            description={searchQuery ? "Nessuna attività corrisponde alla ricerca." : (listFilter === "aperte" ? "Crea la tua prima attività per iniziare a coinvolgere volontari" : "Non hai ancora completato nessuna attività.")}
+                            emoji={listFilter === "aperte" ? "📋" : listFilter === "annullate" ? "🚫" : "✅"}
+                            title={listFilter === "aperte" ? "Nessun Progetto Aperto" : listFilter === "annullate" ? "Nessuna Attività Annullata" : "Nessun Progetto Completato"}
+                            description={searchQuery ? "Nessuna attività corrisponde alla ricerca." : (listFilter === "aperte" ? "Crea la tua prima attività per iniziare a coinvolgere volontari" : listFilter === "annullate" ? "Le attività che annulli restano qui come storico." : "Non hai ancora completato nessuna attività.")}
                             actionLabel={listFilter === "aperte" ? "Crea Attività" : undefined}
                             onAction={listFilter === "aperte" ? () => router.push("/(npo)/create-activity") : undefined}
                         />
                     ) : (
                         <View>
                             {filteredProjects
-                                .filter(p => listFilter === "aperte" ? (p.status === "APERTA" || p.status === "IN_CORSO") : p.status === "COMPLETATA")
+                                .filter(matchesListFilter)
                                 .map((project) => (
                                     <View key={project.id} className="mb-4">
                                         <ActivityCard activity={project} onPress={() => router.push(`/activity/${project.id}` as any)} />

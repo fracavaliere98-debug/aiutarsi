@@ -50,11 +50,11 @@ export function useUpdateActivityMutation() {
     });
 }
 
-export function useDeleteActivityMutation() {
+export function useCancelActivityMutation() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (activityId: string) => activityService.deleteActivity(activityId),
+        mutationFn: (activityId: string) => activityService.cancelActivity(activityId),
         onSuccess: async (_, activityId) => {
             await invalidateActivityQueries(queryClient, { activityId });
         },

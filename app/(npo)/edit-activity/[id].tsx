@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import { ActivityForm, ActivityFormValues } from "../../../components/npo/ActivityForm";
 import { countActiveUrgentActivities, wasFutureActivityMovedToPast } from "../../../components/npo/activityFormLogic";
 import { useActivitiesListQuery, useActivityDetailQuery } from "../../../hooks/activities/queries";
-import { useDeleteActivityMutation, useUpdateActivityMutation } from "../../../hooks/activities/mutations";
+import { useCancelActivityMutation, useUpdateActivityMutation } from "../../../hooks/activities/mutations";
 
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
@@ -12,7 +12,7 @@ export default function EditActivityScreen() {
     const { data: activity } = useActivityDetailQuery(activityId);
     const { data: activities = [] } = useActivitiesListQuery(activity?.npoId);
     const updateActivityMutation = useUpdateActivityMutation();
-    const deleteActivityMutation = useDeleteActivityMutation();
+    const cancelActivityMutation = useCancelActivityMutation();
 
     const initialValues: ActivityFormValues = activity
         ? {
@@ -35,6 +35,10 @@ export default function EditActivityScreen() {
 
     const handleSubmit = async (values: ActivityFormValues) => {
         if (!activity) return;
+        if (activity.status === "CANCELLATA") {
+            Alert.alert("Attività annullata", "Un'attività annullata non può più essere modificata.");
+            return;
+        }
         const startISO = `${values.date}T${values.startTime}:00Z`;
         const endISO = `${values.date}T${values.endTime}:00Z`;
         if (wasFutureActivityMovedToPast(activity.dateTime, startISO)) {
@@ -63,21 +67,26 @@ export default function EditActivityScreen() {
         }
     };
 
-    const handleDelete = () => {
+    const isCancellable = activity?.status === "APERTA" || activity?.status === "IN_CORSO";
+
+    const handleCancelActivity = () => {
+        const enrolledCount = activity?.iscritti?.length ?? 0;
         Alert.alert(
-            "Elimina Attività",
-            "Sei sicuro di voler eliminare questa attività? Verrà spostata nello stato 'Cancellata' e i volontari iscritti riceveranno una notifica.",
+            "Annulla attività",
+            enrolledCount > 0
+                ? `Vuoi annullare questa attività? I ${enrolledCount} volontari iscritti riceveranno una notifica. L'attività resterà visibile nello storico come "Cancellata" e non potrà essere riattivata.`
+                : `Vuoi annullare questa attività? Resterà visibile nello storico come "Cancellata" e non potrà essere riattivata.`,
             [
-                { text: "Annulla", style: "cancel" },
+                { text: "Torna indietro", style: "cancel" },
                 {
-                    text: "Elimina",
+                    text: "Annulla attività",
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            await deleteActivityMutation.mutateAsync(activityId);
+                            await cancelActivityMutation.mutateAsync(activityId);
                             router.back();
                         } catch {
-                            Alert.alert("Errore", "Non sono riuscita a eliminare l'attività. Riprova.");
+                            Alert.alert("Errore", "Non sono riuscita ad annullare l'attività. Riprova.");
                         }
                     },
                 },
@@ -100,7 +109,7 @@ export default function EditActivityScreen() {
             submitLabel="Salva Modifiche"
             isSubmitting={updateActivityMutation.isPending}
             canEnableUrgent={() => otherUrgentCount < 3}
-            onDelete={handleDelete}
+            onCancelActivity={isCancellable ? handleCancelActivity : undefined}
         />
     );
 }

@@ -106,4 +106,22 @@ export const notificationRoutingCases: RoutingCase[] = [
     notification: { type: "FOLLOWED_NPO_POST", title: "Nuovo post", message: "", payload: {} },
     expected: "/(volunteer)/(tabs)/community",
   },
+  {
+    label: "Volunteer enrolled routes the NPO to the activity detail",
+    role: "NPO",
+    notification: { type: "VOLUNTEER_ENROLLED", title: "Nuova iscrizione", message: "", activityId: "activity-3", payload: { volunteerId: "vol-1" } },
+    expected: "/activity/activity-3",
+  },
+  {
+    label: "Volunteer withdrawn routes the NPO to the activity detail",
+    role: "NPO",
+    notification: { type: "VOLUNTEER_WITHDRAWN", title: "Iscrizione ritirata", message: "", activityId: "activity-3", payload: { volunteerId: "vol-1" } },
+    expected: "/activity/activity-3",
+  },
+  {
+    label: "Volunteer withdrawn without activity falls back to community",
+    role: "NPO",
+    notification: { type: "VOLUNTEER_WITHDRAWN", title: "Iscrizione ritirata", message: "" },
+    expected: "/(npo)/(tabs)/community",
+  },
 ];

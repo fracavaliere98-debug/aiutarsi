@@ -11,7 +11,7 @@
  * comportamenti da preservare rispetto all'app originale (vedi conversazione):
  *   1. auto-rifinitura AI su "Rilancia con AI" (ai_draft=true)
  *   2. conferma indirizzo obbligatoria solo in creazione, mai in modifica
- *   3. link "Elimina" disabilitato durante il salvataggio in modifica
+ *   3. link "Annulla questa attività" disabilitato durante il salvataggio in modifica
  *
  * Run: npx tsx scripts/test_activity_form_contract.ts
  */
@@ -291,8 +291,8 @@ function testStructuralWiring() {
 
   const activityForm = readSource("components/npo/ActivityForm.tsx");
   assert(
-    /onPress=\{onDelete\}\s+disabled=\{isSubmitting\}/.test(activityForm.replace(/\s+/g, " ")),
-    "REGRESSIONE: il link 'Elimina' deve restare disabilitato durante il salvataggio (isSubmitting)"
+    /onPress=\{onCancelActivity\}\s+disabled=\{isSubmitting\}/.test(activityForm.replace(/\s+/g, " ")),
+    "REGRESSIONE: il link 'Annulla questa attività' deve restare disabilitato durante il salvataggio (isSubmitting)"
   );
   assert(activityForm.includes("validateActivityFormSubmit"), "handleSubmit deve usare la validazione centralizzata testata sopra");
   assert(activityForm.includes("shouldAutoCurateDraft"), "l'effetto di auto-rifinitura deve usare il guard centralizzato testato sopra");
@@ -306,9 +306,9 @@ function testStructuralWiring() {
   pass("app/(npo)/create-activity.tsx: fix #1 (autoCurateOnLoad) cablato correttamente");
 
   const editWrapper = readSource("app/(npo)/edit-activity/[id].tsx");
-  assert(editWrapper.includes("onDelete={handleDelete}"), "edit-activity/[id].tsx deve passare onDelete ad ActivityForm");
+  assert(editWrapper.includes("onCancelActivity={isCancellable ? handleCancelActivity : undefined}"), "edit-activity/[id].tsx deve passare onCancelActivity ad ActivityForm (solo se annullabile)");
   assert(editWrapper.includes("wasFutureActivityMovedToPast"), "edit-activity/[id].tsx deve riusare il guard data-passata testato sopra");
-  pass("app/(npo)/edit-activity/[id].tsx: wiring onDelete e guard data invariati");
+  pass("app/(npo)/edit-activity/[id].tsx: wiring onCancelActivity e guard data invariati");
 }
 
 // ── Runner ────────────────────────────────────────────────────────────────

@@ -35,6 +35,7 @@ function getNotificationIcon(type: string, title?: string) {
     case "NPO_WEEKLY_RECAP":
       return { Icon: ChartColumnIncreasing, color: "#7c3aed" };
     case "VOLUNTEER_ENROLLED":
+    case "VOLUNTEER_WITHDRAWN":
       return { Icon: Users, color: colors.accent };
     case "APPLICATION_RECEIVED":
       return { Icon: FileText, color: colors.primary };

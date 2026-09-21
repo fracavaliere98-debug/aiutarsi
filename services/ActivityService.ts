@@ -541,18 +541,62 @@ export class ActivityService {
         return activity;
     }
 
-    async deleteActivity(id: string): Promise<void> {
-        // Soft delete
-        const { error } = await this._withTimeout(
+    /**
+     * Annulla un'attività (soft, irreversibile lato app): resta nello storico con status
+     * CANCELLATA e badge "Cancellata". Non esiste alcun percorso di cancellazione fisica.
+     * Notifica una sola volta i volontari iscritti: l'update è condizionato allo stato
+     * corrente, quindi un secondo tap / retry non rimanda le notifiche.
+     */
+    async cancelActivity(id: string): Promise<void> {
+        const { data: updatedRows, error } = await this._withTimeout(
             supabase
                 .from('activities')
                 .update({ status: 'CANCELLATA' })
-                .eq('id', id),
+                .eq('id', id)
+                .in('status', ['APERTA', 'IN_CORSO'])
+                .select('id, title'),
             8000,
-            'activities.delete'
+            'activities.cancel'
         );
 
         if (error) throw error;
+
+        // Nessuna riga aggiornata: già annullata/completata, oppure non è dell'ente (RLS).
+        if (!updatedRows || updatedRows.length === 0) {
+            throw new Error('ACTIVITY_NOT_CANCELLABLE');
+        }
+
+        const title = updatedRows[0]?.title || 'Attività';
+
+        const { data: participants, error: partError } = await this._withTimeout(
+            supabase
+                .from('activity_participants')
+                .select('user_id')
+                .eq('activity_id', id)
+                .in('status', ['APPROVED', 'REGISTERED']),
+            8000,
+            'activities.cancel.participants'
+        );
+
+        if (!partError && participants && participants.length > 0) {
+            const notifications = participants.map((p: any) => ({
+                user_id: p.user_id,
+                type: 'ACTIVITY_UPDATE',
+                title: 'Attività annullata',
+                message: `L'attività "${title}" a cui eri iscritto è stata annullata dall'ente.`,
+                related_activity_id: id,
+                read: false
+            }));
+
+            const { error: notifError } = await this._withTimeout(
+                supabase.from('notifications').insert(notifications),
+                8000,
+                'activities.cancel.notifications'
+            );
+
+            if (notifError) console.error("Error sending cancellation notifications:", notifError);
+        }
+
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
     }
 

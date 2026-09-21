@@ -66,6 +66,13 @@ export default function ReviewApplication() {
                 showToast("error", "Errore durante l'invio. Potresti aver già inviato una candidatura.");
             }
         } catch (error) {
+            if (String((error as any)?.message ?? "").includes("ACTIVITY_CANCELLED")) {
+                // Blocco lato DB (trigger block_join_cancelled_activity): l'attività è stata annullata
+                // mentre il volontario compilava l'iscrizione.
+                showToast("error", "Questa attività è stata annullata dall'ente: non è più possibile iscriversi.");
+                router.back();
+                return;
+            }
             console.error("[ReviewApplication] handleConfirm failed", error);
             showToast("error", "Si è verificato un errore tecnico.");
         } finally {
