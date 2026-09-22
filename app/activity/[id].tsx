@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CommunityCompactPostCard } from "../../components/community/CommunityCompactPostCard";
 import { addEventToDeviceCalendar } from "../../utils/calendar";
 import { useActivityDetailQuery, useVolunteerReviewsQuery } from "../../hooks/activities/queries";
-import { useUnenrollFromActivityMutation } from "../../hooks/activities/mutations";
+import { useUnenrollFromActivityMutation, useRequestAttendanceReminderMutation } from "../../hooks/activities/mutations";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useCommunityActivityPostsQuery } from "../../hooks/community/queries";
 import { useCommunityRealtime } from "../../hooks/community/realtime";
@@ -73,6 +73,7 @@ export default function ActivityDetail() {
     const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
     const { showToast } = useToast();
     const unenrollFromActivityMutation = useUnenrollFromActivityMutation(user?.id);
+    const requestAttendanceReminderMutation = useRequestAttendanceReminderMutation();
     const recordActivityShareMutation = useRecordActivityShareMutation(user?.id);
 
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
@@ -161,6 +162,35 @@ export default function ActivityDetail() {
         !hasReviewed &&
         !isConfirmedPresent;
     const hasSubmittedReview = user?.role === 'VOLUNTEER' && isEnrolled && hasReviewed;
+
+    // ─── Reminder alla NPO (presenza in attesa di conferma) ─────────────────
+    const handleRequestAttendanceReminder = async () => {
+        if (!activity) return;
+        try {
+            const result = await requestAttendanceReminderMutation.mutateAsync(activity.id);
+            switch (result) {
+                case 'sent':
+                    showToast('success', 'Promemoria inviato all\'ente!');
+                    break;
+                case 'already_sent_recently':
+                    showToast('info', 'Promemoria già inviato di recente: riprova più tardi.');
+                    break;
+                case 'already_confirmed':
+                    showToast('info', 'La tua presenza è già stata confermata.');
+                    break;
+                case 'not_a_participant':
+                    showToast('error', 'Non risulti iscritto a questa attività.');
+                    break;
+                case 'activity_not_completed':
+                    showToast('error', 'Questa attività non è ancora conclusa.');
+                    break;
+                default:
+                    showToast('info', 'Richiesta inviata.');
+            }
+        } catch {
+            showToast('error', 'Impossibile inviare il promemoria. Riprova.');
+        }
+    };
 
     // ─── Share ──────────────────────────────────────────────────────────────
     const handleShare = async () => {
@@ -775,9 +805,26 @@ export default function ActivityDetail() {
                                 In attesa conferma
                             </Text>
                         </View>
-                        <Text style={{ color: '#9a3412', fontWeight: '700', fontSize: 12, lineHeight: 17 }}>
+                        <Text style={{ color: '#9a3412', fontWeight: '700', fontSize: 12, lineHeight: 17, marginBottom: 10 }}>
                             In attesa conferma presenza da {npoUser?.npoName || npoUser?.name || activity.npoName || 'questo ente'}.
                         </Text>
+                        <TouchableOpacity
+                            onPress={handleRequestAttendanceReminder}
+                            disabled={requestAttendanceReminderMutation.isPending}
+                            style={{
+                                backgroundColor: 'white',
+                                borderWidth: 1,
+                                borderColor: palette.orange200,
+                                borderRadius: 14,
+                                paddingVertical: 9,
+                                alignItems: 'center',
+                                opacity: requestAttendanceReminderMutation.isPending ? 0.6 : 1,
+                            }}
+                        >
+                            <Text style={{ color: palette.orange700, fontWeight: '800', fontSize: 12 }}>
+                                {requestAttendanceReminderMutation.isPending ? 'Invio in corso…' : "Invia promemoria all'ente"}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 ) : hasSubmittedReview ? (
                     <View style={{ backgroundColor: palette.purple50, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.purple100, flexDirection: 'row', alignItems: 'center', gap: 6 }}>

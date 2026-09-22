@@ -734,6 +734,7 @@ export class ActivityService {
             npoId: r.npo_id,
             volunteerId: r.volunteer_id,
             isPresent: r.is_present,
+            confirmedBy: r.confirmed_by,
             stars: r.stars,
             comment: r.comment,
             date: r.created_at
@@ -769,10 +770,31 @@ export class ActivityService {
             npoId: r.npo_id,
             volunteerId: r.volunteer_id,
             isPresent: r.is_present,
+            confirmedBy: r.confirmed_by,
             stars: r.stars,
             comment: r.comment,
             date: r.created_at
         }));
+    }
+
+    /**
+     * RPC chiamata dalla CTA "Invia promemoria all'ente" (schermata attività,
+     * stato "In attesa conferma"). Ritorna un codice testuale (mai eccezione
+     * per gli esiti del normale flusso), mappato in Italiano lato UI:
+     * 'sent' | 'already_sent_recently' | 'not_a_participant' |
+     * 'already_confirmed' | 'activity_not_completed'.
+     * Vedi migration 20260922100000_attendance_auto_confirm_and_reminder.sql.
+     */
+    async requestAttendanceConfirmationReminder(activityId: string): Promise<string> {
+        const { data, error } = await this._withTimeout(
+            supabase.rpc('request_attendance_confirmation_reminder', { p_activity_id: activityId }),
+            8000,
+            'activities.requestAttendanceConfirmationReminder'
+        );
+
+        if (error) throw error;
+
+        return data as string;
     }
 
     async getLatestActivity(): Promise<AppActivity | null> {

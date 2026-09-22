@@ -223,6 +223,9 @@ export interface OldVolunteerReview {
     npoId: string;
     volunteerId: string;
     isPresent: boolean;
+    // 'npo' = confermata dall'ente; 'auto' = confermata automaticamente dopo 72h
+    // senza risposta della NPO (vedi migration attendance_auto_confirm_72h).
+    confirmedBy?: 'npo' | 'auto';
     stars?: number;
     comment?: string;
     date: string;

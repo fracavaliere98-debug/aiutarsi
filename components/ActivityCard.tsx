@@ -1,8 +1,10 @@
-import { View, Text, StyleProp, ViewStyle } from "react-native";
-import { Clock, Building2, MapPin, RefreshCw } from "lucide-react-native";
+import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
+import { Clock, Building2, MapPin, RefreshCw, ThumbsUp } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { useVolunteerReviewsQuery } from "../hooks/activities/queries";
 
 import { AppActivity, OldActivity } from "../types";
 import { colors } from "@/theme";
@@ -20,6 +22,8 @@ const OVERLAP = 5;
 
 export function ActivityCard({ activity, onPress, style, showProgress }: ActivityCardProps) {
     const { users, user } = useAuth();
+    const { showToast } = useToast();
+    const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
 
     const status = activity.status;
     const npoId = activity.npoId;
@@ -63,12 +67,47 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
     const isVolunteerEnrolled = user?.role === 'VOLUNTEER' && !!user?.id && iscritti.includes(user.id);
     const isOwnNpoActivity = user?.role === 'NPO' && npoId === user.id;
 
+    // Presenza confermata (NPO o auto dopo 72h) — thumb up verde/grigio, in alto
+    // a destra sulla card (vedi migration attendance_auto_confirm_and_reminder).
+    const myConfirmedReview = user?.role === 'VOLUNTEER' && user?.id && status === 'COMPLETATA'
+        ? volunteerReviews.find(r => r.activityId === activity.id && r.volunteerId === user.id && r.isPresent === true)
+        : undefined;
+    const isAutoConfirmed = myConfirmedReview?.confirmedBy === 'auto';
+
     return (
         <SoftCard
             className="bg-white p-4"
             style={style as any}
             onPress={onPress}
         >
+            {myConfirmedReview && (
+                <TouchableOpacity
+                    onPress={() => showToast(
+                        'info',
+                        isAutoConfirmed
+                            ? "Presenza confermata automaticamente: l'ente non ha risposto entro 72h dalla fine dell'attività."
+                            : "Presenza confermata dall'ente."
+                    )}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 10,
+                        backgroundColor: 'white',
+                        borderRadius: 999,
+                        padding: 5,
+                        borderWidth: 1,
+                        borderColor: '#f1f5f9',
+                    }}
+                >
+                    <ThumbsUp
+                        size={12}
+                        color={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                        fill={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                    />
+                </TouchableOpacity>
+            )}
             <View style={{ flex: 1, justifyContent: 'space-between' }}>
                 <View>
                     <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>

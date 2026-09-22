@@ -31,29 +31,47 @@ nel piano/doc pertinente (o in una issue) e rimuoverlo da qui.
   test forza a *rivedere* il file quando cambia qualcosa, non garantisce che
   il contenuto scritto sia sempre corretto (quello resta un giudizio umano).
 
-- [ ] **Reminder conferma presenza — CTA per il volontario.** Nella
-  schermata "Valuta la tua esperienza", quando in basso è mostrato lo stato
-  "in attesa conferma", aggiungere una CTA affiancata per inviare un reminder
-  all'associazione (NPO) di confermare la presenza, con notifica che arriva
-  alla NPO. **Localizzato 2026-09-22, non implementato**: il blocco esatto è
-  in `app/activity/[id].tsx`, ramo `isWaitingPresenceConfirmation` (righe
-  ~158-163 la condizione, ~767-780 il box "In attesa conferma" — oggi solo
-  testo, nessuna CTA). Serve una nuova notifica verso la NPO (tipo dedicato o
-  riuso di `ACTIVITY_UPDATE`/`ACTIVITY_COMPLETED` con `related_activity_id`)
-  e probabilmente un rate-limit per evitare reminder ripetuti a raffica sullo
-  stesso volontario/attività. Cambio di comportamento visibile a
-  NPO/volontari → serve ok esplicito prima di implementare (regola di
-  progetto).
+- [x] **Reminder conferma presenza — CTA per il volontario. FATTO
+  2026-09-22** (ok esplicito dato dall'utente in chat lo stesso giorno,
+  insieme al punto 72h sotto — cambio di comportamento visibile a
+  NPO/volontari, come richiesto dalla regola di progetto). Nella schermata
+  attività, nel box "In attesa conferma" (`app/activity/[id].tsx`, ramo
+  `isWaitingPresenceConfirmation`) è stato aggiunto un bottone "Invia
+  promemoria all'ente" che chiama la nuova RPC
+  `request_attendance_confirmation_reminder(activity_id)` (migration
+  `20260922100000_attendance_auto_confirm_and_reminder.sql`, applicata su
+  **staging**, non ancora su produzione). La RPC verifica che il chiamante
+  sia davvero un iscritto in attesa su quell'attività e inserisce una
+  notifica `ATTENDANCE_REMINDER` alla NPO, con un cooldown di 24h per
+  attività (non per singolo volontario, per evitare spam se più volontari la
+  usano lo stesso giorno) — ritorna un codice testuale (`sent` /
+  `already_sent_recently` / `already_confirmed` / `not_a_participant` /
+  `activity_not_completed`) mappato in altrettanti messaggi `showToast` per
+  l'utente, mai un `Alert.alert` (convenzione feedback UI del progetto).
+  Service layer: `ActivityService.requestAttendanceConfirmationReminder()` +
+  hook `useRequestAttendanceReminderMutation()` in
+  `hooks/activities/mutations.ts`.
 
-  - [x] **Verificato 2026-09-22: NO, non esiste nessuna regola di
-    auto-conferma dopo 72h.** In `supabase/migrations/20260921150000_attendance_confirmation.sql`
-    solo la NPO proprietaria può impostare `volunteer_reviews.is_present =
-    true` (trigger `guard_volunteer_review_attendance`, security definer,
-    nessun bypass lato client). Nessun cron job, nessun trigger a tempo:
-    grep su tutte le migration e su `supabase/functions/` per `is_present`/
-    cron non trova nessuna logica di conferma automatica. Se la NPO non
-    conferma, il volontario **non riceve XP/ore/badge, a tempo indefinito** —
-    è esattamente il motivo per cui la CTA di reminder (punto sopra) ha senso.
+  - [x] **Verificato 2026-09-22: NO, non esisteva nessuna regola di
+    auto-conferma dopo 72h — IMPLEMENTATA lo stesso giorno.** In
+    `supabase/migrations/20260921150000_attendance_confirmation.sql` solo la
+    NPO proprietaria poteva impostare `volunteer_reviews.is_present = true`
+    (trigger `guard_volunteer_review_attendance`, security definer, nessun
+    bypass lato client): nessun cron, nessun trigger a tempo, quindi un
+    volontario non confermato restava senza XP/ore/badge a tempo indefinito.
+    Aggiunta la funzione `auto_confirm_stale_attendance()` (migration
+    `20260922100000_attendance_auto_confirm_and_reminder.sql`, cron orario
+    `auto-confirm-stale-attendance-hourly`, applicata su **staging**): per le
+    attività `COMPLETATA` da più di 72h, i partecipanti che non hanno ancora
+    **nessuna** riga in `volunteer_reviews` (la NPO non si è mai espressa, né
+    presente né assente — chi è stato segnato assente dalla NPO NON viene
+    toccato) vengono confermati presenti con `confirmed_by = 'auto'`. La
+    guardia esistente forza `confirmed_by = 'npo'` in ogni altro caso, anche
+    se un client lo mandasse esplicitamente — solo il cron, tramite un flag
+    di sessione (`set_config`), può scrivere `'auto'`. Vedi voce di Decision
+    Log in fondo a questo file per il ragionamento su "che motivazione ha la
+    NPO di confermare, allora?" e su come si è deciso di tracciare/mostrare
+    la distinzione npo/auto.
   - [x] **Verificato 2026-09-22: SÌ, esiste già.** `hooks/useNPOInsights.ts`
     genera un insight `type: 'ATTENDANCE'` con **priorità 1** (la più alta)
     quando ci sono attività `COMPLETATA` con presenze non confermate ("Conferma
@@ -66,3 +84,90 @@ nel piano/doc pertinente (o in una issue) e rimuoverlo da qui.
     separata (tabella `notifications`, tipo `ACTIVITY_COMPLETED`, "Conferma le
     presenze") inserita dal trigger `notify_participants_on_activity_change`
     a fine attività.
+
+- [x] **Tracciamento e visibilità conferma npo/auto — FATTO 2026-09-22.**
+  Aggiunta la colonna `volunteer_reviews.confirmed_by` (`'npo'` di default |
+  `'auto'`, scrivibile solo dal cron — vedi punto 72h sopra). Resa visibile in
+  app su richiesta esplicita dell'utente (non solo tracciamento interno): su
+  `components/ActivityCard.tsx` (la card condivisa, usata in 7 schermate sia
+  volontario che NPO — non la `EnrolledActivityCard.tsx`, risultata codice
+  morto, non importata da nessuna schermata), quando il volontario loggato ha
+  una presenza confermata su un'attività `COMPLETATA`, in alto a destra sulla
+  card compare una piccola icona pollice in su: **verde** se `confirmed_by !==
+  'auto'` (conferma diretta della NPO), **grigia** se `confirmed_by === 'auto'`
+  (scattata da sola dopo 72h). Al tocco mostra una spiegazione via `showToast`
+  (mai `Alert.alert`, per coerenza con la convenzione feedback UI). La card
+  legge il dato da `useVolunteerReviewsQuery()` (già cache-condivisa da React
+  Query, nessun prop nuovo da passare nei 7 punti di utilizzo).
+
+## Lavoro futuro (solo annotato, non implementato)
+
+- **Reputazione NPO.** Segnalato dall'utente il 2026-09-22 come idea per il
+  futuro, non da implementare ora: un punteggio/indicatore di reputazione per
+  ogni NPO basato sul suo comportamento in app. Input menzionati
+  esplicitamente dall'utente: se confermano le presenze o lasciano che
+  scattino in automatico dopo 72h (ora misurabile grazie a `confirmed_by`,
+  vedi sopra), recensioni ricevute, numero di attività organizzate, numero di
+  volontari coinvolti, numero di follower, segnalazioni ricevute (tabella
+  `reports`, già esistente per altri scopi). Nessun disegno di schema o UI
+  ancora fatto: da riprendere come una vera epic (discovery completa, non un
+  fix) quando si deciderà di affrontarla — coinvolge scelte di prodotto
+  (cosa pesa quanto, se mostrarla pubblicamente o solo internamente/agli
+  admin) più che tecniche.
+
+## Decision Log
+
+### 2026-09-22 — Auto-conferma presenza dopo 72h + visibilità npo/auto
+
+**Contesto.** La conferma presenza (migration `20260921150000`) richiede
+un'azione attiva della NPO senza scadenza: se la NPO non risponde, il
+volontario resta indefinitamente senza XP/ore/badge/possibilità di
+recensire — un problema reale per l'esperienza volontario, aggravato dal
+fatto che target dell'app includono utenti che potrebbero non capire perché
+sono "bloccati". L'utente ha fatto notare durante la discussione un problema
+consequente: se dopo 72h la presenza viene comunque confermata in automatico,
+quale motivazione resta alla NPO per confermare attivamente?
+
+**Opzioni considerate per la visibilità della distinzione npo/auto:**
+1. Tracciare `confirmed_by` solo internamente (nessuna UI) — proposta
+   inizialmente da Claude come opzione più conservativa in attesa di
+   validazione.
+2. Tracciare e mostrare in modo neutro/testuale (es. un tag "auto" nella
+   lista recensioni).
+3. Tracciare e mostrare in modo visivamente immediato sulla card attività —
+   scelta dall'utente: icona pollice in su, verde se confermata dalla NPO,
+   grigia se confermata in automatico, in alto a destra sulla card.
+
+**Scelta:** opzione 3. Motivazione esplicita dell'utente: rendere visibile la
+differenza è ciò che dà alla NPO un incentivo reale a confermare
+attivamente (la conferma automatica è un fallback per il volontario, non una
+funzione equivalente per la NPO) — coerente con l'idea, annotata come lavoro
+futuro, di una reputazione NPO che userebbe proprio questo dato come input.
+
+**Trade-off/limiti accettati:**
+- La conferma automatica presume sempre presenza (`is_present = true`): non
+  può in alcun modo sostituire una NPO che segna attivamente degli assenti —
+  se la NPO non fa nulla, tutti i non ancora segnati vengono confermati
+  presenti, il che è il comportamento desiderato (dare comunque XP al
+  volontario) ma non equivale a "verificare" la presenza reale.
+  - Il cron è orario (`cron.schedule('auto-confirm-stale-attendance-hourly',
+    '0 * * * *', ...)`), quindi lo scatto avviene entro un'ora dal
+    superamento delle 72h, non esattamente al secondo.
+- Nessuna valutazione GDPR è stata fatta per questa modifica specifica: non
+  introduce nuovi dati personali (riusa `is_present`/`volunteer_id` già
+  esistenti), solo una colonna aggiuntiva (`confirmed_by`) che descrive il
+  processo di conferma, non la persona — valutazione legale non ritenuta
+  necessaria per questo motivo, ma non è stata richiesta una conferma
+  esplicita all'utente su questo punto.
+- Rate-limit del reminder: 24h per attività (non per singolo volontario), per
+  evitare spam alla NPO se più volontari usano la CTA lo stesso giorno; come
+  effetto collaterale, se un volontario invia il reminder e un altro lo rifà
+  poco dopo, il secondo riceve `already_sent_recently` anche se non ha mai
+  inviato lui stesso un reminder per quell'attività — accettato come
+  trade-off ragionevole vista la finalità (evitare spam alla NPO), non
+  ancora comunicato esplicitamente all'utente come limite del design.
+
+**Stato deploy:** migration applicata solo su **staging**
+(`pavnfiladmnwbptwlwpr`); il deploy su produzione (`ibyjkqowokxrlormkwzw`)
+richiede un ok esplicito separato, non ancora richiesto/dato in questa
+sessione.

@@ -215,7 +215,7 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         id: "attendanceconfirm",
         question: "Perché dopo l'attività vedo \"In attesa conferma\" e non ho ancora i punti XP?",
         answer:
-          "Quando un'attività termina, l'ente organizzatore deve confermare chi ha effettivamente partecipato. Solo dopo questa conferma ricevi punti XP, ore di volontariato e puoi lasciare una recensione. \"In attesa conferma\" significa solo che l'ente non ha ancora completato questo passaggio: non serve fare nulla da parte tua.",
+          "Quando un'attività termina, l'ente organizzatore deve confermare chi ha effettivamente partecipato. Solo dopo questa conferma ricevi punti XP, ore di volontariato e puoi lasciare una recensione. \"In attesa conferma\" significa solo che l'ente non ha ancora completato questo passaggio: puoi toccare \"Invia promemoria all'ente\" nella stessa schermata per avvisarlo. Se comunque passano più di 72 ore dalla fine dell'attività senza una risposta, la tua presenza viene confermata automaticamente, così non resti bloccato: in questo caso, sulla card dell'attività vedrai un'iconcina a forma di mano con il pollice in su in alto a destra, grigia invece che verde, a indicare che è stata una conferma automatica e non una conferma diretta dell'ente.",
       },
     ],
   },
@@ -342,7 +342,7 @@ export const NPO_GUIDE_SECTIONS: GuideSection[] = [
         id: "npo_confirm_attendance",
         question: "Come confermo la presenza dei volontari a un'attività conclusa?",
         answer:
-          "Quando un'attività passa a \"Completata\", nella tua Home vedi in evidenza l'avviso \"Conferma le presenze\": toccalo per aprire l'elenco degli iscritti e segnare chi ha davvero partecipato. Solo dopo la tua conferma i volontari ricevono i punti XP, le ore di volontariato e possono lasciare una recensione: è un passaggio importante, non solo formale.",
+          "Quando un'attività passa a \"Completata\", nella tua Home vedi in evidenza l'avviso \"Conferma le presenze\": toccalo per aprire l'elenco degli iscritti e segnare chi ha davvero partecipato. Un volontario in attesa può anche inviarti un promemoria in-app per ricordartelo. Attenzione: se non confermi entro 72 ore dalla fine dell'attività, la presenza di chi non hai ancora segnato viene confermata automaticamente dal sistema (e mostrata al volontario con un'iconcina grigia invece che verde, per distinguerla da una tua conferma diretta) — così nessun volontario resta bloccato senza punti XP per una tua dimenticanza. Confermare tu stessa resta comunque importante: solo la tua conferma ti permette di segnare davvero chi non si è presentato, e la conferma automatica presume sempre la presenza.",
       },
     ],
   },

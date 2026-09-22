@@ -115,3 +115,16 @@ export function useSubmitVolunteerReviewsMutation() {
         },
     });
 }
+
+export function useRequestAttendanceReminderMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (activityId: string) => activityService.requestAttendanceConfirmationReminder(activityId),
+        onSuccess: async (_, activityId) => {
+            // Nessun dato locale cambia per il volontario (la notifica va alla NPO),
+            // ma invalidiamo comunque la vista attività per coerenza futura.
+            await invalidateActivityQueries(queryClient, { activityId });
+        },
+    });
+}
