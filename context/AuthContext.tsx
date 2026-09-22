@@ -192,7 +192,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 authService.setCachedAccessToken(refreshed.session.access_token);
             }
 
-            const refreshedUser = await authService.getCurrentUser();
+            const refreshedUser = await authService.getCurrentUser(refreshed.session);
             if (refreshedUser) {
                 setUser(refreshedUser);
             }
@@ -242,7 +242,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // If Supabase finds a session, we load the full app user (with DB profile)
                 if (result?.data?.session?.user && isMounted) {
                     authService.setCachedAccessToken(result.data.session.access_token);
-                    const currentUser = await authService.getCurrentUser();
+                    const currentUser = await authService.getCurrentUser(result?.data?.session);
                     setUser(currentUser);
                 }
                 // REMOVED FALLBACK: We rely on Supabase Persistence. 
@@ -302,7 +302,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     ) {
                         return;
                     }
-                    const appUser = await authService.getCurrentUser();
+                    const appUser = await authService.getCurrentUser(session);
                     setUser(appUser);
                     // No automatic full refresh anymore
                 }
@@ -377,7 +377,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     if (refreshed.session?.access_token) {
                         authService.setCachedAccessToken(refreshed.session.access_token);
                     }
-                    const refreshedUser = await authService.getCurrentUser();
+                    const refreshedUser = await authService.getCurrentUser(refreshed.session);
                     if (refreshedUser) {
                         setUser(refreshedUser);
                     }
@@ -437,7 +437,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                                 authService.setCachedAccessToken(refreshed.session.access_token);
                             }
 
-                            const refreshedUser = await authService.getCurrentUser();
+                            const refreshedUser = await authService.getCurrentUser(refreshed.session);
                             if (refreshedUser) {
                                 setUser(refreshedUser);
                             }

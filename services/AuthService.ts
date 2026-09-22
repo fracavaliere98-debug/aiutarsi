@@ -758,7 +758,22 @@ export class AuthService {
         }
     }
 
-    async getCurrentUser(): Promise<AppUser | null> {
+    // `knownSession`: quando il chiamante ha già una sessione fresca in mano (dal proprio
+    // getSession()/refreshSession(), o dal parametro `session` di onAuthStateChange), la passa
+    // qui per evitare una SECONDA chiamata interna a getSession(). Non è solo un'ottimizzazione:
+    // getSession() (vedi commento sotto) passa per un lock di rinnovo sessione condiviso da
+    // TUTTE le operazioni auth del client (incluse le query autenticate via supabase.from(...),
+    // che devono risolvere la sessione prima di poter allegare l'access token). Ogni chiamata
+    // ridondante è un contendente in più su quel lock: se una si blocca (bug noto lato client),
+    // tutte le altre in coda — comprese chiamate DB come profiles.getUsers — ereditano il
+    // ritardo, trasformando quello che sarebbe un singolo timeout isolato in una raffica di
+    // timeout consecutivi (osservato in log reali il 2026-09-22, con INITIAL_SESSION già
+    // risolto correttamente in corso). Evitare le chiamate ridondanti non elimina il bug di
+    // fondo (resta comunque un rischio noto e già gestito col timeout), ma riduce la pressione
+    // sul lock e quindi la probabilità/gravità delle raffiche.
+    async getCurrentUser(
+        knownSession?: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] | null
+    ): Promise<AppUser | null> {
         // 1. Check Session (Basic Auth)
         // getSession() può restare bloccato a tempo indefinito se il lock interno di rinnovo
         // sessione del client resta "impegnato" (refresh mai completato/rilasciato) — stesso
@@ -768,12 +783,16 @@ export class AuthService {
         // AuthContext.tsx fanno `await authService.getCurrentUser()` senza try/catch, quindi
         // deve fallire in modo sicuro restituendo null, coerente con la firma del metodo.
         let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
-        try {
-            const result = await this._withTimeout(supabase.auth.getSession(), 'auth.getSession.currentUser', 5000);
-            session = result.data.session;
-        } catch (e) {
-            console.error("getCurrentUser: auth.getSession timed out or failed", e);
-            return null;
+        if (knownSession?.user) {
+            session = knownSession;
+        } else {
+            try {
+                const result = await this._withTimeout(supabase.auth.getSession(), 'auth.getSession.currentUser', 5000);
+                session = result.data.session;
+            } catch (e) {
+                console.error("getCurrentUser: auth.getSession timed out or failed", e);
+                return null;
+            }
         }
         if (!session?.user) return null;
 
