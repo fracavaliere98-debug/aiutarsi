@@ -6,6 +6,7 @@ import { storageService } from './StorageService';
 import { getAuthScheme, getSupabaseProjectRef, isPreviewRuntime } from '../utils/runtimeConfig';
 import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
 import { withTimeout } from '../utils/withTimeout';
+import { trackError } from '../utils/monitoring';
 
 export type EmailConfirmationState = {
     exists: boolean;
@@ -644,6 +645,18 @@ export class AuthService {
             return data.map(p => this._mapProfileToUser(p));
         } catch (e) {
             console.error("Exception fetching users", e);
+            // Strumentazione (2026-09-22): stesso motivo del trackError in getCurrentUser() -
+            // prima finiva solo in console.error, invisibile a Sentry.
+            const isTimeout = this._isTimeoutError(e);
+            trackError(e, {
+                source: "profiles.getUsers",
+            }, {
+                source: "profiles.getUsers",
+                priority: "normal",
+                classification: "warning_functional",
+                issueName: isTimeout ? "profiles_get_users_timeout" : "profiles_get_users_exception",
+                fingerprint: [isTimeout ? "profiles_get_users_timeout" : "profiles_get_users_exception"],
+            });
             return [];
         }
     }
@@ -791,6 +804,20 @@ export class AuthService {
                 session = result.data.session;
             } catch (e) {
                 console.error("getCurrentUser: auth.getSession timed out or failed", e);
+                // Strumentazione (2026-09-22): prima di questa riga il timeout finiva solo in
+                // console.error, senza mai arrivare a Sentry — nessun modo di sapere quanto
+                // spesso capita realmente o in quali condizioni (rete, cold start, reload).
+                // Non e' un fix del bug di fondo (il lock di rinnovo sessione del client puo'
+                // restare bloccato, vedi commento sopra), solo visibilita' per la prossima volta.
+                trackError(e, {
+                    source: "auth.getSession.currentUser",
+                }, {
+                    source: "auth.getSession.currentUser",
+                    priority: "normal",
+                    classification: "warning_functional",
+                    issueName: "auth_get_session_timeout",
+                    fingerprint: ["auth_get_session_timeout"],
+                });
                 return null;
             }
         }
