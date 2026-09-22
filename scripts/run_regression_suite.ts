@@ -40,6 +40,7 @@ const suite = [
   { label: "help-center-freshness-contract", path: "scripts/test_help_center_freshness_contract.ts" },
   { label: "css-import-typing-contract", path: "scripts/test_css_import_typing_contract.ts" },
   { label: "review-no-time-limit-contract", path: "scripts/test_review_no_time_limit_contract.ts" },
+  { label: "css-interop-stringify-patch-contract", path: "scripts/test_css_interop_stringify_patch_contract.ts" },
 ];
 
 for (const test of suite) {

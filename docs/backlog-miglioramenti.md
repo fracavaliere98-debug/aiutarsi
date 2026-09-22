@@ -171,3 +171,96 @@ futuro, di una reputazione NPO che userebbe proprio questo dato come input.
 (`pavnfiladmnwbptwlwpr`); il deploy su produzione (`ibyjkqowokxrlormkwzw`)
 richiede un ok esplicito separato, non ancora richiesto/dato in questa
 sessione.
+
+## Decision Log — patch-package per crash "Couldn't find a navigation context" (2026-09-22)
+
+**Contesto:** primo test reale su device dopo la migrazione SDK 54->57 +
+NativeWind v2->v4. Crash critico (ErrorBoundary, `critical_crash`) su due
+schermate scollegate tra loro (`app/(volunteer)/(tabs)/calendar.tsx`,
+`app/feedback/[id].tsx`), stesso messaggio: `Couldn't find a navigation
+context. Have you wrapped your app with 'NavigationContainer'?`.
+
+**Causa reale (verificata leggendo il codice installato, non ipotizzata):**
+il messaggio è fuorviante. `expo-router` vendorizza react-navigation
+internamente; il suo `NavigationStateContext.js` dà al valore di default del
+context dei getter (`getKey`, `getState`, ...) che lanciano volutamente
+questo errore se letti fuori da un Navigator reale. Il vero colpevole è
+`react-native-css-interop` 0.2.7 (dipendenza transitiva di NativeWind): la
+sua utility di debug `printUpgradeWarning -> stringify`
+(`render-component.js`) costruisce un messaggio di warning facendo
+`Object.entries(value)` ricorsivo senza try/catch — quando tra le props di
+un componente è raggiungibile uno di questi context "a trappola",
+`Object.entries` innesca il getter e l'eccezione non gestita crasha la
+schermata invece di limitarsi a un warning in console. Bug upstream
+confermato su GitHub, non risolto in nativewind 4.2.7 (ultima stabile) né
+nelle preview 5.0.0: https://github.com/nativewind/nativewind/issues/1536 ,
+https://github.com/nativewind/nativewind/issues/1711. I maintainer
+collegano il trigger a `shadow-*`, `opacity-*` e le scorciatoie
+colore/opacità (`bg-x/NN`, `text-x/NN`); nel nostro codice sono usate ~350
+volte in `app/`+`components/`.
+
+**Opzioni valutate:**
+1. Sostituire le utility class incriminate con inline style, schermata per
+   schermata.
+2. Patchare `react-native-css-interop` alla fonte con `patch-package`.
+3. Solo diagnosi, nessuna azione immediata.
+
+**Scelta:** opzione 2, confermata esplicitamente dall'utente. Motivazione:
+la scala (~350 occorrenze in tutto l'app) rende l'opzione 1 impraticabile
+come fix completa (avrebbe lasciato scoperte tutte le schermate non ancora
+osservate in crash); il bug è dev-only (`printUpgradeWarning` è dentro un
+`if (process.env.NODE_ENV !== "production")`), quindi non può verificarsi
+in una build di produzione — solo in Expo Go/dev client, che è esattamente
+dove si sta ancora testando questa migrazione.
+
+**Implementazione:** `patches/react-native-css-interop+0.2.7.patch` rende
+`stringify` a prova di eccezione (try/catch attorno a `Object.entries` e a
+ogni proprietà, fallback `"[Unserializable]"` invece di propagare).
+`patch-package` aggiunto a `devDependencies` + `"postinstall": "patch-package"`
+in `package.json`. Nessuna classe NativeWind dell'app toccata: zero cambi
+visivi, solo il logging di debug diventa crash-safe. Contract test statico:
+`scripts/test_css_interop_stringify_patch_contract.ts`.
+
+**Trade-off/limiti accettati:**
+- `package-lock.json` NON è stato aggiornato da questa sessione (impossibile
+  farlo senza eseguire `npm install`, operazione che il sandbox di sviluppo
+  non esegue su questo repo per il rischio di installare binari nativi
+  Linux invece di macOS sulla cartella condivisa — vedi nota operativa più
+  sotto). **Azione richiesta all'utente prima del prossimo push:** un
+  `npm install` (non `npm ci`) sul proprio Mac, per aggiornare il lockfile e
+  far scattare il postinstall che applica la patch — senza questo, `npm ci`
+  in CI fallirà per lockfile fuori sync.
+- La patch è stata applicata anche a mano, direttamente sul file installato
+  in `node_modules` in questa sessione, per sbloccare subito il test su
+  device: è temporanea (sparisce al prossimo `npm install`/`npm ci` pulito)
+  finché l'utente non esegue il passo sopra, dopo il quale diventa
+  permanente/riproducibile via `postinstall`.
+- Il meccanismo di "upgrade" di NativeWind che la warning originale segnalava
+  (remount di un componente quando cambiano a runtime stili
+  pseudo-classe/transition/variabile) resta presente e non è stato
+  investigato: la patch rende solo il *logging* di quel caso crash-safe, non
+  elimina un eventuale remount/flicker visivo reale in produzione — non
+  osservato finora, non trattato come bug verificato.
+- Non risolve il bug upstream per altri progetti: è una patch locale a
+  questo repo, da rimuovere se/quando `nativewind`/`react-native-css-interop`
+  la risolvono a monte (issue linkate sopra da tenere d'occhio).
+
+**Nota operativa (promemoria, non nuova):** né la sandbox cloud né
+`device_bash` eseguono `npm install`/`npm ci` su questa cartella condivisa —
+rischio già concretizzato una volta in questa sessione (binari nativi
+platform-specific corrotti). La generazione del file di patch è stata fatta
+con `npx patch-package react-native-css-interop`, che installa una copia
+pulita del solo package in una cartella temporanea isolata (non tocca
+`node_modules`/`package-lock.json` del progetto) solo per calcolare il
+diff — operazione diversa e verificata sicura, a differenza di un
+`npm install`/`npm ci` sul progetto.
+
+### Addendum — la prima revisione della patch causava un freeze (2026-09-22, stesso giorno)
+
+**Regressione osservata su device**: dopo il primo `npm install` dell'utente (patch applicata con successo), l'errore con messaggio è sparito ma è stato sostituito da un **freeze** (app non risponde, nessun errore visibile) esattamente negli stessi punti — tab Calendario -> "Lista", e nella finestra feedback attività selezionando una voce di "come ti senti?" (componente `SelectableChip`, stessa famiglia di re-render "upgrade" di NativeWind).
+
+**Causa della regressione**: la revisione 1 della patch avvolgeva `Object.entries(value)` e ogni accesso a proprietà in try/catch, ma non limitava in altro modo la ricorsione. Le props di un componente possono includere `children` con elementi React che portano campi di debug (`_owner`, `_source`) che risalgono l'intero fiber tree; intercettare l'eccezione della singola proprietà "a trappola" ha permesso al walk di continuare in quel grafo, di fatto enorme/non delimitato, invece di interrompersi subito come faceva involontariamente l'eccezione originale non gestita. Risultato: stesso trigger, ma lavoro sincrono molto più lungo sul thread JS invece di un crash immediato — percepito come blocco dell'app.
+
+**Fix (revisione 2)**: aggiunto, oltre al try/catch già presente, un limite di profondità (`MAX_DEPTH = 4`) e un budget massimo di nodi visitati (`MAX_NODES = 300`) alla ricorsione di `stringify`— qualunque valore oltre il limite diventa `"[Truncated]"` invece di continuare la discesa. Dato che questa stringa serve solo a un `console.log` di debug, non deve essere completa: è accettabile perdere dettaglio in cambio della garanzia che il lavoro totale sia sempre limitato da una costante, indipendentemente dalla forma dell'oggetto raggiungibile dalle props. `patches/react-native-css-interop+0.2.7.patch` e `scripts/test_css_interop_stringify_patch_contract.ts` aggiornati di conseguenza (il contract test ora verifica anche la presenza del limite di profondità/nodi, non solo del try/catch, per evitare che questa specifica regressione si ripeta).
+
+**Non ancora verificato su device dopo questa seconda revisione** — richiede un altro giro di test dell'utente su calendario/tab Lista e sulla selezione "come ti senti?" nel feedback attività.
