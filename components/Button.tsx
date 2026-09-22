@@ -1,9 +1,8 @@
 import { TouchableOpacity, Text, ActivityIndicator } from "react-native";
-import { styled } from "nativewind";
 import { colors } from "@/theme";
 
-const StyledTouchableOpacity = styled(TouchableOpacity);
-const StyledText = styled(Text);
+// NativeWind v4: i componenti core (TouchableOpacity, Text) supportano className
+// nativamente, styled() non esiste piu' ed e' stato rimosso.
 
 interface ButtonProps {
   title: string;
@@ -65,7 +64,7 @@ export const Button = ({
     : colors.white;
 
   return (
-    <StyledTouchableOpacity
+    <TouchableOpacity
       onPress={onPress}
       className={containerClass}
       style={disabledBgStyle}
@@ -75,10 +74,10 @@ export const Button = ({
       {isLoading ? (
         <ActivityIndicator color={indicatorColor} />
       ) : (
-        <StyledText className={SIZE_TEXT[size]} style={{ color: textColor }}>
+        <Text className={SIZE_TEXT[size]} style={{ color: textColor }}>
           {title}
-        </StyledText>
+        </Text>
       )}
-    </StyledTouchableOpacity>
+    </TouchableOpacity>
   );
 };

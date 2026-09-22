@@ -1,3 +1,4 @@
+import "../global.css";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
@@ -11,7 +12,7 @@ import { NotificationsRuntimeBridge } from "../components/notifications/Notifica
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { QueryProvider } from "../providers/QueryProvider";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated } from "react-native";
 import * as Updates from "expo-updates";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import BannedScreen from "../components/BannedScreen";
