@@ -48,9 +48,13 @@ export function NPOHeaderActions({ showAddPost }: { showAddPost?: boolean }) {
 
             <TouchableOpacity
                 onPress={() => router.push("/(npo)/(tabs)/profile" as any)}
-                className="rounded-full border-2 border-white/20 overflow-hidden active:scale-90"
+                className="active:scale-90"
                 style={{ width: avatarSize, height: avatarSize }}
             >
+                {/* Il cerchio/bordo dell'avatar è già disegnato da UserAvatar stesso:
+                    prima questo TouchableOpacity aveva un secondo cerchio identico
+                    (rounded-full border-2 overflow-hidden) sovrapposto, ridondante e
+                    possibile causa del disallineamento visivo segnalato nell'header NPO. */}
                 <UserAvatar size={avatarSize} fontSize={avatarSize > 44 ? 18 : 15} useAuthFallback={true} />
             </TouchableOpacity>
         </View>
