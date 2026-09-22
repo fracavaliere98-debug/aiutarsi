@@ -10,7 +10,7 @@ export interface CalendarEventInput {
 }
 
 async function getWritableCalendarId(): Promise<string | null> {
-    const Calendar = await import("expo-calendar");
+    const Calendar = await import("expo-calendar/legacy");
     const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
     const writable = calendars.find((calendar) => calendar.allowsModifications);
     if (writable?.id) return writable.id;
@@ -24,7 +24,7 @@ async function getWritableCalendarId(): Promise<string | null> {
 }
 
 export async function addEventToDeviceCalendar(input: CalendarEventInput): Promise<{ ok: true; eventId: string } | { ok: false; reason: string }> {
-    const Calendar = await import("expo-calendar");
+    const Calendar = await import("expo-calendar/legacy");
     const current = await Calendar.getCalendarPermissionsAsync();
     const granted = current.status === "granted"
         ? current
