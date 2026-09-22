@@ -6,4 +6,5 @@
 - [Design system](./design-system.md)
 - [Checklist migrazione a produzione](./prod-migration-checklist.md)
 - [Piano migrazione Expo SDK 57](./sdk-57-migration-plan.md)
+- [Backlog miglioramenti](./backlog-miglioramenti.md)
 - [Piano go-to-market / lancio pilota](./go-to-market-pilot.md)
