@@ -112,5 +112,14 @@ assert(card.includes("confirmedBy"), "ActivityCard deve leggere confirmedBy da v
 assert(card.includes("ThumbsUp"), "ActivityCard deve mostrare un'icona thumb-up per la presenza confermata");
 pass("components/ActivityCard.tsx: badge conferma presenza basato su confirmedBy");
 
+// Stella oro (2026-09-22): visibile solo al volontario che ha già lasciato
+// la propria recensione per l'attività, di fianco al thumb di conferma.
+assert(card.includes("Star"), "ActivityCard deve mostrare un'icona Star per la recensione già inviata");
+assert(
+    card.includes("const hasSubmittedReview") && card.includes("userReviews.some"),
+    "hasSubmittedReview deve derivare dalle recensioni del volontario (userReviews), non da un flag indipendente"
+);
+pass("components/ActivityCard.tsx: stella oro per recensione già inviata, basata su userReviews");
+
 console.log("\n────────────────────────────────────────────────────────────");
 console.log("Attendance auto-confirm + reminder contract: PASS ✓");

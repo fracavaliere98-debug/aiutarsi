@@ -1,13 +1,14 @@
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
-import { Clock, Building2, MapPin, RefreshCw, ThumbsUp } from "lucide-react-native";
+import { Clock, Building2, MapPin, RefreshCw, ThumbsUp, Star } from "lucide-react-native";
 import { SoftCard } from "./SoftCard";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useVolunteerReviewsQuery } from "../hooks/activities/queries";
+import { useUserReviews } from "../hooks/activities/selectors";
 
 import { AppActivity, OldActivity } from "../types";
-import { colors } from "@/theme";
+import { colors, palette } from "@/theme";
 
 interface ActivityCardProps {
     activity: OldActivity | AppActivity;
@@ -24,6 +25,7 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
     const { users, user } = useAuth();
     const { showToast } = useToast();
     const { data: volunteerReviews = [] } = useVolunteerReviewsQuery();
+    const userReviews = useUserReviews(user?.id);
 
     const status = activity.status;
     const npoId = activity.npoId;
@@ -73,6 +75,10 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
         ? volunteerReviews.find(r => r.activityId === activity.id && r.volunteerId === user.id && r.isPresent === true)
         : undefined;
     const isAutoConfirmed = myConfirmedReview?.confirmedBy === 'auto';
+    // Stella oro: il volontario ha già lasciato la sua recensione (stelle)
+    // per questa attività — visibile solo a lui, di fianco al thumb.
+    const hasSubmittedReview = user?.role === 'VOLUNTEER' && status === 'COMPLETATA' &&
+        userReviews.some(r => r.activityId === activity.id);
 
     return (
         <SoftCard
@@ -80,33 +86,48 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
             style={style as any}
             onPress={onPress}
         >
-            {myConfirmedReview && (
-                <TouchableOpacity
-                    onPress={() => showToast(
-                        'info',
-                        isAutoConfirmed
-                            ? "Presenza confermata automaticamente: l'ente non ha risposto entro 72h dalla fine dell'attività."
-                            : "Presenza confermata dall'ente."
+            {(myConfirmedReview || hasSubmittedReview) && (
+                <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, flexDirection: 'row', gap: 6 }}>
+                    {hasSubmittedReview && (
+                        <TouchableOpacity
+                            onPress={() => showToast('success', "Hai già inviato la tua recensione!")}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{
+                                backgroundColor: 'white',
+                                borderRadius: 999,
+                                padding: 5,
+                                borderWidth: 1,
+                                borderColor: '#f1f5f9',
+                            }}
+                        >
+                            <Star size={12} color={palette.amber400} fill={palette.amber400} />
+                        </TouchableOpacity>
                     )}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        zIndex: 10,
-                        backgroundColor: 'white',
-                        borderRadius: 999,
-                        padding: 5,
-                        borderWidth: 1,
-                        borderColor: '#f1f5f9',
-                    }}
-                >
-                    <ThumbsUp
-                        size={12}
-                        color={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
-                        fill={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
-                    />
-                </TouchableOpacity>
+                    {myConfirmedReview && (
+                        <TouchableOpacity
+                            onPress={() => showToast(
+                                'info',
+                                isAutoConfirmed
+                                    ? "Presenza confermata automaticamente."
+                                    : "Presenza confermata dall'ente."
+                            )}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{
+                                backgroundColor: 'white',
+                                borderRadius: 999,
+                                padding: 5,
+                                borderWidth: 1,
+                                borderColor: '#f1f5f9',
+                            }}
+                        >
+                            <ThumbsUp
+                                size={12}
+                                color={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                                fill={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                            />
+                        </TouchableOpacity>
+                    )}
+                </View>
             )}
             <View style={{ flex: 1, justifyContent: 'space-between' }}>
                 <View>

@@ -827,9 +827,9 @@ export default function ActivityDetail() {
                         </TouchableOpacity>
                     </View>
                 ) : hasSubmittedReview ? (
-                    <View style={{ backgroundColor: palette.purple50, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.purple100, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <CheckCircle2 size={16} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontWeight: '800' }}>Recensione inviata</Text>
+                    <View style={{ backgroundColor: palette.amber75, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.amber200, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <CheckCircle2 size={16} color={palette.amber700} />
+                        <Text style={{ color: palette.amber700, fontWeight: '800' }}>Recensione inviata</Text>
                     </View>
                 ) : activity.status === 'CANCELLATA' && user?.role === 'VOLUNTEER' ? (
                     <View style={{ backgroundColor: colors.dangerSoft, paddingHorizontal: 18, paddingVertical: 16, borderRadius: 28, borderWidth: 1, borderColor: palette.red200 }}>
