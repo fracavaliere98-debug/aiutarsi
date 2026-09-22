@@ -113,7 +113,7 @@
     },
     "owner": "fracava",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/b14b866c-c340-4e7d-a7ad-a6ec9a9935b3"
