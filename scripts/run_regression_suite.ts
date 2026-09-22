@@ -36,6 +36,7 @@ const suite = [
   { label: "review-application-contract", path: "scripts/test_review_application_contract.ts" },
   { label: "service-query-timeout-contract", path: "scripts/test_service_query_timeout_contract.ts" },
   { label: "feedback-ui-convention-contract", path: "scripts/test_feedback_ui_convention_contract.ts" },
+  { label: "help-center-freshness-contract", path: "scripts/test_help_center_freshness_contract.ts" },
 ];
 
 for (const test of suite) {

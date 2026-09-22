@@ -8,21 +8,28 @@ nel piano/doc pertinente (o in una issue) e rimuoverlo da qui.
 ## 2026-09-22
 
 - [x] **Gemma — accesso a documentazione aggiornata. VERIFICATO 2026-09-22:
-  no, è statica e datata.** Il contesto passato a Gemma (`supabase/functions/gemma-help-assistant/index.ts`)
+  no, è statica e datata (FATTO: risolto lo stesso giorno, vedi sotto).** Il
+  contesto passato a Gemma (`supabase/functions/gemma-help-assistant/index.ts`)
   viene costruito da `buildHelpCenterContextForRole()` in `shared/helpCenterContent.ts`
   — un elenco di FAQ scritte a mano nel codice, non collegato a nessuna fonte
   di documentazione live (non legge `docs/`, non fa retrieval, nessun
-  aggiornamento automatico). Ultima modifica a quel file: 31 marzo 2026
-  (commit `8d8b9eb`). La funzionalità di conferma presenza/XP (migration
-  `20260921150000_attendance_confirmation.sql`, del 21 settembre) NON è
-  ancora coperta da nessuna FAQ: Gemma oggi non sa spiegare a un volontario
-  perché è "in attesa conferma" né a una NPO come/dove confermare le
-  presenze. **Azione consigliata** (non ancora fatta): aggiungere una sezione
-  FAQ dedicata alla conferma presenze in `shared/helpCenterContent.ts` (comune
-  ai due ruoli o come sotto-sezione NPO/volontario) e, più in generale,
-  introdurre un promemoria di processo — quando si aggiunge una feature
-  visibile all'utente, aggiornare anche questo file — perché oggi non c'è
-  nessun collegamento automatico che lo forzi.
+  aggiornamento automatico). Ultima modifica a quel file prima di oggi: 31
+  marzo 2026 (commit `8d8b9eb`) — quasi 6 mesi, mentre nel frattempo era
+  arrivata la conferma presenza/XP (migration `20260921150000_attendance_confirmation.sql`).
+
+  **FATTO 2026-09-22**: aggiunte le FAQ sulla conferma presenza (volontario:
+  perché vede "In attesa conferma"; NPO: come confermare) in
+  `shared/helpCenterContent.ts`. Soprattutto, aggiunto un meccanismo che rende
+  l'aggiornamento non più opzionale: `HELP_CENTER_LAST_REVIEWED` (costante in
+  testa al file) più un nuovo contract test,
+  `scripts/test_help_center_freshness_contract.ts`, dentro
+  `npm run test:regression` (quindi nella Definition of Done). Il test
+  confronta quella data con la migration Supabase più recente nel repo: se la
+  data non è aggiornata, la regression suite FALLISCE con un messaggio che
+  dice esattamente cosa fare. Non è un promemoria che si può ignorare in
+  silenzio — è un gate meccanico eseguito ad ogni "Done". Limite onesto: il
+  test forza a *rivedere* il file quando cambia qualcosa, non garantisce che
+  il contenuto scritto sia sempre corretto (quello resta un giudizio umano).
 
 - [ ] **Reminder conferma presenza — CTA per il volontario.** Nella
   schermata "Valuta la tua esperienza", quando in basso è mostrato lo stato

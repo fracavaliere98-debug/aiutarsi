@@ -1,3 +1,24 @@
+/**
+ * FONTE DI VERITA' per le FAQ mostrate in app (Help Center) E per il contesto
+ * che l'edge function gemma-help-assistant passa a Gemma (vedi
+ * buildHelpCenterContextForRole in fondo a questo file). Non c'e' nessun'altra
+ * fonte "live" da cui Gemma legge: se una funzionalita' visibile a
+ * volontari/NPO cambia e non aggiorni le FAQ qui sotto, Gemma continuera' a
+ * dare risposte vecchie o incomplete.
+ *
+ * REGOLA (fatta rispettare da scripts/test_help_center_freshness_contract.ts,
+ * dentro test:regression, quindi nella Definition of Done): ogni volta che si
+ * aggiunge una migration Supabase, HELP_CENTER_LAST_REVIEWED deve essere una
+ * data pari o successiva alla piu' recente migration esistente. Il test
+ * fallisce (con un messaggio esplicito) se non lo e' — non e' un promemoria
+ * facoltativo, e' un gate che blocca "Done = tsc + lint + regression verdi".
+ * Quando il test fallisce: apri questo file, valuta se la nuova migration
+ * introduce un comportamento visibile all'utente che merita una FAQ (non
+ * sempre serve — una migration puramente tecnica no), poi aggiorna la
+ * costante alla data di oggi in ogni caso, per far ripartire la finestra.
+ */
+export const HELP_CENTER_LAST_REVIEWED = "2026-09-22";
+
 export type HelpCenterRole = "VOLUNTEER" | "NPO" | "ALL";
 
 export interface FAQ {
@@ -190,6 +211,12 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         answer:
           'Lo Smart Match analizza il tuo profilo, i tuoi interessi, le tue competenze e il contesto delle attività per proporti opportunità rilevanti. Gemma può aiutarti a capire perché un’attività è adatta a te.',
       },
+      {
+        id: "attendanceconfirm",
+        question: "Perché dopo l'attività vedo \"In attesa conferma\" e non ho ancora i punti XP?",
+        answer:
+          "Quando un'attività termina, l'ente organizzatore deve confermare chi ha effettivamente partecipato. Solo dopo questa conferma ricevi punti XP, ore di volontariato e puoi lasciare una recensione. \"In attesa conferma\" significa solo che l'ente non ha ancora completato questo passaggio: non serve fare nulla da parte tua.",
+      },
     ],
   },
   {
@@ -310,6 +337,12 @@ export const NPO_GUIDE_SECTIONS: GuideSection[] = [
         question: "Cosa significa vedere volontari attivi nella dashboard?",
         answer:
           "La dashboard evidenzia i volontari recentemente presenti o coinvolti, così puoi capire rapidamente chi è più vicino all'operatività in questo momento.",
+      },
+      {
+        id: "npo_confirm_attendance",
+        question: "Come confermo la presenza dei volontari a un'attività conclusa?",
+        answer:
+          "Quando un'attività passa a \"Completata\", nella tua Home vedi in evidenza l'avviso \"Conferma le presenze\": toccalo per aprire l'elenco degli iscritti e segnare chi ha davvero partecipato. Solo dopo la tua conferma i volontari ricevono i punti XP, le ore di volontariato e possono lasciare una recensione: è un passaggio importante, non solo formale.",
       },
     ],
   },
