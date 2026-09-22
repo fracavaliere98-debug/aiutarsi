@@ -59,6 +59,13 @@ export default function VolunteerDashboard() {
                 return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
             });
     }, [enrolledActivities]);
+    // Nessun limite di giorni: da volontario si puo' recensire in qualsiasi
+    // momento dopo che la presenza e' stata confermata (da NPO o
+    // automaticamente) — indicazione esplicita del 2026-09-22. Questa card
+    // resta quindi visibile per qualsiasi attivita' completata non ancora
+    // recensita, a prescindere da quanto tempo sia passato; se la presenza
+    // non e' ancora confermata, il tap porta correttamente al box "In attesa
+    // conferma" in app/activity/[id].tsx (isWaitingPresenceConfirmation).
     const toEvaluate = enrolledActivities.filter(a =>
         a.status === "COMPLETATA" && !userReviews.some(r => r.activityId === a.id)
     );

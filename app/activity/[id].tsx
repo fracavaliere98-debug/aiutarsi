@@ -139,11 +139,12 @@ export default function ActivityDetail() {
     const hasReviewed = !!user && !!activity &&
         reviews.some(r => r.activityId === activityId && r.volunteerId === user.id);
 
-    const daysSinceEnd = useMemo(() => {
-        if (!activity?.endDateTime) return 0;
-        return Math.floor((Date.now() - new Date(activity.endDateTime).getTime()) / 86400000);
-    }, [activity?.endDateTime]);
-
+    // NB: nessun limite di giorni per lasciare una recensione da volontario
+    // (a differenza, per esempio, della finestra dei 10gg che regolava un
+    // tempo canLeaveReview: rimossa il 2026-09-22 su indicazione esplicita —
+    // "da volontario devo poter recensire anche trascorsi 10 giorni, non c'e'
+    // un limite per recensire" — l'unico requisito e' la presenza confermata,
+    // da NPO o automaticamente, indifferentemente).
     const isConfirmedPresent = useMemo(() => {
         if (!user || !activity) return false;
         return volunteerReviews.some(r => 
@@ -154,8 +155,7 @@ export default function ActivityDetail() {
     }, [volunteerReviews, activity, user]);
 
     const canLeaveReview = user?.role === 'VOLUNTEER' && isEnrolled &&
-        activity?.status === 'COMPLETATA' && !hasReviewed && daysSinceEnd <= 10 &&
-        isConfirmedPresent;
+        activity?.status === 'COMPLETATA' && !hasReviewed && isConfirmedPresent;
     const isWaitingPresenceConfirmation = user?.role === 'VOLUNTEER' &&
         isEnrolled &&
         activity?.status === 'COMPLETATA' &&
