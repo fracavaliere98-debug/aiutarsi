@@ -14,7 +14,7 @@ npx expo start --android
 npx expo start --ios
 ```
 
-Requisito runtime: usare Node 20.x. Con versioni piu recenti di Node, Expo SDK 54 puo fallire in avvio.
+Requisito runtime: usare Node 20.x (>= 20.19.4 per Expo SDK 57 / React Native 0.86). Con versioni piu recenti di Node, Expo puo fallire in avvio.
 
 ## UI e Design System
 
@@ -147,7 +147,7 @@ maestro test maestro/flows/
 
 ## Stack
 
-- React Native 0.81 / Expo SDK 54
+- React Native 0.86 / Expo SDK 57
 - TypeScript · Expo Router · NativeWind
 - Supabase (Postgres + Auth + Realtime + Storage)
 - Google Gemini / Gemma AI

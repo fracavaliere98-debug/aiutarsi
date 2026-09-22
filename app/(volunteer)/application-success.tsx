@@ -26,29 +26,35 @@ export default function ApplicationSuccess() {
                     </View>
                 </Animated.View>
 
-                <Animated.Text entering={FadeInDown.delay(200).duration(500)} className="text-3xl font-black text-primary text-center mb-6">
-                    {isActivity ? "Ti sei iscritto!" : "Candidatura Inviata!"}
-                </Animated.Text>
+                <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+                    <Text className="text-3xl font-black text-primary text-center mb-6">
+                        {isActivity ? "Ti sei iscritto!" : "Candidatura Inviata!"}
+                    </Text>
+                </Animated.View>
 
-                <Animated.Text entering={FadeInDown.delay(300).duration(500)} className="text-lg text-secondary text-center px-4 leading-relaxed">
-                    {isActivity ? (
-                        <>
-                            L&apos;ente <Text className="font-bold text-accent">{npoName}</Text> sarà felice di averti tra i suoi volontari per questa attività! Mettiti in contatto con loro il prima possibile!
-                        </>
-                    ) : (
-                        <>
-                            L&apos;ente <Text className="font-bold text-accent">{npoName}</Text> riceverà la tua richiesta e ti risponderà a breve.
-                        </>
-                    )}
-                </Animated.Text>
+                <Animated.View entering={FadeInDown.delay(300).duration(500)}>
+                    <Text className="text-lg text-secondary text-center px-4 leading-relaxed">
+                        {isActivity ? (
+                            <>
+                                L&apos;ente <Text className="font-bold text-accent">{npoName}</Text> sarà felice di averti tra i suoi volontari per questa attività! Mettiti in contatto con loro il prima possibile!
+                            </>
+                        ) : (
+                            <>
+                                L&apos;ente <Text className="font-bold text-accent">{npoName}</Text> riceverà la tua richiesta e ti risponderà a breve.
+                            </>
+                        )}
+                    </Text>
+                </Animated.View>
 
-                <Animated.Text entering={FadeInDown.delay(400).duration(500)} className="text-secondary text-center mt-8 text-sm">
-                    {isActivity ? (
-                        <>Puoi vedere i dettagli in{"\n"}<Text className="font-bold">&quot;Calendar&quot;</Text> o <Text className="font-bold">&quot;Le Mie Attività&quot;</Text>.</>
-                    ) : (
-                        <>Puoi monitorare lo stato in{"\n"}<Text className="font-bold">&quot;Le Mie Candidature&quot;</Text>.</>
-                    )}
-                </Animated.Text>
+                <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+                    <Text className="text-secondary text-center mt-8 text-sm">
+                        {isActivity ? (
+                            <>Puoi vedere i dettagli in{"\n"}<Text className="font-bold">&quot;Calendar&quot;</Text> o <Text className="font-bold">&quot;Le Mie Attività&quot;</Text>.</>
+                        ) : (
+                            <>Puoi monitorare lo stato in{"\n"}<Text className="font-bold">&quot;Le Mie Candidature&quot;</Text>.</>
+                        )}
+                    </Text>
+                </Animated.View>
 
                 {/* Dots indicator mimicking design */}
                 <Animated.View entering={FadeInDown.delay(500)} className="flex-row gap-2 mt-10">

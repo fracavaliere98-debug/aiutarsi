@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react";
-import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
+import { BottomTabBarHeightContext } from "expo-router/js-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function useBottomScreenInset(extraSpacing = 8) {

@@ -7,8 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "aiutarsiapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
+        "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aiutarsi.app",
       "buildNumber": "1",
@@ -50,8 +49,7 @@
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
+            "predictiveBackGestureEnabled": false,
       "permissions": [
         "INTERNET",
         "ACCESS_COARSE_LOCATION",
@@ -115,7 +113,7 @@
     },
     "owner": "fracava",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/b14b866c-c340-4e7d-a7ad-a6ec9a9935b3"
