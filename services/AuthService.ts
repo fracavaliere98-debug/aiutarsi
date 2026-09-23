@@ -354,6 +354,23 @@ export class AuthService {
         }
     }
 
+    // Un'eccezione di rete a livello nativo (mai raggiunto il server: connessione persa,
+    // offline, DNS irraggiungibile) arriva qui con un messaggio tecnico non tradotto, es.
+    // "fetch failed: UnexpectedException: The network connection was lost. (at
+    // ExpoModulesCore/Promise.swift:56)" — non un errore applicativo di Supabase. Va
+    // normalizzato PRIMA che risalga alla UI (login.tsx e register fanno
+    // Alert.alert(..., error.message)): qui, in un unico punto riusato da login() e
+    // register(), invece di duplicare il controllo nei due catch. Non e' un
+    // timeout/retry al posto della causa: il timeout esplicito sopra resta distinto e
+    // continua a produrre il suo messaggio dedicato.
+    private _friendlyConnectionErrorMessage(e: any): string {
+        const raw = e?.message || "";
+        if (/fetch failed/i.test(raw) || /network connection was lost/i.test(raw) || /network request failed/i.test(raw) || /internet connection appears to be offline/i.test(raw)) {
+            return "Connessione internet assente o instabile. Controlla la rete e riprova.";
+        }
+        return raw || "Errore di connessione.";
+    }
+
     async login(email: string, password: string): Promise<AppUser> {
         const cleanEmail = email.trim();
         if (!this._validateEmail(cleanEmail)) {
@@ -383,7 +400,7 @@ export class AuthService {
             error = result.error;
         } catch (e: any) {
             clearTimeout(timeoutId);
-            throw new Error(e.message || "Errore di connessione.");
+            throw new Error(this._friendlyConnectionErrorMessage(e));
         }
 
         if (error) {
@@ -491,7 +508,7 @@ export class AuthService {
             error = result.error;
         } catch (e: any) {
             clearTimeout(timeoutId);
-            throw new Error(e.message || "Errore di connessione.");
+            throw new Error(this._friendlyConnectionErrorMessage(e));
         }
 
         if (error) {
