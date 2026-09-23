@@ -1,26 +1,28 @@
 /**
- * Regression/contract test per la razionalizzazione della tassonomia competenze (2026-07-23).
+ * Regression/contract test per la tassonomia competenze/categorie.
  *
- * Prima di questo fix esistevano 3 formati diversi per lo stesso concetto di "competenza":
- *  - label lunghe storiche già salvate in DB (user_skills, profiles.sought_skills), es.
- *    "Educazione e Mentoring"
- *  - id/parole brevi eterogenee in activity_skills, es. "educazione", "medical", "tech"
- *  - un elenco di label brevi nel codice app, diverso da entrambi
- * Il codice onboarding/settings confrontava per label, quindi le competenze salvate da un
- * volontario non risultavano mai selezionate quando riapriva la schermata, e "competenza
- * richiesta da un'attività" non combaciava mai con "competenza offerta da un volontario"
- * (vedi hooks/smart-match/selectors.ts, confronto stringa letterale).
+ * Fix originale (2026-07-23): prima esistevano 3 formati diversi per lo stesso concetto di
+ * "competenza" (label lunghe storiche in DB, id/parole brevi eterogenee in activity_skills, un
+ * elenco diverso ancora nel codice app) — le competenze salvate da un volontario non risultavano
+ * mai selezionate quando riapriva la schermata, e "competenza richiesta da un'attività" non
+ * combaciava mai con "competenza offerta da un volontario" (confronto per label invece che id).
+ * Il fix ha introdotto un'unica tassonomia id-based (12 competenze) usata ovunque nell'app.
  *
- * Il fix introduce un'unica tassonomia id-based (12 voci, constants/Skills.ts) usata ovunque:
- * onboarding NPO e volontario, settings NPO e volontario, form attività, dettaglio attività,
- * profilo, activity-curator-ai. Le 12 voci sono competenze reali di una persona, distinte dalle
- * 6 categorie/settori in cui una NPO dichiara di operare (constants/Interests.ts) — nessuna
- * sovrapposizione di id/label tra le due liste. Un backfill SQL
+ * Fix successivo (2026-09-23): l'unica copia rimasta a mano era in
+ * supabase/functions/activity-curator-ai/index.ts (SKILL_IDS/CATEGORY_LABELS), perché quella
+ * edge function Deno non può importare constants/Skills.ts (che importa icone da
+ * lucide-react-native, a sua volta react-native). Gli id/label puri sono stati estratti in
+ * shared/skillsTaxonomy.ts e shared/categoriesTaxonomy.ts (nessun import di icone/react-native),
+ * fonte unica letta sia da constants/Skills.ts e constants/Interests.ts (che ci attaccano sopra
+ * la parte visuale, solo-app) sia dalla edge function — stesso pattern già in uso in questo repo
+ * per shared/helpCenterContent.ts. Le 12 competenze restano distinte dalle 6 categorie/settori in
+ * cui una NPO dichiara di operare (shared/categoriesTaxonomy.ts) — nessuna sovrapposizione di
+ * id/label tra le due liste. Un backfill SQL
  * (supabase/migrations/*_rationalize_skills_taxonomy.sql) ha rimappato i valori legacy già
  * salvati sui 12 id canonici.
  *
- * Sono controlli statici sul codice sorgente (no Metro, no rendering React Native, no DB),
- * stesso approccio di scripts/test_settings_structure_contract.ts.
+ * Sono controlli statici sul codice sorgente (no Metro, no rendering React Native, no Deno, no
+ * DB), stesso approccio di scripts/test_settings_structure_contract.ts.
  *
  * Run: npx tsx scripts/test_skills_taxonomy_contract.ts
  */
@@ -70,56 +72,89 @@ function extractIdBlock(source: string, arrayStartMarker: string): string {
   return source.slice(start, end);
 }
 
-function testSkillsConstantHas12CanonicalIds() {
-  console.log("\n[constants/Skills.ts] 12 competenze canoniche, id-based");
+function testSharedSkillsTaxonomyHas12CanonicalIds() {
+  console.log("\n[shared/skillsTaxonomy.ts] 12 competenze canoniche, id-based, fonte unica");
 
-  const source = readSource("constants/Skills.ts");
-  const block = extractIdBlock(source, "export const SKILLS: SkillItem[] = [");
+  const source = readSource("shared/skillsTaxonomy.ts");
+  const block = extractIdBlock(source, "export const SKILL_TAXONOMY: SkillTaxonomyItem[] = [");
 
   const idMatches = [...block.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert(idMatches.length === 12, `SKILLS deve avere esattamente 12 voci, trovate ${idMatches.length}`);
-  pass("SKILLS ha esattamente 12 voci");
+  assert(idMatches.length === 12, `SKILL_TAXONOMY deve avere esattamente 12 voci, trovate ${idMatches.length}`);
+  pass("SKILL_TAXONOMY ha esattamente 12 voci");
 
   const uniqueIds = new Set(idMatches);
-  assert(uniqueIds.size === idMatches.length, "SKILLS contiene id duplicati");
-  pass("nessun id duplicato in SKILLS");
+  assert(uniqueIds.size === idMatches.length, "SKILL_TAXONOMY contiene id duplicati");
+  pass("nessun id duplicato in SKILL_TAXONOMY");
 
   for (const id of EXPECTED_SKILL_IDS) {
-    assert(idMatches.includes(id), `SKILLS deve contenere l'id "${id}"`);
+    assert(idMatches.includes(id), `SKILL_TAXONOMY deve contenere l'id "${id}"`);
   }
   pass("tutti i 12 id attesi sono presenti");
 
   for (const id of REMOVED_SKILL_IDS) {
-    assert(!idMatches.includes(id), `REGRESSIONE: SKILLS non deve più contenere "${id}" (rimosso su richiesta esplicita)`);
+    assert(!idMatches.includes(id), `REGRESSIONE: SKILL_TAXONOMY non deve più contenere "${id}" (rimosso su richiesta esplicita)`);
   }
   pass("Amministrazione, Logistica e Scrittura non sono più presenti come competenze");
 
-  assert(idMatches.includes("ascolto-compagnia"), "SKILLS deve contenere la nuova soft skill 'ascolto-compagnia' al posto di Scrittura");
+  assert(idMatches.includes("ascolto-compagnia"), "SKILL_TAXONOMY deve contenere la nuova soft skill 'ascolto-compagnia' al posto di Scrittura");
   assert(block.includes('label: "Ascolto e compagnia"'), "la label di 'ascolto-compagnia' deve essere 'Ascolto e compagnia'");
   pass("la soft skill relazionale 'Ascolto e compagnia' sostituisce Scrittura");
+}
+
+function testSkillsConstantDerivesFromSharedTaxonomy() {
+  console.log("\n[constants/Skills.ts] deriva da shared/skillsTaxonomy.ts, nessuna copia id/label a mano");
+
+  const source = readSource("constants/Skills.ts");
+
+  assert(
+    /import\s*\{\s*SKILL_TAXONOMY\s*\}\s*from\s*['"]\.\.\/shared\/skillsTaxonomy['"]/.test(source),
+    "constants/Skills.ts deve importare SKILL_TAXONOMY da ../shared/skillsTaxonomy"
+  );
+  assert(
+    /SKILL_TAXONOMY\.map\(/.test(source),
+    "constants/Skills.ts deve derivare SKILLS da SKILL_TAXONOMY.map(...), non da una lista scritta a mano"
+  );
+  assert(
+    !/export const SKILLS: SkillItem\[\] = \[\s*\n\s*\{\s*id:/.test(source),
+    "REGRESSIONE: constants/Skills.ts torna a definire SKILLS come lista letterale — deve derivarla da SKILL_TAXONOMY"
+  );
+  pass("SKILLS è derivato da SKILL_TAXONOMY, nessuna copia letterale di id/label");
 
   assert(source.includes("export const getSkillLabel"), "constants/Skills.ts deve esportare getSkillLabel()");
   pass("getSkillLabel() è esportato");
 }
 
 function testNoOverlapBetweenSkillsAndCategories() {
-  console.log("\n[constants/Skills.ts vs constants/Interests.ts] nessun doppione competenza/categoria");
+  console.log("\n[shared/skillsTaxonomy.ts vs shared/categoriesTaxonomy.ts] nessun doppione competenza/categoria");
 
-  const skillsSource = readSource("constants/Skills.ts");
-  const block = extractIdBlock(skillsSource, "export const SKILLS: SkillItem[] = [");
-  const skillIds = [...block.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
-  const skillLabels = [...block.matchAll(/label:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const skillsSource = readSource("shared/skillsTaxonomy.ts");
+  const skillsBlock = extractIdBlock(skillsSource, "export const SKILL_TAXONOMY: SkillTaxonomyItem[] = [");
+  const skillIds = [...skillsBlock.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const skillLabels = [...skillsBlock.matchAll(/label:\s*"([^"]+)"/g)].map((m) => m[1]);
 
   for (const catId of CATEGORY_IDS) {
-    assert(!skillIds.includes(catId), `REGRESSIONE: l'id competenza "${catId}" duplica un id categoria di INTERESTS`);
+    assert(!skillIds.includes(catId), `REGRESSIONE: l'id competenza "${catId}" duplica un id categoria di CATEGORY_TAXONOMY`);
   }
   for (const catLabel of CATEGORY_LABELS) {
     assert(
       !skillLabels.some((l) => l.toLowerCase() === catLabel.toLowerCase()),
-      `REGRESSIONE: la label competenza "${catLabel}" duplica letteralmente una categoria di INTERESTS`
+      `REGRESSIONE: la label competenza "${catLabel}" duplica letteralmente una categoria di CATEGORY_TAXONOMY`
     );
   }
-  pass("nessun id/label di SKILLS combacia con un id/label di INTERESTS (categorie/settori NPO)");
+  pass("nessun id/label di SKILL_TAXONOMY combacia con un id/label di CATEGORY_TAXONOMY");
+}
+
+function testSharedTaxonomyFilesAreDenoSafe() {
+  console.log("\n[shared/*Taxonomy.ts] nessun import react-native — devono restare importabili da Deno");
+
+  for (const path of ["shared/skillsTaxonomy.ts", "shared/categoriesTaxonomy.ts"]) {
+    const source = readSource(path);
+    assert(
+      !/from ['"]react-native['"]/.test(source) && !/from ['"]lucide-react-native['"]/.test(source),
+      `REGRESSIONE: ${path} importa react-native/lucide-react-native — activity-curator-ai (Deno) non potrebbe più importarlo`
+    );
+  }
+  pass("shared/skillsTaxonomy.ts e shared/categoriesTaxonomy.ts contengono solo dati puri, nessun import RN");
 }
 
 function testOnboardingAndSettingsUseSkillIds() {
@@ -188,23 +223,36 @@ function testDisplaySectionsUseGetSkillLabel() {
   pass("app/onboarding/npo-preview.tsx mostra le skill ricercate tramite getSkillLabel()");
 }
 
-function testActivityCuratorAiInSyncWithCanonicalSkillIds() {
-  console.log("\n[activity-curator-ai] SKILL_IDS della edge function allineati a constants/Skills.ts");
+function testActivityCuratorAiUsesSharedTaxonomy() {
+  console.log("\n[activity-curator-ai] usa shared/skillsTaxonomy.ts e shared/categoriesTaxonomy.ts, nessuna copia a mano");
 
   const source = readSource("supabase/functions/activity-curator-ai/index.ts");
-  const match = source.match(/const SKILL_IDS = \[([\s\S]*?)\];/);
-  assert(match, "supabase/functions/activity-curator-ai/index.ts deve definire const SKILL_IDS = [...]");
 
-  const ids = [...match![1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  assert(ids.length === 12, `SKILL_IDS della edge function deve avere 12 voci, trovate ${ids.length}`);
-
-  const sortedIds = [...ids].sort();
-  const sortedExpected = [...EXPECTED_SKILL_IDS].sort();
   assert(
-    JSON.stringify(sortedIds) === JSON.stringify(sortedExpected),
-    `SKILL_IDS della edge function (${sortedIds.join(", ")}) deve combaciare esattamente con i 12 id di constants/Skills.ts (${sortedExpected.join(", ")})`
+    /import\s*\{\s*SKILL_TAXONOMY\s*\}\s*from\s*["']\.\.\/\.\.\/\.\.\/shared\/skillsTaxonomy\.ts["']/.test(source),
+    "activity-curator-ai deve importare SKILL_TAXONOMY da ../../../shared/skillsTaxonomy.ts"
   );
-  pass("SKILL_IDS in activity-curator-ai combacia esattamente con i 12 id canonici");
+  assert(
+    /import\s*\{\s*CATEGORY_TAXONOMY\s*\}\s*from\s*["']\.\.\/\.\.\/\.\.\/shared\/categoriesTaxonomy\.ts["']/.test(source),
+    "activity-curator-ai deve importare CATEGORY_TAXONOMY da ../../../shared/categoriesTaxonomy.ts"
+  );
+  assert(
+    /const SKILL_IDS = SKILL_TAXONOMY\.map\(/.test(source),
+    "SKILL_IDS deve essere derivato da SKILL_TAXONOMY.map(...), non da una lista scritta a mano"
+  );
+  assert(
+    /const CATEGORY_LABELS = CATEGORY_TAXONOMY\.map\(/.test(source),
+    "CATEGORY_LABELS deve essere derivato da CATEGORY_TAXONOMY.map(...), non da una lista scritta a mano"
+  );
+  assert(
+    !/const SKILL_IDS = \[/.test(source),
+    "REGRESSIONE: activity-curator-ai torna a definire SKILL_IDS come lista letterale scritta a mano"
+  );
+  assert(
+    !/const CATEGORY_LABELS = \[/.test(source),
+    "REGRESSIONE: activity-curator-ai torna a definire CATEGORY_LABELS come lista letterale scritta a mano"
+  );
+  pass("SKILL_IDS/CATEGORY_LABELS derivati da shared/*Taxonomy.ts, nessuna copia letterale");
 
   assert(
     source.includes("suggestedSkills: []"),
@@ -236,14 +284,16 @@ function testBackfillMigrationExists() {
 }
 
 function run() {
-  console.log("Skills taxonomy contract tests (2026-07-23)");
+  console.log("Skills taxonomy contract tests");
   console.log("─".repeat(60));
 
-  testSkillsConstantHas12CanonicalIds();
+  testSharedSkillsTaxonomyHas12CanonicalIds();
+  testSkillsConstantDerivesFromSharedTaxonomy();
   testNoOverlapBetweenSkillsAndCategories();
+  testSharedTaxonomyFilesAreDenoSafe();
   testOnboardingAndSettingsUseSkillIds();
   testDisplaySectionsUseGetSkillLabel();
-  testActivityCuratorAiInSyncWithCanonicalSkillIds();
+  testActivityCuratorAiUsesSharedTaxonomy();
   testBackfillMigrationExists();
 
   console.log("\n" + "─".repeat(60));

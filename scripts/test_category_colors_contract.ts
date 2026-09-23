@@ -1,15 +1,16 @@
 /**
- * Contract test: ogni categoria in constants/Interests.ts deve avere un colore esplicito in
- * CATEGORY_COLORS, e search.tsx non deve tornare ad avere una copia locale a mano dello switch
- * colore→categoria (era il caso prima di questo fix: getCategoryColors viveva come switch
- * duplicato in app/(volunteer)/(tabs)/search.tsx, unico consumer, senza nessun test che
- * impedisse a una nuova categoria di finire silenziosamente grigia — vedi CATEGORY_COLORS in
- * constants/Interests.ts per il dettaglio).
+ * Contract test: ogni categoria (shared/categoriesTaxonomy.ts, fonte unica id/label) deve avere
+ * un colore esplicito in CATEGORY_COLORS (constants/Interests.ts), e search.tsx non deve tornare
+ * ad avere una copia locale a mano dello switch colore→categoria (era il caso prima di questo
+ * fix: getCategoryColors viveva come switch duplicato in app/(volunteer)/(tabs)/search.tsx,
+ * unico consumer, senza nessun test che impedisse a una nuova categoria di finire
+ * silenziosamente grigia).
  *
  * Controlli statici sul codice sorgente (no Metro, no rendering React Native): constants/*.ts
  * importa icone da lucide-react-native, che a sua volta importa react-native — un `import`
- * runtime di questi file rompe sotto tsx/esbuild fuori da Metro. Stesso approccio di
- * scripts/test_skills_taxonomy_contract.ts.
+ * runtime di questi file rompe sotto tsx/esbuild fuori da Metro (shared/categoriesTaxonomy.ts
+ * invece è dati puri, importabile senza problemi, ma resta comunque coerenza usare qui lo stesso
+ * approccio statico). Stesso approccio di scripts/test_skills_taxonomy_contract.ts.
  *
  * Run: npx tsx scripts/test_category_colors_contract.ts
  */
@@ -40,13 +41,18 @@ function extractBlock(source: string, startMarker: string, endMarker: string): s
 }
 
 const interestsSource = readSource("constants/Interests.ts");
+const categoriesTaxonomySource = readSource("shared/categoriesTaxonomy.ts");
 
 function testEveryInterestHasAnExplicitColor() {
-  console.log("\n[CATEGORY_COLORS] ogni categoria di INTERESTS ha un colore esplicito");
+  console.log("\n[CATEGORY_COLORS] ogni categoria di CATEGORY_TAXONOMY ha un colore esplicito");
 
-  const interestsBlock = extractBlock(interestsSource, "export const INTERESTS: InterestItem[] = [", "\n];");
-  const interestIds = [...interestsBlock.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert(interestIds.length > 0, "nessun id trovato in INTERESTS — regex/marker non combacia più con il file");
+  const taxonomyBlock = extractBlock(
+    categoriesTaxonomySource,
+    "export const CATEGORY_TAXONOMY: CategoryTaxonomyItem[] = [",
+    "\n];"
+  );
+  const interestIds = [...taxonomyBlock.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert(interestIds.length > 0, "nessun id trovato in CATEGORY_TAXONOMY — regex/marker non combacia più con il file");
 
   const colorsBlock = extractBlock(
     interestsSource,
@@ -71,6 +77,24 @@ function testEveryInterestHasAnExplicitColor() {
     );
   }
   pass("nessuna voce orfana in CATEGORY_COLORS");
+}
+
+function testInterestsConstantDerivesFromSharedTaxonomy() {
+  console.log("\n[constants/Interests.ts] deriva da shared/categoriesTaxonomy.ts, nessuna copia id/label a mano");
+
+  assert(
+    /import\s*\{\s*CATEGORY_TAXONOMY\s*\}\s*from\s*['"]\.\.\/shared\/categoriesTaxonomy['"]/.test(interestsSource),
+    "constants/Interests.ts deve importare CATEGORY_TAXONOMY da ../shared/categoriesTaxonomy"
+  );
+  assert(
+    /CATEGORY_TAXONOMY\.map\(/.test(interestsSource),
+    "constants/Interests.ts deve derivare INTERESTS da CATEGORY_TAXONOMY.map(...), non da una lista scritta a mano"
+  );
+  assert(
+    !/export const INTERESTS: InterestItem\[\] = \[\s*\n\s*\{\s*id:/.test(interestsSource),
+    "REGRESSIONE: constants/Interests.ts torna a definire INTERESTS come lista letterale — deve derivarla da CATEGORY_TAXONOMY"
+  );
+  pass("INTERESTS è derivato da CATEGORY_TAXONOMY, nessuna copia letterale di id/label");
 }
 
 function testGetCategoryColorsHasFallbackAndCaseInsensitiveLookup() {
@@ -112,6 +136,7 @@ function run() {
   console.log("─".repeat(60));
 
   testEveryInterestHasAnExplicitColor();
+  testInterestsConstantDerivesFromSharedTaxonomy();
   testGetCategoryColorsHasFallbackAndCaseInsensitiveLookup();
   testSearchScreenHasNoLocalDuplicate();
 

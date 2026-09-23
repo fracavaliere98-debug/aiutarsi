@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
+import { SKILL_TAXONOMY } from "../../../shared/skillsTaxonomy.ts";
+import { CATEGORY_TAXONOMY } from "../../../shared/categoriesTaxonomy.ts";
 
 interface ActivityDraft {
     title: string;
@@ -13,19 +15,18 @@ interface CuratedActivity {
     suggestedCategory: string;
 }
 
-// Tenute in sync a mano con constants/Skills.ts e constants/Interests.ts (questa edge function
-// gira su Deno, non può importare i moduli RN dell'app). Prima del 2026-07-23 il prompt chiedeva
-// competenze/categorie a testo libero non vincolate a nessuna lista reale (es. "Lavoro di
-// squadra", "Cultura", "Emergenza") — non corrispondevano MAI a un id/label valido, quindi il
-// filtro lato client (components/npo/ActivityForm.tsx, applyCuratedDraft) scartava sempre il
-// suggerimento e faceva fallback silenzioso ai valori precedenti. Il fix vincola l'AI a
-// scegliere solo tra le competenze/categorie che esistono davvero nell'app.
-const SKILL_IDS = [
-    "assistenza-persona", "primo-soccorso", "insegnamento", "manualita", "cura-animali",
-    "cucina", "comunicazione-digitale", "informatica", "creativita", "ascolto-compagnia",
-    "lingue", "sport",
-];
-const CATEGORY_LABELS = ["Ambiente", "Sociale", "Educazione", "Animali", "Arte & Cultura", "Salute"];
+// shared/skillsTaxonomy.ts e shared/categoriesTaxonomy.ts sono la fonte unica (letta anche da
+// constants/Skills.ts e constants/Interests.ts nell'app) — prima questa edge function ne teneva
+// una copia scritta a mano (questa funzione gira su Deno e non può importare moduli che a loro
+// volta importano react-native, motivo per cui shared/ contiene solo dati puri id/label, nessuna
+// icona). Prima ancora del 23/7/2026 il prompt chiedeva competenze/categorie a testo libero non
+// vincolate a nessuna lista reale (es. "Lavoro di squadra", "Cultura", "Emergenza") — non
+// corrispondevano MAI a un id/label valido, quindi il filtro lato client
+// (components/npo/ActivityForm.tsx, applyCuratedDraft) scartava sempre il suggerimento e faceva
+// fallback silenzioso ai valori precedenti. Il fix vincola l'AI a scegliere solo tra le
+// competenze/categorie che esistono davvero nell'app.
+const SKILL_IDS = SKILL_TAXONOMY.map((skill) => skill.id);
+const CATEGORY_LABELS = CATEGORY_TAXONOMY.map((category) => category.label);
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";

@@ -1,4 +1,5 @@
 import { BookOpen, Dog, Heart, Palette, TreePine, Users } from "lucide-react-native";
+import { CATEGORY_TAXONOMY } from "../shared/categoriesTaxonomy";
 
 export interface InterestItem {
     id: string;
@@ -9,56 +10,61 @@ export interface InterestItem {
     uri?: string;
 }
 
-export const INTERESTS: InterestItem[] = [
-    {
-        id: "ambiente",
-        label: "Ambiente",
+/**
+ * Id e label canonici vivono in shared/categoriesTaxonomy.ts (fonte unica, letta anche dalla
+ * edge function activity-curator-ai): qui si attacca solo la parte visuale, solo-app (icona
+ * Lucide, emoji, descrizione, immagine di copertina), che una edge function Deno non potrebbe
+ * importare. Se aggiungi/rinomini una categoria, parti da shared/categoriesTaxonomy.ts — non da
+ * qui.
+ */
+const INTEREST_VISUALS: Record<string, Pick<InterestItem, "emoji" | "icon" | "description" | "uri">> = {
+    ambiente: {
         emoji: "🌿",
         icon: TreePine,
         description: "Salvaguardia del territorio e natura",
         uri: "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop",
     },
-    {
-        id: "sociale",
-        label: "Sociale",
+    sociale: {
         emoji: "🤝",
         icon: Users,
         description: "Inclusione e supporto alla comunità",
         uri: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=800&auto=format&fit=crop",
     },
-    {
-        id: "educazione",
-        label: "Educazione",
+    educazione: {
         emoji: "📚",
         icon: BookOpen,
         description: "Supporto scolastico e formazione",
         uri: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=800&auto=format&fit=crop",
     },
-    {
-        id: "animali",
-        label: "Animali",
+    animali: {
         emoji: "🐶",
         icon: Dog,
         description: "Cura e tutela dei nostri amici",
         uri: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=800&auto=format&fit=crop",
     },
-    {
-        id: "arte",
-        label: "Arte & Cultura",
+    arte: {
         emoji: "🎨",
         icon: Palette,
         description: "Promozione della bellezza e storia",
         uri: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop",
     },
-    {
-        id: "salute",
-        label: "Salute",
+    salute: {
         emoji: "💚",
         icon: Heart,
         description: "Prevenzione e assistenza sanitaria",
         uri: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop",
     },
-];
+};
+
+export const INTERESTS: InterestItem[] = CATEGORY_TAXONOMY.map((category) => {
+    const visuals = INTEREST_VISUALS[category.id];
+    if (!visuals) {
+        // Nessun fallback silenzioso: una categoria senza visual assegnato deve rompere subito in
+        // dev, non finire con un'icona/immagine a caso in produzione.
+        throw new Error(`constants/Interests.ts: nessun visual assegnato per l'id "${category.id}" (presente in shared/categoriesTaxonomy.ts)`);
+    }
+    return { id: category.id, label: category.label, ...visuals };
+});
 
 export const ACTIVITY_CATEGORIES = INTERESTS.map((interest) => interest.label);
 
