@@ -115,7 +115,7 @@ export default function CorporateRegister() {
                     </View>
                     <Text style={styles.privacyText}>
                         Accetto la{" "}
-                        <Text onPress={() => router.push("/(corporate)/privacy-policy")} style={styles.inlineLink}>
+                        <Text onPress={() => router.push("/privacy-policy")} style={styles.inlineLink}>
                             Privacy Policy
                         </Text>
                         {" "}e i{" "}

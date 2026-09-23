@@ -1,16 +1,16 @@
 import React from 'react';
 import { ScrollView, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { StandardLayout } from '../../components/StandardLayout';
-import { SoftCard } from '../../components/SoftCard';
+import { StandardLayout } from '../components/StandardLayout';
+import { SoftCard } from '../components/SoftCard';
 
 export default function PrivacyPolicyScreen() {
     const router = useRouter();
 
     return (
-        <StandardLayout 
-            title="Privacy Policy" 
-            label="Legale" 
+        <StandardLayout
+            title="Privacy Policy"
+            label="Legale"
             onBack={() => router.back()}
         >
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -22,7 +22,7 @@ export default function PrivacyPolicyScreen() {
                     <Text className="text-secondary text-sm leading-6 mb-4">
                         Benvenuto su AiutarSì. La tua privacy è fondamentale per noi. Questa informativa spiega come raccogliamo, utilizziamo e proteggiamo i tuoi dati personali.
                     </Text>
-                    
+
                     <Text className="text-primary font-bold text-lg mb-2">1. Dati Raccolti</Text>
                     <Text className="text-secondary text-sm leading-6 mb-4">
                         Raccogliamo dati necessari per il funzionamento dell&apos;app: nome, email, posizione (opzionale), interessi e competenze di volontariato.
