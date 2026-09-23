@@ -20,7 +20,7 @@ import { EmptyState } from "../../../components/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 import { CalendarPicker } from "../../../components/CalendarPicker";
 import { useAuth } from "../../../context/AuthContext";
-import { INTERESTS } from "../../../constants/Interests";
+import { INTERESTS, getCategoryColors } from "../../../constants/Interests";
 import { useSmartMatchActivityScoresView, useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
@@ -592,18 +592,6 @@ export default function SearchScreen() {
             ...sortedActivities.filter((activity) => !topMatchIds.has(activity.id)),
         ];
     }, [sortedActivities, topMatchActivities, topMatchIds]);
-
-    const getCategoryColors = (cat?: string) => {
-        switch ((cat || '').toUpperCase()) {
-            case 'AMBIENTE': return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
-            case 'SOCIALE': return { bg: 'bg-blue-100', text: 'text-blue-700' };
-            case 'ANIMALI': return { bg: 'bg-orange-100', text: 'text-orange-700' };
-            case 'SALUTE': return { bg: 'bg-rose-100', text: 'text-rose-700' };
-            case 'EDUCAZIONE': return { bg: 'bg-purple-100', text: 'text-purple-700' };
-            case 'ARTE & CULTURA': return { bg: 'bg-indigo-100', text: 'text-indigo-700' };
-            default: return { bg: 'bg-slate-100', text: 'text-slate-700' };
-        }
-    };
 
     const renderActivityItem = ({ item, index }: { item: AppActivity; index: number }) => {
         const isExpanded = expandedId === item.id;

@@ -18,6 +18,7 @@ const suite = [
   { label: "npo-report-quick-wins", path: "scripts/test_npo_report_quick_wins.ts" },
   { label: "smart-match-compatibility", path: "scripts/test_smart_match_compatibility_contract.ts" },
   { label: "smart-match-reason-consistency", path: "scripts/test_smart_match_reason_consistency_contract.ts" },
+  { label: "category-colors-contract", path: "scripts/test_category_colors_contract.ts" },
   { label: "unit-logic", path: "scripts/test_unit_logic.ts" },
   { label: "bootstrap-runtime-settings", path: "scripts/test_bootstrap_runtime_settings.ts" },
   { label: "gemma-help-local", path: "scripts/test_gemma_help_local.ts" },
