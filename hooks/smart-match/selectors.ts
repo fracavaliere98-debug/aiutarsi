@@ -15,7 +15,7 @@ function haversineKm(a?: { lat: number; lng: number }, b?: { lat: number; lng: n
     return 6371 * (2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
 }
 
-export function deriveSmartMatchChips(user: AppUser | null | undefined, activity: any, score: number) {
+export function deriveSmartMatchChips(user: AppUser | null | undefined, activity: any) {
     const chips: string[] = [];
     const userSkills = (user?.skills || []).map((item: string) => norm(item));
     const activitySkills = (activity?.skills || []).map((item: string) => norm(item));
@@ -32,17 +32,16 @@ export function deriveSmartMatchChips(user: AppUser | null | undefined, activity
     if (distanceKm !== null && distanceKm <= 10) chips.push('Vicino a te');
     else if (distanceKm !== null && distanceKm <= 25) chips.push('Raggiungibile');
 
-    if (activity?.isUrgent) chips.push('Urgente');
-
+    // "Urgente" non va ripetuto qui: e' gia' un badge separato e ben visibile sulla card
+    // (item.isUrgent) quando presente. "Alta compatibilita'/Buon fit" non va ripetuto qui:
+    // e' la stessa informazione dello score/etichetta di confidenza gia' mostrati accanto
+    // (badge + confidenceLabel), solo riscritta a parole — stesso segnale, tre volte.
     const activityDate = activity?.dateTime ? new Date(activity.dateTime).getTime() : null;
     if (activityDate) {
         const diffDays = (activityDate - Date.now()) / (1000 * 60 * 60 * 24);
         if (diffDays >= 0 && diffDays <= 3) chips.push('Nei prossimi giorni');
         else if (diffDays > 3 && diffDays <= 7) chips.push('Questa settimana');
     }
-
-    if (score >= 80) chips.push('Alta compatibilità');
-    else if (score >= 65) chips.push('Buon fit');
 
     return Array.from(new Set(chips)).slice(0, 3);
 }
@@ -105,7 +104,7 @@ export function rerankSmartMatches(
             if (npoId && relations.affiliatedNpoIds.has(npoId)) adjustedScore += 10;
             else if (npoId && relations.followedNpoIds.has(npoId)) adjustedScore += 5;
 
-            const chips = deriveSmartMatchChips(user, activity, adjustedScore);
+            const chips = deriveSmartMatchChips(user, activity);
             const confidence = deriveSmartMatchConfidence(adjustedScore);
 
             return {

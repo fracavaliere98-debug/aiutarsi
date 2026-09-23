@@ -8,6 +8,10 @@ const allowedFiles = new Set([
   "hooks/smart-match/queries.ts",
   "utils/smartMatchCompatibility.ts",
   "scripts/test_smart_match_compatibility_contract.ts",
+  // Fixture di test: matchPercentage e' un campo obbligatorio di OldActivity, va
+  // soddisfatto per costruire un'attivita' di prova — non e' usato come base di
+  // ranking (il test usa direttamente match.score, bypassando volutamente il campo).
+  "scripts/test_smart_match_reason_consistency_contract.ts",
 ]);
 
 // Use grep -rl (portable, no ripgrep dependency)

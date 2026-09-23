@@ -92,9 +92,12 @@ async function fetchSmartMatches(user: AppUser): Promise<SmartMatchQueryData> {
                 }));
             })
             .catch(() => {
+                // Stesso motivo del fallback in fetchSmartMatchActivityScores: match.score qui
+                // e' ancora lo score legacy pre-rerank, che puo' differire da quello canonico
+                // mostrato nel badge dopo rerankSmartMatches piu' sotto. Niente numero nel testo.
                 return serverInputMatches.map((match) => ({
                     ...match,
-                    reason: `Match ${Math.round(match.score || 0)}% in linea con il tuo profilo.`,
+                    reason: 'Attività in linea con il tuo profilo attuale.',
                 }));
             })
         : serverInputMatches;
@@ -148,11 +151,31 @@ async function fetchSmartMatchActivityScores(
     const serverInputMatches: OldSmartMatchResult[] = activities.map((activity) => ({
         id: activity.id,
         score: getLegacyActivityMatchSnapshot(activity),
-        reason: `Match ${Math.round(getLegacyActivityMatchSnapshot(activity))}% in linea con il tuo profilo.`,
+        reason: 'Gemma sta preparando un consiglio personalizzato...',
         activity: activity as any,
     }));
 
-    const ordered = rerankSmartMatches(serverInputMatches, user, prefs, relations, {
+    // Il reason va generato con la stessa pipeline di fetchSmartMatches (gemmaService),
+    // non con un terzo template locale: un template diverso qui produceva un numero
+    // (lo score legacy pre-rerank) diverso da quello mostrato nel badge accanto
+    // (lo score canonico post-rerank in rerankSmartMatches sotto) — la stessa card
+    // mostrava due percentuali diverse per lo stesso match.
+    const enrichedInputMatches = serverInputMatches.length > 0
+        ? await gemmaService.getSmartMatchReasons(serverInputMatches)
+            .then((result) => {
+                const reasonsMap = new Map(result.reasons.map((item: any) => [item.activityId, item.reason]));
+                return serverInputMatches.map((match) => ({
+                    ...match,
+                    reason: reasonsMap.get(match.id) || 'Attività in linea con il tuo profilo attuale.',
+                }));
+            })
+            .catch(() => serverInputMatches.map((match) => ({
+                ...match,
+                reason: 'Attività in linea con il tuo profilo attuale.',
+            })))
+        : serverInputMatches;
+
+    const ordered = rerankSmartMatches(enrichedInputMatches, user, prefs, relations, {
         ignoreHidden: true,
     });
 

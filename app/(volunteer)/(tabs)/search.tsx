@@ -1,6 +1,6 @@
 import {
     View, Text, TextInput, TouchableOpacity, Image, RefreshControl,
-    ActivityIndicator, ScrollView, Modal, Platform, Share
+    ActivityIndicator, ScrollView, Modal, Platform, Share, StyleSheet
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -24,7 +24,8 @@ import { INTERESTS } from "../../../constants/Interests";
 import { useSmartMatchActivityScoresView, useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
 
 import { SKILLS } from "../../../constants/Skills";
-import { colors } from "@/theme";
+import { colors, radius, spacing, fontWeight, shadows, typography, withAlpha } from "@/theme";
+import { StatusPill } from "../../../components/ui";
 
 const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100];
 
@@ -240,12 +241,218 @@ function FilterModal({
     );
 }
 
+// ─── Card attività: stili token-based (vertical slice di migrazione al design
+// system, vedi docs/design-system.md — sostituisce colori hex e className ad hoc
+// usati prima in questa card con i token esistenti in theme/). Il resto della
+// schermata (ricerca, filtri, mappa) resta con lo stile legacy esistente: non è
+// nello scope di questa slice. ──────────────────────────────────────────────
+const cardStyles = StyleSheet.create({
+    topSectionBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: withAlpha(colors.accent, 0.06),
+        borderRadius: radius['2xl'],
+        borderWidth: 1,
+        borderColor: withAlpha(colors.accent, 0.18),
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        marginBottom: spacing.md,
+    },
+    topSectionTitle: {
+        ...typography.label,
+        color: colors.accent,
+        textTransform: 'uppercase',
+    },
+    topSectionSubtitle: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginTop: spacing.xs,
+        marginBottom: spacing.lg,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.borderMuted,
+    },
+    dividerLabel: {
+        ...typography.overline,
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+    },
+    card: {
+        width: '100%',
+        backgroundColor: colors.white,
+        borderRadius: radius.card,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: colors.borderMuted,
+        ...shadows.card(),
+    },
+    cardExpanded: {
+        ...shadows.floating(),
+    },
+    imageWrap: {
+        width: '100%',
+        backgroundColor: colors.surfaceMuted,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+    },
+    imageOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 96,
+        backgroundColor: withAlpha(colors.black, 0.3),
+    },
+    topLeftBadges: {
+        position: 'absolute',
+        top: spacing.md,
+        left: spacing.md,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: spacing.sm,
+        zIndex: 20,
+    },
+    matchBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.pill,
+    },
+    matchBadgeText: {
+        ...typography.caption,
+        color: colors.white,
+        fontWeight: fontWeight.extrabold,
+        textTransform: 'uppercase',
+    },
+    heartButton: {
+        position: 'absolute',
+        top: spacing.md,
+        right: spacing.md,
+        backgroundColor: withAlpha(colors.black, 0.2),
+        padding: spacing.sm,
+        borderRadius: radius.circle,
+        zIndex: 20,
+    },
+    content: {
+        padding: spacing.lg,
+    },
+    title: {
+        ...typography.cardTitle,
+        color: colors.text,
+        marginBottom: spacing['2xs'],
+    },
+    npoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.sm,
+    },
+    npoName: {
+        ...typography.bodySmall,
+        color: colors.primary,
+        fontWeight: fontWeight.bold,
+    },
+    metaGroup: {
+        gap: spacing.xs,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    metaText: {
+        ...typography.caption,
+        color: colors.textMuted,
+        flex: 1,
+    },
+    expandedSection: {
+        marginTop: spacing.md,
+        paddingTop: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderMuted,
+        gap: spacing.md,
+    },
+    reasonBox: {
+        backgroundColor: colors.surfaceSubtle,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.borderMuted,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    reasonBoxTop: {
+        backgroundColor: withAlpha(colors.accent, 0.06),
+        borderColor: withAlpha(colors.accent, 0.18),
+    },
+    reasonHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.xs,
+    },
+    reasonLabel: {
+        ...typography.label,
+    },
+    reasonText: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        lineHeight: 18,
+    },
+    chipsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    description: {
+        ...typography.caption,
+        color: colors.textMuted,
+        lineHeight: 18,
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    detailsButton: {
+        flex: 1,
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        borderRadius: radius.xl,
+        alignItems: 'center',
+        ...shadows.card(),
+    },
+    detailsButtonText: {
+        ...typography.bodySmall,
+        color: colors.white,
+        fontWeight: fontWeight.black,
+    },
+    iconButton: {
+        backgroundColor: colors.surfaceSubtle,
+        padding: spacing.md,
+        borderRadius: radius.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
+
 // ─── Esplora (Search) Screen ──────────────────────────────────────────────────
 export default function SearchScreen() {
     const router = useRouter();
     const { showToast } = useToast();
     const { user } = useAuth();
-    const { matches, likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatchView(user);
+    const { likeMatch, saveMatch, hideMatch, markMatchSeen } = useSmartMatchView(user);
 
     // Search state
     const [searchText, setSearchText] = useState("");
@@ -361,7 +568,6 @@ export default function SearchScreen() {
     const { scoreMap: smartMatchMap } = useSmartMatchActivityScoresView(user, sortedActivities, {
         enabled: sortedActivities.length > 0,
     });
-    const visibleMatchMap = useMemo(() => new Map(matches.map((match) => [match.id, match])), [matches]);
     const topMatchActivities = useMemo(() => {
         return sortedActivities
             .filter((activity) => {
@@ -404,8 +610,12 @@ export default function SearchScreen() {
         const isFocusedMode = expandedId !== null;
         const isDimmed = isFocusedMode && !isExpanded;
         const catColors = getCategoryColors(item.category);
+        // Fonte unica del match per questa card: lo stesso oggetto alimenta punteggio,
+        // etichetta, motivazione, chip e le azioni sotto (like/salva/nascondi) — prima
+        // le azioni leggevano da un secondo dataset (le "top 15" vicine) che non conteneva
+        // sempre l'attivita' corrente: il tap su cuore/salva/nascondi non faceva nulla per
+        // molte card. aiMatch esiste invece per ogni attivita' visibile in Esplora.
         const aiMatch = smartMatchMap.get(item.id);
-        const visibleAiMatch = visibleMatchMap.get(item.id);
         const displayScore = typeof aiMatch?.score === 'number' ? aiMatch.score : 0;
         const displayBadge = aiMatch?.confidenceLabel || 'Gemma';
         const aiChips = aiMatch?.chips?.slice(0, 3) || [];
@@ -416,47 +626,23 @@ export default function SearchScreen() {
         const showTopSectionHeader = isInTopSection && index === 0;
         const showAllActivitiesHeader = !isInTopSection && !!topMatchActivities.length && !!previousItem && topMatchIds.has(previousItem.id);
 
-
         return (
             <View>
                 {showTopSectionHeader && (
-                    <View style={{
-                        backgroundColor: '#fff4f7',
-                        borderRadius: 18,
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        marginBottom: 12,
-                        borderWidth: 1,
-                        borderColor: '#ffd6e4',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                    }}>
+                    <View style={cardStyles.topSectionBanner}>
                         <Sparkles size={15} color={colors.accent} />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: '#be185d', fontSize: 12, fontWeight: '900', textTransform: 'uppercase' }}>
-                                Top match per te
-                            </Text>
-                            <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '600' }}>
-                                Le attività con il fit migliore secondo Gemma
-                            </Text>
+                            <Text style={cardStyles.topSectionTitle}>Top match per te</Text>
+                            <Text style={cardStyles.topSectionSubtitle}>Le attività con il fit migliore secondo Gemma</Text>
                         </View>
                     </View>
                 )}
 
                 {showAllActivitiesHeader && (
-                    <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 10,
-                        marginTop: 4,
-                        marginBottom: 14,
-                    }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                        <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                            Tutte le attivita
-                        </Text>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                    <View style={cardStyles.dividerRow}>
+                        <View style={cardStyles.dividerLine} />
+                        <Text style={cardStyles.dividerLabel}>Tutte le attivita</Text>
+                        <View style={cardStyles.dividerLine} />
                     </View>
                 )}
 
@@ -470,181 +656,153 @@ export default function SearchScreen() {
                     }}
                     activeOpacity={0.9}
                     testID={`activity-card-${index}`}
-                    className="mb-5"
-                    style={{ opacity: isDimmed ? 0.35 : 1, transform: [{ scale: isExpanded ? 1.02 : 1 }] }}
+                    style={{
+                        opacity: isDimmed ? 0.35 : 1,
+                        transform: [{ scale: isExpanded ? 1.02 : 1 }],
+                        marginBottom: spacing.xl,
+                    }}
                 >
-                    <View className={`w-full bg-white rounded-3xl relative overflow-hidden p-0 border border-slate-100 ${isExpanded ? 'shadow-2xl' : 'shadow-md'}`}>
-                    {/* Image section */}
-                    <View className={`${isExpanded ? 'h-[180px]' : 'h-[150px]'} bg-slate-200 w-full relative`}>
-                        <Image
-                            source={{ uri: item.imageUrl || `https://dummyimage.com/600x300/e2e8f0/462282&text=${item.category}` }}
-                            className="w-full h-full"
-                        />
-                        {/* Dark gradient overlay at top for badge readability */}
-                        <View className="absolute top-0 left-0 right-0 h-24 bg-black/30" />
+                    <View style={[cardStyles.card, isExpanded && cardStyles.cardExpanded]}>
+                        {/* Image section */}
+                        <View style={[cardStyles.imageWrap, { height: isExpanded ? 180 : 150 }]}>
+                            <Image
+                                source={{ uri: item.imageUrl || `https://dummyimage.com/600x300/e2e8f0/462282&text=${item.category}` }}
+                                style={cardStyles.image}
+                            />
+                            <View style={cardStyles.imageOverlay} />
 
-                        {/* Top Badges */}
-                        <View className="absolute top-4 left-4 flex-col gap-2 z-20">
-                            <View style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                alignSelf: 'flex-start',
-                                paddingHorizontal: 10,
-                                paddingVertical: 5,
-                                borderRadius: 999,
-                                gap: 5,
-                                backgroundColor: isTopGemma ? colors.accent : colors.primary,
-                            }} className="shadow-md border border-white/20">
-                                <Sparkles size={12} color="#ffffff" fill="#ffffff" />
-                                <Text
-                                    style={{
-                                        color: '#ffffff',
-                                        fontSize: 12,
-                                        fontWeight: '800',
-                                        textTransform: 'uppercase'
-                                    }}
-                                >
-                                    {aiMatch ? displayBadge : `${displayScore}% MATCH`}
-                                </Text>
-                            </View>
-                            {item.isUrgent && (
-                                <View className="bg-rose-600 px-2.5 py-1 rounded-full self-start shadow-md">
-                                    <Text className="text-white text-[10px] font-black uppercase">URGENTE</Text>
-                                </View>
-                            )}
-                            {isEnrolled && (
-                                <View className="bg-emerald-600 px-2.5 py-1 rounded-full self-start shadow-md">
-                                    <Text className="text-white text-[10px] font-black uppercase">ISCRITTO</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Heart Icon */}
-                        <TouchableOpacity
-                            onPress={(e) => {
-                                e.stopPropagation?.();
-                                if (visibleAiMatch) void likeMatch(visibleAiMatch);
-                            }}
-                            className="absolute top-4 right-4 bg-black/20 p-2.5 rounded-full z-20 backdrop-blur-md"
-                        >
-                            <Heart size={16} color="white" strokeWidth={2.5} fill={aiMatch?.liked ? 'white' : 'transparent'} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Content section */}
-                    <View className="p-4">
-                        <View className="flex-row items-center justify-between mb-3">
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                                <View className={`${catColors.bg} px-2.5 py-1 rounded-md`}>
-                                    <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
-                                </View>
+                            {/* Un solo segnale di match sull'immagine: la percentuale, leggibile
+                                subito anche da chi non sa cosa sia "Gemma". L'etichetta qualitativa
+                                e la motivazione compaiono solo nella vista espansa (tap sulla card),
+                                cosi' lo stesso numero non viene ripetuto in piu' punti della card. */}
+                            <View style={cardStyles.topLeftBadges}>
                                 {displayScore > 0 && (
-                                    <View style={{ backgroundColor: isTopGemma ? '#fff1f7' : '#eef2ff', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999 }}>
-                                        <Text style={{ color: isTopGemma ? colors.accent : colors.primary, fontSize: 10, fontWeight: '900' }}>
-                                            {displayScore}% fit
-                                        </Text>
+                                    <View style={[cardStyles.matchBadge, { backgroundColor: isTopGemma ? colors.accent : colors.primary }]}>
+                                        <Sparkles size={12} color={colors.white} fill={colors.white} />
+                                        <Text style={cardStyles.matchBadgeText}>{displayScore}% match</Text>
                                     </View>
                                 )}
+                                {item.isUrgent && <StatusPill label="Urgente" tone="danger" />}
+                                {isEnrolled && <StatusPill label="Iscritto" tone="success" />}
                             </View>
+
+                            <TouchableOpacity
+                                onPress={(e) => {
+                                    e.stopPropagation?.();
+                                    if (aiMatch) void likeMatch(aiMatch);
+                                }}
+                                style={cardStyles.heartButton}
+                                accessibilityRole="button"
+                                accessibilityLabel={aiMatch?.liked ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                            >
+                                <Heart size={16} color={colors.white} strokeWidth={2.5} fill={aiMatch?.liked ? colors.white : 'transparent'} />
+                            </TouchableOpacity>
                         </View>
 
-                        <Text className={`font-black text-[#1e1b4b] leading-tight mb-1.5 ${isExpanded ? 'text-xl' : 'text-lg'}`} numberOfLines={isExpanded ? undefined : 2}>
-                            {item.title}
-                        </Text>
+                        {/* Content section */}
+                        <View style={cardStyles.content}>
+                            <View className={`${catColors.bg} px-2.5 py-1 rounded-md self-start mb-3`}>
+                                <Text className={`${catColors.text} text-[9px] font-black uppercase tracking-wider`}>{item.category || "CATEGORIA"}</Text>
+                            </View>
 
-                        <View className="flex-row items-center gap-1.5 mb-2.5">
-                            <Text className="text-indigo-800 font-bold text-xs">{item.npoName}</Text>
-                            {isExpanded && <CheckCircle2 size={13} color="#4f46e5" strokeWidth={2.5} />}
-                        </View>
+                            <Text style={cardStyles.title} numberOfLines={isExpanded ? undefined : 2}>
+                                {item.title}
+                            </Text>
 
-                        {!!aiMatch?.reason && (
-                            <View style={{
-                                backgroundColor: isTopGemma ? '#fff4f7' : '#f8f9ff',
-                                borderRadius: 16,
-                                paddingHorizontal: 12,
-                                paddingVertical: 10,
-                                marginBottom: 10,
-                                borderWidth: 1,
-                                borderColor: isTopGemma ? '#ffd6e4' : '#e8eaf0',
-                            }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                                    <Sparkles size={12} color={isTopGemma ? colors.accent : colors.primary} />
-                                    <Text style={{ color: isTopGemma ? colors.accent : colors.primary, fontSize: 11, fontWeight: '900' }}>
-                                        {displayBadge}{displayScore > 0 ? ` · ${displayScore}%` : ''}
+                            <View style={cardStyles.npoRow}>
+                                <Text style={cardStyles.npoName}>{item.npoName}</Text>
+                                {isExpanded && <CheckCircle2 size={13} color={colors.primary} strokeWidth={2.5} />}
+                            </View>
+
+                            <View style={cardStyles.metaGroup}>
+                                <View style={cardStyles.metaRow}>
+                                    <MapPin size={12} color={colors.textMuted} />
+                                    <Text style={cardStyles.metaText} numberOfLines={1}>{item.location?.address || 'Indirizzo non specificato'}</Text>
+                                </View>
+                                <View style={cardStyles.metaRow}>
+                                    <Calendar size={12} color={colors.textMuted} />
+                                    <Text style={cardStyles.metaText}>
+                                        {new Date(item.dateTime).toLocaleDateString("it-IT", { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, c => c.toUpperCase())} • {new Date(item.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </View>
-                                <Text style={{ color: '#475569', fontSize: 12, lineHeight: 18, fontWeight: '600' }} numberOfLines={isExpanded ? 3 : 2}>
-                                    {aiMatch.reason}
-                                </Text>
                             </View>
-                        )}
 
-                        {!!aiChips.length && (
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                                {aiChips.map((chip) => (
-                                    <View key={`${item.id}-${chip}`} style={{ backgroundColor: '#eef2ff', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 }}>
-                                        <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>{chip}</Text>
+                            {/* Divulgazione progressiva: il "perche' ti consiglio questa", le chip
+                                e la descrizione compaiono solo al tap. La prima impressione della
+                                card resta leggibile; chi vuole approfondire apre. */}
+                            {isExpanded && (
+                                <View style={cardStyles.expandedSection}>
+                                    {!!aiMatch?.reason && (
+                                        <View style={[cardStyles.reasonBox, isTopGemma && cardStyles.reasonBoxTop]}>
+                                            <View style={cardStyles.reasonHeader}>
+                                                <Sparkles size={12} color={isTopGemma ? colors.accent : colors.primary} />
+                                                <Text style={[cardStyles.reasonLabel, { color: isTopGemma ? colors.accent : colors.primary }]}>
+                                                    {displayBadge}
+                                                </Text>
+                                            </View>
+                                            <Text style={cardStyles.reasonText} numberOfLines={3}>{aiMatch.reason}</Text>
+                                        </View>
+                                    )}
+
+                                    {!!aiChips.length && (
+                                        <View style={cardStyles.chipsRow}>
+                                            {aiChips.map((chip) => (
+                                                <StatusPill key={`${item.id}-${chip}`} label={chip} tone="info" />
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    <Text style={cardStyles.description} numberOfLines={3}>
+                                        {item.description}
+                                    </Text>
+
+                                    <View style={cardStyles.actionsRow}>
+                                        <TouchableOpacity
+                                            onPress={() => router.push(`/activity/${item.id}` as any)}
+                                            style={cardStyles.detailsButton}
+                                        >
+                                            <Text style={cardStyles.detailsButtonText}>Dettagli Attività</Text>
+                                        </TouchableOpacity>
+                                        {aiMatch && (
+                                            <TouchableOpacity
+                                                onPress={() => void saveMatch(aiMatch)}
+                                                style={cardStyles.iconButton}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={aiMatch.saved ? "Rimuovi dai salvati" : "Salva attività"}
+                                            >
+                                                <Bookmark size={18} color={colors.primary} fill={aiMatch.saved ? colors.primary : 'transparent'} />
+                                            </TouchableOpacity>
+                                        )}
+                                        {aiMatch && (
+                                            <TouchableOpacity
+                                                onPress={() => void hideMatch(aiMatch)}
+                                                style={cardStyles.iconButton}
+                                                accessibilityRole="button"
+                                                accessibilityLabel="Nascondi questa attività"
+                                            >
+                                                <EyeOff size={18} color={colors.textSecondary} />
+                                            </TouchableOpacity>
+                                        )}
+                                        <TouchableOpacity
+                                            onPress={async () => {
+                                                try {
+                                                    await Share.share({
+                                                        message: `👐 ${item.title}\nPartecipa a questa attività su AiutarSì!\n\n📱 Apri direttamente nell'app:\naiutarsiapp://activity/${item.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${item.id}`,
+                                                    });
+                                                } catch (error) {
+                                                    console.error("Error sharing:", error);
+                                                }
+                                            }}
+                                            style={cardStyles.iconButton}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Condividi questa attività"
+                                        >
+                                            <Share2 size={18} color={colors.text} />
+                                        </TouchableOpacity>
                                     </View>
-                                ))}
-                            </View>
-                        )}
-
-                        <View className="gap-1.5 mb-1">
-                            <View className="flex-row items-center gap-2">
-                                <MapPin size={12} color="#64748b" />
-                                <Text className="text-slate-500 font-medium text-[11px] flex-1" numberOfLines={1}>{item.location?.address || 'Indirizzo non specificato'}</Text>
-                            </View>
-                            <View className="flex-row items-center gap-2">
-                                <Calendar size={12} color="#64748b" />
-                                <Text className="text-slate-500 font-medium text-[11px]">
-                                    {new Date(item.dateTime).toLocaleDateString("it-IT", { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, c => c.toUpperCase())} • {new Date(item.dateTime).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Expanded Content */}
-                        {isExpanded && (
-                            <View className="mt-3 pt-3 border-t border-slate-100">
-                                <Text className="text-slate-500 text-xs leading-5 mb-4" numberOfLines={3}>
-                                    {item.description}
-                                </Text>
-                                <View className="flex-row items-center gap-3">
-                                    <TouchableOpacity
-                                        onPress={() => router.push(`/activity/${item.id}` as any)}
-                                        className="bg-primary flex-1 py-3.5 rounded-2xl items-center shadow-md">
-                                        <Text className="text-white font-black text-[13px]">Dettagli Attività</Text>
-                                    </TouchableOpacity>
-                                    {visibleAiMatch && (
-                                        <TouchableOpacity
-                                            onPress={() => void saveMatch(visibleAiMatch)}
-                                            className="bg-indigo-50 p-3.5 rounded-2xl items-center justify-center">
-                                            <Bookmark size={18} color={colors.primary} fill={visibleAiMatch.saved ? colors.primary : 'transparent'} />
-                                        </TouchableOpacity>
-                                    )}
-                                    {visibleAiMatch && (
-                                        <TouchableOpacity
-                                            onPress={() => void hideMatch(visibleAiMatch)}
-                                            className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
-                                            <EyeOff size={18} color="#475569" />
-                                        </TouchableOpacity>
-                                    )}
-                                    <TouchableOpacity 
-                                        onPress={async () => {
-                                            try {
-                                                await Share.share({
-                                                    message: `👐 ${item.title}\nPartecipa a questa attività su AiutarSì!\n\n📱 Apri directement nell'app:\naiutarsiapp://activity/${item.id}\n\n🌐 Oppure visualizza sul web:\nhttps://aiutarsi.app/activity/${item.id}`,
-                                                });
-                                            } catch (error) {
-                                                console.error("Error sharing:", error);
-                                            }
-                                        }}
-                                        className="bg-slate-100 p-3.5 rounded-2xl items-center justify-center">
-                                        <Share2 size={18} color="#1e1b4b" />
-                                    </TouchableOpacity>
                                 </View>
-                            </View>
-                        )}
-                    </View>
+                            )}
+                        </View>
                     </View>
                 </TouchableOpacity>
             </View>
