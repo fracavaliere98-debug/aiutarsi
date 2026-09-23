@@ -16,6 +16,8 @@ export type { TypographyToken } from "./typography";
 export { shadows } from "./shadows";
 export type { ShadowToken } from "./shadows";
 
+export { withAlpha } from "./withAlpha";
+
 export { motion, MOTION_TIMINGS, STACK_TRANSITIONS } from "./motion";
 
 export { roleColors } from "./roles";

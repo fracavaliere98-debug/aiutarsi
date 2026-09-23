@@ -22,7 +22,7 @@ import {
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useEffect, useState } from "react";
 import { authService } from "../services/AuthService";
-import { colors, radius, spacing, fontSize, fontWeight, shadows, typography } from "@/theme";
+import { colors, radius, spacing, fontSize, fontWeight, shadows, typography, withAlpha } from "@/theme";
 import { SectionHeader } from "../components/ui";
 
 // NOTE (design-system, eccezione temporanea documentata — vedi docs/design-system.md
@@ -34,14 +34,8 @@ import { SectionHeader } from "../components/ui";
 // Niente blob/glow decorativi: un solo blocco di colore netto (color-blocking), coerente
 // con la direzione "no gradienti/chrome decorativo, un solo colore per gli elementi
 // interattivi" adottata dopo il confronto con le linee guida Apple. I toni qui sotto sono
-// derivati SOLO da colors.white/colors.primary/colors.accent esistenti tramite withAlpha().
-const withAlpha = (hex: string, alpha: number) => {
-    const clean = hex.replace("#", "");
-    const r = parseInt(clean.substring(0, 2), 16);
-    const g = parseInt(clean.substring(2, 4), 16);
-    const b = parseInt(clean.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+// derivati SOLO da colors.white/colors.primary/colors.accent esistenti tramite withAlpha()
+// (theme/withAlpha.ts, condiviso — non una copia locale).
 
 // Testo bianco su colors.primary (#462282): anche la variante più trasparente qui sotto
 // (78%) resta a ~7.6:1 di contrasto — ben sopra la soglia AA 4.5:1 — verificato via calcolo
