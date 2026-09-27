@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Sparkles, Map as MapIcon, ArrowRight, Clock, Target } from "lucide-react-native";
+import { Sparkles, Map as MapIcon, ArrowRight, Clock, HandHelping, Target } from "lucide-react-native";
 import { ActivityCard } from "../../../components/ActivityCard";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../../context/AuthContext";
@@ -15,7 +15,7 @@ import { EmptyState } from "../../../components/EmptyState";
 import { SmartMatchCarousel } from "../../../components/SmartMatchCarousel";
 import { useActivitiesDomain, useUserReviews, useVolunteerStats } from "../../../hooks/activities/selectors";
 import { useSmartMatchView } from "../../../hooks/smart-match/useSmartMatchView";
-import { colors } from "@/theme";
+import { colors, palette } from "@/theme";
 
 export default function VolunteerDashboard() {
     const router = useRouter();
@@ -117,19 +117,19 @@ export default function VolunteerDashboard() {
             }
         >
             {/* Quick Stats - Premium Dashboard Style */}
-            <View className="flex-row gap-2 mb-6">
+            <View className="flex-row gap-2 mb-5">
                 <View className="flex-1 h-24">
                     <StatCard
                         value={volunteerStats.totalHours.toString()}
                         label="ORE DONATE"
                         valueColor={colors.primary}
-                        icon={<Clock size={14} color="#312e81" style={{ marginBottom: 2 }} />}
+                        icon={<HandHelping size={14} color="#312e81" style={{ marginBottom: 2 }} />}
                     />
                 </View>
                 <View className="flex-1 h-24">
                     <StatCard
                         value={volunteerStats.completedMissions.toString()}
-                        label="ATTIVITÀ"
+                        label="COMPLETATE"
                         valueColor={colors.accent}
                         icon={<Target size={14} color="#db2777" style={{ marginBottom: 2 }} />}
                         onPress={() => router.push("/(volunteer)/calendar?view=list&filter=completed" as any)}
@@ -138,7 +138,7 @@ export default function VolunteerDashboard() {
                 <View className="flex-1 h-24">
                     <StatCard
                         value={volunteerStats.upcomingMissions.toString()}
-                        label="ATTIVE"
+                        label="IN PROGRAMMA"
                         valueColor={colors.accent}
                         icon={<Clock size={14} color={colors.accent} style={{ marginBottom: 2 }} />}
                         onPress={() => router.push("/(volunteer)/calendar?view=list&filter=upcoming" as any)}
@@ -148,15 +148,25 @@ export default function VolunteerDashboard() {
 
 
 
-            {/* Activities to Evaluate Reminder */}
+            {/* Activities to Evaluate Reminder — bordo/ombra e sfondo icona color oro
+                (stesso oro della recensione, palette.amber400) per farlo risaltare, su richiesta. */}
             {toEvaluate.length > 0 && (
                 <SoftCard
-                    className="mb-6 p-5 bg-gradient-to-r from-accent/5 to-accent/10 border-accent/20"
+                    className="mb-6 p-5 bg-gradient-to-r from-amber-400/5 to-amber-400/10"
+                    style={{
+                        borderColor: palette.amber400,
+                        borderWidth: 1.5,
+                        shadowColor: palette.amber400,
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 6,
+                        elevation: 3,
+                    }}
                     onPress={() => router.push(`/activity/${toEvaluate[0].id}` as any)}
                 >
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center gap-3 flex-1">
-                            <View className="bg-accent p-3 rounded-2xl">
+                            <View className="p-3 rounded-2xl" style={{ backgroundColor: palette.amber400 }}>
                                 <Sparkles size={20} color="white" />
                             </View>
                             <View className="flex-1">
@@ -164,7 +174,7 @@ export default function VolunteerDashboard() {
                                 <Text className="text-secondary text-xs font-semibold">La tua opinione aiuta la community</Text>
                             </View>
                         </View>
-                        <ArrowRight size={20} color={colors.accent} />
+                        <ArrowRight size={20} color={palette.amber400} />
                     </View>
                 </SoftCard>
             )}
@@ -252,6 +262,7 @@ export default function VolunteerDashboard() {
                             key={activity.id}
                             activity={activity}
                             onPress={() => router.push(`/activity/${activity.id}` as any)}
+                            style={{ marginBottom: 16 }}
                         />
                     ))}
 

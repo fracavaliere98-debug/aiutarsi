@@ -586,7 +586,7 @@ export default function ActivityDetail() {
                                             </Text>
                                             <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>Leggi le recensioni generali della NPO organizzatrice</Text>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.accent }}>Vedi recensioni NPO</Text>
+                                                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.accent }}>Vedi recensioni di {activity.npoName || "questa NPO"}</Text>
                                                 <ChevronRight size={14} color={colors.accent} />
                                             </View>
                                         </TouchableOpacity>

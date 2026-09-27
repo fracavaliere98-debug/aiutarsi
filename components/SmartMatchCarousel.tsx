@@ -299,7 +299,7 @@ export function SmartMatchCarousel() {
                         Consigliato per te
                     </Text>
                     <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '500' }}>
-                        Proposta AI con Gemma
+                        In base a cosa ti piace e cosa sai fare
                     </Text>
                 </View>
             </View>
@@ -460,29 +460,38 @@ export function SmartMatchCarousel() {
     return (
         <View style={{ marginBottom: 32 }}>
             {Header}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                decelerationRate="fast"
-                snapToInterval={CARD_SNAP_INTERVAL} // card width + gap
-                snapToAlignment="start"
-                onMomentumScrollEnd={handleScroll}
-                scrollEventThrottle={16}
-                style={{ marginHorizontal: -24 }}
-                contentContainerStyle={{ paddingHorizontal: 24 }}
-            >
-                {displayedMatches.map((match, i) => (
-                    <MatchCard
-                        key={match.id}
-                        match={match}
-                        index={i}
-                        onSave={saveMatch}
-                        onHide={hideMatch}
-                        onLike={likeMatch}
-                        onSeen={markMatchSeen}
-                    />
-                ))}
-            </ScrollView>
+            <View style={{ position: 'relative' }}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    decelerationRate="fast"
+                    snapToInterval={CARD_SNAP_INTERVAL} // card width + gap
+                    snapToAlignment="start"
+                    onMomentumScrollEnd={handleScroll}
+                    scrollEventThrottle={16}
+                    style={{ marginHorizontal: -24 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }}
+                >
+                    {displayedMatches.map((match, i) => (
+                        <MatchCard
+                            key={match.id}
+                            match={match}
+                            index={i}
+                            onSave={saveMatch}
+                            onHide={hideMatch}
+                            onLike={likeMatch}
+                            onSeen={markMatchSeen}
+                        />
+                    ))}
+                </ScrollView>
+                {/* Sfumatura di continuità: smorza il taglio netto dell'ombra delle card
+                    contro il bordo dello ScrollView invece di lasciarlo come linea dura. */}
+                <LinearGradient
+                    colors={['rgba(255,255,255,0)', colors.background]}
+                    pointerEvents="none"
+                    style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 18 }}
+                />
+            </View>
             {/* Dot indicators */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 12 }}>
                 {displayedMatches.map((_, i) => (

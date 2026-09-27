@@ -31,12 +31,24 @@ export function StatCard({ value, label, icon, valueColor = colors.primary, clas
         </View>
     );
 
+    // Ombra piccola e uniforme (shadowOffset/radius/opacity ridotti) al posto di
+    // shadow-md: stesso fix già applicato all'header in StandardLayout.tsx — shadow-md
+    // rendeva un taglio netto/contrasto forte proprio a ridosso dell'header sottostante.
+    const cardShadow = {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    } as const;
+
     if (onPress) {
         return (
             <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={onPress}
-                className={`bg-white ${compact ? "py-3" : "py-5"} justify-center rounded-[24px] border border-slate-200 shadow-md ${className}`}
+                className={`bg-white ${compact ? "py-3" : "py-5"} justify-center rounded-[24px] border border-slate-200 ${className}`}
+                style={cardShadow}
                 testID={testID}
             >
                 {Content}
@@ -45,7 +57,7 @@ export function StatCard({ value, label, icon, valueColor = colors.primary, clas
     }
 
     return (
-        <View className={`bg-white ${compact ? "py-3" : "py-5"} justify-center rounded-[24px] border border-slate-200 shadow-md ${className}`} testID={testID}>
+        <View className={`bg-white ${compact ? "py-3" : "py-5"} justify-center rounded-[24px] border border-slate-200 ${className}`} style={cardShadow} testID={testID}>
             {Content}
         </View>
     );

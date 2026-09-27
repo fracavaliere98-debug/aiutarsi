@@ -86,52 +86,9 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
             style={style as any}
             onPress={onPress}
         >
-            {(myConfirmedReview || hasSubmittedReview) && (
-                <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, flexDirection: 'row', gap: 6 }}>
-                    {hasSubmittedReview && (
-                        <TouchableOpacity
-                            onPress={() => showToast('success', "Hai già inviato la tua recensione!")}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{
-                                backgroundColor: 'white',
-                                borderRadius: 999,
-                                padding: 5,
-                                borderWidth: 1,
-                                borderColor: '#f1f5f9',
-                            }}
-                        >
-                            <Star size={12} color={palette.amber400} fill={palette.amber400} />
-                        </TouchableOpacity>
-                    )}
-                    {myConfirmedReview && (
-                        <TouchableOpacity
-                            onPress={() => showToast(
-                                'info',
-                                isAutoConfirmed
-                                    ? "Presenza confermata automaticamente."
-                                    : "Presenza confermata dall'ente."
-                            )}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{
-                                backgroundColor: 'white',
-                                borderRadius: 999,
-                                padding: 5,
-                                borderWidth: 1,
-                                borderColor: '#f1f5f9',
-                            }}
-                        >
-                            <ThumbsUp
-                                size={12}
-                                color={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
-                                fill={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
-                            />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            )}
             <View style={{ flex: 1, justifyContent: 'space-between' }}>
                 <View>
-                    <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12, alignItems: 'flex-start' }}>
                         {/* Date Badge */}
                         <View style={{ width: 56, height: 56, backgroundColor: '#eef2ff', borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e0e7ff' }}>
                             <Text style={{ fontSize: 9, fontWeight: '900', color: colors.accent, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: -2 }}>{month}</Text>
@@ -145,6 +102,105 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
                             <Text style={{ fontSize: 15, fontWeight: '900', color: '#1e1b4b', lineHeight: 20 }} numberOfLines={2}>
                                 {activity.title}
                             </Text>
+                        </View>
+
+                        {/* Stato + iscritti — spostati qui in alto a dx su richiesta (prima erano
+                            in una barra dedicata in fondo alla card). Sopra: eventuali badge di
+                            presenza/recensione (prima erano assoluti in questo stesso angolo, ora
+                            in flow per non sovrapporsi allo stato); poi stato + ricorrenza; poi gli
+                            avatar dei primi iscritti, o "Ancora nessun iscritto" se non ce ne sono. */}
+                        <View style={{ alignItems: 'flex-end', flexShrink: 0, gap: 6 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View className={`${statusProps.bgColor} px-2 py-1 rounded-full`}>
+                                    <Text className={`${statusProps.textColor} text-[10px] font-black uppercase tracking-wider`}>
+                                        {activity.status}
+                                    </Text>
+                                </View>
+                                {activity.recurrence && activity.recurrence !== 'NONE' && (
+                                    <View className="flex-row items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full">
+                                        <RefreshCw size={9} color="#4f46e5" />
+                                        <Text className="text-indigo-600 text-[9px] font-black uppercase">
+                                            {activity.recurrence === 'WEEKLY' ? 'Sett.' : 'Mens.'}
+                                        </Text>
+                                    </View>
+                                )}
+                                {/* Badge presenza/recensione — a destra dello stato (es. "COMPLETATA"),
+                                    non sopra, su richiesta. */}
+                                {hasSubmittedReview && (
+                                    <TouchableOpacity
+                                        onPress={() => showToast('success', "Hai già inviato la tua recensione!")}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        style={{
+                                            backgroundColor: 'white',
+                                            borderRadius: 999,
+                                            padding: 5,
+                                            borderWidth: 1,
+                                            borderColor: '#f1f5f9',
+                                        }}
+                                    >
+                                        <Star size={12} color={palette.amber400} fill={palette.amber400} />
+                                    </TouchableOpacity>
+                                )}
+                                {myConfirmedReview && (
+                                    <TouchableOpacity
+                                        onPress={() => showToast(
+                                            'info',
+                                            isAutoConfirmed
+                                                ? "Presenza confermata automaticamente."
+                                                : "Presenza confermata dall'ente."
+                                        )}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        style={{
+                                            backgroundColor: 'white',
+                                            borderRadius: 999,
+                                            padding: 5,
+                                            borderWidth: 1,
+                                            borderColor: '#f1f5f9',
+                                        }}
+                                    >
+                                        <ThumbsUp
+                                            size={12}
+                                            color={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                                            fill={isAutoConfirmed ? '#94a3b8' : '#16a34a'}
+                                        />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            {visibleAvatars.length > 0 ? (
+                                <View style={{ flexDirection: 'row' }}>
+                                    {visibleAvatars.map((volId: string, idx: number) => {
+                                        const volunteer = users.find((u: any) => u.id === volId);
+                                        return (
+                                            <View key={volId} style={{ marginLeft: idx === 0 ? 0 : -OVERLAP, zIndex: 20 - idx }}>
+                                                <UserAvatar
+                                                    size={AVATAR_SIZE}
+                                                    fontSize={9}
+                                                    name={volunteer?.name || "V"}
+                                                    avatarUrl={volunteer?.avatar}
+                                                />
+                                            </View>
+                                        );
+                                    })}
+                                    {overflowCount > 0 && (
+                                        <View
+                                            style={{
+                                                marginLeft: -OVERLAP, zIndex: 0,
+                                                width: AVATAR_SIZE, height: AVATAR_SIZE,
+                                                borderRadius: AVATAR_SIZE / 2,
+                                                backgroundColor: '#e2e8f0',
+                                                alignItems: 'center', justifyContent: 'center',
+                                                borderWidth: 1.5, borderColor: 'white',
+                                            }}
+                                        >
+                                            <Text style={{ fontSize: 8, fontWeight: '900', color: '#64748b' }}>+{overflowCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            ) : (
+                                <Text style={{ fontSize: 9, fontWeight: '700', color: '#94a3b8' }} numberOfLines={1}>
+                                    Ancora nessun iscritto
+                                </Text>
+                            )}
                         </View>
                     </View>
 
@@ -189,81 +245,35 @@ export function ActivityCard({ activity, onPress, style, showProgress }: Activit
                             </View>
                         </View>
 
-                        {!isOwnNpoActivity && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <View style={{ backgroundColor: '#f8fafc', padding: 5, borderRadius: 8 }}>
-                                    <Building2 size={12} color="#64748b" />
+                        {/* Nome ente + azione sulla stessa riga (spostata qui dalla vecchia barra
+                            in fondo alla card, su richiesta). Se è l'ente proprietario a guardare
+                            la propria attività non c'è un nome ente da mostrare a sinistra, ma
+                            l'azione (GESTISCI) resta comunque allineata a destra. */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            {!isOwnNpoActivity ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                                    <View style={{ backgroundColor: '#f8fafc', padding: 5, borderRadius: 8 }}>
+                                        <Building2 size={12} color="#64748b" />
+                                    </View>
+                                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569', flex: 1 }} numberOfLines={1}>
+                                        {npoName}
+                                    </Text>
                                 </View>
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
-                                    {npoName}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
-                {/* Bottom row — left side flex:1 keeps action button from overflowing */}
-                <View style={{ paddingTop: 12, marginTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center' }}>
-                    {/* Left: status + recurrence + avatars — flex:1 so it doesn't spill into right */}
-                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden', marginRight: 8 }}>
-                        <View className={`${statusProps.bgColor} px-2 py-1 rounded-full mr-2`} style={{ flexShrink: 0 }}>
-                            <Text className={`${statusProps.textColor} text-[10px] font-black uppercase tracking-wider`}>
-                                {activity.status}
-                            </Text>
-                        </View>
-                        {activity.recurrence && activity.recurrence !== 'NONE' && (
-                            <View className="flex-row items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full mr-2" style={{ flexShrink: 0 }}>
-                                <RefreshCw size={9} color="#4f46e5" />
-                                <Text className="text-indigo-600 text-[9px] font-black uppercase">
-                                    {activity.recurrence === 'WEEKLY' ? 'Sett.' : 'Mens.'}
-                                </Text>
-                            </View>
-                        )}
-                        {/* Avatar stack — static, no onLayout */}
-                        {visibleAvatars.length > 0 && (
-                            <View style={{ flexDirection: 'row', flexShrink: 1 }}>
-                                {visibleAvatars.map((volId: string, idx: number) => {
-                                    const volunteer = users.find((u: any) => u.id === volId);
-                                    return (
-                                        <View key={volId} style={{ marginLeft: idx === 0 ? 0 : -OVERLAP, zIndex: 20 - idx }}>
-                                            <UserAvatar
-                                                size={AVATAR_SIZE}
-                                                fontSize={9}
-                                                name={volunteer?.name || "V"}
-                                                avatarUrl={volunteer?.avatar}
-                                            />
-                                        </View>
-                                    );
-                                })}
-                                {overflowCount > 0 && (
-                                    <View
-                                        style={{
-                                            marginLeft: -OVERLAP, zIndex: 0,
-                                            width: AVATAR_SIZE, height: AVATAR_SIZE,
-                                            borderRadius: AVATAR_SIZE / 2,
-                                            backgroundColor: '#e2e8f0',
-                                            alignItems: 'center', justifyContent: 'center',
-                                            borderWidth: 1.5, borderColor: 'white',
-                                        }}
-                                    >
-                                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#64748b' }}>+{overflowCount}</Text>
+                            ) : (
+                                <View style={{ flex: 1 }} />
+                            )}
+                            <View style={{ flexShrink: 0 }}>
+                                {user?.role === 'VOLUNTEER' ? (
+                                    <Text className="text-accent font-bold text-xs">{isVolunteerEnrolled ? 'DETTAGLI →' : 'ISCRIVITI →'}</Text>
+                                ) : isOwnNpoActivity ? (
+                                    <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
+                                ) : (
+                                    <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
+                                        <Text className="text-slate-400 text-[10px] font-black uppercase">INFO</Text>
                                     </View>
                                 )}
                             </View>
-                        )}
-                    </View>
-
-                    {/* Right: action button — flexShrink:0 so it never overflows */}
-                    <View style={{ flexShrink: 0 }}>
-                        {user?.role === 'VOLUNTEER' ? (
-                            <Text className="text-accent font-bold text-xs">{isVolunteerEnrolled ? 'DETTAGLI →' : 'ISCRIVITI →'}</Text>
-                        ) : isOwnNpoActivity ? (
-                            <Text className="text-primary font-bold text-xs uppercase">GESTISCI →</Text>
-                        ) : (
-                            <View className="bg-slate-100 px-2.5 py-1 rounded-lg">
-                                <Text className="text-slate-400 text-[10px] font-black uppercase">INFO</Text>
-                            </View>
-                        )}
+                        </View>
                     </View>
                 </View>
             </View>

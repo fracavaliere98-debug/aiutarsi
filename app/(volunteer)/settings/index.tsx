@@ -13,7 +13,7 @@ import { reportIssue } from "../../../utils/monitoring";
 import { colors } from "@/theme";
 
 const SectionHeader = ({ title }: { title: string }) => (
-    <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-1">
+    <Text className="text-secondary font-bold text-sm uppercase tracking-widest mb-3 px-1">
         {title}
     </Text>
 );
@@ -38,17 +38,17 @@ const MenuItem = ({
     <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
-        className={`flex-row items-center justify-between py-4 ${!last ? "border-b border-gray-50" : ""}`}
+        className={`flex-row items-center justify-between py-3 ${!last ? "border-b border-gray-50" : ""}`}
         testID={testID}
     >
-        <View className="flex-row items-center gap-4 flex-1 pr-3">
-            <View style={{ backgroundColor: color + "15" }} className="p-2.5 rounded-2xl">
+        <View className="flex-row items-center gap-3 flex-1 pr-3">
+            <View style={{ backgroundColor: color + "15" }} className="p-2 rounded-2xl">
                 <Icon size={20} color={color} />
             </View>
             <View className="flex-1">
-                <Text className="text-primary font-bold text-base">{label}</Text>
+                <Text className="text-primary font-bold text-lg">{label}</Text>
                 {!!description && (
-                    <Text className="text-secondary text-xs mt-0.5">{description}</Text>
+                    <Text className="text-secondary text-sm mt-0.5">{description}</Text>
                 )}
             </View>
         </View>
@@ -210,17 +210,17 @@ export default function VolunteerSettingsScreen() {
                     onPress={async () => await logout()}
                     disabled={isAuthLoading}
                     activeOpacity={0.7}
-                    className="flex-row items-center justify-between py-4"
+                    className="flex-row items-center justify-between py-3"
                 >
-                    <View className="flex-row items-center gap-4">
-                        <View className="bg-red-50 p-2.5 rounded-2xl">
+                    <View className="flex-row items-center gap-3">
+                        <View className="bg-red-50 p-2 rounded-2xl">
                             {isAuthLoading ? (
                                 <ActivityIndicator size={20} color="#ef4444" />
                             ) : (
                                 <LogOut size={20} color="#ef4444" />
                             )}
                         </View>
-                        <Text className="text-red-500 font-bold text-base">Esci dall&apos;account</Text>
+                        <Text className="text-red-500 font-bold text-lg">Esci dall&apos;account</Text>
                     </View>
                     <ChevronRight size={18} color="#fca5a5" />
                 </TouchableOpacity>

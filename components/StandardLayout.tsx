@@ -66,11 +66,21 @@ export function StandardLayout({
         return "bg-primary";
     };
 
+    const headerBoxHeight = Layout.headerHeight + insets.top;
+
     return (
         <ScreenWrapper bg={bg} className="px-0" withPadding={false} edges={[]} statusBarStyle="light">
             <View
-                className={`${getHeaderColor()} pb-3 px-6 rounded-b-[32px] shadow-lg mb-3 justify-center`}
-                style={{ height: Layout.headerHeight + insets.top, paddingTop: insets.top + 8 }}
+                className={`${getHeaderColor()} pb-3 px-6 rounded-b-[32px] mb-3 justify-center`}
+                style={{
+                    height: headerBoxHeight,
+                    paddingTop: insets.top + 8,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 2,
+                    elevation: 2,
+                }}
             >
                 {headerContent ? (
                     headerContent

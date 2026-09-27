@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bookmark, ChevronLeft, EyeOff, Heart, MapPin, Sparkles } from 'lucide-react-native';
+import { Bookmark, ChevronLeft, EyeOff, Heart, MapPin, RotateCcw, Sparkles } from 'lucide-react-native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { useSmartMatchView } from '../../hooks/smart-match/useSmartMatchView';
@@ -40,23 +40,28 @@ export default function SmartMatchScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                    <View style={{ backgroundColor: '#f8f4ff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
-                        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>Match forti prima</Text>
-                    </View>
                     <TouchableOpacity
                         onPress={() => setShowSavedOnly((current) => !current)}
                         style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
                             backgroundColor: showSavedOnly ? colors.info : '#eef2ff',
                             borderRadius: 999,
                             paddingHorizontal: 12,
                             paddingVertical: 7,
                         }}
                     >
+                        <Bookmark size={13} color={showSavedOnly ? '#ffffff' : colors.info} fill={showSavedOnly ? '#ffffff' : 'transparent'} />
                         <Text style={{ color: showSavedOnly ? '#ffffff' : colors.info, fontSize: 12, fontWeight: '700' }}>
                             Attività salvate
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => void resetHiddenMatches()} style={{ backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
+                    <TouchableOpacity
+                        onPress={() => void resetHiddenMatches()}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff1f7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}
+                    >
+                        <RotateCcw size={13} color={colors.accent} />
                         <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700' }}>Ripristina nascosti</Text>
                     </TouchableOpacity>
                 </View>
