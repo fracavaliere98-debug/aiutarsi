@@ -212,12 +212,12 @@ export default function NPOProfileScreen() {
             {user?.role === "VOLUNTEER" && (
                 <TouchableOpacity
                     onPress={handleMessageNPO}
-                    className="p-2 bg-white/20 rounded-full"
+                    className="bg-white/10 p-2.5 rounded-xl border border-white/20"
                 >
                     <MessageCircle size={20} color="white" />
                 </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={handleShare} className="p-2 bg-white/20 rounded-full">
+            <TouchableOpacity onPress={handleShare} className="bg-white/10 p-2.5 rounded-xl border border-white/20">
                 <Share2 size={20} color="white" />
             </TouchableOpacity>
             {user?.role === "VOLUNTEER" && (
@@ -253,9 +253,18 @@ export default function NPOProfileScreen() {
                 <Text className="text-primary font-black text-2xl text-center mb-1">
                     {npoUser.npoName || npoUser.name}
                 </Text>
-                <Text className="text-secondary font-medium text-sm text-center mb-4 mt-1">
-                    Comitato Locale • {npoUser.locationString || "Milano, MI"}
-                </Text>
+                <View className="flex-row items-center justify-center gap-1 mt-1">
+                    <MapPin size={14} color={colors.textSecondary} />
+                    <Text className="text-secondary font-medium text-sm text-center">
+                        {npoUser.locationString || "Sede non specificata"}
+                    </Text>
+                </View>
+                {!!npoUser.bio && (
+                    <Text className="text-secondary text-xs text-center mb-4 mt-1 px-8" numberOfLines={2}>
+                        {npoUser.bio}
+                    </Text>
+                )}
+                {!npoUser.bio && <View className="mb-4" />}
 
                 {/* Main Action: Follow */}
                 <TouchableOpacity
@@ -336,7 +345,7 @@ export default function NPOProfileScreen() {
 
             {/* Become Volunteer Callout */}
             {user?.role === "VOLUNTEER" && !hasAppliedToCurrentNPO && (
-                <SoftCard className="p-4 mb-6 bg-primary" onPress={handleApply}>
+                <SoftCard className="p-4 mb-6" style={{ backgroundColor: colors.primary }} onPress={handleApply}>
                     <View className="flex-row items-center justify-between">
                         <View className="flex-1 mr-4">
                             <Text className="text-white font-black text-lg mb-1">Diventa Volontario</Text>

@@ -7,17 +7,19 @@
  * dare risposte vecchie o incomplete.
  *
  * REGOLA (fatta rispettare da scripts/test_help_center_freshness_contract.ts,
- * dentro test:regression, quindi nella Definition of Done): ogni volta che si
- * aggiunge una migration Supabase, HELP_CENTER_LAST_REVIEWED deve essere una
- * data pari o successiva alla piu' recente migration esistente. Il test
- * fallisce (con un messaggio esplicito) se non lo e' — non e' un promemoria
- * facoltativo, e' un gate che blocca "Done = tsc + lint + regression verdi".
- * Quando il test fallisce: apri questo file, valuta se la nuova migration
- * introduce un comportamento visibile all'utente che merita una FAQ (non
- * sempre serve — una migration puramente tecnica no), poi aggiorna la
+ * dentro test:regression, quindi nella Definition of Done): ogni volta che
+ * viene aggiunta una migration Supabase, OPPURE cambia qualcosa sotto app/,
+ * components/ o shared/ (committato o ancora nel working tree — esteso il
+ * 2026-09-27, prima valeva solo per le migration), HELP_CENTER_LAST_REVIEWED
+ * deve essere una data pari o successiva al piu' recente dei due eventi. Il
+ * test fallisce (con un messaggio esplicito) se non lo e' — non e' un
+ * promemoria facoltativo, e' un gate che blocca "Done = tsc + lint +
+ * regression verdi". Quando il test fallisce: apri questo file, valuta se il
+ * cambiamento introduce un comportamento visibile all'utente che merita una
+ * FAQ (non sempre serve — un refactor puramente interno no), poi aggiorna la
  * costante alla data di oggi in ogni caso, per far ripartire la finestra.
  */
-export const HELP_CENTER_LAST_REVIEWED = "2026-09-22";
+export const HELP_CENTER_LAST_REVIEWED = "2026-09-27";
 
 export type HelpCenterRole = "VOLUNTEER" | "NPO" | "ALL";
 
