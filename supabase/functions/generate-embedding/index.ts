@@ -1,12 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
-// NOTA (28/9/2026): le altre edge function AI (gemma-help-assistant, activity-curator-ai,
-// community-moderator-ai) sono state migrate da HuggingFace a Gemini. Questa è rimasta
-// intenzionalmente su HuggingFace: il modello di embedding (sentence-transformers/all-MiniLM-L6-v2)
-// produce vettori a 384 dimensioni, la colonna `embedding` (pgvector) è fissata a 384, e i modelli
-// di embedding di Gemini producono dimensioni diverse — passare a Gemini qui richiede una
-// migration di schema + re-embedding di tutte le righe esistenti, pianificata come task separato.
-// Il token HUGGINGFACE_API_KEY va quindi mantenuto attivo finché questa funzione non viene migrata.
+// Migrata da HuggingFace (sentence-transformers/all-MiniLM-L6-v2, 384 dim) a Gemini il 28/9/2026.
+// La colonna `embedding` (pgvector, sia su profiles che activities) resta vector(384): chiediamo a
+// Gemini output_dimensionality=384 (troncamento MRL + rinormalizzazione, supportato dai modelli di
+// embedding recenti) invece di cambiare schema. NON VERIFICATO con una chiamata reale — nessuna
+// GEMINI_API_KEY disponibile in questa sessione. Il controllo `embedding.length !== 384` più sotto
+// resta com'era apposta: se Gemini non onora davvero output_dimensionality o il nome modello è
+// cambiato, la funzione fallisce rumorosamente invece di scrivere vettori nella dimensione sbagliata.
+// Nome modello ed esatta forma della request/response vanno riconfermati sulla documentazione
+// ufficiale al momento della configurazione — l'API di Google evolve più in fretta di questo commento.
+const GEMINI_EMBEDDING_MODEL = "models/gemini-embedding-001";
+const EMBEDDING_DIMENSIONS = 384;
 
 Deno.serve(async (req) => {
     try {
@@ -26,22 +30,22 @@ Deno.serve(async (req) => {
 
         const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-        // Fetch HF API Key from database
+        // Fetch Gemini API key from database (stesso pattern/secret delle altre edge function AI)
         const { data: secretData, error: secretError } = await supabase
             .from('internal_secrets')
             .select('value')
-            .eq('key', 'HUGGINGFACE_API_KEY')
+            .eq('key', 'GEMINI_API_KEY')
             .single();
 
         if (secretError) {
             console.error(`[Error] Secret fetch failed: ${secretError.message}`);
         }
 
-        const hfToken = secretData?.value || Deno.env.get("HUGGINGFACE_API_KEY") || Deno.env.get("HUGGING_FACE_TOKEN");
-        console.log(`[Step] HF Token found: ${!!hfToken}`);
+        const geminiApiKey = secretData?.value || Deno.env.get("GEMINI_API_KEY");
+        console.log(`[Step] Gemini API key found: ${!!geminiApiKey}`);
 
-        if (!hfToken) {
-            throw new Error("Hugging Face Token not found in DB or Env");
+        if (!geminiApiKey) {
+            throw new Error("Gemini API key not found in DB or Env");
         }
 
         let textToEmbed = "";
@@ -74,34 +78,34 @@ Deno.serve(async (req) => {
 
         console.log(`Generating embedding for: ${textToEmbed.substring(0, 50)}...`);
 
-        const hfResponse = await fetch(
-            `https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction`,
+        const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/${GEMINI_EMBEDDING_MODEL}:embedContent`,
             {
                 headers: {
-                    Authorization: `Bearer ${hfToken}`,
+                    "x-goog-api-key": geminiApiKey,
                     "Content-Type": "application/json",
-                    "x-wait-for-model": "true",
                 },
                 method: "POST",
                 body: JSON.stringify({
-                    inputs: textToEmbed
+                    content: { parts: [{ text: textToEmbed }] },
+                    embedContentConfig: { outputDimensionality: EMBEDDING_DIMENSIONS },
                 }),
             }
         );
 
-        if (!hfResponse.ok) {
-            const errorText = await hfResponse.text();
-            console.error(`HF Error (${hfResponse.status}): ${errorText}`);
-            throw new Error(`HF API Error: ${hfResponse.status} - ${errorText}`);
+        if (!geminiResponse.ok) {
+            const errorText = await geminiResponse.text();
+            console.error(`Gemini Error (${geminiResponse.status}): ${errorText}`);
+            throw new Error(`Gemini API Error: ${geminiResponse.status} - ${errorText}`);
         }
 
-        const result = await hfResponse.json();
-        const embedding = Array.isArray(result[0]) ? result[0] : result;
+        const result = await geminiResponse.json();
+        const embedding = result?.embedding?.values;
 
-        console.log(`Embedding success. Length: ${embedding.length}`);
+        console.log(`Embedding success. Length: ${Array.isArray(embedding) ? embedding.length : "n/a"}`);
 
-        if (embedding.length !== 384) {
-            throw new Error(`Invalid embedding length: ${embedding.length}`);
+        if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
+            throw new Error(`Invalid embedding length: ${Array.isArray(embedding) ? embedding.length : typeof embedding}`);
         }
 
         const { error: updateError } = await supabase

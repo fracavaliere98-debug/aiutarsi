@@ -56,9 +56,11 @@ async function verifySecrets(baseUrl: string, serviceRoleKey: string, expectedKe
 async function run() {
   const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  // HUGGINGFACE_API_KEY resta necessaria solo per generate-embedding (in attesa della migration
-  // dimensione-vettore verso Gemini, vedi commento in quella edge function). GEMINI_API_KEY serve
-  // a gemma-help-assistant, activity-curator-ai e community-moderator-ai, migrate da HuggingFace.
+  // Tutte le 4 edge function AI (gemma-help-assistant, activity-curator-ai,
+  // community-moderator-ai, generate-embedding) usano ora GEMINI_API_KEY. HUGGINGFACE_API_KEY
+  // non è più richiesta da nessuna: resta supportata qui solo come rete di sicurezza durante la
+  // finestra di transizione (nessuna funzione la legge più una volta completato il backfill degli
+  // embedding esistenti e verificato che Gemini funzioni in produzione) — rimuovibile in seguito.
   const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY;
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const dryRun = process.argv.includes("--dry-run");
