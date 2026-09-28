@@ -61,10 +61,11 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 // Modello free-tier "flash-lite" di Gemini via l'endpoint OpenAI-compatible di Google AI Studio.
-// Il nome esatto va riverificato sull'elenco modelli di AI Studio al momento in cui si configura
-// GEMINI_API_KEY: Google evolve la numerazione dei modelli più rapidamente di quanto questo
-// commento possa restare aggiornato.
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+// gemini-2.5-flash-lite (usato inizialmente in questa migrazione) è stato dismesso da Google per i
+// nuovi utenti il 28/9/2026 (404 "no longer available to new users", verificato con una chiamata
+// reale su staging) — usiamo gemini-3.5-flash-lite. Se torna a fallire, controllare l'elenco modelli
+// aggiornato su AI Studio: la numerazione dei modelli Gemini evolve più rapidamente di questo commento.
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
 const RATE_LIMIT_AUTH = 30;             // authenticated users
@@ -497,12 +498,14 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${tokenToUse}`,
         "Content-Type": "application/json",
       },
+      // frequency_penalty (usato con HuggingFace) rimosso: l'endpoint OpenAI-compatible di Gemini
+      // lo rifiuta con 400 "Unknown name \"frequency_penalty\": Cannot find field" (verificato con
+      // una chiamata reale su staging il 28/9/2026, non supportato da questo endpoint al momento).
       body: JSON.stringify({
         model: GEMINI_MODEL,
         messages,
         temperature: assistantMode === "shadow" ? 0.45 : 0.7,
         max_tokens: assistantMode === "shadow" ? 220 : 500,
-        frequency_penalty: 0.15,
       }),
     });
 

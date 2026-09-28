@@ -2,13 +2,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
 // Migrata da HuggingFace (sentence-transformers/all-MiniLM-L6-v2, 384 dim) a Gemini il 28/9/2026.
 // La colonna `embedding` (pgvector, sia su profiles che activities) resta vector(384): chiediamo a
-// Gemini output_dimensionality=384 (troncamento MRL + rinormalizzazione, supportato dai modelli di
-// embedding recenti) invece di cambiare schema. NON VERIFICATO con una chiamata reale — nessuna
-// GEMINI_API_KEY disponibile in questa sessione. Il controllo `embedding.length !== 384` più sotto
-// resta com'era apposta: se Gemini non onora davvero output_dimensionality o il nome modello è
-// cambiato, la funzione fallisce rumorosamente invece di scrivere vettori nella dimensione sbagliata.
-// Nome modello ed esatta forma della request/response vanno riconfermati sulla documentazione
-// ufficiale al momento della configurazione — l'API di Google evolve più in fretta di questo commento.
+// Gemini outputDimensionality=384 (troncamento MRL + rinormalizzazione) invece di cambiare schema.
+// VERIFICATO su staging il 28/9/2026 con una chiamata reale (trigger DB su un profilo di test):
+// primo tentativo con `outputDimensionality` annidato sotto una chiave `embedContentConfig` fallito
+// (Gemini ha ignorato il parametro e restituito 3072 dim, la validazione sotto ha bloccato la
+// scrittura correttamente) — il campo REST corretto è `outputDimensionality` in camelCase A LIVELLO
+// RADICE del body (non annidato), come per gli altri parametri dell'API generativelanguage.googleapis.com.
+// Confermato dopo il fix (deploy v33): risposta a 384 dim, embedding scritto correttamente sul
+// profilo di test via il trigger DB reale (non solo una chiamata manuale). Il controllo
+// `embedding.length !== 384` più sotto resta com'era apposta come rete di sicurezza per un
+// eventuale futuro cambio di comportamento/nome modello lato Google.
 const GEMINI_EMBEDDING_MODEL = "models/gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = 384;
 
@@ -88,7 +91,7 @@ Deno.serve(async (req) => {
                 method: "POST",
                 body: JSON.stringify({
                     content: { parts: [{ text: textToEmbed }] },
-                    embedContentConfig: { outputDimensionality: EMBEDDING_DIMENSIONS },
+                    outputDimensionality: EMBEDDING_DIMENSIONS,
                 }),
             }
         );

@@ -27,9 +27,11 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Modello free-tier "flash-lite" di Gemini via l'endpoint OpenAI-compatible di Google AI Studio.
-// Verificare il nome esatto sull'elenco modelli di AI Studio al momento in cui si configura
-// GEMINI_API_KEY (stesso avviso lasciato nelle altre edge function migrate da HuggingFace).
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+// gemini-2.5-flash-lite (usato inizialmente in questa migrazione) è stato dismesso da Google per i
+// nuovi utenti il 28/9/2026 (404 "no longer available to new users", verificato con una chiamata
+// reale su staging) — usiamo gemini-3.5-flash-lite. Se torna a fallire, controllare l'elenco modelli
+// aggiornato su AI Studio: la numerazione dei modelli Gemini evolve più rapidamente di questo commento.
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 // --------------------------------------------------------------------------
 // Term lists
