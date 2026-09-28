@@ -1,5 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
+// NOTA (28/9/2026): le altre edge function AI (gemma-help-assistant, activity-curator-ai,
+// community-moderator-ai) sono state migrate da HuggingFace a Gemini. Questa è rimasta
+// intenzionalmente su HuggingFace: il modello di embedding (sentence-transformers/all-MiniLM-L6-v2)
+// produce vettori a 384 dimensioni, la colonna `embedding` (pgvector) è fissata a 384, e i modelli
+// di embedding di Gemini producono dimensioni diverse — passare a Gemini qui richiede una
+// migration di schema + re-embedding di tutte le righe esistenti, pianificata come task separato.
+// Il token HUGGINGFACE_API_KEY va quindi mantenuto attivo finché questa funzione non viene migrata.
+
 Deno.serve(async (req) => {
     try {
         const payload = await req.json();

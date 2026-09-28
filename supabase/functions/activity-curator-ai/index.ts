@@ -31,14 +31,19 @@ const CATEGORY_LABELS = CATEGORY_TAXONOMY.map((category) => category.label);
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-async function getHfToken(): Promise<string> {
-    const envToken = Deno.env.get("HUGGINGFACE_API_KEY") ?? "";
+// Modello free-tier "flash-lite" di Gemini via l'endpoint OpenAI-compatible di Google AI Studio.
+// Verificare il nome esatto sull'elenco modelli di AI Studio al momento in cui si configura
+// GEMINI_API_KEY (stesso avviso lasciato in gemma-help-assistant/index.ts).
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
+
+async function getGeminiApiKey(): Promise<string> {
+    const envToken = Deno.env.get("GEMINI_API_KEY") ?? "";
     try {
         const supabase = createClient(supabaseUrl, serviceRoleKey);
         const { data } = await supabase
             .from("internal_secrets")
             .select("value")
-            .eq("key", "HUGGINGFACE_API_KEY")
+            .eq("key", "GEMINI_API_KEY")
             .single();
         return data?.value || envToken;
     } catch {
@@ -82,23 +87,23 @@ Deno.serve(async (req) => {
 
         console.log(`[Curator] Optimizing: ${activity.title}`);
 
-        const hfToken = await getHfToken();
-        if (!hfToken) {
-            console.warn("[Curator] No HuggingFace token, returning fallback");
+        const geminiApiKey = await getGeminiApiKey();
+        if (!geminiApiKey) {
+            console.warn("[Curator] No Gemini API key, returning fallback");
             return new Response(
                 JSON.stringify({ success: true, ...fallbackCuration(activity) }),
                 { headers: { "Content-Type": "application/json" } },
             );
         }
 
-        const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${hfToken}`,
+                Authorization: `Bearer ${geminiApiKey}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "meta-llama/Meta-Llama-3-8B-Instruct",
+                model: GEMINI_MODEL,
                 messages: [{ role: "user", content: buildPrompt(activity) }],
                 temperature: 0.7,
                 max_tokens: 400,
@@ -107,7 +112,7 @@ Deno.serve(async (req) => {
 
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`HuggingFace API error ${response.status}: ${errText}`);
+            throw new Error(`Gemini API error ${response.status}: ${errText}`);
         }
 
         const data = await response.json();

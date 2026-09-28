@@ -26,6 +26,11 @@ interface ModerationResult {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Modello free-tier "flash-lite" di Gemini via l'endpoint OpenAI-compatible di Google AI Studio.
+// Verificare il nome esatto sull'elenco modelli di AI Studio al momento in cui si configura
+// GEMINI_API_KEY (stesso avviso lasciato nelle altre edge function migrate da HuggingFace).
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+
 // --------------------------------------------------------------------------
 // Term lists
 // --------------------------------------------------------------------------
@@ -148,16 +153,16 @@ function needsAiReview(rawText: string, hasImage: boolean): boolean {
 }
 
 // --------------------------------------------------------------------------
-// Layer 3: AI review via HuggingFace (only when layers 1-2 are inconclusive)
+// Layer 3: AI review via Gemini (only when layers 1-2 are inconclusive)
 // --------------------------------------------------------------------------
 
-async function getHfToken(supabase: ReturnType<typeof createClient>): Promise<string> {
-    const envToken = Deno.env.get('HUGGINGFACE_API_KEY') ?? '';
+async function getGeminiApiKey(supabase: ReturnType<typeof createClient>): Promise<string> {
+    const envToken = Deno.env.get('GEMINI_API_KEY') ?? '';
     try {
         const { data } = await supabase
             .from('internal_secrets')
             .select('value')
-            .eq('key', 'HUGGINGFACE_API_KEY')
+            .eq('key', 'GEMINI_API_KEY')
             .single();
         return data?.value || envToken;
     } catch {
@@ -182,16 +187,16 @@ Testo: ${text}`;
 async function callAiModeration(
     text: string,
     context: 'post' | 'chat',
-    hfToken: string,
+    geminiApiKey: string,
 ): Promise<ModerationResult> {
-    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${hfToken}`,
+            Authorization: `Bearer ${geminiApiKey}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'meta-llama/Meta-Llama-3-8B-Instruct',
+            model: GEMINI_MODEL,
             messages: [{ role: 'user', content: buildModerationPrompt(text, context) }],
             temperature: 0.1,
             max_tokens: 120,
@@ -199,7 +204,7 @@ async function callAiModeration(
     });
 
     if (!response.ok) {
-        throw new Error(`HuggingFace API error: ${response.status}`);
+        throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -236,9 +241,9 @@ async function moderateChatMessage(
 
     // Layer 3
     try {
-        const hfToken = await getHfToken(supabase);
-        if (!hfToken) return safe('AI non disponibile; approvato per default.', 'bypass');
-        return await callAiModeration(text, 'chat', hfToken);
+        const geminiApiKey = await getGeminiApiKey(supabase);
+        if (!geminiApiKey) return safe('AI non disponibile; approvato per default.', 'bypass');
+        return await callAiModeration(text, 'chat', geminiApiKey);
     } catch (err) {
         console.error('[Moderator] AI unavailable for chat, falling back to safe', err);
         return safe('AI non disponibile; approvato per default.', 'bypass');
@@ -263,14 +268,14 @@ async function moderateCommunityPost(
 
     // Layer 3
     try {
-        const hfToken = await getHfToken(supabase);
-        if (!hfToken) return safe('AI non disponibile; approvato per default.', 'bypass');
+        const geminiApiKey = await getGeminiApiKey(supabase);
+        if (!geminiApiKey) return safe('AI non disponibile; approvato per default.', 'bypass');
         // For posts with images, include a note in the text — we cannot send the image
-        // to HuggingFace text completion, so we ask the model to evaluate caption + context.
+        // to Gemini's text-only chat completions, so we ask the model to evaluate caption + context.
         const textForAi = hasImage
             ? `[Post con immagine allegata] Caption: ${record.caption ?? ''}`
             : record.caption ?? '';
-        return await callAiModeration(textForAi, 'post', hfToken);
+        return await callAiModeration(textForAi, 'post', geminiApiKey);
     } catch (err) {
         console.error('[Moderator] AI unavailable for post, falling back to safe', err);
         return safe('AI non disponibile; approvato per default.', 'bypass');

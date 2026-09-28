@@ -56,7 +56,11 @@ async function verifySecrets(baseUrl: string, serviceRoleKey: string, expectedKe
 async function run() {
   const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // HUGGINGFACE_API_KEY resta necessaria solo per generate-embedding (in attesa della migration
+  // dimensione-vettore verso Gemini, vedi commento in quella edge function). GEMINI_API_KEY serve
+  // a gemma-help-assistant, activity-curator-ai e community-moderator-ai, migrate da HuggingFace.
   const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   const dryRun = process.argv.includes("--dry-run");
 
   assert(baseUrl, "EXPO_PUBLIC_SUPABASE_URL is required");
@@ -73,6 +77,13 @@ async function run() {
     rows.push({
       key: "HUGGINGFACE_API_KEY",
       value: huggingFaceApiKey,
+    });
+  }
+
+  if (geminiApiKey) {
+    rows.push({
+      key: "GEMINI_API_KEY",
+      value: geminiApiKey,
     });
   }
 

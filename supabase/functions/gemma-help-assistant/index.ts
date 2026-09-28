@@ -56,9 +56,15 @@ type CommunityDraftInput = {
   };
 };
 
-const hfApiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
+const geminiApiKey = Deno.env.get("GEMINI_API_KEY") || "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+// Modello free-tier "flash-lite" di Gemini via l'endpoint OpenAI-compatible di Google AI Studio.
+// Il nome esatto va riverificato sull'elenco modelli di AI Studio al momento in cui si configura
+// GEMINI_API_KEY: Google evolve la numerazione dei modelli più rapidamente di quanto questo
+// commento possa restare aggiornato.
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
 const RATE_LIMIT_AUTH = 30;             // authenticated users
@@ -100,6 +106,27 @@ Bio: ${profile.bio || "non disponibile"}
 Competenze: ${skills.length > 0 ? skills.join(", ") : "nessuna"}
 Interessi: ${interests.length > 0 ? interests.join(", ") : "nessuno"}
 Posizione: ${profile.location_string || "non disponibile"}
+NPO seguiti: ${followedNPOs.length}
+XP: ${profile.impact_points || 0}
+`;
+}
+
+function buildShadowUserContext(profile: any): string {
+  if (!profile) return "";
+
+  const skills = (profile.user_skills || []).map((s: any) => s.skill).filter(Boolean);
+  const interests = (profile.user_interests || []).map((i: any) => i.interest).filter(Boolean);
+  const followedNPOs = (profile.followed_entities || []).map((f: any) => f.npo_id).filter(Boolean);
+
+  // Modalità shadow: questo contesto finisce nel prompt inviato a Gemini (provider LLM terzo).
+  // Niente testo libero né dati identificativi — no nome, no bio, no località — solo tag/contatori
+  // già usati per il match, per una personalizzazione minima senza condividere dati personali.
+  return `
+=== CONTESTO UTENTE (dati minimizzati per provider esterno) ===
+Ruolo: ${profile.role || "sconosciuto"}
+Profilo completato: ${profile.profile_completed ? "sì" : "no"}
+Competenze: ${skills.length > 0 ? skills.join(", ") : "nessuna"}
+Interessi: ${interests.length > 0 ? interests.join(", ") : "nessuno"}
 NPO seguiti: ${followedNPOs.length}
 XP: ${profile.impact_points || 0}
 `;
@@ -152,14 +179,14 @@ async function checkRateLimit(
   }
 }
 
-async function getHfToken(serviceClient: any): Promise<string> {
+async function getGeminiApiKey(serviceClient: any): Promise<string> {
   const { data: secretData } = await serviceClient
     .from("internal_secrets")
     .select("value")
-    .eq("key", "HUGGINGFACE_API_KEY")
+    .eq("key", "GEMINI_API_KEY")
     .single();
 
-  return secretData?.value || hfApiKey;
+  return secretData?.value || geminiApiKey;
 }
 
 async function getUserProfile(serviceClient: any, userId: string) {
@@ -306,7 +333,7 @@ Parla in modo umano, vicino e incoraggiante. Non sembrare un widget o una funzio
 Non comportarti come un help desk generale. Non fare chiacchiere lunghe. Massimo 3 frasi brevi o 3 bullet.
 Se l'utente è volontario e il profilo non è completo, priorità assoluta: spiegare quale informazione manca e perché aiuta i match.
 Se ci sono attività suggerite, usa solo quelle reali e non inventarne altre.
-Se ti rivolgi direttamente a un volontario, usa solo il nome proprio. Non usare mai nome e cognome insieme.
+Non hai il nome dell'utente in questo contesto: rivolgiti a lui/lei senza usarlo (es. "ciao!", "guarda qui").
 
 ${sharedRules}
 ${userContext}
@@ -373,7 +400,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    // Rate limit check — runs before any HuggingFace call
+    // Rate limit check — runs before any Gemini call
     const clientIp = getClientIp(req);
     const { allowed, retryAfterSeconds } = await checkRateLimit(serviceClient, authUserId, clientIp);
     if (!allowed) {
@@ -386,7 +413,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const userContext = profile ? buildUserContext(profile) : buildRoleOnlyContext(effectiveRole);
+    const userContext = assistantMode === "shadow"
+      ? (profile ? buildShadowUserContext(profile) : buildRoleOnlyContext(effectiveRole))
+      : (profile ? buildUserContext(profile) : buildRoleOnlyContext(effectiveRole));
     const roleScopedHelpCenterContext = buildHelpCenterContextForRole(effectiveRole);
 
     let suggestedActivitiesText = "";
@@ -404,9 +433,9 @@ Deno.serve(async (req) => {
       ? formatCommunityDraftContext(communityDraft as CommunityDraftInput)
       : "";
 
-    const tokenToUse = await getHfToken(serviceClient);
+    const tokenToUse = await getGeminiApiKey(serviceClient);
     if (!tokenToUse) {
-      throw new Error("Hugging Face token not configured");
+      throw new Error("Gemini API key not configured");
     }
 
     const systemPrompt = buildSystemPrompt(
@@ -462,14 +491,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenToUse}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "meta-llama/Meta-Llama-3-8B-Instruct",
+        model: GEMINI_MODEL,
         messages,
         temperature: assistantMode === "shadow" ? 0.45 : 0.7,
         max_tokens: assistantMode === "shadow" ? 220 : 500,
@@ -479,7 +508,7 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Hugging Face API Error: ${errorText}`);
+      throw new Error(`Gemini API Error: ${errorText}`);
     }
 
     const data = await response.json();
