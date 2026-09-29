@@ -6,12 +6,11 @@ import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { supabase } from "../../../utils/supabase";
 import { colors } from "@/theme";
 
 
 export default function NPOPrivacyScreen() {
-    const { user } = useAuth();
+    const { user, updateUserProfile } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
@@ -22,34 +21,23 @@ export default function NPOPrivacyScreen() {
     const [showEmail, setShowEmail] = useState(true);
 
     useEffect(() => {
-        const fetchPrivacy = async () => {
-            if (!user) return;
-            const { data } = await supabase
-                .from('profiles')
-                .select('allow_calls, show_email')
-                .eq('id', user.id)
-                .single();
-            if (data) {
-                setAllowCalls(data.allow_calls !== false);
-                setShowEmail(data.show_email !== false);
-            }
+        if (!user?.id) {
             setIsFetching(false);
-        };
-        fetchPrivacy();
-    }, [user]);
+            return;
+        }
+        setAllowCalls(user.allow_calls !== false);
+        setShowEmail(user.show_email !== false);
+        setIsFetching(false);
+    }, [user, user?.id]);
 
     const handleSave = async () => {
         if (!user) return;
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    allow_calls: allowCalls,
-                    show_email: showEmail,
-                })
-                .eq('id', user.id);
-            if (error) throw error;
+            await updateUserProfile({
+                allow_calls: allowCalls,
+                show_email: showEmail,
+            });
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
         } catch (e: any) {

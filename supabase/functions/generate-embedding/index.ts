@@ -15,6 +15,106 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 const GEMINI_EMBEDDING_MODEL = "models/gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = 384;
 
+// Il piano free di Gemini per gemini-embedding-001 ha un limite di 100 richieste/minuto
+// (quotaId EmbedContentRequestsPerMinutePerProjectPerModel-FreeTier, osservato in produzione
+// durante il backfill del 29/9/2026 con scripts/backfill_embeddings.ts: 62/127 righe fallite con
+// 429 pur restando sotto la media teorica). Rispettiamo il `retryDelay` che Gemini stesso
+// restituisce nel body dell'errore 429 (RetryInfo), ma NON ci fidiamo ciecamente: riprovato lo
+// stesso giorno con retry basato solo su quel valore, un fallimento reale è arrivato con
+// `retryDelay: "0s"` e il retry immediato ha ripreso lo stesso 429 (la finestra di quota non si
+// era ancora liberata). Per questo il valore riportato da Gemini è solo un minimo, mai preso alla
+// lettera: applichiamo comunque un floor crescente per tentativo. Applicato qui, alla fonte della
+// chiamata Gemini, cosi vale per ogni chiamante (trigger DB in tempo reale, backfill, usi futuri).
+const GEMINI_MAX_RETRIES = 2;
+const GEMINI_RETRY_DELAY_CAP_MS = 30_000;
+const GEMINI_RETRY_DELAY_FLOOR_MS = [5_000, 15_000]; // floor per tentativo di retry (indice 0 = primo retry)
+
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryDelayMs(errorText: string): number | null {
+    try {
+        const parsed = JSON.parse(errorText);
+        const details = parsed?.error?.details;
+        if (!Array.isArray(details)) return null;
+        const retryInfo = details.find((d: any) => typeof d?.["@type"] === "string" && d["@type"].includes("RetryInfo"));
+        const raw = retryInfo?.retryDelay; // es. "42s" oppure "0.148s"
+        if (typeof raw !== "string") return null;
+        const seconds = parseFloat(raw.replace(/s$/, ""));
+        if (!Number.isFinite(seconds) || seconds < 0) return null;
+        return Math.min(seconds * 1000, GEMINI_RETRY_DELAY_CAP_MS);
+    } catch {
+        return null;
+    }
+}
+
+// Gemini free tier ha DUE quote distinte sullo stesso errore 429 RESOURCE_EXHAUSTED: una al minuto
+// (EmbedContentRequestsPerMinutePerProjectPerModel-FreeTier, 100/min) e una al giorno
+// (EmbedContentRequestsPerDayPerProjectPerModel-FreeTier, 1000/giorno) — osservata in produzione il
+// 29/9/2026 durante il backfill, con Gemini che riporta comunque un `retryDelay` di ~59s anche
+// quando è il tetto GIORNALIERO ad essere esaurito (fuorviante: aspettare un minuto non libera un
+// quota giornaliero). Ritentare in quel caso non solo non risolve nulla entro la vita della
+// function, ma spreca ulteriori richieste sul budget giornaliero già esaurito. Distinguiamo quindi
+// il tipo di quota violata e ritentiamo SOLO per quella al minuto.
+function getViolatedQuotaId(errorText: string): string | null {
+    try {
+        const parsed = JSON.parse(errorText);
+        const details = parsed?.error?.details;
+        if (!Array.isArray(details)) return null;
+        const quotaFailure = details.find((d: any) => typeof d?.["@type"] === "string" && d["@type"].includes("QuotaFailure"));
+        const violation = quotaFailure?.violations?.[0];
+        return typeof violation?.quotaId === "string" ? violation.quotaId : null;
+    } catch {
+        return null;
+    }
+}
+
+async function callGeminiEmbed(geminiApiKey: string, textToEmbed: string) {
+    for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+        const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/${GEMINI_EMBEDDING_MODEL}:embedContent`,
+            {
+                headers: {
+                    "x-goog-api-key": geminiApiKey,
+                    "Content-Type": "application/json",
+                },
+                method: "POST",
+                body: JSON.stringify({
+                    content: { parts: [{ text: textToEmbed }] },
+                    outputDimensionality: EMBEDDING_DIMENSIONS,
+                }),
+            }
+        );
+
+        if (geminiResponse.ok) {
+            return geminiResponse.json();
+        }
+
+        const errorText = await geminiResponse.text();
+        const isLastAttempt = attempt === GEMINI_MAX_RETRIES;
+        console.error(`Gemini Error (${geminiResponse.status}), tentativo ${attempt + 1}/${GEMINI_MAX_RETRIES + 1}: ${errorText}`);
+
+        if (geminiResponse.status !== 429 || isLastAttempt) {
+            throw new Error(`Gemini API Error: ${geminiResponse.status} - ${errorText}`);
+        }
+
+        const quotaId = getViolatedQuotaId(errorText);
+        if (quotaId && quotaId.includes("PerDay")) {
+            throw new Error(`Gemini API Error: ${geminiResponse.status} - quota giornaliera esaurita (${quotaId}), nessun retry - ${errorText}`);
+        }
+
+        const floorMs = GEMINI_RETRY_DELAY_FLOOR_MS[attempt] ?? GEMINI_RETRY_DELAY_CAP_MS;
+        const reportedDelayMs = parseRetryDelayMs(errorText) ?? floorMs;
+        const retryDelayMs = Math.max(reportedDelayMs, floorMs);
+        console.log(`[Retry] 429 da Gemini (retryDelay riportato: ${reportedDelayMs}ms), attendo ${retryDelayMs}ms prima del tentativo ${attempt + 2}`);
+        await sleep(retryDelayMs);
+    }
+
+    // Non raggiungibile: ogni iterazione del loop ritorna o lancia.
+    throw new Error("Gemini API Error: retry loop exited unexpectedly");
+}
+
 Deno.serve(async (req) => {
     try {
         const payload = await req.json();
@@ -81,28 +181,7 @@ Deno.serve(async (req) => {
 
         console.log(`Generating embedding for: ${textToEmbed.substring(0, 50)}...`);
 
-        const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/${GEMINI_EMBEDDING_MODEL}:embedContent`,
-            {
-                headers: {
-                    "x-goog-api-key": geminiApiKey,
-                    "Content-Type": "application/json",
-                },
-                method: "POST",
-                body: JSON.stringify({
-                    content: { parts: [{ text: textToEmbed }] },
-                    outputDimensionality: EMBEDDING_DIMENSIONS,
-                }),
-            }
-        );
-
-        if (!geminiResponse.ok) {
-            const errorText = await geminiResponse.text();
-            console.error(`Gemini Error (${geminiResponse.status}): ${errorText}`);
-            throw new Error(`Gemini API Error: ${geminiResponse.status} - ${errorText}`);
-        }
-
-        const result = await geminiResponse.json();
+        const result = await callGeminiEmbed(geminiApiKey, textToEmbed);
         const embedding = result?.embedding?.values;
 
         console.log(`Embedding success. Length: ${Array.isArray(embedding) ? embedding.length : "n/a"}`);
