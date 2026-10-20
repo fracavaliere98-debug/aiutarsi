@@ -250,11 +250,11 @@ export default function ChatDetailScreen() {
 
   const handleCall = () => {
     if (!otherPhone) {
-      Alert.alert('Nessun numero', 'Questo utente non ha inserito un numero di telefono.');
+      showToast('error', 'Questo utente non ha inserito un numero di telefono.');
       return;
     }
     if (!otherAllowsCalls) {
-      Alert.alert('Chiamate disabilitate', 'Questo utente ha disabilitato le chiamate nelle impostazioni di privacy.');
+      showToast('error', 'Questo utente ha disabilitato le chiamate nelle impostazioni di privacy.');
       return;
     }
     void Linking.openURL(`tel:${otherPhone}`);

@@ -6,6 +6,7 @@ import { AuthShell } from "../../components/auth/AuthShell";
 import { AuthField } from "../../components/auth/AuthField";
 import { Button } from "../../components/Button";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { getPasswordRequirementsShortText } from "../../utils/passwordValidation";
 import { supabase } from "../../utils/supabase";
 import { colors } from "@/theme";
@@ -13,6 +14,7 @@ import { colors } from "@/theme";
 export default function ResetPasswordScreen() {
     const router = useRouter();
     const { completePasswordRecovery } = useAuth();
+    const { showToast } = useToast();
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,17 +47,17 @@ export default function ResetPasswordScreen() {
 
     const handleSubmit = async () => {
         if (!hasRecoverySession) {
-            Alert.alert("Link richiesto", "Apri il link ricevuto via email su questo dispositivo per impostare la nuova password.");
+            showToast("error", "Apri il link ricevuto via email su questo dispositivo per impostare la nuova password.");
             return;
         }
 
         if (!newPassword || !confirmPassword) {
-            Alert.alert("Attenzione", "Inserisci e conferma la nuova password.");
+            showToast("error", "Inserisci e conferma la nuova password.");
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            Alert.alert("Password diverse", "Le due password non coincidono.");
+            showToast("error", "Le due password non coincidono.");
             return;
         }
 
@@ -66,7 +68,7 @@ export default function ResetPasswordScreen() {
                 { text: "Continua", onPress: () => router.replace("/") },
             ]);
         } catch (error: any) {
-            Alert.alert("Reset non riuscito", error?.message || "Non siamo riusciti ad aggiornare la password.");
+            showToast("error", error?.message || "Non siamo riusciti ad aggiornare la password.");
         } finally {
             setIsSubmitting(false);
         }

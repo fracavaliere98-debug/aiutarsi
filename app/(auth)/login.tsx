@@ -1,8 +1,9 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { Button } from "../../components/Button";
 import { AuthShell } from "../../components/auth/AuthShell";
 import { AuthField } from "../../components/auth/AuthField";
@@ -12,6 +13,7 @@ import { colors } from "@/theme";
 export default function LoginScreen() {
     const router = useRouter();
     const { login, requestPasswordReset } = useAuth();
+    const { showToast } = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +25,7 @@ export default function LoginScreen() {
                 hasEmail: !!email,
                 hasPassword: !!password,
             });
-            Alert.alert("Attenzione", "Per favore inserisci email e password");
+            showToast("error", "Per favore inserisci email e password");
             return;
         }
 
@@ -42,7 +44,7 @@ export default function LoginScreen() {
                 });
                 return;
             }
-            Alert.alert("Errore di Accesso", error.message || "Login fallito. Riprova.");
+            showToast("error", error.message || "Login fallito. Riprova.");
         } finally {
             setIsLoading(false);
         }
@@ -50,19 +52,16 @@ export default function LoginScreen() {
 
     const handlePasswordReset = async () => {
         if (!email.trim()) {
-            Alert.alert("Email richiesta", "Inserisci prima la tua email per ricevere il link di reset.");
+            showToast("error", "Inserisci prima la tua email per ricevere il link di reset.");
             return;
         }
 
         setIsResetting(true);
         try {
             await requestPasswordReset(email);
-            Alert.alert(
-                "Controlla la tua email",
-                "Ti abbiamo inviato un link per reimpostare la password. Aprilo su questo dispositivo."
-            );
+            showToast("success", "Email inviata: apri il link per reimpostare la password su questo dispositivo.");
         } catch (error: any) {
-            Alert.alert("Reset non riuscito", error?.message || "Non siamo riusciti a inviare la mail di reset.");
+            showToast("error", error?.message || "Non siamo riusciti a inviare la mail di reset.");
         } finally {
             setIsResetting(false);
         }

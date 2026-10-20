@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert } from "react-native";
+import { useToast } from "../../../context/ToastContext";
 import { ActivityForm, ActivityFormValues } from "../../../components/npo/ActivityForm";
 import { countActiveUrgentActivities, wasFutureActivityMovedToPast } from "../../../components/npo/activityFormLogic";
 import { useActivitiesListQuery, useActivityDetailQuery } from "../../../hooks/activities/queries";
@@ -8,6 +9,7 @@ import { useCancelActivityMutation, useUpdateActivityMutation } from "../../../h
 export default function EditActivityScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const { showToast } = useToast();
     const activityId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
     const { data: activity } = useActivityDetailQuery(activityId);
     const { data: activities = [] } = useActivitiesListQuery(activity?.npoId);
@@ -36,13 +38,13 @@ export default function EditActivityScreen() {
     const handleSubmit = async (values: ActivityFormValues) => {
         if (!activity) return;
         if (activity.status === "CANCELLATA") {
-            Alert.alert("Attività annullata", "Un'attività annullata non può più essere modificata.");
+            showToast("error", "Un'attività annullata non può più essere modificata.");
             return;
         }
         const startISO = `${values.date}T${values.startTime}:00Z`;
         const endISO = `${values.date}T${values.endTime}:00Z`;
         if (wasFutureActivityMovedToPast(activity.dateTime, startISO)) {
-            Alert.alert("Errore", "Non puoi spostare un'attività futura nel passato.");
+            showToast("error", "Non puoi spostare un'attività futura nel passato.");
             return;
         }
         try {
@@ -60,10 +62,10 @@ export default function EditActivityScreen() {
                 imageUrl: values.imageUrl,
                 recurrence: values.recurrence === "NONE" ? undefined : values.recurrence,
             });
-            Alert.alert("Successo", "Attività aggiornata con successo! I volontari iscritti riceveranno una notifica.");
+            showToast("success", "Attività aggiornata con successo! I volontari iscritti riceveranno una notifica.");
             router.back();
         } catch {
-            Alert.alert("Errore", "Non sono riuscita ad aggiornare l'attività. Riprova.");
+            showToast("error", "Non sono riuscita ad aggiornare l'attività. Riprova.");
         }
     };
 
@@ -86,7 +88,7 @@ export default function EditActivityScreen() {
                             await cancelActivityMutation.mutateAsync(activityId);
                             router.back();
                         } catch {
-                            Alert.alert("Errore", "Non sono riuscita ad annullare l'attività. Riprova.");
+                            showToast("error", "Non sono riuscita ad annullare l'attività. Riprova.");
                         }
                     },
                 },

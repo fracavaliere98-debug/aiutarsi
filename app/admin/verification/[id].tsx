@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
 import { 
   ChevronLeft, Building2, User, ShieldCheck, FileText, XCircle, 
   MapPin, Globe, Mail, Info, ExternalLink, Phone
@@ -28,6 +29,7 @@ const formatDate = (dateString: string, includeYear = false) => {
 export default function AdminVerificationDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
+  const { showToast } = useToast();
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,11 +51,11 @@ export default function AdminVerificationDetail() {
       setRequest(data);
     } catch (error) {
       console.error('Error fetching verification detail:', error);
-      Alert.alert('Errore', 'Impossibile caricare i dettagli della richiesta.');
+      showToast('error', 'Impossibile caricare i dettagli della richiesta.');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, showToast]);
 
   useEffect(() => {
     void fetchDetails();
@@ -131,13 +133,13 @@ export default function AdminVerificationDetail() {
         console.error('Admin notification failed', notifyError);
       }
 
-      Alert.alert('Successo', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);
+      showToast('success', `Richiesta ${action === 'approved' ? 'approvata' : 'rifiutata'} correttamente.`);
       setShowRejectModal(false);
       setRejectionNotes('');
       router.back();
     } catch (error: any) {
       console.error('Action failed:', error);
-      Alert.alert('Errore', error.message || 'Si è verificato un errore durante l\'operazione.');
+      showToast('error', error.message || 'Si è verificato un errore durante l\'operazione.');
     } finally {
       setActionLoading(false);
     }
@@ -156,10 +158,10 @@ export default function AdminVerificationDetail() {
         await WebBrowser.openBrowserAsync(docUrl);
       } catch (error) {
         console.error('Error opening browser:', error);
-        Alert.alert('Errore', 'Impossibile aprire il documento nel browser.');
+        showToast('error', 'Impossibile aprire il documento nel browser.');
       }
     } else {
-      Alert.alert('Documento non disponibile', 'L\'ente non ha caricato alcun documento di supporto.');
+      showToast('error', 'L\'ente non ha caricato alcun documento di supporto.');
     }
   };
 

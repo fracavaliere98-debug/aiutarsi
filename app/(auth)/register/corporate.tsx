@@ -1,8 +1,9 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { BriefcaseBusiness, Lock, Mail, ShieldCheck } from "lucide-react-native";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
@@ -11,6 +12,7 @@ import { colors } from "@/theme";
 export default function CorporateRegister() {
     const router = useRouter();
     const { register } = useAuth();
+    const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         companyName: "",
@@ -22,7 +24,7 @@ export default function CorporateRegister() {
 
     const handleRegister = async () => {
         if (!formData.companyName || !formData.vatId || !formData.email || !formData.password || !acceptedPrivacy) {
-            Alert.alert("Attenzione", "Compila tutti i campi e accetta privacy e termini.");
+            showToast("error", "Compila tutti i campi e accetta privacy e termini.");
             return;
         }
 
@@ -37,7 +39,7 @@ export default function CorporateRegister() {
             });
 
             if (result.requiresEmailConfirmation) {
-                Alert.alert("Registrazione completata", "Controlla la tua email per continuare.");
+                showToast("success", "Registrazione completata: controlla la tua email per continuare.");
                 router.replace({
                     pathname: "/confirm-email",
                     params: {
@@ -50,7 +52,7 @@ export default function CorporateRegister() {
 
             router.replace("/(corporate)" as any);
         } catch (error: any) {
-            Alert.alert("Errore", error.message || "Errore durante la registrazione.");
+            showToast("error", error.message || "Errore durante la registrazione.");
         } finally {
             setIsLoading(false);
         }

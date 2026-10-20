@@ -91,18 +91,12 @@ export default function ConfirmEmailScreen() {
             }
 
             if (isEmailChangeFlow) {
-                Alert.alert(
-                    "Cambio email non ancora completato",
-                    "Il nuovo indirizzo non risulta ancora confermato. Se il link non è più valido, richiedi di nuovo il cambio email dalle impostazioni."
-                );
+                showToast("info", "Il nuovo indirizzo non risulta ancora confermato. Se il link non è più valido, richiedi di nuovo il cambio email dalle impostazioni.");
                 return;
             }
 
             await resendSignupConfirmation(email);
-            Alert.alert(
-                "Conferma non ancora rilevata",
-                "La tua email non risulta ancora confermata. Ti abbiamo inviato una nuova mail di conferma."
-            );
+            showToast("info", "La tua email non risulta ancora confermata. Ti abbiamo inviato una nuova mail di conferma.");
 
             const { data } = await supabase.auth.getSession();
             if (data.session?.user) {
@@ -110,10 +104,7 @@ export default function ConfirmEmailScreen() {
                 return;
             }
         } catch (error: any) {
-            Alert.alert(
-                "Verifica non riuscita",
-                error?.message || "Non siamo riusciti a controllare lo stato della conferma. Riprova tra poco."
-            );
+            showToast("error", error?.message || "Non siamo riusciti a controllare lo stato della conferma. Riprova tra poco.");
         } finally {
             setIsChecking(false);
         }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    Image, KeyboardAvoidingView, Platform, ActivityIndicator, Alert
+    Image, KeyboardAvoidingView, Platform, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -118,7 +118,7 @@ export default function CreatePostScreen() {
             settingsLabel: 'la galleria',
         });
         if (!granted) {
-            Alert.alert('Permesso negato', 'Serve accesso alla galleria per caricare immagini.');
+            showToast('error', 'Serve accesso alla galleria per caricare immagini.');
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Share, Modal } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator, Share, Modal } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useNPOFollow } from "../../hooks/useNPOFollow";
@@ -189,11 +189,11 @@ export default function NPOProfileScreen() {
             if (canOpen) {
                 await Linking.openURL(finalUrl);
             } else {
-                Alert.alert("Errore", "Impossibile aprire il link: " + url);
+                showToast("error", "Impossibile aprire il link: " + url);
             }
         } catch (error) {
             console.error("Link error:", error);
-            Alert.alert("Errore", "Si è verificato un problema nell'apertura del link.");
+            showToast("error", "Si è verificato un problema nell'apertura del link.");
         }
     };
 

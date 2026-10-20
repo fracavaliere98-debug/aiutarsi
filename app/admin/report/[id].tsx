@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
 import { 
   ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
 } from 'lucide-react-native';
@@ -34,6 +35,7 @@ interface AuditLog {
 export default function AdminReportDetail() {
   const { id } = useLocalSearchParams();
   const { user: adminUser } = useAuth();
+  const { showToast } = useToast();
   const [report, setReport] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +114,7 @@ export default function AdminReportDetail() {
         user_agent: `${Platform.OS} ${Platform.Version}`
       });
 
-      Alert.alert('Successo', `Azione "${action}" completata.`);
+      showToast('success', `Azione "${action}" completata.`);
 
       // Ammonimento: l'utente segnalato deve sapere che c'è stato un intervento.
       if (action === 'warned' && report?.reported_id) {
@@ -144,7 +146,7 @@ export default function AdminReportDetail() {
 
       router.back();
     } catch (error: any) {
-      Alert.alert('Errore', error.message);
+      showToast('error', error.message);
     } finally {
       setActionLoading(false);
     }
