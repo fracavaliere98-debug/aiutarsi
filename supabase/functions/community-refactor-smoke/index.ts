@@ -198,7 +198,6 @@ async function runQueryConsistencyTest(admin: ReturnType<typeof createClient>) {
     ];
   } finally {
     if (postId) {
-      await admin.from("community_reports").delete().eq("post_id", postId);
       await admin.from("post_reactions").delete().eq("post_id", postId);
       await admin.from("community_posts").delete().eq("id", postId);
     }
@@ -213,6 +212,8 @@ async function runStateTransitionsTest(admin: ReturnType<typeof createClient>) {
   const npo = await createProfile(admin, { role: "NPO", fullName: "Community State NPO", npoName: "Community State NPO" });
   const volunteer = await createProfile(admin, { role: "VOLUNTEER", fullName: "Community State Volunteer" });
   let postId = "";
+  // `reports` non ha FK verso community_posts: il report va rimosso a mano anche dopo la delete del post.
+  let reportedPostId = "";
 
   try {
     const { data: insertedPost, error: insertError } = await admin
@@ -225,6 +226,7 @@ async function runStateTransitionsTest(admin: ReturnType<typeof createClient>) {
       .single();
     if (insertError) throw insertError;
     postId = insertedPost.id;
+    reportedPostId = insertedPost.id;
 
     const { error: updateError } = await admin
       .from("community_posts")
@@ -245,21 +247,26 @@ async function runStateTransitionsTest(admin: ReturnType<typeof createClient>) {
     const withReaction = await fetchPost(admin, postId);
     assert((withReaction.reactions || []).length === 1, "Reaction insert must remain visible via canonical post query");
 
-    const { error: reportError } = await admin.from("community_reports").insert({
-      post_id: postId,
+    // Stessa forma del client (hooks/community/mutations.ts): tabella `reports`, content_type "community_post".
+    const { error: reportError } = await admin.from("reports").insert({
       reporter_id: volunteer.id,
+      reported_id: npo.id,
+      content_type: "community_post",
+      content_id: postId,
       reason: `${localMarker} report`,
+      evidence_snapshot: { post_id: postId },
       status: "pending",
     });
     if (reportError) throw reportError;
 
     const { data: reportRows, error: reportFetchError } = await admin
-      .from("community_reports")
+      .from("reports")
       .select("id")
-      .eq("post_id", postId)
+      .eq("content_type", "community_post")
+      .eq("content_id", postId)
       .eq("reporter_id", volunteer.id);
     if (reportFetchError) throw reportFetchError;
-    assert((reportRows || []).length === 1, "Community reports should remain queryable after report mutation");
+    assert((reportRows || []).length === 1, "Post reports should remain queryable in `reports` after report mutation");
 
     const { error: deleteReactionError } = await admin
       .from("post_reactions")
@@ -288,8 +295,10 @@ async function runStateTransitionsTest(admin: ReturnType<typeof createClient>) {
       "PASS report and reaction mutations remain observable without local optimistic state",
     ];
   } finally {
+    if (reportedPostId) {
+      await admin.from("reports").delete().eq("content_type", "community_post").eq("content_id", reportedPostId);
+    }
     if (postId) {
-      await admin.from("community_reports").delete().eq("post_id", postId);
       await admin.from("post_reactions").delete().eq("post_id", postId);
       await admin.from("community_posts").delete().eq("id", postId);
     }
