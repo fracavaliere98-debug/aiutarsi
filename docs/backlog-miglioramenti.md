@@ -264,3 +264,89 @@ diff — operazione diversa e verificata sicura, a differenza di un
 **Fix (revisione 2)**: aggiunto, oltre al try/catch già presente, un limite di profondità (`MAX_DEPTH = 4`) e un budget massimo di nodi visitati (`MAX_NODES = 300`) alla ricorsione di `stringify`— qualunque valore oltre il limite diventa `"[Truncated]"` invece di continuare la discesa. Dato che questa stringa serve solo a un `console.log` di debug, non deve essere completa: è accettabile perdere dettaglio in cambio della garanzia che il lavoro totale sia sempre limitato da una costante, indipendentemente dalla forma dell'oggetto raggiungibile dalle props. `patches/react-native-css-interop+0.2.7.patch` e `scripts/test_css_interop_stringify_patch_contract.ts` aggiornati di conseguenza (il contract test ora verifica anche la presenza del limite di profondità/nodi, non solo del try/catch, per evitare che questa specifica regressione si ripeta).
 
 **Non ancora verificato su device dopo questa seconda revisione** — richiede un altro giro di test dell'utente su calendario/tab Lista e sulla selezione "come ti senti?" nel feedback attività.
+
+## Decision Log — Fix del loop di rigenerazione embedding (2026-10-24)
+
+**Stato in breve:** il fix del loop è **verificato solo su staging**; in
+produzione è **parziale, non completo** (completamento tracciato nella task
+A20 del Registro AiutarSi).
+
+**Contesto e problema.** Smart Match usa un vettore di 384 numeri (embedding)
+per ogni profilo e per ogni attività. I trigger `trigger_update_profile_embedding`
+e `trigger_update_activity_embedding` erano `AFTER INSERT OR UPDATE` su qualsiasi
+colonna; la edge function `generate-embedding` scrive `UPDATE <tabella> SET
+embedding = ...`, che rilanciava lo stesso trigger: loop auto-alimentato
+(~120-160 chiamate/min, quota Gemini free tier esaurita, backfill impossibile).
+Effetti collaterali dello stesso difetto: ogni UPDATE di `profiles.last_seen_at`
+(heartbeat ogni 30 s) e ogni cambio di `activities.status` (cron ogni 15 min)
+generava una chiamata a Gemini. Conseguenze: quota sprecata e consigli di Smart
+Match poco affidabili (vettori rigenerati di continuo o a metà).
+
+**Opzioni considerate** (scheda D01 del Registro):
+1. **A) Solo guardie sui trigger.** Il trigger resta com'è, con controlli per non
+   ripartire. Il più semplice, ma il loop non è escluso per struttura.
+2. **B) Trigger solo sulle colonne sorgente, più dedup per transazione.** Il
+   trigger scatta solo se cambiano i dati con cui si costruisce l'embedding;
+   una transazione che tocca più righe produce una sola richiesta.
+3. **C) Coda con cron.** Le modifiche finiscono in una coda e un job periodico
+   rigenera gli embedding. La più robusta, ma richiede più costruzione.
+
+**Scelta: B**, applicata su staging il 24/10/2026 (migration
+`20261020210000_fix_embedding_trigger_loop.sql`), confermata da Francesco.
+La coda C è rimandata finché i numeri reali non la giustificano.
+
+Cosa fa la migration (verificato leggendo il file nel repo):
+- un solo percorso, `public.request_embedding_refresh(tabella, id)`, che invia
+  alla edge function solo i campi usati per costruire il testo (niente
+  email/telefono/embedding nel payload);
+- trigger limitati alle colonne sorgente e con `WHEN ... IS DISTINCT FROM`
+  (`profiles`: INSERT, UPDATE OF bio; `activities`: INSERT, UPDATE OF title,
+  category, description; `user_skills`/`user_interests` → profili;
+  `activity_skills` → attività), tutti via `trg_request_embedding_refresh`;
+- constraint trigger DEFERRED con dedup per transazione: N righe di
+  competenze/interessi nella stessa transazione producono 1 sola chiamata;
+- niente più `embedding = NULL` come segnale: se la generazione fallisce resta
+  il vecchio vettore.
+
+Scrivere `embedding`, `last_seen_at`, `status` ecc. non rilancia più nulla: il
+loop non è strutturalmente più possibile.
+
+**Stato verificato su staging (24/10/2026):** 0 trigger vecchi, 7 trigger
+nuovi, 0 funzioni vecchie, funzioni di supporto non eseguibili da `anon` e
+`authenticated`, migration registrata, nessuna chiamata di embedding negli
+ultimi 10 minuti, vettori a 384 dimensioni, backfill fatto.
+
+**Stato di produzione (letta in sola lettura il 24/10/2026): PARZIALE, NON
+COMPLETO.** Uguali a staging: 7 trigger, funzione principale (stesso hash), 10
+job programmati. Differenze ancora aperte (tutte TODO in A20):
+
+| # | Differenza in prod rispetto a staging |
+|---|---|
+| a | Restano 5 funzioni vecchie (`on_*_change_for_embedding`) |
+| b | `request_embedding_refresh` e `trg_request_embedding_refresh` sono eseguibili da `anon` e `authenticated` |
+| c | La migration `20261020210000` non è registrata |
+| d | La edge function `generate-embedding` è v5 con codice diverso; su staging è v36 |
+
+Oggi prod ha 0 profili e 0 attività, quindi nessun loop è in corso.
+
+**Trade-off e rischi accettati:**
+- La voce esce con un fix verificato solo su staging: chi la legge non deve
+  pensare che prod sia a posto.
+- Prod può ripartire con il loop quando arriveranno dati reali (5 funzioni
+  vecchie ancora presenti). ASSUMED, non testato: prod oggi ha 0 dati.
+- Funzioni di supporto aperte ad `anon`/`authenticated`: impatto reale non
+  valutato. ASSUMED.
+- `generate-embedding` diversa tra prod e staging: il comportamento in prod può
+  non coincidere con quello verificato. ASSUMED.
+
+**Prossimi passi:**
+1. Task A20: pulire le 5 funzioni vecchie, chiudere i permessi sulle 2 funzioni
+   di supporto, registrare la migration, riallineare `generate-embedding` dal
+   sorgente del repo. Ogni scrittura su prod richiede l'ok esplicito.
+2. Prima di ogni evento production-facing (demo, onboarding NPO reale),
+   rilevare di nuovo le differenze prod/staging, anche per `ezbr_sha256` delle
+   edge function.
+
+**Nota sulle fonti:** i dati di staging e produzione di questa voce arrivano
+dalle letture della task A10 del Registro; la descrizione della migration è
+stata riletta dal file nel repo.
