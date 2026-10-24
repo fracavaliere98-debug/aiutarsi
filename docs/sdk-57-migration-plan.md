@@ -1,6 +1,6 @@
 # Migrazione a Expo SDK 57 — studio e piano (21/09/2026)
 
-Stato: PIANO, nessuna modifica al codice applicativo. Sostituisce `docs/sdk-55-upgrade-plan.md` del branch `upgrade/expo-sdk-55` (fermo ad aprile, solo bump dipendenze).
+Stato: COMPLETATO. Migrazione SDK 54 -> 57 mergiata su `main` il 22/09/2026 (commit 52bdfbf) e pubblicata su origin/main; `package.json` oggi: expo ~57.0.24, react-native 0.86.3. Il testo qui sotto resta come storico di piano, rischi e decisioni. Rimangono da fare solo la verifica visiva su device/build nativo (NativeWind 4, mappe) e il primo `eas build`. Sostituisce `docs/sdk-55-upgrade-plan.md` del branch `upgrade/expo-sdk-55` (fermo ad aprile, solo bump dipendenze).
 
 ## Decision Log
 
