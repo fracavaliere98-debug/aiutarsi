@@ -6,6 +6,7 @@ const suite = [
   { label: "chat-filter-contract", path: "scripts/test_chat_filter_contract.ts" },
   { label: "chat-ux-contract", path: "scripts/test_chat_ux_contract.ts" },
   { label: "gemma-invocation-guard-contract", path: "scripts/test_gemma_invocation_guard_contract.ts" },
+  { label: "gemma-shadow-minimization-contract", path: "scripts/test_gemma_shadow_minimization_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
   { label: "attendance-confirmation-contract", path: "scripts/test_attendance_confirmation_contract.ts" },
   { label: "attendance-auto-confirm-and-reminder-contract", path: "scripts/test_attendance_auto_confirm_and_reminder_contract.ts" },
