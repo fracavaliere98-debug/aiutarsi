@@ -98,15 +98,17 @@ function buildUserContext(profile: any): string {
     ? getFirstName(profile.full_name || profile.npo_name)
     : (profile.npo_name || profile.full_name || "utente");
 
+  // Centro Assistenza: questo contesto finisce nel prompt inviato a Gemini (provider LLM terzo).
+  // Decisione GDPR (A24, 24/10/2026): si invia solo il nome proprio (volontari) o il nome ente (NPO),
+  // MAI bio né località testuale. Le coordinate (location_lat/lng) restano solo lato server per
+  // cercare attività vicine (getSuggestedActivities) e non entrano nel prompt.
   return `
 === CONTESTO UTENTE ===
 Ruolo: ${profile.role || "sconosciuto"}
 Profilo completato: ${profile.profile_completed ? "sì" : "no"}
 Nome: ${displayName}
-Bio: ${profile.bio || "non disponibile"}
 Competenze: ${skills.length > 0 ? skills.join(", ") : "nessuna"}
 Interessi: ${interests.length > 0 ? interests.join(", ") : "nessuno"}
-Posizione: ${profile.location_string || "non disponibile"}
 NPO seguiti: ${followedNPOs.length}
 XP: ${profile.impact_points || 0}
 `;
