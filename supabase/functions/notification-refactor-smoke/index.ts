@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rejectIfNotStaging } from "../_shared/stagingOnly.ts";
 import { normalizeNotificationRequestBody } from "../_shared/notifyUserPayload.ts";
 import {
   cleanupRetention,
@@ -875,6 +876,9 @@ async function runAuthBanFlowTest(admin: ReturnType<typeof createClient>) {
 }
 
 Deno.serve(async (req) => {
+  const blocked = rejectIfNotStaging(jsonHeaders);
+  if (blocked) return blocked;
+
   try {
     const mode = ((await req.json().catch(() => ({})))?.mode || "full") as Mode;
     const admin = createClient(

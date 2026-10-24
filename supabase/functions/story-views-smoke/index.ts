@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rejectIfNotStaging } from "../_shared/stagingOnly.ts";
 
 type Role = "VOLUNTEER" | "NPO";
 type Mode = "idempotence" | "cross_device" | "viewer_scope" | "full";
@@ -229,6 +230,9 @@ async function runViewerScopeTest(admin: ReturnType<typeof createClient>, supaba
 }
 
 Deno.serve(async (req) => {
+  const blocked = rejectIfNotStaging(jsonHeaders);
+  if (blocked) return blocked;
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: jsonHeaders });
   }

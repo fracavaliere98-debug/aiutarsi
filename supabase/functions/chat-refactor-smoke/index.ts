@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rejectIfNotStaging } from "../_shared/stagingOnly.ts";
 
 type Role = "VOLUNTEER" | "NPO";
 type Mode = "query_consistency" | "state_transitions" | "inbox_visibility" | "full";
@@ -277,6 +278,9 @@ async function runInboxVisibilityTest(admin: ReturnType<typeof createClient>) {
 }
 
 Deno.serve(async (req) => {
+  const blocked = rejectIfNotStaging(jsonHeaders);
+  if (blocked) return blocked;
+
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ success: false, error: "Method not allowed" }), {
       status: 405,

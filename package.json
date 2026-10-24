@@ -19,6 +19,7 @@
     "test:gemma-guard": "npx -y tsx scripts/test_gemma_invocation_guard_contract.ts",
     "test:gemma-shadow": "npx -y tsx scripts/test_gemma_shadow_minimization_contract.ts",
     "test:gemma-help-context": "npx -y tsx scripts/test_gemma_help_context_minimization_contract.ts",
+    "test:smoke-staging-only": "npx -y tsx scripts/test_smoke_functions_staging_only_contract.ts",
     "test:activity-enrollment": "npx -y tsx scripts/test_activity_enrollment_contract.ts",
     "test:activity-form-contract": "npx -y tsx scripts/test_activity_form_contract.ts",
     "test:stories-contract": "npx -y tsx scripts/test_stories_contract.ts",

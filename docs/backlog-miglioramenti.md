@@ -350,3 +350,36 @@ Oggi prod ha 0 profili e 0 attività, quindi nessun loop è in corso.
 **Nota sulle fonti:** i dati di staging e produzione di questa voce arrivano
 dalle letture della task A10 del Registro; la descrizione della migration è
 stata riletta dal file nel repo.
+
+## Decision Log — Funzioni edge di test (`*-smoke`) solo su staging (2026-10-24)
+
+**Contesto.** Otto edge function di test (`activity`, `application`, `chat`,
+`community`, `gamification`, `notification`, `smart-match`, `story-views`
+`-smoke`) creano utenti (`auth.admin.createUser`), attività e messaggi con la
+service role e poi li cancellano. Erano pubblicate anche su prod. Nel codice non
+c'è alcun controllo oltre a `verify_jwt`, e la chiave anon, pubblica, lo supera:
+in teoria chiunque la conosca poteva chiamarle su prod e creare utenti e dati
+di prova veri. Letto nel codice (VERIFIED); non provato chiamandole su prod,
+perché la prova avrebbe creato utenti nell'auth di prod.
+
+**Opzioni considerate.**
+1. Controllo "solo staging" nel codice e ripubblicazione su prod: la funzione
+   resta raggiungibile.
+2. Togliere le funzioni da prod: nessuna superficie esposta.
+3. Lasciarle: rischio appena prod ha dati veri.
+
+**Scelta.** Opzione 2 come soluzione principale, più il controllo dell'opzione 1
+nel repo come rete di sicurezza (difesa in profondità): `rejectIfNotStaging` in
+`supabase/functions/_shared/stagingOnly.ts` risponde 403 se `SUPABASE_URL` non
+è quello di staging. Principio: il codice di test non va in produzione; un
+controllo dentro una funzione raggiungibile non basta, perché un suo errore
+darebbe accesso completo con la service role.
+
+**Trade-off.** La cancellazione da prod è definitiva ma reversibile dal repo
+(basta ripubblicare); prod non ha smoke test finché non si decide di farli lì,
+con un controllo di accesso dedicato. Il riallineamento prod/staging non si
+applica a queste funzioni. Il test `scripts/test_smoke_functions_staging_only_contract.ts`
+impedisce di aggiungere una nuova funzione `*-smoke` senza il controllo.
+
+**Stato.** Codice e test pronti nel repo; cancellazione da prod e ripubblicazione
+su staging: vedi task A25 del Registro.

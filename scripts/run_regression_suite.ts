@@ -8,6 +8,7 @@ const suite = [
   { label: "gemma-invocation-guard-contract", path: "scripts/test_gemma_invocation_guard_contract.ts" },
   { label: "gemma-shadow-minimization-contract", path: "scripts/test_gemma_shadow_minimization_contract.ts" },
   { label: "gemma-help-context-minimization-contract", path: "scripts/test_gemma_help_context_minimization_contract.ts" },
+  { label: "smoke-functions-staging-only-contract", path: "scripts/test_smoke_functions_staging_only_contract.ts" },
   { label: "activity-enrollment-contract", path: "scripts/test_activity_enrollment_contract.ts" },
   { label: "attendance-confirmation-contract", path: "scripts/test_attendance_confirmation_contract.ts" },
   { label: "attendance-auto-confirm-and-reminder-contract", path: "scripts/test_attendance_auto_confirm_and_reminder_contract.ts" },
