@@ -19,7 +19,7 @@
  * FAQ (non sempre serve — un refactor puramente interno no), poi aggiorna la
  * costante alla data di oggi in ogni caso, per far ripartire la finestra.
  */
-export const HELP_CENTER_LAST_REVIEWED = "2026-10-24";
+export const HELP_CENTER_LAST_REVIEWED = "2026-10-25";
 
 export type HelpCenterRole = "VOLUNTEER" | "NPO" | "ALL";
 

@@ -164,11 +164,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const syncBanStateFromProfile = useCallback(async (profileId: string) => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('is_banned, ban_reason, ban_report_id')
-                .eq('id', profileId)
-                .single();
+            // A26 P4: lettura del proprio stato di ban tramite get_my_profile (le colonne di ban non
+            // saranno piu' leggibili direttamente dalla tabella).
+            const { data, error } = await supabase.rpc('get_my_profile');
 
             if (error) throw error;
             setUser(prev => prev ? {

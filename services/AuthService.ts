@@ -14,23 +14,13 @@ export type EmailConfirmationState = {
     role?: string | null;
 };
 
-// Tutte le colonne di public.profiles TRANNE `embedding` (vector pgvector usato solo lato
-// server da get_matching_volunteers/Smart Match, mai letto dal client). Prima del 2026-07-24
-// ogni select('*') su profiles scaricava anche questo vettore da ~1536 dimensioni — payload
-// inutile su ogni fetch profilo (login, getCurrentUser ad ogni avvio app, getProfileById,
-// getUsers su liste paginate), che su una rete mobile lenta poteva far percepire un fetch
-// come bloccato/interminabile. Aggiornare questa lista se si aggiungono nuove colonne a
-// profiles che il client deve poter leggere.
-const PROFILE_COLUMNS_NO_EMBEDDING = `
-    id, role, full_name, email, avatar_url, bio, impact_points, location_string, location_lat,
-    location_lng, is_verified, profile_completed, npo_name, phone, website, public_email,
-    company_name, created_at, updated_at, last_seen_at, location_coords, expo_push_token,
-    allow_calls, profile_public, show_email, volunteer_list_visible, show_volunteering_history,
-    badges, deletion_requested_at, is_banned, ban_reason, ban_report_id, npo_vat_id, npo_website,
-    referent_name, referent_role, referent_avatar_url, auto_welcome_message, address_full,
-    sought_skills, verification_doc_url, location, verification_status, referral_code, referred_by,
-    gender, date_of_birth, email_confirmed
-`;
+// A26 P4 (2026-10-25): le letture di profiles passano da funzioni server.
+//  - proprio profilo: rpc get_my_profile() (jsonb senza `embedding`; le colonne nuove arrivano da sole);
+//  - profili altrui: rpc get_public_profiles() (colonne ammesse + regole di visibilita': Profilo pubblico,
+//    ente verificato, azioni che sbloccano). Se aggiungi una colonna che il client deve vedere negli
+//    ALTRI profili, aggiungila a quella funzione (supabase/migrations/..._a26_p3_public_profiles.sql).
+//  Non serve piu' elencare le colonne qui, ed e' la premessa per togliere la lettura diretta delle
+//  colonne sensibili (A26 P2).
 
 export class AuthService {
     private _cachedAccessToken: string | null = null;
@@ -99,23 +89,21 @@ export class AuthService {
         accessToken: string,
         seed?: Partial<AppUser>
     ): Promise<void> {
-        const payload: Record<string, unknown> = {
-            id: userId,
-            updated_at: new Date().toISOString(),
-        };
-
-        const role = seed?.role || (await this.loadUserLocally())?.role || 'VOLUNTEER';
-        if (role) payload.role = role;
-        if (seed?.email) payload.email = seed.email;
-        if (seed?.full_name || seed?.name) payload.full_name = seed.full_name || seed.name;
-        if ((seed as any)?.npo_name || seed?.npoName) payload.npo_name = (seed as any)?.npo_name || seed?.npoName;
-        if ((seed as any)?.company_name || seed?.companyName) payload.company_name = (seed as any)?.company_name || seed?.companyName;
-
-        await this._withTimeout(
-            profileRest.ensureVolunteerProfile(payload, accessToken),
-            'profiles.ensure.rest',
+        // A26 P2: il client non scrive piu' direttamente la riga (niente upsert con ruolo ed email
+        // decisi dal telefono). La funzione server crea il profilo se manca (ruolo solo VOLUNTEER/NPO/
+        // CORPORATE, email presa dall'account) e completa solo i campi ancora vuoti.
+        void accessToken;
+        const { error } = await this._withTimeout(
+            supabase.rpc('ensure_my_profile', {
+                p_role: seed?.role || (await this.loadUserLocally())?.role || 'VOLUNTEER',
+                p_full_name: seed?.full_name || seed?.name || null,
+                p_npo_name: (seed as any)?.npo_name || seed?.npoName || null,
+                p_company_name: (seed as any)?.company_name || seed?.companyName || null,
+            }),
+            'profiles.ensure.rpc',
             8000
         );
+        if (error) throw error;
     }
 
     private async _getAccessTokenForRest(): Promise<string> {
@@ -429,11 +417,7 @@ export class AuthService {
 
         // FORCE SYNC FROM DB
         try {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select(PROFILE_COLUMNS_NO_EMBEDDING)
-                .eq('id', user.id)
-                .single();
+            const profile = await this._fetchOwnProfileRow(user.id, 'profiles.login');
 
             if (profile) {
                 if (!profile.full_name && user.full_name) {
@@ -586,6 +570,49 @@ export class AuthService {
         }
     }
 
+    // A26 P4: il proprio profilo completo (rpc) + competenze, interessi e enti seguiti.
+    private async _fetchOwnProfileRow(userId: string, label: string): Promise<any | null> {
+        const { data: row, error } = await this._withTimeout(
+            supabase.rpc('get_my_profile'),
+            `${label}.rpc`,
+            8000
+        );
+        if (error) throw error;
+        if (!row) return null;
+        const [skills, interests, follows] = await this._withTimeout(
+            Promise.all([
+                supabase.from('user_skills').select('skill').eq('user_id', userId),
+                supabase.from('user_interests').select('interest').eq('user_id', userId),
+                supabase.from('npo_followers').select('npo_id').eq('follower_id', userId),
+            ]),
+            `${label}.relations`,
+            8000
+        );
+        return {
+            ...(row as any),
+            user_skills: skills.data || [],
+            user_interests: interests.data || [],
+            followed_entities: follows.data || [],
+        };
+    }
+
+    // A26 P4: riga di get_public_profiles -> forma attesa da _mapProfileToUser.
+    private _mapPublicRowToUser(row: any): AppUser {
+        const { profile_id, display_name, skills, interests, access, ...rest } = row;
+        return {
+            ...this._mapProfileToUser({
+                ...rest,
+                id: profile_id,
+                full_name: display_name,
+                user_skills: (skills || []).map((skill: string) => ({ skill })),
+                user_interests: (interests || []).map((interest: string) => ({ interest })),
+                followed_entities: [],
+            }),
+            // 'limited' = volontario non pubblico: solo nome abbreviato e livello, profilo non apribile.
+            profile_access: access,
+        } as AppUser;
+    }
+
     // Helper: Map public profile to AppUser
     private _mapProfileToUser(profile: any): AppUser {
         const derivedDisplayName =
@@ -637,29 +664,22 @@ export class AuthService {
     // NOTE: Fetches public profiles with pagination.
     async getUsers(page = 0, pageSize = 20, role?: string): Promise<AppUser[]> {
         try {
-            let query = supabase
-                .from('profiles')
-                .select(`
-                    ${PROFILE_COLUMNS_NO_EMBEDDING},
-                    user_skills (skill),
-                    user_interests (interest),
-                    followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                `)
-                .order('full_name')
-                .range(page * pageSize, (page + 1) * pageSize - 1);
-
-            if (role) {
-                query = query.eq('role', role);
-            }
-
-            const { data, error } = await this._withTimeout(query, 'profiles.getUsers', 8000);
+            const { data, error } = await this._withTimeout(
+                supabase.rpc('get_public_profiles', {
+                    p_role: role || null,
+                    p_limit: pageSize,
+                    p_offset: page * pageSize,
+                }),
+                'profiles.getUsers',
+                8000
+            );
 
             if (error) {
                 console.error("Error fetching users:", error);
                 return [];
             }
 
-            return data.map(p => this._mapProfileToUser(p));
+            return ((data as any[]) || []).map(p => this._mapPublicRowToUser(p));
         } catch (e) {
             console.error("Exception fetching users", e);
             // Strumentazione (2026-09-22): stesso motivo del trackError in getCurrentUser() -
@@ -695,28 +715,25 @@ export class AuthService {
             // uno spinner "in caricamento continuo" a tempo indefinito perché nessun livello
             // della catena (qui, non nella sola UI) faceva mai scadere la richiesta.
             const { data, error } = await this._withTimeout(
-                supabase
-                    .from('profiles')
-                    .select(`
-                        ${PROFILE_COLUMNS_NO_EMBEDDING},
-                        user_skills (skill),
-                        user_interests (interest),
-                        followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                    `)
-                    .eq('id', userId)
-                    .single(),
+                supabase.rpc('get_public_profiles', { p_ids: [userId], p_limit: 1 }),
                 'profiles.getById',
                 8000
             );
 
             if (error) {
-                if (error.code !== 'PGRST116') { // Not found is fine
-                    console.error("Error fetching profile by ID:", error);
-                }
+                console.error("Error fetching profile by ID:", error);
                 return null;
             }
 
-            return this._mapProfileToUser(data);
+            // Nessuna riga = profilo non esistente oppure non visibile a chi guarda (A26): "non trovato".
+            const row = Array.isArray(data) ? (data as any[])[0] : null;
+            if (!row) return null;
+            if (row.access === 'self') {
+                // Il proprio profilo: versione completa (telefono, data di nascita, ecc.).
+                const own = await this._fetchOwnProfileRow(userId, 'profiles.getById.self');
+                return own ? this._mapProfileToUser(own) : null;
+            }
+            return this._mapPublicRowToUser(row);
         } catch (e) {
             console.error("Exception fetching profile by ID", e);
             return null;
@@ -844,20 +861,13 @@ export class AuthService {
 
         // 2. FETCH PROFILE FROM DB (Primary Source of Truth)
         try {
-            const { data: profile, error } = await this._withTimeout(
-                supabase
-                    .from('profiles')
-                    .select(`
-                        ${PROFILE_COLUMNS_NO_EMBEDDING},
-                        user_skills (skill),
-                        user_interests (interest),
-                        followed_entities:npo_followers!npo_followers_follower_id_fkey (npo_id)
-                    `)
-                    .eq('id', session.user.id)
-                    .single(),
-                'profiles.getCurrentUser',
-                8000
-            );
+            let profile: any = null;
+            let error: any = null;
+            try {
+                profile = await this._fetchOwnProfileRow(session.user.id, 'profiles.getCurrentUser');
+            } catch (fetchError) {
+                error = fetchError;
+            }
 
             if (profile && !error) {
                 user = this._mapProfileToUser(profile);
@@ -1376,18 +1386,15 @@ export class AuthService {
                 if (user && user.id === userId) {
                     const metadata = user.user_metadata || {};
                     const appMetaSH = user.app_metadata || {};
-                    const { error: insertError } = await supabase
-                        .from('profiles')
-                        .insert({
-                            id: userId,
-                            email: user.email,
-                            full_name: metadata.full_name || metadata.name || metadata.displayName || 'Utente',
-                            avatar_url: metadata.avatar_url || metadata.avatar,
-                            role: ((appMetaSH.role || metadata.role) || 'VOLUNTEER').toUpperCase(),
-                            npo_name: metadata.npoName,
-                            company_name: metadata.companyName,
-                            profile_completed: metadata.profile_completed || metadata.profileCompleted || false
-                        });
+                    // A26 P2: creazione tramite funzione server (ruolo e email non decisi dal client).
+                    const { error: insertError } = await supabase.rpc('ensure_my_profile', {
+                        p_role: String((appMetaSH.role || metadata.role) || 'VOLUNTEER'),
+                        p_full_name: metadata.full_name || metadata.name || metadata.displayName || 'Utente',
+                        p_npo_name: metadata.npoName || null,
+                        p_company_name: metadata.companyName || null,
+                        p_avatar_url: metadata.avatar_url || metadata.avatar || null,
+                        p_profile_completed: !!(metadata.profile_completed || metadata.profileCompleted),
+                    });
 
                     if (insertError) {
                         console.error("[AuthService] Self-healing failed:", insertError.message);

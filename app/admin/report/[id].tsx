@@ -48,8 +48,8 @@ export default function AdminReportDetail() {
         .from('reports')
         .select(`
           *,
-          reporter:profiles!reports_reporter_id_fkey(*),
-          reported:profiles!reports_reported_id_fkey(*)
+          reporter:profiles!reports_reporter_id_fkey(id, full_name, avatar_url, role),
+          reported:profiles!reports_reported_id_fkey(id, full_name, avatar_url, role)
         `)
         .eq('id', id)
         .single();

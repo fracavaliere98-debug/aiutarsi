@@ -121,6 +121,34 @@ class ChatService {
     }
 
     /**
+     * A26 P4: il telefono non e' piu' leggibile dalla tabella profiles. Per il pulsante "Chiama"
+     * serve solo quello degli enti (NPO/CORPORATE), che e' pubblico: lo prendiamo da
+     * get_public_profiles. Il telefono di un volontario non arriva mai (resta privato).
+     */
+    private async _withOrgPhones<T extends { participants?: any[] }>(data: T): Promise<T> {
+        const orgs = (data?.participants || []).filter(
+            (part: any) => part?.profiles && ['NPO', 'CORPORATE'].includes(part.profiles.role)
+        );
+        if (!orgs.length) return data;
+        try {
+            const { data: rows, error } = await this._withTimeout(
+                supabase.rpc('get_public_profiles', { p_ids: orgs.map((part: any) => part.user_id), p_limit: orgs.length }),
+                'chat.orgPhones',
+                8000
+            );
+            if (error) throw error;
+            const phoneById = new Map<string, string | null>(((rows as any[]) || []).map((row) => [row.profile_id, row.phone || null]));
+            for (const part of orgs) {
+                part.profiles = { ...part.profiles, phone: phoneById.get(part.user_id) || null };
+            }
+        } catch (e) {
+            // Non critico: senza telefono il pulsante "Chiama" resta nascosto.
+            console.warn('[ChatService] org phone lookup failed', e);
+        }
+        return data;
+    }
+
+    /**
      * Get details of a single conversation with messages
      */
     async getConversationDetails(conversationId: string) {
@@ -134,7 +162,7 @@ class ChatService {
             this.startGroupConversation(data.activity_id, data.activities?.title || '');
         }
 
-        return data;
+        return this._withOrgPhones(data);
     }
 
     async getConversationMetadata(conversationId: string) {
@@ -142,7 +170,7 @@ class ChatService {
         const rows = await profileRest.getConversationMetadata(conversationId, accessToken);
         const data = Array.isArray(rows) ? rows[0] : rows;
         if (!data) throw new Error('Conversazione non trovata');
-        return data;
+        return this._withOrgPhones(data);
     }
 
     /**

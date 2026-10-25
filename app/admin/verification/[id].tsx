@@ -41,14 +41,19 @@ export default function AdminVerificationDetail() {
     try {
       const { data, error } = await supabase
         .from('verification_requests')
-        .select(`
-          *,
-          profiles:user_id(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
       if (error) throw error;
-      setRequest(data);
+      // A26 P4: il profilo completo dell'ente (partita IVA, indirizzo, documento) si legge solo con la
+      // funzione riservata agli admin, non piu' con un embed su profiles.
+      let profile: any = null;
+      if (data?.user_id) {
+        const { data: fullProfile, error: profileError } = await supabase.rpc('admin_get_profile', { p_id: data.user_id });
+        if (profileError) throw profileError;
+        profile = fullProfile;
+      }
+      setRequest({ ...data, profiles: profile });
     } catch (error) {
       console.error('Error fetching verification detail:', error);
       showToast('error', 'Impossibile caricare i dettagli della richiesta.');

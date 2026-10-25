@@ -111,7 +111,7 @@ export class ActivityService {
             Promise.all([
                 supabase.from('activity_skills').select('activity_id, skill').in('activity_id', ids),
                 supabase.from('activity_participants').select('activity_id, user_id, status').in('activity_id', ids),
-                supabase.from('profiles').select('id, npo_name, full_name, public_email, email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
+                supabase.from('profiles').select('id, npo_name, full_name, public_email, is_verified').in('id', (data || []).map((r: any) => r.npo_id)),
             ]),
             8000,
             'activities.getByRadius.hydration'
@@ -131,7 +131,7 @@ export class ActivityService {
         for (const r of profiles || []) {
             profilesMap[r.id] = {
                 npoName: r.npo_name || r.full_name || 'NPO Sconosciuta',
-                email: r.public_email || r.email || '',
+                email: r.public_email || '',
                 isVerified: r.is_verified
             };
         }
@@ -330,7 +330,7 @@ export class ActivityService {
                     .from('activities')
                     .select(`
                         *,
-                        profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
+                        profiles:npo_id (npo_name, full_name, public_email, is_verified),
                         activity_skills (skill),
                         activity_participants (user_id, status)
                     `)
@@ -804,7 +804,7 @@ export class ActivityService {
                     .from('activities')
                     .select(`
                         *,
-                        profiles:npo_id (npo_name, full_name, public_email, email),
+                        profiles:npo_id (npo_name, full_name, public_email),
                         activity_skills (skill),
                         activity_participants (user_id)
                     `)
@@ -840,7 +840,7 @@ export class ActivityService {
                     .from('activities')
                     .select(`
                         *,
-                        profiles:npo_id (npo_name, full_name, public_email, email, is_verified),
+                        profiles:npo_id (npo_name, full_name, public_email, is_verified),
                         activity_skills (skill),
                         activity_participants (user_id, status)
                     `)

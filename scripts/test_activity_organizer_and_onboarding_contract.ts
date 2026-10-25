@@ -55,36 +55,32 @@ function fileExists(relativePath: string): boolean {
 }
 
 // ── 1. AuthService: niente più `embedding` nei select profilo, ovunque ─────
+// A26 P4 (2026-10-25): le letture passano da rpc get_my_profile (proprio profilo, jsonb senza
+// `embedding`) e rpc get_public_profiles (profili altrui, colonne ammesse + regole di visibilita').
 
 function testProfileSelectsExcludeEmbedding() {
-  console.log("\n[AuthService] i select su profiles non scaricano più `embedding`");
+  console.log("\n[AuthService] le letture di profiles passano dalle funzioni server e non scaricano `embedding`");
 
   const source = readSource("services/AuthService.ts");
 
-  assert(
-    source.includes("PROFILE_COLUMNS_NO_EMBEDDING"),
-    "AuthService.ts deve definire una costante di colonne esplicite che esclude `embedding`"
-  );
+  assert(source.includes("rpc('get_my_profile')"), "AuthService.ts deve leggere il proprio profilo con rpc get_my_profile");
+  assert(source.includes("rpc('get_public_profiles'"), "AuthService.ts deve leggere i profili altrui con rpc get_public_profiles");
+  pass("proprio profilo da get_my_profile, profili altrui da get_public_profiles");
 
-  const constMatch = source.match(/const PROFILE_COLUMNS_NO_EMBEDDING = `([\s\S]*?)`;/);
-  assert(constMatch, "PROFILE_COLUMNS_NO_EMBEDDING deve essere una template string di colonne");
-  assert(
-    !constMatch![1].includes("embedding"),
-    "REGRESSIONE: PROFILE_COLUMNS_NO_EMBEDDING non deve includere la colonna embedding"
-  );
-  assert(constMatch![1].includes("id") && constMatch![1].includes("full_name"), "PROFILE_COLUMNS_NO_EMBEDDING deve includere le colonne base (id, full_name, ...)");
-  pass("PROFILE_COLUMNS_NO_EMBEDDING esiste ed esclude embedding");
-
-  const usageCount = (source.match(/PROFILE_COLUMNS_NO_EMBEDDING/g) || []).length;
-  // 1 dichiarazione + almeno 4 usi (login, getUsers, getProfileById, getCurrentUser)
-  assert(usageCount >= 5, `PROFILE_COLUMNS_NO_EMBEDDING deve essere riusata in almeno 4 punti (login/getUsers/getProfileById/getCurrentUser), trovati ${usageCount - 1} usi`);
-  pass("PROFILE_COLUMNS_NO_EMBEDDING è riusata in tutti i fetch profilo principali");
-
+  assert(!source.includes("PROFILE_COLUMNS_NO_EMBEDDING`") && !/\$\{PROFILE_COLUMNS_NO_EMBEDDING\}/.test(source), "REGRESSIONE: la vecchia lista di colonne dirette non deve essere reintrodotta nei select");
   assert(
     !/\.from\('profiles'\)\s*\.select\('\*'\)/.test(source),
-    "REGRESSIONE: nessun select('*') grezzo su profiles deve restare in AuthService.ts (deve usare PROFILE_COLUMNS_NO_EMBEDDING)"
+    "REGRESSIONE: nessun select('*') grezzo su profiles deve restare in AuthService.ts"
   );
-  pass("nessun select('*') grezzo residuo su profiles in AuthService.ts");
+  assert(!/\.from\('profiles'\)\s*\.select\(\s*`[^`]*\bembedding\b/.test(source), "REGRESSIONE: nessun select su profiles deve includere embedding");
+  pass("nessun select('*') grezzo e nessun embedding nei select su profiles in AuthService.ts");
+
+  const services = ["services/ActivityService.ts", "utils/profileRest.ts"];
+  for (const file of services) {
+    const text = readSource(file);
+    assert(!/profiles[^\n]{0,40}\(([^)]*,\s*)?email[,)]/.test(text.replace(/public_email/g, "public_mail")), `REGRESSIONE: ${file} non deve piu' leggere profiles.email dei profili altrui (usare public_email)`);
+  }
+  pass("le query delle attivita' non leggono l'email privata dell'ente");
 }
 
 // ── 1b. AuthService: il fix vero è ALLA FONTE — la query stessa ha un timeout ──
@@ -101,14 +97,14 @@ function testProfileFetchesAreWrappedInTimeoutAtTheSource() {
 
   const getProfileByIdBlock = source.slice(source.indexOf("async getProfileById"), source.indexOf("async getBlockedUsers"));
   assert(
-    /this\._withTimeout\(\s*supabase\s*\.from\('profiles'\)/.test(getProfileByIdBlock),
+    /this\._withTimeout\(\s*supabase\.rpc\('get_public_profiles'/.test(getProfileByIdBlock),
     "REGRESSIONE: getProfileById deve avvolgere la query supabase in this._withTimeout — senza, un hang del client (lock di rinnovo sessione bloccato) resta senza mai risolversi, indipendentemente da qualunque timeout messo solo lato UI"
   );
   pass("getProfileById avvolge la query in this._withTimeout alla fonte");
 
   const getUsersBlock = source.slice(source.indexOf("async getUsers"), source.indexOf("async getAllUsers"));
   assert(
-    /this\._withTimeout\(query,/.test(getUsersBlock),
+    /this\._withTimeout\(\s*supabase\.rpc\('get_public_profiles'/.test(getUsersBlock),
     "REGRESSIONE: getUsers deve avvolgere la query in this._withTimeout"
   );
   pass("getUsers avvolge la query in this._withTimeout alla fonte");
@@ -119,8 +115,9 @@ function testProfileFetchesAreWrappedInTimeoutAtTheSource() {
     "REGRESSIONE: getCurrentUser deve avvolgere auth.getSession() in this._withTimeout (gira ad ogni avvio app: senza, un hang qui blocca l'intero avvio)"
   );
   assert(
-    /this\._withTimeout\(\s*supabase\s*\.from\('profiles'\)/.test(getCurrentUserBlock),
-    "REGRESSIONE: getCurrentUser deve avvolgere anche la query del profilo in this._withTimeout"
+    getCurrentUserBlock.includes("_fetchOwnProfileRow(") &&
+      /_fetchOwnProfileRow[\s\S]*?this\._withTimeout\(\s*supabase\.rpc\('get_my_profile'\)/.test(source),
+    "REGRESSIONE: getCurrentUser deve leggere il profilo con _fetchOwnProfileRow, che avvolge rpc get_my_profile in this._withTimeout"
   );
   pass("getCurrentUser avvolge sia getSession() sia la query profilo in this._withTimeout");
 

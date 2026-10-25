@@ -253,7 +253,7 @@ export const profileRest = {
 
     return request<any[]>(
       "GET",
-      `/rest/v1/activities?select=*,profiles:npo_id(npo_name,full_name,public_email,email,is_verified),activity_skills(skill),activity_participants(user_id,status)${category}${npoId}${search}${urgent}${dateFrom}${dateTo}${statuses}&order=is_urgent.desc,date_start.asc,created_at.desc&limit=${limit}&offset=${offset}`,
+      `/rest/v1/activities?select=*,profiles:npo_id(npo_name,full_name,public_email,is_verified),activity_skills(skill),activity_participants(user_id,status)${category}${npoId}${search}${urgent}${dateFrom}${dateTo}${statuses}&order=is_urgent.desc,date_start.asc,created_at.desc&limit=${limit}&offset=${offset}`,
       undefined,
       accessToken,
       undefined,
@@ -271,7 +271,7 @@ export const profileRest = {
   getConversationMetadata: async (conversationId: string, accessToken?: string) => {
     return request<any[]>(
       "GET",
-      `/rest/v1/conversations?id=eq.${conversationId}&select=id,type,activity_id,created_at,last_message_content,last_message_at,last_message_sender_id,activities(title,npo:profiles!npo_id(npo_name)),participants:conversation_participants(user_id,last_read_at,inbox_visible_at,hidden_at,notifications_muted,profiles(name:full_name,npo_name,avatar:avatar_url,role,phone,allow_calls,last_seen_at))`,
+      `/rest/v1/conversations?id=eq.${conversationId}&select=id,type,activity_id,created_at,last_message_content,last_message_at,last_message_sender_id,activities(title,npo:profiles!npo_id(npo_name)),participants:conversation_participants(user_id,last_read_at,inbox_visible_at,hidden_at,notifications_muted,profiles(name:full_name,npo_name,avatar:avatar_url,role,allow_calls,last_seen_at))`,
       undefined,
       accessToken
     );
