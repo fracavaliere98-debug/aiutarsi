@@ -4,3 +4,4 @@ export { SegmentedControl } from "./SegmentedControl";
 export type { SegmentedControlItem } from "./SegmentedControl";
 export { SelectableChip } from "./SelectableChip";
 export { StatusPill } from "./StatusPill";
+export { ContactRow } from "./ContactRow";

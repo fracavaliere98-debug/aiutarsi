@@ -10,4 +10,5 @@ export const applicationKeys = {
         role ?? UNKNOWN_ROLE_KEY,
     ] as const,
     list: (userId?: string, role?: string) => [...applicationKeys.lists(userId, role), "all"] as const,
+    sharedContacts: (npoId?: string) => [...applicationKeys.all, "shared-contacts", npoId ?? ANONYMOUS_USER_KEY] as const,
 };

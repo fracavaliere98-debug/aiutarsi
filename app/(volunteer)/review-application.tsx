@@ -9,6 +9,7 @@ import { useActivityDetailQuery } from "../../hooks/activities/queries";
 import { useEnrollInActivityMutation } from "../../hooks/activities/mutations";
 import { useApplyToNPOMutation } from "../../hooks/applications/mutations";
 import { colors } from "@/theme";
+import { isValidEmail, normalizeEmailInput } from "../../utils/emailFormat";
 
 export default function ReviewApplication() {
     const router = useRouter();
@@ -25,6 +26,9 @@ export default function ReviewApplication() {
 
     // State
     const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+    // Precompilata con l'email del profilo, ma e' una scelta per questo ente: si puo' cambiare o togliere.
+    const [email, setEmail] = useState(user?.email || "");
+    const [emailError, setEmailError] = useState<string | null>(null);
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,18 +41,37 @@ export default function ReviewApplication() {
         );
     }
 
+    const recipientName = isActivity ? activity!.npoName : npoUser!.npoName;
+
     const handleConfirm = async () => {
+        const sharedEmail = normalizeEmailInput(email);
+        const sharedPhone = phoneNumber.trim();
+        if (sharedEmail && !isValidEmail(sharedEmail)) {
+            setEmailError("Controlla l'indirizzo: deve essere come nome@posta.it. Puoi anche lasciarlo vuoto.");
+            return;
+        }
         setIsSubmitting(true);
         try {
             let success = false;
 
             if (isActivity && activity) {
                 // IMMEDIATE Enrollment for OldActivity
-                await enrollInActivityMutation.mutateAsync({ activityId: activity.id, message: notes, phone: phoneNumber });
+                await enrollInActivityMutation.mutateAsync({
+                    activityId: activity.id,
+                    message: notes,
+                    phone: sharedPhone || undefined,
+                    email: sharedEmail || undefined,
+                });
                 success = true;
             } else if (npoUser) {
                 // Apply to NPO
-                await applyToNPOMutation.mutateAsync({ npoId: npoUser.id, npoName: npoUser.npoName || "NPO", message: notes });
+                await applyToNPOMutation.mutateAsync({
+                    npoId: npoUser.id,
+                    npoName: npoUser.npoName || "NPO",
+                    message: notes,
+                    phone: sharedPhone || undefined,
+                    email: sharedEmail || undefined,
+                });
                 success = true;
             }
 
@@ -135,7 +158,10 @@ export default function ReviewApplication() {
 
                 {/* Form Section */}
                 <View className="border-l-4 border-accent pl-4 mb-6">
-                    <Text className="text-xl font-bold text-primary">Conferma i tuoi dati</Text>
+                    <Text className="text-xl font-bold text-primary">Cosa condividi con {recipientName}</Text>
+                    <Text className="text-secondary text-sm mt-1">
+                        Li vede solo {recipientName}, finché {isActivity ? "l'iscrizione" : "la candidatura"} è attiva. Puoi cambiarli o toglierli.
+                    </Text>
                 </View>
 
                 <View className="mb-6">
@@ -151,8 +177,36 @@ export default function ReviewApplication() {
                         <CheckCircle2 size={20} color={colors.success} fill={colors.success} className="opacity-20" />
                     </View>
                     <Text className="text-gray-400 text-xs mt-2 px-1">
-                        Usiamo questo numero per contattarti in caso di necessità.
+                        Se lo lasci vuoto, {recipientName} non riceve il tuo telefono.
                     </Text>
+                </View>
+
+                <View className="mb-6">
+                    <Text className="text-primary font-bold mb-2 text-base">Email</Text>
+                    <View className={`flex-row items-center bg-white border rounded-2xl px-4 h-14 ${emailError ? "border-danger" : "border-gray-200"}`}>
+                        <TextInput
+                            testID="input-shared-email"
+                            className="flex-1 text-primary text-lg"
+                            value={email}
+                            onChangeText={(value) => {
+                                setEmail(value);
+                                if (emailError) setEmailError(null);
+                            }}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            autoComplete="email"
+                            textContentType="emailAddress"
+                            placeholder="nome@posta.it"
+                        />
+                    </View>
+                    {emailError ? (
+                        <Text className="text-danger text-xs mt-2 px-1">{emailError}</Text>
+                    ) : (
+                        <Text className="text-gray-400 text-xs mt-2 px-1">
+                            È quella del tuo profilo: puoi cambiarla con un altro indirizzo. Se la lasci vuota, {recipientName} non riceve la tua email.
+                        </Text>
+                    )}
                 </View>
 
                 <View className="mb-8">

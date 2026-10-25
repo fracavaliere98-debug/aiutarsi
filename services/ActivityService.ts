@@ -542,14 +542,15 @@ export class ActivityService {
         eventEmitter.emit(SyncEvents.SYNC_ACTIVITIES);
     }
 
-    async joinActivity(activityId: string, userId: string, message?: string, phone?: string): Promise<AppActivity> {
+    async joinActivity(activityId: string, userId: string, message?: string, phone?: string, email?: string): Promise<AppActivity> {
         const accessToken = await this._getAccessToken();
         await profileRest.joinActivity({
                 activity_id: activityId,
                 user_id: userId,
                 status: 'REGISTERED',
                 message: message,
-                phone: phone
+                phone: phone,
+                email: email || null
             },
             accessToken
         );
@@ -690,18 +691,22 @@ export class ActivityService {
     async getActivityApplications(): Promise<AppActivityApplication[]> {
         try {
             const accessToken = await this._getAccessToken();
-            const data = await profileRest.listActivityApplications(accessToken);
-            return data.map((row: any) => ({
-                id: `${row.activity_id}_${row.user_id}`,
-                activityId: row.activity_id,
-                volunteerId: row.user_id,
-                volunteerName: row.volunteer?.full_name || "Volontario",
-                volunteerAvatar: row.volunteer?.avatar_url || "",
-                status: row.status as any,
-                appliedDate: row.created_at,
-                message: row.message,
-                phone: row.phone || row.volunteer?.phone
-            }));
+            const data = await profileRest.listSharedContacts({}, accessToken);
+            const ACTIVE = new Set(["PENDING", "APPROVED", "REJECTED", "REGISTERED"]);
+            return data
+                .filter((row: any) => row.source === "ACTIVITY" && ACTIVE.has(row.status))
+                .map((row: any) => ({
+                    id: `${row.activity_id}_${row.volunteer_id}`,
+                    activityId: row.activity_id,
+                    volunteerId: row.volunteer_id,
+                    volunteerName: row.full_name || "Volontario",
+                    volunteerAvatar: row.avatar_url || "",
+                    status: row.status as any,
+                    appliedDate: row.shared_at,
+                    message: row.message,
+                    phone: row.phone || undefined,
+                    email: row.email || undefined,
+                }));
         } catch (error) {
             if ((error as any)?.message?.includes('Sessione assente o token utente non disponibile')) {
                 console.log('[ActivityService] Skipping activity applications fetch until session is ready');

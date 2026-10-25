@@ -19,7 +19,7 @@
  * FAQ (non sempre serve — un refactor puramente interno no), poi aggiorna la
  * costante alla data di oggi in ogni caso, per far ripartire la finestra.
  */
-export const HELP_CENTER_LAST_REVIEWED = "2026-10-25";
+export const HELP_CENTER_LAST_REVIEWED = "2026-10-26";
 
 export type HelpCenterRole = "VOLUNTEER" | "NPO" | "ALL";
 
@@ -248,7 +248,7 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         id: "whocan_volunteer",
         question: "Chi può vedere il mio profilo?",
         answer:
-          'Se il tuo profilo è pubblico (è acceso di default), gli enti verificati e gli altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Se lo togli, gli altri ti vedono solo come, ad esempio, Marta B. e con il tuo livello; un ente vede comunque il tuo profilo se ti candidi, ti iscrivi a una sua attività o gli rispondi. La tua email e il tuo telefono restano privati: un ente li vede solo se li condividi tu. Puoi cambiare tutto in Impostazioni > Privacy e Visibilità.',
+          'Se il tuo profilo è pubblico (è acceso di default), gli enti verificati e gli altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Se lo togli, gli altri ti vedono solo come, ad esempio, Marta B. e con il tuo livello; un ente vede comunque il tuo profilo se ti candidi, ti iscrivi a una sua attività o gli rispondi. La tua email del profilo non la vede nessun ente. Quando ti iscrivi a un\'attività o ti candidi a un ente puoi condividere con lui un\'email e un telefono a tua scelta (l\'email è già compilata, puoi cambiarla o toglierla): li vede solo quell\'ente, finché l\'iscrizione o la candidatura è attiva. Il resto lo cambi in Impostazioni > Privacy e Visibilità.',
       },
     ],
   },
@@ -321,6 +321,12 @@ export const NPO_GUIDE_SECTIONS: GuideSection[] = [
         question: "Dove gestisco candidature e richieste dei volontari?",
         answer:
           'Nella sezione volontari puoi vedere candidature, followers, volontari approvati e storico. Da lì puoi approvare, rifiutare o approfondire i profili.',
+      },
+      {
+        id: "npo_volunteer_contacts",
+        question: "Dove trovo email e telefono dei volontari?",
+        answer:
+          "Li trovi solo se il volontario ha scelto di condividerli con il tuo ente, quando si è candidato o iscritto a una tua attività. Li vedi nella scheda della candidatura, nella lista degli iscritti di ogni attività e nel profilo del volontario, nella sezione \"Contatti condivisi con te\". Spariscono se il volontario annulla l'iscrizione o se rifiuti la candidatura. Serve un ente verificato.",
       },
       {
         id: "npo_followers_vs_members",

@@ -1,4 +1,4 @@
-import { AppUser, OldApplication } from '../types';
+import { AppUser, OldApplication, SharedContact } from '../types';
 import { eventEmitter, SyncEvents } from '../utils/EventEmitter';
 import { authService } from './AuthService';
 import { profileRest } from '../utils/profileRest';
@@ -154,7 +154,9 @@ export class NPOService {
                 npo_id: applicationData.npoId,
                 volunteer_id: applicationData.volunteerId,
                 message: applicationData.message,
-                status: 'PENDING'
+                status: 'PENDING',
+                email: applicationData.email || null,
+                phone: applicationData.phone || null,
             },
             accessToken
         );
@@ -183,6 +185,31 @@ export class NPOService {
             console.error("Error fetching applications:", error);
             return [];
         }
+    }
+
+    /**
+     * Contatti (email, telefono, messaggio) che i volontari hanno scelto di condividere con questo ente,
+     * da iscrizioni e candidature. Li restituisce solo il server, all'ente verificato destinatario, e
+     * non li restituisce se l'iscrizione e' annullata o rifiutata / la candidatura e' rifiutata.
+     */
+    async getSharedContacts(): Promise<SharedContact[]> {
+        // Niente catch che restituisce []: se la lettura fallisce l'errore arriva alla query e la schermata
+        // lo mostra, invece di far credere all'ente che nessuno abbia condiviso un contatto.
+        const accessToken = await this._getAccessToken();
+        const rows = await profileRest.listSharedContacts({}, accessToken);
+        return (rows || []).map((row: any): SharedContact => ({
+            source: row.source,
+            refId: row.ref_id,
+            activityId: row.activity_id || undefined,
+            volunteerId: row.volunteer_id,
+            volunteerName: row.full_name || undefined,
+            volunteerAvatar: row.avatar_url || undefined,
+            status: row.status,
+            email: row.email || undefined,
+            phone: row.phone || undefined,
+            message: row.message || undefined,
+            sharedAt: row.shared_at,
+        }));
     }
 
     async getApplicationsForVolunteer(volunteerId: string): Promise<OldApplication[]> {

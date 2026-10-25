@@ -19,7 +19,7 @@ export function useApplyToNPOMutation(user?: AppUser | null) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ npoId, npoName, message }: { npoId: string; npoName: string; message: string }) => {
+        mutationFn: async ({ npoId, npoName, message, email, phone }: { npoId: string; npoName: string; message: string; email?: string; phone?: string }) => {
             if (!user || user.role !== "VOLUNTEER") {
                 throw new Error("Unauthorized");
             }
@@ -36,6 +36,8 @@ export function useApplyToNPOMutation(user?: AppUser | null) {
                 skills: user.skills || [],
                 status: "PENDING",
                 appliedDate: new Date().toISOString(),
+                email,
+                phone,
             });
 
 

@@ -124,3 +124,19 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - `community_reports` è legacy: nessun client né edge function deve più scriverci (nessun admin la legge). Da rimuovere in una migration dedicata dopo verifica.
 - Il moderatore AI scrive in `reports` con `reporter_id` NULL e `is_ai_generated = true` (prima usava un reporter inesistente e il flag andava perso).
 - L'ammonimento ("warned") notifica l'utente segnalato via `admin_send_notification`.
+
+### Stato di verifica degli enti: una sola fonte (decisione 26/10/2026, A28)
+- `profiles.verification_status` (none | pending | verified | rejected) è l'unica fonte. `profiles.is_verified` è derivata dal database (`is_verified = (verification_status = 'verified')`) da un trigger e protetta da un vincolo CHECK: nessun client, edge function o script la scrive.
+- Il passaggio a `pending` lo fa il database quando arriva una riga in `verification_requests` (trigger). Il client non scrive `verification_status`; la schermata dell'ente legge lo stato da `AuthContext.user`.
+- Approvazione/rifiuto: solo `admin_review_verification(request_id, approve, notes)`, che aggiorna richiesta e profilo nella stessa transazione. `admin_set_npo_verification` non esiste più. `verification_requests` resta storico e note.
+- Le regole di accesso ai profili dei volontari (A26) leggono `is_verified`, che per costruzione coincide con `verification_status = 'verified'`.
+- Contract test: `scripts/test_verification_single_source_contract.ts`.
+
+### Contatti condivisi con l'ente (decisione 26/10/2026, A29/A30)
+- Il volontario sceglie cosa condividere con **quell'ente** quando si iscrive a un'attività (`activity_participants.email/phone/message`) o si candida (`applications.email/phone/message`). L'email è precompilata dal profilo ma modificabile o cancellabile; telefono ed email sono facoltativi.
+- La email del profilo non è mai visibile a un ente (`get_public_profiles` la restituisce solo a se stessi e all'admin). Il toggle «Mostra email» è stato tolto; `profiles.show_email` resta come colonna inerte fino alla pulizia P9.
+- Telefono, email e messaggio delle iscrizioni, e email/telefono delle candidature, non si leggono con una SELECT diretta (permessi per colonna). Si leggono solo con `get_shared_contacts_for_npo` (via `NPOService.getSharedContacts`), che li restituisce all'ente verificato destinatario e li nasconde se l'iscrizione è annullata/rifiutata o la candidatura è rifiutata (una iscrizione annullata sparisce del tutto).
+- `activity_participants` non è più leggibile da utenti anonimi (policy solo `authenticated`); gli utenti loggati vedono solo `activity_id, user_id, status, created_at`.
+- Dove li vede l'ente: scheda candidatura (tab Volontari), lista iscritti nel dettaglio attività, sezione «Contatti condivisi con te» nel profilo del volontario. Componenti: `ContactRow` (`components/ui`), `SharedContactBlock`, `SharedContactsSection` (`components/npo`).
+- Un errore di lettura dei contatti non si nasconde con una lista vuota: la query espone `isError` e la schermata lo dice.
+- Contract test: `scripts/test_shared_contacts_contract.ts`.

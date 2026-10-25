@@ -5,11 +5,16 @@ import { MessageSquareText, ChevronRight, Mail, X } from 'lucide-react-native';
 import { UserAvatar } from '../UserAvatar';
 import { AppUser } from '../../types';
 import { getLegacyGamificationSnapshot } from '../../utils/gamificationLegacy';
+import { SharedContactBlock } from './SharedContactBlock';
 
 interface CandidacyCardProps {
     volunteer: AppUser;
     appliedDate: string;
     applicationMessage?: string;
+    /** Contatti scelti dal volontario per questo ente (candidatura attiva). */
+    sharedEmail?: string;
+    sharedPhone?: string;
+    onContactOpenError?: () => void;
     onPress?: () => void;
     onMessage: () => void;
     onReject: () => void;
@@ -29,7 +34,7 @@ function formatAppliedAgo(timestamp: string) {
     return `${diffDays} giorni fa`;
 }
 
-export function CandidacyCard({ volunteer, appliedDate, applicationMessage, onPress, onMessage, onReject, onApprove }: CandidacyCardProps) {
+export function CandidacyCard({ volunteer, appliedDate, applicationMessage, sharedEmail, sharedPhone, onContactOpenError, onPress, onMessage, onReject, onApprove }: CandidacyCardProps) {
     const [showPresentation, setShowPresentation] = useState(false);
     const hasPresentation = !!applicationMessage && applicationMessage.trim() !== "";
     const { level: volunteerLevel } = getLegacyGamificationSnapshot(volunteer.id, volunteer);
@@ -148,6 +153,9 @@ export function CandidacyCard({ volunteer, appliedDate, applicationMessage, onPr
                         <ChevronRight size={16} color="#b3adcb" style={{ marginLeft: 'auto' }} />
                     </TouchableOpacity>
                 )}
+
+                {/* Contatti condivisi dal volontario */}
+                <SharedContactBlock email={sharedEmail} phone={sharedPhone} onOpenError={onContactOpenError} />
 
                 {/* Azioni */}
                 <View style={{ flexDirection: 'row', gap: 8 }}>

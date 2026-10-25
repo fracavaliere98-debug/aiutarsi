@@ -20,7 +20,7 @@ import { useSendNpoInviteMutation } from "../../../hooks/npo/mutations";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
 import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
 import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
-import { useNPOApplications } from "../../../hooks/applications/selectors";
+import { useNPOApplications, useSharedContacts } from "../../../hooks/applications/selectors";
 import { colors, palette } from "../../../theme";
 
 type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
@@ -28,6 +28,15 @@ type TabType = 'CANDIDATURE' | 'FOLLOWERS' | 'STORICO';
 export default function VolunteersScreen() {
     const { user, getUserById } = useAuth();
     const npoApplications = useNPOApplications(user, user?.id);
+    const { contacts: sharedContacts } = useSharedContacts(user);
+    // Contatti condivisi per candidatura (refId = id della candidatura).
+    const contactsByApplication = useMemo(() => {
+        const map = new Map<string, { email?: string; phone?: string }>();
+        sharedContacts.forEach((c) => {
+            if (c.source === "APPLICATION") map.set(c.refId, { email: c.email, phone: c.phone });
+        });
+        return map;
+    }, [sharedContacts]);
     const approveApplicationMutation = useApproveApplicationMutation(user);
     const rejectApplicationMutation = useRejectApplicationMutation(user);
     const { showToast } = useToast();
@@ -319,6 +328,7 @@ export default function VolunteersScreen() {
                         <FlashList
                             data={displayPending as any[]}
                             keyExtractor={item => item.id}
+                            extraData={contactsByApplication}
                             // @ts-ignore
                             estimatedItemSize={230}
                             showsVerticalScrollIndicator={false}
@@ -342,6 +352,9 @@ export default function VolunteersScreen() {
                                         volunteer={enrichedVolunteer}
                                         appliedDate={(item as any).appliedDate}
                                         applicationMessage={(item as any).message}
+                                        sharedEmail={contactsByApplication.get(item.id)?.email}
+                                        sharedPhone={contactsByApplication.get(item.id)?.phone}
+                                        onContactOpenError={() => showToast("error", "Non riesco ad aprire il contatto su questo telefono.")}
                                         onPress={() => router.push(`/(npo)/volunteer-profile/${item.volunteerId}`)}
                                         onMessage={() => handleMessageVolunteer(item.volunteerId, enrichedVolunteer.name, enrichedVolunteer.avatar)}
                                         onReject={() => handleReject(item.id)}

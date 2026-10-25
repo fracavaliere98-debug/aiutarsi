@@ -23,3 +23,13 @@ export function useApplicationsQuery(user?: AppUser | null, enabled = true) {
         staleTime: 30_000,
     });
 }
+
+/** Contatti condivisi con l'ente (email/telefono scelti dal volontario in iscrizione o candidatura). Solo ente verificato. */
+export function useSharedContactsQuery(user?: AppUser | null) {
+    return useQuery({
+        queryKey: applicationKeys.sharedContacts(user?.id),
+        queryFn: () => npoService.getSharedContacts(),
+        enabled: !!user?.id && user.role === "NPO",
+        staleTime: 30_000,
+    });
+}

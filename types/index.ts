@@ -241,6 +241,23 @@ export interface OldActivityApplication {
     appliedDate: string;
     message?: string;
     phone?: string;
+    email?: string;
+}
+
+/** Contatti che il volontario ha scelto di condividere con un ente (iscrizione a un'attivita' o candidatura). */
+export interface SharedContact {
+    source: "ACTIVITY" | "APPLICATION";
+    /** Per le iscrizioni "<activityId>_<volunteerId>", per le candidature l'id della candidatura. */
+    refId: string;
+    activityId?: string;
+    volunteerId: string;
+    volunteerName?: string;
+    volunteerAvatar?: string;
+    status: string;
+    email?: string;
+    phone?: string;
+    message?: string;
+    sharedAt: string;
 }
 
 export interface OldApplication {
@@ -256,6 +273,9 @@ export interface OldApplication {
     status: "PENDING" | "APPROVED" | "REJECTED";
     appliedDate: string;
     reviewedDate?: string;
+    /** Contatti condivisi dal volontario con questo ente (solo per l'ente destinatario). */
+    email?: string;
+    phone?: string;
 }
 
 export interface OldCandidature {

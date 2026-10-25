@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { AppUser } from "../../types";
-import { useApplicationsQuery } from "./queries";
+import { AppUser, SharedContact } from "../../types";
+import { useApplicationsQuery, useSharedContactsQuery } from "./queries";
 
 const EMPTY_APPLICATIONS: any[] = [];
 
@@ -48,4 +48,18 @@ export function useHasAppliedToNPO(user?: AppUser | null, npoId?: string) {
                 (application.status === "PENDING" || application.status === "APPROVED")
         );
     }, [applications, npoId, user?.id]);
+}
+
+const EMPTY_SHARED_CONTACTS: SharedContact[] = [];
+
+/** Contatti condivisi con l'ente (email/telefono scelti dal volontario). Solo per l'ente verificato destinatario. */
+export function useSharedContacts(user?: AppUser | null) {
+    const query = useSharedContactsQuery(user);
+
+    return {
+        contacts: query.data ?? EMPTY_SHARED_CONTACTS,
+        isLoading: query.isLoading,
+        isError: query.isError,
+        refetch: query.refetch,
+    };
 }

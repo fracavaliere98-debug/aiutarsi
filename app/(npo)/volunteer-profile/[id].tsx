@@ -6,7 +6,9 @@ import { VolunteerProfileView } from "../../../components/VolunteerProfileView";
 import { AppUser } from "../../../types";
 import ReportModal from "../../../components/ReportModal";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
-import { useVolunteerApplications } from "../../../hooks/applications/selectors";
+import { useVolunteerApplications, useSharedContacts } from "../../../hooks/applications/selectors";
+import { SharedContactsSection } from "../../../components/npo/SharedContactsSection";
+import { useToast } from "../../../context/ToastContext";
 import { useGamificationView } from "../../../hooks/gamification/selectors";
 import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
 
@@ -23,6 +25,17 @@ export default function NPOVolunteerProfile() {
     const [showReportModal, setShowReportModal] = useState(false);
     const { state: gamificationState, levelProgress, xpInLevel, xpNeededForLevel, levelName } = useGamificationView(user);
     const startPrivateConversationMutation = useStartPrivateConversationMutation(currentUser?.id);
+    const { showToast } = useToast();
+    const { contacts: allSharedContacts, isLoading: contactsLoading, isError: contactsError } = useSharedContacts(currentUser);
+    const volunteerContacts = useMemo(
+        () => allSharedContacts.filter((c) => c.volunteerId === (typeof id === 'string' ? id : '')),
+        [allSharedContacts, id]
+    );
+    const activityTitleById = useMemo(() => {
+        const map: Record<string, string> = {};
+        activities.forEach((a) => { map[a.id] = a.title; });
+        return map;
+    }, [activities]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -206,7 +219,15 @@ export default function NPOVolunteerProfile() {
                 followedNPOs={followedNPOs as any[]}
                 affiliatedNPOs={affiliatedNPOs as any[]}
                 npoApplications={userApplications}
-            />
+            >
+                <SharedContactsSection
+                    contacts={volunteerContacts}
+                    activityTitleById={activityTitleById}
+                    isLoading={contactsLoading}
+                    isError={contactsError}
+                    onOpenError={() => showToast("error", "Non riesco ad aprire il contatto su questo telefono.")}
+                />
+            </VolunteerProfileView>
 
             {/* Modal di Segnalazione */}
             <ReportModal

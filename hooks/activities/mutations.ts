@@ -65,11 +65,11 @@ export function useEnrollInActivityMutation(userId?: string) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ activityId, message, phone }: { activityId: string; message?: string; phone?: string }) => {
+        mutationFn: async ({ activityId, message, phone, email }: { activityId: string; message?: string; phone?: string; email?: string }) => {
             if (!userId) {
                 throw new Error("Missing user id");
             }
-            return activityService.joinActivity(activityId, userId, message, phone);
+            return activityService.joinActivity(activityId, userId, message, phone, email);
         },
         onSuccess: (_, variables) => {
             void invalidateActivityQueries(queryClient, { activityId: variables.activityId, userId });

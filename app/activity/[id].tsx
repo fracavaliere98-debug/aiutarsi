@@ -22,6 +22,8 @@ import { addEventToDeviceCalendar } from "../../utils/calendar";
 import { useActivityDetailQuery, useVolunteerReviewsQuery } from "../../hooks/activities/queries";
 import { useUnenrollFromActivityMutation, useRequestAttendanceReminderMutation } from "../../hooks/activities/mutations";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
+import { useSharedContacts } from "../../hooks/applications/selectors";
+import { SharedContactBlock } from "../../components/npo/SharedContactBlock";
 import { useCommunityActivityPostsQuery } from "../../hooks/community/queries";
 import { useCommunityRealtime } from "../../hooks/community/realtime";
 import { useRecordActivityShareMutation } from "../../hooks/gamification/mutations";
@@ -108,6 +110,16 @@ export default function ActivityDetail() {
     }, [user, activity]);
 
     const isOtherNPO = user?.role === 'NPO' && !isOwner;
+
+    // Contatti che gli iscritti hanno scelto di condividere con l'ente (solo per l'ente proprietario).
+    const { contacts: sharedContacts, isError: sharedContactsError } = useSharedContacts(isOwner ? user : null);
+    const contactsByVolunteer = useMemo(() => {
+        const map = new Map<string, { email?: string; phone?: string }>();
+        sharedContacts.forEach((c) => {
+            if (c.source === 'ACTIVITY' && c.activityId === activity?.id) map.set(c.volunteerId, { email: c.email, phone: c.phone });
+        });
+        return map;
+    }, [sharedContacts, activity?.id]);
 
     const currentIscritti = localIscrittiOverride ?? activity?.iscritti ?? [];
     const isEnrolled = !!user && currentIscritti.includes(user.id);
@@ -512,20 +524,35 @@ export default function ActivityDetail() {
                             {currentIscritti.map(volId => {
                                 const v = users.find(u => u.id === volId);
                                 if (!v) return null;
+                                const shared = contactsByVolunteer.get(volId);
                                 return (
-                                    <TouchableOpacity
+                                    <View
                                         key={volId}
-                                        onPress={() => router.push(`/(npo)/volunteer-profile/${volId}` as any)}
-                                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 14, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: '#f1f5f9' }}
-                                        activeOpacity={0.7}
+                                        style={{ backgroundColor: 'white', padding: 14, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: '#f1f5f9', gap: 10 }}
                                     >
-                                        <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
-                                        <View style={{ marginLeft: 12, flex: 1 }}>
-                                            <Text style={{ fontWeight: '700', color: colors.primary, fontSize: 14 }}>{v.name}</Text>
-                                            <Text style={{ color: '#64748b', fontSize: 12 }}>{v.email}</Text>
-                                        </View>
-                                        <ChevronRight size={16} color={colors.textSecondary} />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => router.push(`/(npo)/volunteer-profile/${volId}` as any)}
+                                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <UserAvatar name={v.name} avatarUrl={v.avatar} size={40} />
+                                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                                <Text style={{ fontWeight: '700', color: colors.primary, fontSize: 14 }}>{v.name}</Text>
+                                            </View>
+                                            <ChevronRight size={16} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                        {shared?.email || shared?.phone ? (
+                                            <SharedContactBlock
+                                                email={shared?.email}
+                                                phone={shared?.phone}
+                                                onOpenError={() => showToast('error', 'Non riesco ad aprire il contatto su questo telefono.')}
+                                            />
+                                        ) : (
+                                            <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                                                {sharedContactsError ? 'Non riesco a caricare i contatti. Riprova più tardi.' : 'Nessun contatto condiviso.'}
+                                            </Text>
+                                        )}
+                                    </View>
                                 );
                             })}
                         </Animated.View>

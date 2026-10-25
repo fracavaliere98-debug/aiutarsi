@@ -419,7 +419,7 @@ export const profileRest = {
     return typeof conversationId === 'string' ? conversationId : null;
   },
   joinActivity: async (
-    payload: { activity_id: string; user_id: string; status: "REGISTERED"; message?: string; phone?: string },
+    payload: { activity_id: string; user_id: string; status: "REGISTERED"; message?: string; phone?: string; email?: string | null },
     accessToken?: string
   ) => {
     return request(
@@ -439,16 +439,21 @@ export const profileRest = {
       { Prefer: "return=minimal" }
     );
   },
-  listActivityApplications: async (accessToken?: string) => {
+  // Contatti condivisi con l'ente (iscrizioni + candidature): la lettura diretta di telefono/email/messaggio
+  // e' chiusa per colonna, passano solo da questa funzione del server (A29/A30).
+  listSharedContacts: async (
+    args: { volunteerId?: string; activityId?: string } = {},
+    accessToken?: string
+  ) => {
     return request<any[]>(
-      "GET",
-      `/rest/v1/activity_participants?select=activity_id,user_id,status,created_at,message,phone,volunteer:user_id(full_name,avatar_url,phone)&status=in.(PENDING,APPROVED,REJECTED,REGISTERED)&order=created_at.desc`,
-      undefined,
+      "POST",
+      `/rest/v1/rpc/get_shared_contacts_for_npo`,
+      { p_volunteer_id: args.volunteerId ?? null, p_activity_id: args.activityId ?? null },
       accessToken
     );
   },
   submitApplication: async (
-    payload: { npo_id: string; volunteer_id: string; message?: string | null; status?: string },
+    payload: { npo_id: string; volunteer_id: string; message?: string | null; status?: string; email?: string | null; phone?: string | null },
     accessToken?: string
   ) => {
     return request<any[]>(

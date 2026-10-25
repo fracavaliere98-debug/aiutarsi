@@ -19,8 +19,6 @@ export default function VolunteerPrivacyScreen() {
     const [allowCalls, setAllowCalls] = useState(true);
     // A26 P5: "Profilo pubblico" = colonna volunteer_list_visible (acceso di default).
     const [publicProfile, setPublicProfile] = useState(true);
-    // show_email: se acceso, l'email la vede solo l'ente di cui il volontario fa parte (candidatura approvata).
-    const [showEmail, setShowEmail] = useState(false);
 
     useEffect(() => {
         if (!user?.id) {
@@ -31,7 +29,6 @@ export default function VolunteerPrivacyScreen() {
         const fetchPrivacy = async () => {
             setAllowCalls(user.allow_calls !== false);
             setPublicProfile(user.volunteer_list_visible !== false);
-            setShowEmail(user.show_email === true);
             setIsFetching(false);
         };
 
@@ -45,7 +42,6 @@ export default function VolunteerPrivacyScreen() {
             await updateUserProfile({
                 allow_calls: allowCalls,
                 volunteer_list_visible: publicProfile,
-                show_email: showEmail,
             });
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
@@ -89,7 +85,7 @@ export default function VolunteerPrivacyScreen() {
                     iconBg={publicProfile ? "bg-emerald-50" : "bg-slate-100"}
                     title="Profilo pubblico"
                     subtitle={publicProfile
-                        ? "Enti verificati e altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Email e telefono restano privati: un ente li vede solo se sei tu a condividerli."
+                        ? "Enti verificati e altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Email e telefono restano privati: li vede solo l'ente a cui li dai tu quando ti iscrivi o ti candidi."
                         : "Gli altri ti vedono solo come, ad esempio, Marta B. e con il tuo livello."}
                     value={publicProfile}
                     onValueChange={handlePublicProfileChange}
@@ -97,19 +93,20 @@ export default function VolunteerPrivacyScreen() {
                 />
             </SoftCard>
 
-            {/* Contacts */}
+            {/* Contatti: nessun interruttore, la scelta si fa a ogni iscrizione o candidatura */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">CONTATTI</Text>
             <SoftCard className="p-5 mb-6">
-                <PrivacyRow
-                    icon={<Mail size={22} color={showEmail ? colors.primary : colors.textSecondary} />}
-                    iconBg={showEmail ? "bg-blue-50" : "bg-slate-100"}
-                    title="Mostra la mia email agli enti di cui faccio parte"
-                    subtitle={showEmail
-                        ? "Gli enti che hanno approvato la tua candidatura vedono la tua email. Gli altri volontari no."
-                        : "La tua email resta privata."}
-                    value={showEmail}
-                    onValueChange={setShowEmail}
-                />
+                <View className="flex-row items-start">
+                    <View className="w-11 h-11 rounded-2xl items-center justify-center mr-4 bg-slate-100">
+                        <Mail size={22} color={colors.textSecondary} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-primary font-bold text-base">Email e telefono</Text>
+                        <Text className="text-secondary text-sm mt-1">
+                            Gli enti non vedono mai la tua email del profilo. Quando ti iscrivi a un&apos;attività o ti candidi scegli tu cosa condividere con quell&apos;ente: l&apos;email è già compilata, ma puoi cambiarla o toglierla.
+                        </Text>
+                    </View>
+                </View>
             </SoftCard>
 
             {/* Calls */}
