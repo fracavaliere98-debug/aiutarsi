@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
@@ -8,7 +8,6 @@ import { useToast } from "../../context/ToastContext";
 import { OnboardingStepHeader } from "../onboarding/OnboardingStepHeader";
 import { storageService } from "../../services/StorageService";
 import { authService } from "../../services/AuthService";
-import { supabase } from "../../utils/supabase";
 import { colors } from "@/theme";
 
 type Props = {
@@ -36,45 +35,8 @@ export function NPOVerificationFlow({
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [document, setDocument] = useState<DocumentPicker.DocumentPickerResult | null>(null);
-  const [hasPendingRequest, setHasPendingRequest] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkPendingRequest = async () => {
-      if (!user?.id || user?.is_verified || user?.isVerified) return;
-
-      try {
-        const { data, error } = await supabase
-          .from("verification_requests")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .limit(1);
-
-        if (error) throw error;
-
-        if (!isMounted) return;
-
-        const hasPending = !!data && data.length > 0;
-        setHasPendingRequest(hasPending);
-
-        if (hasPending && user.verification_status !== "pending") {
-          setUser({
-            ...user,
-            verification_status: "pending",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to check pending verification request:", error);
-      }
-    };
-
-    void checkPendingRequest();
-    return () => {
-      isMounted = false;
-    };
-  }, [setUser, user]);
+  // Lo stato 'in revisione' arriva dal database (verification_status = 'pending'), non si ricostruisce sul telefono.
+  const hasPendingRequest = user?.verification_status === "pending";
 
   const pickDocument = async () => {
     try {
@@ -90,7 +52,7 @@ export function NPOVerificationFlow({
   };
 
   const handleContinue = async () => {
-    if (hasPendingRequest || user?.verification_status === "pending") {
+    if (hasPendingRequest) {
       showToast("info", "Hai gia una richiesta di verifica in revisione.");
       onSubmitted();
       return;
@@ -132,32 +94,17 @@ export function NPOVerificationFlow({
 
       await authService.updateProfile(user.id, {
         verification_doc_url: uploadedUrl,
-        verification_status: "pending",
       } as any);
 
       await authService.submitVerificationRequest(user.id, npoDetailsSnap);
       const freshUser = await fetchUserById(user.id);
-      if (freshUser) {
-        setUser(freshUser);
-      } else {
-        setUser({
-          ...user,
-          verification_status: "pending",
-        });
-      }
+      if (freshUser) setUser(freshUser);
       showToast("success", "Richiesta inviata! L'admin la revisionera.");
       onSubmitted();
     } catch (e: any) {
       if (e?.message?.includes("Hai gia una richiesta di verifica in revisione.")) {
         const freshUser = await fetchUserById(user!.id);
-        if (freshUser) {
-          setUser(freshUser);
-        } else {
-          setUser({
-            ...user!,
-            verification_status: "pending",
-          });
-        }
+        if (freshUser) setUser(freshUser);
         showToast("info", "Hai gia una richiesta di verifica in revisione.");
         onSubmitted();
         return;
@@ -193,7 +140,7 @@ export function NPOVerificationFlow({
             Carica lo Statuto o l&apos;Atto Costitutivo dell&apos;ente in PDF o immagine.
           </Text>
 
-          {(hasPendingRequest || user?.verification_status === "pending") && (
+          {hasPendingRequest && (
             <View style={styles.pendingBox}>
               <Text style={styles.pendingTitle}>Richiesta gia inviata</Text>
               <Text style={styles.pendingText}>
@@ -204,8 +151,8 @@ export function NPOVerificationFlow({
 
           <TouchableOpacity
             onPress={pickDocument}
-            disabled={hasPendingRequest || user?.verification_status === "pending"}
-            style={[styles.uploadBox, document && styles.uploadBoxActive, (hasPendingRequest || user?.verification_status === "pending") && styles.uploadBoxDisabled]}
+            disabled={hasPendingRequest}
+            style={[styles.uploadBox, document && styles.uploadBoxActive, hasPendingRequest && styles.uploadBoxDisabled]}
           >
             {document && document.assets?.[0] ? (
               <View style={styles.fileInfo}>

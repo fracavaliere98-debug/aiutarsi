@@ -785,20 +785,20 @@ export class AuthService {
 
     async getTotalVolunteersCount(): Promise<number> {
         try {
-            const { count, error } = await supabase
-                .from('profiles')
-                .select('*', { count: 'exact', head: true })
-                .eq('role', 'VOLUNTEER');
+            // A26: la tabella profiles non e' leggibile da anon e per gli altri conta solo i profili visibili:
+            // il numero totale arriva da una funzione che restituisce solo il conteggio.
+            const { data, error } = await this._withTimeout(
+                supabase.rpc('get_volunteers_count'),
+                'auth.getTotalVolunteersCount',
+                8000
+            );
 
             if (error) {
                 // Non-critical stat used only for marketing copy on the landing page — degrade quietly.
-                // Note: this uses a HEAD request (count-only), so a restricted/blocked Supabase project
-                // often returns an empty error.message here even though the real cause is a service
-                // restriction (e.g. exceed_db_size_quota) visible on other, non-HEAD queries.
                 console.warn("[AuthService] getTotalVolunteersCount unavailable:", error.message || "empty error message (possible Supabase service restriction)");
                 return 0;
             }
-            return count || 0;
+            return Number(data) || 0;
         } catch (e) {
             console.warn("[AuthService] getTotalVolunteersCount exception:", e);
             return 0;
@@ -1597,9 +1597,8 @@ export class AuthService {
 
             if (error) throw error;
 
-            // Also update the profile status to pending
-            await this.updateProfile(userId, { verification_status: 'pending' });
-
+            // Il passaggio a 'pending' lo fa il database (trigger sull'inserimento della richiesta):
+            // il client non scrive verification_status.
             return true;
         } catch (error) {
             console.error("Error submitting verification request:", error);

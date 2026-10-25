@@ -20,7 +20,6 @@ import { ActivityCard } from "../../../components/ActivityCard";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivitiesDomain } from "../../../hooks/activities/selectors";
 import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
-import { supabase } from "../../../utils/supabase";
 import { colors } from "@/theme";
 
 export default function NPOProfileScreen() {
@@ -43,7 +42,6 @@ export default function NPOProfileScreen() {
         }
     }, [params.tab]);
     const [refreshing, setRefreshing] = useState(false);
-    const [hasPendingVerificationRequest, setHasPendingVerificationRequest] = useState(false);
 
     const npoActivities = (activities || []).filter((a: any) => a.npoId === user?.id);
     const openActivities = npoActivities.filter((a: any) => a.status === "APERTA");
@@ -69,43 +67,10 @@ export default function NPOProfileScreen() {
     const shouldShowProfilePrompt =
         !user?.profile_completed || !user?.avatar_url || !(user?.publicEmail || user?.public_email) || !user?.phone;
     const isVerified = !!(user?.isVerified || user?.is_verified);
-    const isPendingVerification = !isVerified && (user?.verification_status === "pending" || hasPendingVerificationRequest);
+    // Lo stato "in revisione" e' verification_status = 'pending', impostato dal database quando arriva la richiesta.
+    const isPendingVerification = !isVerified && user?.verification_status === "pending";
     const shouldShowVerificationPrompt = !isVerified && !isPendingVerification;
     const shouldShowPendingVerification = isPendingVerification;
-
-    const syncPendingVerificationStatus = useCallback(async () => {
-        if (!user?.id || isVerified) {
-            setHasPendingVerificationRequest(false);
-            return;
-        }
-
-        try {
-            const { data, error } = await supabase
-                .from("verification_requests")
-                .select("id")
-                .eq("user_id", user.id)
-                .eq("status", "pending")
-                .limit(1);
-
-            if (error) throw error;
-
-            const hasPending = !!data && data.length > 0;
-            setHasPendingVerificationRequest(hasPending);
-
-            if (hasPending && user.verification_status !== "pending") {
-                setUser({
-                    ...user,
-                    verification_status: "pending",
-                });
-            }
-        } catch (error) {
-            console.error("Failed to check pending verification request:", error);
-        }
-    }, [isVerified, setUser, user]);
-
-    useEffect(() => {
-        void syncPendingVerificationStatus();
-    }, [syncPendingVerificationStatus]);
 
     const handleShare = async () => {
         if (!user) return;
@@ -139,11 +104,10 @@ export default function NPOProfileScreen() {
             if (freshUser) {
                 setUser(freshUser);
             }
-            await syncPendingVerificationStatus();
         } finally {
             setRefreshing(false);
         }
-    }, [fetchUserById, loadData, setUser, syncPendingVerificationStatus, user?.id]);
+    }, [fetchUserById, loadData, setUser, user?.id]);
 
     return (
         <StandardLayout

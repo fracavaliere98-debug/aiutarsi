@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Switch, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, Switch, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { Phone, Save } from "lucide-react-native";
+import { Phone, Save, Eye, Mail } from "lucide-react-native";
 import { StandardLayout } from "../../../components/StandardLayout";
 import { SoftCard } from "../../../components/SoftCard";
 import { useAuth } from "../../../context/AuthContext";
@@ -17,6 +17,10 @@ export default function VolunteerPrivacyScreen() {
 
     // Privacy flags
     const [allowCalls, setAllowCalls] = useState(true);
+    // A26 P5: "Profilo pubblico" = colonna volunteer_list_visible (acceso di default).
+    const [publicProfile, setPublicProfile] = useState(true);
+    // show_email: se acceso, l'email la vede solo l'ente di cui il volontario fa parte (candidatura approvata).
+    const [showEmail, setShowEmail] = useState(false);
 
     useEffect(() => {
         if (!user?.id) {
@@ -26,6 +30,8 @@ export default function VolunteerPrivacyScreen() {
 
         const fetchPrivacy = async () => {
             setAllowCalls(user.allow_calls !== false);
+            setPublicProfile(user.volunteer_list_visible !== false);
+            setShowEmail(user.show_email === true);
             setIsFetching(false);
         };
 
@@ -38,6 +44,8 @@ export default function VolunteerPrivacyScreen() {
         try {
             await updateUserProfile({
                 allow_calls: allowCalls,
+                volunteer_list_visible: publicProfile,
+                show_email: showEmail,
             });
             showToast("success", "Impostazioni privacy salvate!");
             router.back();
@@ -48,6 +56,22 @@ export default function VolunteerPrivacyScreen() {
         }
     };
 
+    // Spegnere il profilo pubblico limita molte funzioni: conferma esplicita con due scelte.
+    const handlePublicProfileChange = (next: boolean) => {
+        if (next) {
+            setPublicProfile(true);
+            return;
+        }
+        Alert.alert(
+            "Vuoi togliere il profilo pubblico?",
+            "Gli altri ti vedranno solo come, ad esempio, Marta B. e con il tuo livello. Potresti non poter usare gran parte delle funzioni dell'app, come ricevere consigli dagli enti. Se ti candidi, ti iscrivi a un'attività o rispondi a un ente, quell'ente vedrà comunque il tuo profilo.",
+            [
+                { text: "Resta pubblico", style: "cancel", onPress: () => setPublicProfile(true) },
+                { text: "Non pubblico", onPress: () => setPublicProfile(false) },
+            ]
+        );
+    };
+
     if (isFetching) return (
         <View className="flex-1 items-center justify-center bg-background-light">
             <ActivityIndicator color={colors.primary} />
@@ -56,6 +80,37 @@ export default function VolunteerPrivacyScreen() {
 
     return (
         <StandardLayout title="Privacy e Visibilità" label="Impostazioni" onBack={() => router.back()}>
+
+            {/* Public profile */}
+            <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">PROFILO</Text>
+            <SoftCard className="p-5 mb-6">
+                <PrivacyRow
+                    icon={<Eye size={22} color={publicProfile ? colors.success : colors.textSecondary} />}
+                    iconBg={publicProfile ? "bg-emerald-50" : "bg-slate-100"}
+                    title="Profilo pubblico"
+                    subtitle={publicProfile
+                        ? "Enti verificati e altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Email e telefono restano privati: un ente li vede solo se sei tu a condividerli."
+                        : "Gli altri ti vedono solo come, ad esempio, Marta B. e con il tuo livello."}
+                    value={publicProfile}
+                    onValueChange={handlePublicProfileChange}
+                    trackTrue={colors.success}
+                />
+            </SoftCard>
+
+            {/* Contacts */}
+            <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">CONTATTI</Text>
+            <SoftCard className="p-5 mb-6">
+                <PrivacyRow
+                    icon={<Mail size={22} color={showEmail ? colors.primary : colors.textSecondary} />}
+                    iconBg={showEmail ? "bg-blue-50" : "bg-slate-100"}
+                    title="Mostra la mia email agli enti di cui faccio parte"
+                    subtitle={showEmail
+                        ? "Gli enti che hanno approvato la tua candidatura vedono la tua email. Gli altri volontari no."
+                        : "La tua email resta privata."}
+                    value={showEmail}
+                    onValueChange={setShowEmail}
+                />
+            </SoftCard>
 
             {/* Calls */}
             <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2">CHIAMATE</Text>

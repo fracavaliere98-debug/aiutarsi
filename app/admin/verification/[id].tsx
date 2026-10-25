@@ -98,30 +98,17 @@ export default function AdminVerificationDetail() {
         ? `Gestita da admin ${adminUser?.full_name || 'N/D'} | Motivo rifiuto: ${cleanedNotes}`
         : `Gestita da admin ${adminUser?.full_name || 'N/D'}`;
 
-      // 1. Update verification_requests status
-      const { error: requestError } = await supabase
-        .from('verification_requests')
-        .update({ 
-          status: action,
-          admin_notes: adminNotes
-        })
-        .eq('id', id);
-
-      if (requestError) throw requestError;
-
-      // 2. Update profile verification status
-      // Via RPC (non una PATCH diretta su profiles): la RLS su profiles permette scritture
-      // solo sulla propria riga (id = auth.uid()), e qui l'admin scrive sulla riga di un
-      // altro utente (la NPO). Una .update() diretta non tocca nessuna riga, senza errore.
-      const { error: profileError } = await supabase.rpc('admin_set_npo_verification', {
-        p_user_id: request.user_id,
-        p_is_verified: action === 'approved',
-        p_verification_status: action === 'approved' ? 'verified' : 'rejected',
+      // Richiesta e profilo si aggiornano insieme, in una sola transazione lato server
+      // (admin_review_verification): verification_status e' l'unica fonte, is_verified la deriva il database.
+      const { error: reviewError } = await supabase.rpc('admin_review_verification', {
+        p_request_id: id,
+        p_approve: action === 'approved',
+        p_notes: adminNotes,
       });
 
-      if (profileError) throw profileError;
+      if (reviewError) throw reviewError;
 
-      // 3. Notify user
+      // Notifica all'ente
       const rejectionReasonSuffix = cleanedNotes ? ` Motivo: ${cleanedNotes}` : '';
 
       // L'esito della verifica è già registrato: un errore di notifica non deve far fallire l'azione.

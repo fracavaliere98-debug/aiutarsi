@@ -248,7 +248,7 @@ export const VOLUNTEER_GUIDE_SECTIONS: GuideSection[] = [
         id: "whocan_volunteer",
         question: "Chi può vedere il mio profilo?",
         answer:
-          'I tuoi dati (nome, foto, bio) sono visibili agli NPO a cui ti candidi e agli altri volontari nella Community. Puoi gestire la visibilità in Impostazioni > Privacy e Visibilità.',
+          'Se il tuo profilo è pubblico (è acceso di default), gli enti verificati e gli altri volontari vedono il tuo nome e cognome, il livello, i badge, le competenze e gli interessi. Se lo togli, gli altri ti vedono solo come, ad esempio, Marta B. e con il tuo livello; un ente vede comunque il tuo profilo se ti candidi, ti iscrivi a una sua attività o gli rispondi. La tua email e il tuo telefono restano privati: un ente li vede solo se li condividi tu. Puoi cambiare tutto in Impostazioni > Privacy e Visibilità.',
       },
     ],
   },
