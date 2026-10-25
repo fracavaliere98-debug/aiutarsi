@@ -396,27 +396,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 schema: 'public', 
                 table: 'profiles', 
                 filter: `id=eq.${user.id}` 
-            }, async (payload) => {
-                if (payload.new) {
-                    const nextProfileState = computeNextProfileRealtimeState(user, payload.new);
+            }, async () => {
+                // A26: il payload Realtime contiene solo le colonne leggibili dal ruolo authenticated
+                // (is_banned, ban_*, email, email_confirmed non lo sono piu'): l'evento serve da segnale e
+                // lo stato si rilegge con get_my_profile().
+                const { data: fresh, error: freshError } = await supabase.rpc('get_my_profile');
+                if (freshError) {
+                    console.warn("[AuthContext] Realtime profile refresh failed:", freshError.message);
+                    return;
+                }
+                if (fresh) {
+                    const nextProfileState = computeNextProfileRealtimeState(user, fresh);
 
                     if (!hasRelevantProfileRealtimeChange(user, nextProfileState)) {
                         return;
                     }
 
                     console.log("[AuthContext] Profilo aggiornato tramite Realtime", {
-                        is_banned: payload.new.is_banned,
-                        email: payload.new.email,
-                        email_confirmed: payload.new.email_confirmed,
+                        is_banned: fresh.is_banned,
+                        email: fresh.email,
+                        email_confirmed: fresh.email_confirmed,
                     });
 
                     const pendingEmail = await authService.getPendingEmailChange();
-                    const emailChangeConfirmed = isEmailChangeConfirmedByRealtime(pendingEmail, payload.new.email);
+                    const emailChangeConfirmed = isEmailChangeConfirmedByRealtime(pendingEmail, fresh.email);
 
                     setUser(prev => {
                         if (!prev) return null;
 
-                        const nextBanState = computeNextProfileRealtimeState(prev, payload.new);
+                        const nextBanState = computeNextProfileRealtimeState(prev, fresh);
 
                         if (!hasRelevantProfileRealtimeChange(prev, nextBanState)) {
                             return prev;
