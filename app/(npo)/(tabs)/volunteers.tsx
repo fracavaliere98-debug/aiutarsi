@@ -11,15 +11,16 @@ import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 
 import { CandidacyCard } from "../../../components/npo/CandidacyCard";
 import { VolunteerRelationCard } from "../../../components/npo/VolunteerRelationCard";
-import { InviteToActivityModal } from "../../../components/npo/InviteToActivityModal";
+import { InviteToActivityModal, type InviteActivityState } from "../../../components/npo/InviteToActivityModal";
 import { EmptyState } from "../../../components/EmptyState";
 import { ErrorState } from "../../../components/ErrorState";
 import { SectionHeader, SegmentedControl, type SegmentedControlItem } from "../../../components/ui";
 import { useActivitiesListQuery } from "../../../hooks/activities/queries";
 import { useSendNpoInviteMutation } from "../../../hooks/npo/mutations";
+import { MAX_ACTIVITY_INVITES, isInviteLimitError } from "../../../services/NPOService";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
 import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
-import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
+import { useMyActivityInvitesQuery, useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { useNPOApplications, useSharedContacts } from "../../../hooks/applications/selectors";
 import { colors, palette } from "../../../theme";
 
@@ -41,6 +42,9 @@ export default function VolunteersScreen() {
     const rejectApplicationMutation = useRejectApplicationMutation(user);
     const { showToast } = useToast();
     const sendInviteMutation = useSendNpoInviteMutation();
+    // Inviti mirati già mandati (dal server): per ogni volontario, a quali attività è già stato invitato
+    // e quali attività hanno raggiunto il tetto. Nel modal "Invita ad attività" diventano "Già invitato".
+    const { data: myActivityInvites = [] } = useMyActivityInvitesQuery(user?.id);
     const params = useLocalSearchParams();
     const router = useRouter();
     const { data: activities = [], isError: activitiesError, refetch: refetchActivities } = useActivitiesListQuery(user?.id);
@@ -124,6 +128,30 @@ export default function VolunteersScreen() {
             .filter(a => a.status === "APERTA")
             .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
     }, [activities]);
+
+    // Follower già invitati all'attività del "Salvataggio Last Minute" (flag permanente dal server).
+    const alreadyInvitedToMatch = useMemo(() => {
+        const ids = new Set<string>();
+        if (!smartMatchActivity) return ids;
+        for (const invite of myActivityInvites) {
+            if (invite.activityId === smartMatchActivity.id) ids.add(invite.volunteerId);
+        }
+        return ids;
+    }, [myActivityInvites, smartMatchActivity]);
+
+    const inviteActivityStates = useMemo(() => {
+        const states: Record<string, InviteActivityState> = {};
+        if (!inviteActivityTarget) return states;
+        const perActivity = new Map<string, number>();
+        for (const invite of myActivityInvites) {
+            perActivity.set(invite.activityId, (perActivity.get(invite.activityId) ?? 0) + 1);
+            if (invite.volunteerId === inviteActivityTarget.id) states[invite.activityId] = 'invited';
+        }
+        for (const [activityId, count] of perActivity) {
+            if (!states[activityId] && count >= MAX_ACTIVITY_INVITES) states[activityId] = 'full';
+        }
+        return states;
+    }, [myActivityInvites, inviteActivityTarget]);
 
     // Global filtering based on search query
     const searchFilter = (item: any) => {
@@ -225,6 +253,10 @@ export default function VolunteersScreen() {
             setInvitedVolunteers(prev => ({ ...prev, [key]: today }));
             showToast("success", "Invito inviato con successo!");
         } catch (error) {
+            if (isInviteLimitError(error)) {
+                showToast("error", `Hai raggiunto il massimo di ${MAX_ACTIVITY_INVITES} inviti per questa attività.`);
+                return;
+            }
             console.error("Error sending invite:", error);
             showToast("error", "Non è stato possibile inviare l'invito. Riprova.");
         }
@@ -242,7 +274,7 @@ export default function VolunteersScreen() {
     const handleInviteToActivity = (volunteerId: string, activityId: string, _activityTitle: string) =>
         sendInvite("ACTIVITY", volunteerId, {
             activityId,
-            alreadySentMessage: "Hai già invitato questo volontario oggi per questa attività.",
+            alreadySentMessage: "Hai già invitato questo volontario a questa attività.",
         });
 
     // If no tabs available, show empty state (Optional: could also just show empty list under tabs)
@@ -386,14 +418,15 @@ export default function VolunteersScreen() {
                         <View className="mb-6 px-1">
                             <View className="flex-row items-center gap-2 mb-4">
                                 <Sparkles size={18} color={colors.accent} />
-                                <Text className="text-secondary font-black text-xs uppercase tracking-widest">Top matches per l&apos;attività</Text>
+                                <Text className="text-secondary font-black text-xs uppercase tracking-widest">Follower consigliati per l&apos;attività</Text>
                             </View>
                             {matchedFollowers.map((f) => (
                                 <View key={`match-${f.id}`} className="mb-4">
                                     <VolunteerRelationCard
                                         volunteer={f}
                                         onPress={() => router.push(`/(npo)/volunteer-profile/${f.id}`)}
-                                        primaryActionLabel="Invita a questa attività"
+                                        primaryActionLabel={alreadyInvitedToMatch.has(f.id) ? "Follower già invitato" : "Invita il follower a questa attività"}
+                                        primaryActionDisabled={alreadyInvitedToMatch.has(f.id)}
                                         onPrimaryAction={() => smartMatchActivity && handleInviteToActivity(f.id, smartMatchActivity.id, smartMatchActivity.title)}
                                         primaryActionStyle="solid"
                                         primaryActionColor={colors.accent}
@@ -492,6 +525,7 @@ export default function VolunteersScreen() {
                 visible={!!inviteActivityTarget}
                 volunteerName={inviteActivityTarget?.name || ''}
                 activities={upcomingOpenActivities.map(a => ({ id: a.id, title: a.title, dateTime: a.dateTime }))}
+                activityStates={inviteActivityStates}
                 onClose={() => setInviteActivityTarget(null)}
                 onInviteGeneric={() => {
                     if (inviteActivityTarget) handleInviteFollower(inviteActivityTarget.id);

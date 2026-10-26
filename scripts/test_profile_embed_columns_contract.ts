@@ -38,4 +38,8 @@ assert(offenders.length === 0, `Select con * su profiles (usa colonne esplicite)
 const npo = readFileSync(join(REPO_ROOT, "services", "NPOService.ts"), "utf8");
 assert(/follower:follower_id\s*\(\s*id,\s*role,\s*full_name,\s*avatar_url,\s*last_seen_at/.test(npo), "getFollowers deve chiedere solo le colonne mostrate (id, role, full_name, avatar_url, last_seen_at)");
 
+// A37: il server restituisce follower = null per un profilo non visibile (es. bannato).
+// Senza filtro, _mapProfileToUser(null) lancia e la lista intera diventa vuota (contatore a 0).
+assert(/\.filter\(\(d: any\) => d\?\.follower\?\.id\)\s*\.map\(\(d: any\) => this\._mapProfileToUser\(d\.follower\)\)/.test(npo), "getFollowers deve scartare i follower null prima di mapparli");
+
 console.log("profile-embed-columns-contract: ok");

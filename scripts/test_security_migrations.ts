@@ -352,6 +352,36 @@ async function testDefinerFunctionHardening(jwt: string, ownId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// 2026-10-26 (A39): inserimento messaggi. Prima tre policy INSERT permissive in OR:
+// messages_no_send_if_blocked autorizzava da sola qualunque messaggio, in qualunque chat e a nome
+// di chiunque, anche per anon. Con l'id di una conversazione inesistente il vecchio stato rispondeva
+// con errore di chiave esterna (23503), il nuovo con permesso negato (42501) prima della FK.
+// ---------------------------------------------------------------------------
+
+async function testMessagesInsertIsolation(jwt: string) {
+  console.log("\n[messages] insert isolation");
+  const randomId = () => crypto.randomUUID();
+
+  const asOther = await fetch(`${REST}/messages`, {
+    method: "POST",
+    headers: authHeaders(jwt, { Prefer: "return=minimal" }),
+    body: JSON.stringify({ conversation_id: randomId(), sender_id: randomId(), content: "security-suite" }),
+  });
+  const asOtherBody = await asOther.json().catch(() => ({}));
+  assert(asOther.status === 403 && asOtherBody?.code === "42501",
+    `authenticated insert as another sender must be denied by RLS (got ${asOther.status} ${asOtherBody?.code})`);
+  pass("authenticated user cannot insert a message as someone else / outside own conversations");
+
+  const anon = await fetch(`${REST}/messages`, {
+    method: "POST",
+    headers: anonHeaders({ Prefer: "return=minimal" }),
+    body: JSON.stringify({ conversation_id: randomId(), sender_id: randomId(), content: "security-suite" }),
+  });
+  assert(anon.status === 401 || anon.status === 403, `anon insert into messages must be denied (got ${anon.status})`);
+  pass("anon cannot insert messages");
+}
+
+// ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
@@ -385,6 +415,7 @@ async function run() {
   await testAuthenticatedRpcsStillWork(jwt, ownId);
   await testLevelsRLS(jwt);
   await testDefinerFunctionHardening(jwt, ownId);
+  await testMessagesInsertIsolation(jwt);
 
   console.log("\n" + "─".repeat(60));
   console.log("All security checks passed ✓");

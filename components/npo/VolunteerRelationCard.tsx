@@ -19,6 +19,8 @@ interface VolunteerRelationCardProps {
     primaryActionColor?: string;
     /** Design 2b antepone un'icona chat all'azione. */
     showActionIcon?: boolean;
+    /** Azione primaria non attiva (es. "Già invitato"): grigia e non tappabile. */
+    primaryActionDisabled?: boolean;
 }
 
 export function VolunteerRelationCard({
@@ -31,6 +33,7 @@ export function VolunteerRelationCard({
     primaryActionStyle = 'solid',
     primaryActionColor = '#3d2f7a',
     showActionIcon = false,
+    primaryActionDisabled = false,
 }: VolunteerRelationCardProps) {
     const [showPresentation, setShowPresentation] = useState(false);
     const hasPresentation = !!applicationMessage && applicationMessage.trim() !== "";
@@ -155,8 +158,10 @@ export function VolunteerRelationCard({
                     )}
                     <TouchableOpacity
                         onPress={onPrimaryAction}
+                        disabled={primaryActionDisabled}
                         style={{
                             flex: 1,
+                            opacity: primaryActionDisabled ? 0.55 : 1,
                             height: 44,
                             borderRadius: 12,
                             alignItems: 'center',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Calendar, ChevronRight, Megaphone, X } from 'lucide-react-native';
+import { Calendar, Check, ChevronRight, Megaphone, X } from 'lucide-react-native';
 
 export interface InviteActivityOption {
     id: string;
@@ -8,10 +8,17 @@ export interface InviteActivityOption {
     dateTime: string;
 }
 
+/**
+ * Stato di una attività per il volontario che si sta invitando: "invited" = già invitato a quella
+ * attività (non si può rifare), "full" = l'attività ha già raggiunto il tetto di inviti.
+ */
+export type InviteActivityState = 'invited' | 'full';
+
 interface InviteToActivityModalProps {
     visible: boolean;
     volunteerName: string;
     activities: InviteActivityOption[];
+    activityStates?: Record<string, InviteActivityState>;
     onClose: () => void;
     onInviteGeneric: () => void;
     onInviteToActivity: (activityId: string, activityTitle: string) => void;
@@ -35,6 +42,7 @@ export function InviteToActivityModal({
     visible,
     volunteerName,
     activities,
+    activityStates = {},
     onClose,
     onInviteGeneric,
     onInviteToActivity,
@@ -94,10 +102,15 @@ export function InviteToActivityModal({
 
                         {hasActivities ? (
                             <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
-                                {activities.map((activity) => (
+                                {activities.map((activity) => {
+                                    const state = activityStates[activity.id];
+                                    const blocked = !!state;
+                                    return (
                                     <TouchableOpacity
                                         key={activity.id}
                                         onPress={() => onInviteToActivity(activity.id, activity.title)}
+                                        disabled={blocked}
+                                        accessibilityState={{ disabled: blocked }}
                                         activeOpacity={0.7}
                                         style={{
                                             flexDirection: 'row',
@@ -108,10 +121,11 @@ export function InviteToActivityModal({
                                             borderRadius: 12,
                                             backgroundColor: '#faf9f6',
                                             marginBottom: 8,
+                                            opacity: blocked ? 0.7 : 1,
                                         }}
                                     >
-                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Calendar size={15} color="#3d2f7a" />
+                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: state === 'invited' ? '#dcfce7' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                                            {state === 'invited' ? <Check size={16} color="#15803d" /> : <Calendar size={15} color="#3d2f7a" />}
                                         </View>
                                         <View style={{ flex: 1, minWidth: 0 }}>
                                             <Text numberOfLines={1} style={{ fontWeight: '800', fontSize: 13, color: '#3d2f7a' }}>
@@ -120,10 +134,21 @@ export function InviteToActivityModal({
                                             <Text style={{ fontSize: 11, fontWeight: '600', color: '#8b8a99', marginTop: 1 }}>
                                                 {formatActivityDate(activity.dateTime)}
                                             </Text>
+                                            {state === 'invited' && (
+                                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#15803d', marginTop: 2 }}>
+                                                    Già invitato a questa attività
+                                                </Text>
+                                            )}
+                                            {state === 'full' && (
+                                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#b45309', marginTop: 2 }}>
+                                                    Inviti esauriti per questa attività
+                                                </Text>
+                                            )}
                                         </View>
-                                        <ChevronRight size={16} color="#b3adcb" />
+                                        {!blocked && <ChevronRight size={16} color="#b3adcb" />}
                                     </TouchableOpacity>
-                                ))}
+                                    );
+                                })}
                             </ScrollView>
                         ) : (
                             <Text style={{ fontSize: 12.5, fontWeight: '600', color: '#8b8a99', paddingVertical: 8 }}>

@@ -239,6 +239,20 @@ class ChatService {
     }
 
     /**
+     * A41: true se e' una chat privata con un utente bannato. Il server rifiuta comunque l'invio
+     * (send_chat_message -> recipient_unavailable); qui serve per disattivare il campo di scrittura.
+     */
+    async isConversationWithBannedUser(conversationId: string): Promise<boolean> {
+        const { data, error } = await this._withTimeout(
+            supabase.rpc('is_private_conversation_with_banned', { p_conversation_id: conversationId }),
+            'chat.isConversationWithBannedUser',
+            8000
+        );
+        if (error) throw error;
+        return data === true;
+    }
+
+    /**
      * Mark conversation as read
      */
     async markAsRead(conversationId: string, userId: string) {

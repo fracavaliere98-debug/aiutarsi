@@ -17,6 +17,8 @@ const suite = [
   { label: "banned-profile-contract", path: "scripts/test_banned_profile_contract.ts" },
   { label: "preferred-city-contract", path: "scripts/test_preferred_city_contract.ts" },
   { label: "profile-embed-columns-contract", path: "scripts/test_profile_embed_columns_contract.ts" },
+  { label: "banned-hidden-everywhere-contract", path: "scripts/test_banned_hidden_everywhere_contract.ts" },
+  { label: "activity-invites-contract", path: "scripts/test_activity_invites_contract.ts" },
   { label: "confirm-email-pending-contract", path: "scripts/test_confirm_email_pending_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },

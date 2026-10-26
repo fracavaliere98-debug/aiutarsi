@@ -146,7 +146,11 @@ export class NPOService {
             return [];
         }
 
-        return data.map((d: any) => this._mapProfileToUser(d.follower));
+        // Il server restituisce follower = null quando il profilo non e' visibile a questo ente
+        // (es. utente bannato, A37): quella riga si scarta, senza far fallire tutta la lista.
+        return (data || [])
+            .filter((d: any) => d?.follower?.id)
+            .map((d: any) => this._mapProfileToUser(d.follower));
     }
 
     // --- Applications ---
@@ -242,7 +246,8 @@ export class NPOService {
     /**
      * Invito NPO → volontario. Testo e destinatario sono validati lato server (RPC
      * send_npo_invite): il client sceglie solo il tipo di invito.
-     * Ritorna true se inviato, false se già invitato nelle ultime 24h o se c'è un blocco.
+     * Ritorna true se inviato, false se già invitato (per un invito mirato: per sempre; altri tipi: ultime 24h)
+     * o se c'è un blocco. Un 6° invito mirato alla stessa attività lancia INVITE_LIMIT_REACHED.
      */
     async sendInvite(
         volunteerId: string,
@@ -261,6 +266,56 @@ export class NPOService {
         if (error) throw error;
         return data === true;
     }
+
+    /**
+     * Inviti mirati già mandati da questo ente (tabella npo_activity_invites, l'RLS restituisce solo
+     * le righe dell'ente loggato). Serve a mostrare "Già invitato" e il contatore 0/5 per attività.
+     */
+    async getMyActivityInvites(): Promise<{ activityId: string; volunteerId: string }[]> {
+        const { data, error } = await withTimeout(
+            supabase.from('npo_activity_invites').select('activity_id, volunteer_id'),
+            'npo.getMyActivityInvites',
+            8000
+        );
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({ activityId: row.activity_id, volunteerId: row.volunteer_id }));
+    }
+
+    /**
+     * Volontari consigliati per una attività (RPC get_suggested_volunteers_for_activity): solo
+     * id, nome, foto e punteggio di compatibilità, nessun altro dato del profilo.
+     */
+    async getSuggestedVolunteers(activityId: string): Promise<SuggestedVolunteer[]> {
+        const { data, error } = await withTimeout(
+            supabase.rpc('get_suggested_volunteers_for_activity', { p_activity_id: activityId, p_limit: 10 }),
+            'npo.getSuggestedVolunteers',
+            8000
+        );
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.volunteer_id,
+            name: row.full_name || 'Volontario',
+            avatar: row.avatar_url ?? undefined,
+            score: row.score === null || row.score === undefined ? null : Number(row.score),
+            alreadyInvited: !!row.already_invited,
+        }));
+    }
+}
+
+export interface SuggestedVolunteer {
+    id: string;
+    name: string;
+    avatar?: string;
+    /** Compatibilità 0..1 (null se manca il vettore). */
+    score: number | null;
+    alreadyInvited: boolean;
+}
+
+/** Il server rifiuta il 6° invito mirato a una stessa attività (send_npo_invite). */
+export const MAX_ACTIVITY_INVITES = 5;
+export function isInviteLimitError(error: unknown): boolean {
+    const message = (error as any)?.message;
+    return typeof message === 'string' && message.includes('INVITE_LIMIT_REACHED');
 }
 
 export const npoService = new NPOService();

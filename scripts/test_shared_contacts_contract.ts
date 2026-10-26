@@ -50,6 +50,7 @@ assert(/applyToNPOMutation\.mutateAsync\(\{[^}]*phone: sharedPhone/s.test(review
 const activityDetail = read("app", "activity", "[id].tsx");
 assert(!/\{v\.email\}/.test(activityDetail), "Il dettaglio attivita' non mostra l'email del profilo del volontario");
 assert(/SharedContactBlock/.test(activityDetail), "Il dettaglio attivita' mostra i contatti condivisi");
+assert(/Nota di \{v\.name\}/.test(activityDetail) && /shared\?\.message/.test(activityDetail), "Gestione Volontari mostra la nota che il volontario ha scritto iscrivendosi");
 
 // Privacy volontario: nessun interruttore show_email.
 const privacy = read("app", "(volunteer)", "settings", "privacy.tsx");

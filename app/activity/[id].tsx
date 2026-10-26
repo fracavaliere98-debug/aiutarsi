@@ -9,7 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import { AppUser } from "../../types";
 import {
     ArrowLeft, Share2, Pencil, MapPin, Calendar,
-    RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare, AlertTriangle
+    RefreshCw, ChevronRight, Users, Star, CheckCircle2, MessageSquare, AlertTriangle, UserPlus
 } from "lucide-react-native";
 import { UserAvatar } from "../../components/UserAvatar";
 import { ErrorState } from "../../components/ErrorState";
@@ -24,6 +24,10 @@ import { useUnenrollFromActivityMutation, useRequestAttendanceReminderMutation }
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useSharedContacts } from "../../hooks/applications/selectors";
 import { SharedContactBlock } from "../../components/npo/SharedContactBlock";
+import { SuggestedVolunteersModal } from "../../components/npo/SuggestedVolunteersModal";
+import { useMyActivityInvitesQuery, useSuggestedVolunteersQuery } from "../../hooks/npo/queries";
+import { useSendNpoInviteMutation } from "../../hooks/npo/mutations";
+import { MAX_ACTIVITY_INVITES, isInviteLimitError } from "../../services/NPOService";
 import { useCommunityActivityPostsQuery } from "../../hooks/community/queries";
 import { useCommunityRealtime } from "../../hooks/community/realtime";
 import { useRecordActivityShareMutation } from "../../hooks/gamification/mutations";
@@ -113,10 +117,40 @@ export default function ActivityDetail() {
 
     // Contatti che gli iscritti hanno scelto di condividere con l'ente (solo per l'ente proprietario).
     const { contacts: sharedContacts, isError: sharedContactsError } = useSharedContacts(isOwner ? user : null);
+
+    // Volontari consigliati e inviti mirati (D08): solo per l'ente proprietario di una attività aperta.
+    const canInviteSuggested = isOwner && (activity?.status === 'APERTA' || activity?.status === 'IN_CORSO');
+    const [suggestOpen, setSuggestOpen] = useState(false);
+    const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
+    const sendInviteMutation = useSendNpoInviteMutation();
+    const { data: myActivityInvites = [] } = useMyActivityInvitesQuery(canInviteSuggested ? user?.id : undefined);
+    const suggestedQuery = useSuggestedVolunteersQuery(activity?.id, canInviteSuggested && suggestOpen);
+    const invitedCount = useMemo(
+        () => myActivityInvites.filter(invite => invite.activityId === activity?.id).length,
+        [myActivityInvites, activity?.id]
+    );
+    const handleInviteSuggested = async (volunteerId: string) => {
+        if (!activity) return;
+        setSendingInviteId(volunteerId);
+        try {
+            const sent = await sendInviteMutation.mutateAsync({ volunteerId, kind: 'ACTIVITY', activityId: activity.id });
+            if (sent) showToast('success', 'Invito inviato con successo!');
+            else showToast('error', 'Questo volontario risulta già invitato o non è raggiungibile.');
+        } catch (error) {
+            if (isInviteLimitError(error)) {
+                showToast('error', `Hai raggiunto il massimo di ${MAX_ACTIVITY_INVITES} inviti per questa attività.`);
+            } else {
+                console.error('Error sending invite:', error);
+                showToast('error', "Non è stato possibile inviare l'invito. Riprova.");
+            }
+        } finally {
+            setSendingInviteId(null);
+        }
+    };
     const contactsByVolunteer = useMemo(() => {
-        const map = new Map<string, { email?: string; phone?: string }>();
+        const map = new Map<string, { email?: string; phone?: string; message?: string }>();
         sharedContacts.forEach((c) => {
-            if (c.source === 'ACTIVITY' && c.activityId === activity?.id) map.set(c.volunteerId, { email: c.email, phone: c.phone });
+            if (c.source === 'ACTIVITY' && c.activityId === activity?.id) map.set(c.volunteerId, { email: c.email, phone: c.phone, message: c.message?.trim() || undefined });
         });
         return map;
     }, [sharedContacts, activity?.id]);
@@ -514,6 +548,29 @@ export default function ActivityDetail() {
                         )}
                     </Animated.View>
 
+                    {/* NPO Owner: volontari consigliati da invitare (max 5 inviti per attività) */}
+                    {canInviteSuggested && (
+                        <Animated.View entering={FadeInDown.delay(440).springify()} style={{
+                            backgroundColor: '#f2ecfc', borderRadius: 20, padding: 20,
+                            borderWidth: 1, borderColor: '#e4d9f7', marginBottom: 20, gap: 12
+                        }}>
+                            <View>
+                                <Text style={{ fontSize: 17, fontWeight: '900', color: colors.primary }}>Invita i tuoi volontari</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginTop: 4 }}>
+                                    {`Ti proponiamo, tra i volontari già approvati nella tua NPO, i più adatti a questa attività. Inviti mandati: ${invitedCount} su ${MAX_ACTIVITY_INVITES}.`}
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setSuggestOpen(true)}
+                                activeOpacity={0.85}
+                                style={{ backgroundColor: '#7a4fd6', borderRadius: 14, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                            >
+                                <UserPlus size={16} color="white" />
+                                <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>Vedi i tuoi volontari consigliati</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    )}
+
                     {/* NPO Owner: enrolled volunteers list */}
                     {isOwner && currentIscritti.length > 0 && (
                         <Animated.View entering={FadeInDown.delay(460).springify()} style={{
@@ -541,6 +598,14 @@ export default function ActivityDetail() {
                                             </View>
                                             <ChevronRight size={16} color={colors.textSecondary} />
                                         </TouchableOpacity>
+                                        {shared?.message ? (
+                                            <View style={{ backgroundColor: colors.surfaceMuted, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, gap: 4 }}>
+                                                <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                                                    Nota di {v.name}
+                                                </Text>
+                                                <Text style={{ fontSize: 13, lineHeight: 19, color: colors.primary }}>{shared.message}</Text>
+                                            </View>
+                                        ) : null}
                                         {shared?.email || shared?.phone ? (
                                             <SharedContactBlock
                                                 email={shared?.email}
@@ -777,6 +842,22 @@ export default function ActivityDetail() {
                     </View>
                 </View>
             </SafeAreaView>
+
+            {canInviteSuggested && (
+                <SuggestedVolunteersModal
+                    visible={suggestOpen}
+                    activityTitle={activity.title}
+                    volunteers={suggestedQuery.data ?? []}
+                    invitedCount={invitedCount}
+                    maxInvites={MAX_ACTIVITY_INVITES}
+                    isLoading={suggestedQuery.isLoading}
+                    isError={suggestedQuery.isError}
+                    sendingId={sendingInviteId}
+                    onRetry={() => { void suggestedQuery.refetch(); }}
+                    onClose={() => setSuggestOpen(false)}
+                    onInvite={handleInviteSuggested}
+                />
+            )}
 
             {/* ── Bottom Action Bar ─────────────────────────────────────── */}
             <View style={{

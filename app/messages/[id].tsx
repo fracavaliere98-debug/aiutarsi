@@ -21,7 +21,12 @@ import {
   useUnblockUserMutation,
 } from '../../hooks/chat/mutations';
 import { useConversationView } from '../../hooks/chat/useConversationView';
+import { useConversationBannedPeerQuery } from '../../hooks/chat/queries';
 import { colors } from "@/theme";
+
+// A41: chat privata con un utente bannato, non piu' utilizzabile (il server rifiuta l'invio).
+const BANNED_CHAT_MESSAGE = 'Questa conversazione non è più disponibile: non puoi inviare nuovi messaggi.';
+const isRecipientUnavailableError = (error: unknown) => error instanceof Error && error.message.includes('recipient_unavailable');
 
 type PendingMessage = {
   id: string;
@@ -58,6 +63,7 @@ export default function ChatDetailScreen() {
     loadMoreMessages,
     refreshMetadata,
   } = useConversationView(conversationId, user?.id);
+  const { data: isWithBannedUser = false } = useConversationBannedPeerQuery(conversationId, conversation?.type === 'PRIVATE');
 
   const markAsReadMutation = useMarkConversationReadMutation(user?.id);
   const sendMessageMutation = useSendMessageMutation(user?.id, conversationId);
@@ -214,10 +220,11 @@ export default function ChatDetailScreen() {
   const isMuted = currentUserParticipant?.notifications_muted === true;
   const composerDisabledReason = useMemo(() => {
     if (!conversationId || !user?.id) return 'Chat non disponibile in questo momento.';
+    if (isWithBannedUser) return BANNED_CHAT_MESSAGE;
     if (sendMessageMutation.isPending) return 'Invio del messaggio in corso...';
     if (startPrivateConversationMutation.isPending) return 'Sto aprendo la conversazione...';
     return null;
-  }, [conversationId, sendMessageMutation.isPending, startPrivateConversationMutation.isPending, user?.id]);
+  }, [conversationId, isWithBannedUser, sendMessageMutation.isPending, startPrivateConversationMutation.isPending, user?.id]);
   const isComposerDisabled = Boolean(composerDisabledReason);
 
   const visibleMessages = useMemo(() => {
@@ -324,6 +331,12 @@ export default function ChatDetailScreen() {
         return;
       }
 
+      if (isRecipientUnavailableError(error)) {
+        setPendingMessages((previous) => previous.filter((message) => message.id !== pendingId));
+        showToast('warning', BANNED_CHAT_MESSAGE);
+        return;
+      }
+
       setPendingMessages((previous) => previous.map((message) => (
         message.id === pendingId
           ? { ...message, __pending: false, __failed: true }
@@ -347,6 +360,12 @@ export default function ChatDetailScreen() {
       if (error instanceof ChatFilterError) {
         setPendingMessages((previous) => previous.filter((message) => message.id !== failedMessage.id));
         showToast('warning', error.message);
+        return;
+      }
+
+      if (isRecipientUnavailableError(error)) {
+        setPendingMessages((previous) => previous.filter((message) => message.id !== failedMessage.id));
+        showToast('warning', BANNED_CHAT_MESSAGE);
         return;
       }
 
@@ -651,7 +670,7 @@ export default function ChatDetailScreen() {
             </TouchableOpacity>
             <TextInput
               className="flex-1 min-h-[40px] max-h-[100px] px-3 text-primary text-base"
-              placeholder={isComposerDisabled ? 'Attendi un momento...' : 'Scrivi un messaggio...'}
+              placeholder={isWithBannedUser ? 'Conversazione non disponibile' : isComposerDisabled ? 'Attendi un momento...' : 'Scrivi un messaggio...'}
               placeholderTextColor="#94a3b8"
               multiline
               value={inputText}

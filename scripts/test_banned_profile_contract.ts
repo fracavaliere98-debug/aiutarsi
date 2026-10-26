@@ -13,7 +13,7 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), "utf8");
 
-const sql = read("supabase", "migrations", "20261026170000_a37_banned_profile_unavailable.sql");
+const sql = read("supabase", "migrations", "20261026171643_a37_banned_profile_unavailable.sql");
 assert(/when coalesce\(c\.is_banned, false\) then 'unavailable'/.test(sql), "get_public_profiles must mark banned users as unavailable");
 assert(/not \(a\.access = 'unavailable' and p_ids is null\)/.test(sql), "Banned users must not appear in discovery lists");
 assert(/'Utente non disponibile'/.test(sql), "Unavailable profiles must carry a neutral name");

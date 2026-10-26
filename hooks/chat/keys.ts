@@ -5,5 +5,6 @@ export const chatKeys = {
   conversation: (conversationId?: string) => [...chatKeys.all, "conversation", conversationId ?? "unknown"] as const,
   messages: (conversationId?: string) => [...chatKeys.all, "messages", conversationId ?? "unknown"] as const,
   conversationMembers: (conversationId?: string) => [...chatKeys.all, "conversation-members", conversationId ?? "unknown"] as const,
+  bannedPeer: (conversationId?: string) => [...chatKeys.all, "banned-peer", conversationId ?? "unknown"] as const,
   availableEntities: (userId?: string, role?: string) => [...chatKeys.all, "available-entities", userId ?? "anonymous", role ?? "unknown"] as const,
 };

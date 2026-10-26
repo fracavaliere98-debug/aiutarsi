@@ -50,6 +50,16 @@ export function useConversationQuery(conversationId?: string, enabled = true) {
   });
 }
 
+/** A41: la chat privata e' con un utente bannato (campo di scrittura disattivato). */
+export function useConversationBannedPeerQuery(conversationId?: string, enabled = true) {
+  return useQuery({
+    queryKey: chatKeys.bannedPeer(conversationId),
+    queryFn: () => ChatService.isConversationWithBannedUser(conversationId!),
+    enabled: enabled && !!conversationId,
+    staleTime: CHAT_CONVERSATION_STALE_TIME_MS,
+  });
+}
+
 export function useConversationMembersQuery(conversationId?: string, enabled = true) {
   return useQuery({
     queryKey: chatKeys.conversationMembers(conversationId),
