@@ -14,6 +14,7 @@ const suite = [
   { label: "attendance-auto-confirm-and-reminder-contract", path: "scripts/test_attendance_auto_confirm_and_reminder_contract.ts" },
   { label: "reports-admin-contract", path: "scripts/test_reports_admin_contract.ts" },
   { label: "referral-contract", path: "scripts/test_referral_contract.ts" },
+  { label: "banned-profile-contract", path: "scripts/test_banned_profile_contract.ts" },
   { label: "preferred-city-contract", path: "scripts/test_preferred_city_contract.ts" },
   { label: "profile-embed-columns-contract", path: "scripts/test_profile_embed_columns_contract.ts" },
   { label: "confirm-email-pending-contract", path: "scripts/test_confirm_email_pending_contract.ts" },

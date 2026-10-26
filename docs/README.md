@@ -37,3 +37,4 @@ Ogni informazione ha un solo posto. Se la trovi in due posti, uno dei due e' sba
 3. Ogni decisione, errore, scoperta o rilascio ha la sua voce nello Storico, con la lezione per gli errori.
 4. Ogni stato e' etichettato VERIFIED, ASSUMED, TODO o BLOCKED.
 5. Se hai toccato una migration o `app/`, `components/`, `shared/`: alza `HELP_CENTER_LAST_REVIEWED` in `shared/helpCenterContent.ts` alla data del commit ed esegui `npm run test:regression`.
+6. Se un passo richiede una prova di Francesco sul telefono, non basta scrivere «Prova sul telefono»: resta un solo passo, e nella nota ci sono i punti da provare, numerati e brevi (cosa fare, cosa deve succedere, cosa preparare prima).

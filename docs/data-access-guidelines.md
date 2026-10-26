@@ -168,6 +168,12 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - Nessuna scrittura diretta da client su `profiles` di altri utenti né su `admin_audit_logs` (non ha policy di inserimento).
 - Contract test: `scripts/test_reports_admin_contract.ts`.
 
+### Utente bannato: cosa vedono gli altri (decisione 26/10/2026, A37)
+- Chi non è admin, aprendo il profilo di un bannato, vede `ProfileUnavailable` (`components/ui`): «Profilo non disponibile — Questo profilo non è più visibile su AiutarSi.». Messaggio neutro di proposito: non si rivela a terzi la sanzione. L'admin vede il profilo completo con `BannedUserBanner` (`components/admin`): motivo e «Revoca ban».
+- Server: `get_public_profiles` restituisce `access = 'unavailable'` (solo id, ruolo e nome «Utente non disponibile», tutto il resto NULL) quando si chiede quel profilo per id, e lo esclude dagli elenchi senza id (scoperta). `profile_access_level` dà 'none' a un bannato per tutti tranne se stesso e l'admin, quindi le letture dirette di `profiles` non lo restituiscono (resta l'eccezione delle conversazioni in comune). Post e storie di un bannato sono nascosti agli altri (policy restrittive).
+- Al BAN (`admin_resolve_report`): iscrizioni ad attività APERTA/IN_CORSO -> CANCELLED, candidature PENDING (fatte o ricevute) -> REJECTED, e se è un ente le sue attività APERTA/IN_CORSO -> CANCELLATA (annullo soft, D05; i partecipanti ricevono «Attività annullata»). I conteggi finiscono nell'audit log. La revoca del ban non ripristina nulla.
+- Contract test: `scripts/test_banned_profile_contract.ts`.
+
 ### Codice amico (decisione 26/10/2026, A32)
 - `referral_code` è il codice PROPRIO da condividere: ogni utente ne ha uno, lo crea il server (`generate_referral_code`: 8 caratteri maiuscoli dall'id, alternativa se occupato) all'iscrizione, in `ensure_my_profile` e con `ensure_my_referral_code()` se manca. Il client non lo scrive.
 - `referred_by` ("invitato da") si imposta SOLO se l'utente inserisce un codice in onboarding, con `set_my_referrer(code)` via `authService.setMyReferrer`: ricerca senza distinzione maiuscole/minuscole, una volta sola, mai se stessi. Nessun codice = nessun invitante; non si deduce né si inventa. L'iscrizione non legge più l'invitante dai metadata.
