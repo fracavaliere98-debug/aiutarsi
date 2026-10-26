@@ -13,6 +13,7 @@ import { NPOAffiliationSection } from "./profile/NPOAffiliationSection";
 import { SkillInterestSection } from "./profile/SkillInterestSection";
 import { AccountDeletionAlert } from "./AccountDeletionAlert";
 import { GamificationState as CanonicalGamificationState } from "../hooks/gamification/types";
+import { usePreferredCityQuery } from "../hooks/preferred-city/queries";
 
 interface VolunteerStats {
     totalHours: number;
@@ -64,6 +65,7 @@ export function VolunteerProfileView({
     children
 }: VolunteerProfileViewProps) {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
+    const { data: preferredCity } = usePreferredCityQuery(user?.id);
     const iconSize = Layout.iconSize.md;
 
     const HeaderActions = (
@@ -124,6 +126,7 @@ export function VolunteerProfileView({
                         level={gamificationState.level}
                         isOwnProfile={isOwnProfile}
                         onSettingsPress={onSettingsPress}
+                        preferredCity={preferredCity}
                     />
 
                     {/* 2. Stats & Level Section */}

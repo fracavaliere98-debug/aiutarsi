@@ -60,6 +60,12 @@ export const COMMON_GUIDE_SECTIONS: GuideSection[] = [
         answer:
           'Sì. La posizione è opzionale e serve solo per trovare attività vicine a te. Puoi impostarla manualmente nelle Impostazioni oppure negarla e cercare per città nella sezione Esplora.',
       },
+      {
+        id: "loc-who",
+        question: "Chi vede dove mi trovo?",
+        answer:
+          'Nessuno. La tua posizione attuale non è mai mostrata ad altri utenti né agli enti: serve solo in background per suggerirti attività vicine. Puoi invece scegliere una "Posizione preferita" tra i capoluoghi di provincia, durante la registrazione o dalle impostazioni del profilo. Compare sul tuo profilo solo se attivi "Mostra sul mio profilo"; altrimenti la vedi solo tu.',
+      },
     ],
   },
   {

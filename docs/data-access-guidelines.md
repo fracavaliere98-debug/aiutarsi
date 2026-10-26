@@ -149,7 +149,8 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - `activity_participants` non è più leggibile da utenti anonimi (policy solo `authenticated`); gli utenti loggati vedono solo `activity_id, user_id, status, created_at`.
 - Dove li vede l'ente: scheda candidatura (tab Volontari), lista iscritti nel dettaglio attività, sezione «Contatti condivisi con te» nel profilo del volontario. Componenti: `ContactRow` (`components/ui`), `SharedContactBlock`, `SharedContactsSection` (`components/npo`).
 - Un errore di lettura dei contatti non si nasconde con una lista vuota: la query espone `isError` e la schermata lo dice.
-- Contract test: `scripts/test_shared_contacts_contract.ts`.
+- Niente upsert (`on_conflict` + `resolution=merge-duplicates`, `.upsert()`) sulle tabelle con SELECT per colonna (`activity_participants`, `applications`, `profiles`) se il payload contiene colonne non leggibili: `ON CONFLICT DO UPDATE` legge `excluded.<colonna>` e Postgres richiede il SELECT su quella colonna, quindi risponde 403 / 42501 «permission denied for table». Si usa INSERT e, se la riga esiste già (23505), UPDATE della stessa riga con `RETURNING` solo su colonne leggibili. Caso reale: l'iscrizione alle attività falliva per tutti dal rilascio di A30 su staging (26/10/2026), corretta in `profileRest.joinActivity`.
+- Contract test: `scripts/test_shared_contacts_contract.ts`, `scripts/test_join_activity_no_upsert_contract.ts`.
 
 ### Campi protetti del profilo (decisione 25-26/10/2026, A22/A31/R04)
 - Il trigger `protect_privileged_profile_fields` (BEFORE UPDATE su `profiles`) riporta al valore precedente: `is_verified`, `impact_points`, `verification_status`, `role`, `is_banned`, `ban_reason`, `ban_report_id`, `created_at`, `badges`, `referred_by`, `referral_code`, `email`, `email_confirmed`. Vale su staging e prod (26/10).

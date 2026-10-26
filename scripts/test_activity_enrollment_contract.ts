@@ -13,9 +13,11 @@ const profileRest = readRepoFile("utils", "profileRest.ts");
 const activityService = readRepoFile("services", "ActivityService.ts");
 const activityMutations = readRepoFile("hooks", "activities", "mutations.ts");
 
-const participantUpserts = profileRest.match(/\/rest\/v1\/activity_participants\?on_conflict=activity_id,user_id/g) ?? [];
+// Idempotenza sulla chiave composta (activity_id, user_id): dal 26/10/2026 non più con upsert
+// (vietato da A30, vedi scripts/test_join_activity_no_upsert_contract.ts) ma con INSERT e, se la riga
+// esiste già, UPDATE della stessa riga per activity_id + user_id.
 assert(
-  participantUpserts.length >= 1,
+  profileRest.includes("activity_participants?activity_id=eq.${activity_id}&user_id=eq.${user_id}"),
   "Activity enrollment writes must target the composite participant key explicitly"
 );
 

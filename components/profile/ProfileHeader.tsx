@@ -14,9 +14,11 @@ interface ProfileHeaderProps {
     level: number;
     isOwnProfile: boolean;
     onSettingsPress?: () => void;
+    /** P11: posizione preferita scelta dal volontario; per gli altri arriva solo se e' pubblica. */
+    preferredCity?: { name: string; provinceCode: string; isPublic: boolean } | null;
 }
 
-export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: ProfileHeaderProps) {
+export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress, preferredCity }: ProfileHeaderProps) {
     const { updateUserProfile, resendSignupConfirmation } = useAuth();
     const [isResendingConfirmation, setIsResendingConfirmation] = React.useState(false);
     const shouldShowProfilePrompt =
@@ -130,8 +132,11 @@ export function ProfileHeader({ user, level, isOwnProfile, onSettingsPress }: Pr
 
             {/* Location & Email Display */}
             <View className="items-center mb-2 px-4">
-                {user?.location_string && (
-                    <Text className="text-xs text-gray-500 font-medium mb-1">📍 {user.location_string}</Text>
+                {preferredCity && (
+                    <Text className="text-xs text-gray-500 font-medium mb-1">
+                        📍 {preferredCity.name} ({preferredCity.provinceCode})
+                        {isOwnProfile && !preferredCity.isPublic ? " · visibile solo a te" : ""}
+                    </Text>
                 )}
                 {isOwnProfile && user?.email && (
                     <View className="items-center">

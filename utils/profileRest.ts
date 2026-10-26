@@ -418,17 +418,42 @@ export const profileRest = {
     );
     return typeof conversationId === 'string' ? conversationId : null;
   },
+  // Iscrizione: INSERT, e se la riga esiste già (reiscrizione dopo un annullo) UPDATE di quella riga.
+  // NON usare upsert (on_conflict + merge-duplicates): ON CONFLICT DO UPDATE legge excluded.phone/
+  // email/message e Postgres richiede il SELECT su quelle colonne, che A30 ha chiuso di proposito
+  // per proteggere i contatti -> 403 "permission denied for table activity_participants" (26/10/2026).
+  // INSERT e UPDATE con WHERE su activity_id/user_id funzionano con i permessi attuali (verificato su
+  // staging con lo stesso ruolo). Contract test: scripts/test_join_activity_no_upsert_contract.ts
   joinActivity: async (
     payload: { activity_id: string; user_id: string; status: "REGISTERED"; message?: string; phone?: string; email?: string | null },
     accessToken?: string
   ) => {
-    return request(
-      "POST",
-      `/rest/v1/activity_participants?on_conflict=activity_id,user_id`,
-      payload,
-      accessToken,
-      { Prefer: "resolution=merge-duplicates,return=minimal" }
-    );
+    try {
+      return await request(
+        "POST",
+        `/rest/v1/activity_participants`,
+        payload,
+        accessToken,
+        { Prefer: "return=minimal" }
+      );
+    } catch (error) {
+      // 23505 = riga già presente (activity_id, user_id): la si riattiva.
+      if (!String((error as any)?.message ?? "").includes("23505")) throw error;
+      const { activity_id, user_id, ...changes } = payload;
+      const rows = await request<{ activity_id: string }[]>(
+        "PATCH",
+        `/rest/v1/activity_participants?activity_id=eq.${activity_id}&user_id=eq.${user_id}&select=activity_id`,
+        changes,
+        accessToken,
+        { Prefer: "return=representation" }
+      );
+      // La policy di UPDATE ammette solo righe REGISTERED/CANCELLED: 0 righe = iscrizione non riattivabile
+      // (es. rifiutata dall'ente). Va segnalato, non ignorato.
+      if (!Array.isArray(rows) || rows.length !== 1) {
+        throw new Error("JOIN_NOT_REACTIVATABLE");
+      }
+      return undefined;
+    }
   },
   leaveActivity: async (activityId: string, userId: string, accessToken?: string) => {
     return request(

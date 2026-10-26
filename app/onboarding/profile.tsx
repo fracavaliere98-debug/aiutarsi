@@ -9,6 +9,8 @@ import { Camera, UserRound, Gift, Calendar, ChevronDown, Check } from "lucide-re
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from "../../services/AuthService";
+import { preferredCityService } from "../../services/PreferredCityService";
+import { PreferredCityPicker } from "../../components/PreferredCityPicker";
 import { requestMediaLibraryPermission } from "../../utils/permissions";
 import { CalendarPicker } from "../../components/CalendarPicker";
 import {
@@ -40,6 +42,8 @@ export default function OnboardingProfile() {
     const [bio, setBio] = useState("");
     const [avatar, setAvatar] = useState<string | null>(null);
     const [referralCode, setReferralCode] = useState("");
+    const [preferredCityCode, setPreferredCityCode] = useState<string | null>(null);
+    const [preferredCityPublic, setPreferredCityPublic] = useState(false);
     const [gender, setGender] = useState<string>(user?.gender || "");
     const [showGenderDropdown, setShowGenderDropdown] = useState(false);
     const [birthDateInput, setBirthDateInput] = useState(isoToBirthDateLabel(user?.date_of_birth));
@@ -141,6 +145,18 @@ export default function OnboardingProfile() {
             });
 
             if (success) {
+                // P11: posizione preferita (opzionale). Un errore qui non blocca l'onboarding: si puo' impostare dal profilo.
+                if (preferredCityCode) {
+                    try {
+                        const cityStatus = await preferredCityService.setMyPreferredCity(preferredCityCode, preferredCityPublic);
+                        if (cityStatus !== 'ok') {
+                            showToast('error', "Non sono riuscito a salvare la città preferita. Potrai sceglierla dalle impostazioni del profilo.");
+                        }
+                    } catch (cityError) {
+                        console.warn("Could not save preferred city:", cityError);
+                        showToast('error', "Non sono riuscito a salvare la città preferita. Potrai sceglierla dalle impostazioni del profilo.");
+                    }
+                }
                 console.log("[DEBUG] Onboarding Profile: SAVE SUCCESS. Redirecting to welcome.");
                 trackEvent("onboarding_profile_completed", {
                     role: user?.role || "VOLUNTEER",
@@ -292,6 +308,17 @@ export default function OnboardingProfile() {
                             <Text className="text-[11px] text-secondary/70 mt-2 leading-relaxed">
                                 Campo obbligatorio. Devi avere almeno 18 anni.
                             </Text>
+                        </View>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
+                            <Text className="text-sm font-bold text-primary mb-3">Posizione preferita</Text>
+                            <PreferredCityPicker
+                                cityCode={preferredCityCode}
+                                isPublic={preferredCityPublic}
+                                onChange={(code, isPublic) => {
+                                    setPreferredCityCode(code);
+                                    setPreferredCityPublic(code ? isPublic : false);
+                                }}
+                            />
                         </View>
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <View className="flex-row items-center gap-2 mb-3">

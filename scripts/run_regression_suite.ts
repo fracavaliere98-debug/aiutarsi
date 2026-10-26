@@ -14,6 +14,7 @@ const suite = [
   { label: "attendance-auto-confirm-and-reminder-contract", path: "scripts/test_attendance_auto_confirm_and_reminder_contract.ts" },
   { label: "reports-admin-contract", path: "scripts/test_reports_admin_contract.ts" },
   { label: "referral-contract", path: "scripts/test_referral_contract.ts" },
+  { label: "preferred-city-contract", path: "scripts/test_preferred_city_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },
@@ -49,6 +50,7 @@ const suite = [
   { label: "css-interop-stringify-patch-contract", path: "scripts/test_css_interop_stringify_patch_contract.ts" },
   { label: "auth-timeout-telemetry-contract", path: "scripts/test_auth_timeout_telemetry_contract.ts" },
   { label: "auth-state-change-no-deadlock-contract", path: "scripts/test_auth_state_change_no_deadlock_contract.ts" },
+  { label: "join-activity-no-upsert-contract", path: "scripts/test_join_activity_no_upsert_contract.ts" },
   { label: "shared-contacts-contract", path: "scripts/test_shared_contacts_contract.ts" },
   { label: "verification-single-source-contract", path: "scripts/test_verification_single_source_contract.ts" },
 ];

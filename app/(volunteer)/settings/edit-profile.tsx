@@ -12,6 +12,9 @@ import { useToast } from "../../../context/ToastContext";
 import { requestForegroundLocationPermission, requestMediaLibraryPermission } from "../../../utils/permissions";
 import { storageService } from "../../../services/StorageService";
 import { CalendarPicker } from "../../../components/CalendarPicker";
+import { PreferredCityPicker } from "../../../components/PreferredCityPicker";
+import { usePreferredCityQuery } from "../../../hooks/preferred-city/queries";
+import { useSetPreferredCityMutation } from "../../../hooks/preferred-city/mutations";
 import {
     GENDER_OPTIONS,
     normalizeBirthDateInput,
@@ -44,6 +47,18 @@ export default function VolunteerEditProfileScreen({ onClose }: { onClose?: () =
     const [birthDateInput, setBirthDateInput] = useState(isoToBirthDateLabel(user?.date_of_birth));
     const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // P11: posizione preferita (scelta dal volontario, visibile agli altri solo se pubblica).
+    const { data: savedCity } = usePreferredCityQuery(user?.id);
+    const setPreferredCity = useSetPreferredCityMutation(user?.id);
+    const [cityCode, setCityCode] = useState<string | null>(null);
+    const [cityPublic, setCityPublic] = useState(false);
+    const [cityTouched, setCityTouched] = useState(false);
+    useEffect(() => {
+        if (cityTouched) return;
+        setCityCode(savedCity?.code ?? null);
+        setCityPublic(savedCity?.isPublic ?? false);
+    }, [savedCity, cityTouched]);
 
     // Sync state with user data when it loads/updates
     useEffect(() => {
@@ -176,6 +191,13 @@ export default function VolunteerEditProfileScreen({ onClose }: { onClose?: () =
                 avatar_url: avatarUrl,
                 name: fullName,
             });
+
+            if (cityTouched) {
+                const cityStatus = await setPreferredCity.mutateAsync({ cityCode, isPublic: cityPublic });
+                if (cityStatus !== 'ok' && cityStatus !== 'cleared') {
+                    throw new Error("Impossibile salvare la posizione preferita.");
+                }
+            }
 
             showToast('success', 'Profilo salvato correttamente');
             if (onClose) onClose();
@@ -319,7 +341,20 @@ export default function VolunteerEditProfileScreen({ onClose }: { onClose?: () =
                         <View className="bg-gray-100 px-4 py-3 rounded-2xl border border-gray-100">
                             <Text className="text-secondary font-medium text-base italic">{locationInput}</Text>
                         </View>
-                        <Text className="text-secondary/60 text-xs mt-2 ml-1">La località viene aggiornata automaticamente.</Text>
+                        <Text className="text-secondary/60 text-xs mt-2 ml-1">Rilevata dal telefono: la vedi solo tu e non viene salvata.</Text>
+                    </View>
+
+                    <View className="mt-4">
+                        <Text className="text-secondary font-bold text-xs uppercase tracking-widest mb-2 ml-1">Posizione preferita</Text>
+                        <PreferredCityPicker
+                            cityCode={cityCode}
+                            isPublic={cityPublic}
+                            onChange={(code, isPublic) => {
+                                setCityTouched(true);
+                                setCityCode(code);
+                                setCityPublic(code ? isPublic : false);
+                            }}
+                        />
                     </View>
                 </SoftCard>
             </KeyboardAvoidingView>
