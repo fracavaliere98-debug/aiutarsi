@@ -115,6 +115,7 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 
 ### Conferma presenze e XP (decisione 21/09/2026)
 - Iscrizione = `activity_participants` REGISTERED (il volontario non può scrivere APPROVED/CHECKED_IN: RLS).
+- Una sola strada (verificato 26/10, A32): i vecchi trigger che premiavano a CHECKED_IN o a fine attivita' sono stati rimossi insieme alla seconda versione di `award_activity_completion_to_user`.
 - XP, ore, livelli e badge si assegnano solo quando l'ente proprietario conferma la presenza (`volunteer_reviews.is_present = true`, attività COMPLETATA, volontario iscritto) tramite il trigger `on_volunteer_attendance_confirmed`; idempotente via `processed_activity_ids`. Lo stato del partecipante non cambia.
 - La recensione dell'attività da parte del volontario resta condizionata alla presenza confermata; i promemoria (`REVIEW_REMINDER`) partono solo per chi è stato confermato.
 - Notifiche (tutte server-side): fine attività → volontari ("riceverai XP alla conferma") e ente ("Conferma le presenze"); conferma → volontario ("hai guadagnato N XP", livello raggiunto); badge → `BADGE_UNLOCKED`.
@@ -142,8 +143,9 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - Contract test: `scripts/test_shared_contacts_contract.ts`.
 
 ### Campi protetti del profilo (decisione 25-26/10/2026, A22/A31/R04)
-- Il trigger `protect_privileged_profile_fields` (BEFORE UPDATE su `profiles`) riporta al valore precedente: `is_verified`, `impact_points`, `verification_status`, `role`, `is_banned`, `ban_reason`, `ban_report_id`, `created_at`, `badges`, `referred_by`, `referral_code`. Vale su staging e prod (26/10).
-- Il trigger decide con `auth.role()`, cioè con il ruolo del TOKEN della richiesta, non con l'utente che esegue la funzione: anche una funzione `SECURITY DEFINER` chiamata da un utente viene bloccata. Per scrivere uno di questi campi la funzione server deve prima verificare chi chiama e poi impostare `set_config('app.bypass_profile_guard', 'true', true)` (esempi: `admin_resolve_report`, `admin_review_verification`, `sync_gamification_to_profile`, `set_my_referrer`). Anche le scritture fatte da Supabase Auth senza token utente (es. `sync_profile_email_confirmation`) sarebbero bloccate: per questo `email` ed `email_confirmed` non sono ancora nell'elenco (A22, secondo giro).
+- Il trigger `protect_privileged_profile_fields` (BEFORE UPDATE su `profiles`) riporta al valore precedente: `is_verified`, `impact_points`, `verification_status`, `role`, `is_banned`, `ban_reason`, `ban_report_id`, `created_at`, `badges`, `referred_by`, `referral_code`, `email`, `email_confirmed`. Vale su staging e prod (26/10).
+- Il trigger decide con `auth.role()`, cioè con il ruolo del TOKEN della richiesta, non con l'utente che esegue la funzione: anche una funzione `SECURITY DEFINER` chiamata da un utente viene bloccata. Per scrivere uno di questi campi la funzione server deve prima verificare chi chiama e poi impostare `set_config('app.bypass_profile_guard', 'true', true)` (esempi: `admin_resolve_report`, `admin_review_verification`, `sync_gamification_to_profile`, `set_my_referrer`). Anche le scritture fatte da Supabase Auth senza token utente sono soggette al trigger: per questo `handle_new_user` e `sync_profile_email_confirmation` impostano l'eccezione (e filtrano il ruolo dai metadata: solo NPO/CORPORATE, il resto diventa VOLUNTEER).
+- Chi accende l'eccezione la rimette al valore precedente subito dopo la scrittura (`v_prev`), altrimenti resta accesa per tutta la transazione (difetto trovato e corretto in `sync_gamification_to_profile`, 26/10).
 - Il client non scrive mai questi campi: se servono, si aggiunge una funzione server dedicata, non un'eccezione nel trigger.
 
 ### Segnalazioni: chiusura e ban (decisione 25/10/2026, A31)

@@ -33,4 +33,12 @@ const insights = read("hooks", "useNPOInsights.ts");
 assert(/'ATTENDANCE'/.test(insights), "NPO insights must surface attendance to confirm");
 assert(!/"PENDING"\s*;\s*message/.test(read("utils", "profileRest.ts")), "joinActivity must not allow PENDING");
 
+// D06 / A32 (26/10/2026): una sola strada per XP e badge di fine attivita'. I vecchi trigger su
+// CHECKED_IN e su attivita' COMPLETATA (con una seconda versione della funzione premi, senza premio
+// invito) sono stati rimossi.
+const single = read("supabase", "migrations", "20261026110000_a22_a32_email_guard_single_award.sql");
+assert(/drop trigger if exists on_checkin_gamification/.test(single), "Check-in must not award XP (D06)");
+assert(/drop trigger if exists trg_activity_completion_gamification/.test(single), "Activity completion must not award XP by itself (D06)");
+assert(/drop function if exists public\.award_activity_completion_to_user\(uuid, record\)/.test(single), "Only one award_activity_completion_to_user must remain");
+
 console.log("attendance confirmation contract OK");

@@ -33,4 +33,13 @@ assert(/referred_by is null/.test(sql) && /'self'/.test(sql), "Referrer is set o
 assert(!/referred_by_id/.test(sql.split("-- 2)")[1] || ""), "Signup must not accept referred_by from user metadata");
 assert(/new\.referred_by := old\.referred_by/.test(sql) && /new\.referral_code := old\.referral_code/.test(sql), "Profile guard must protect referred_by and referral_code");
 
+// A22 secondo giro: email/email_confirmed protetti; le funzioni di Supabase Auth usano l'eccezione;
+// la sync email non accetta piu' il ruolo dai metadata; la gamification non lascia l'eccezione accesa.
+const guard2 = read("supabase", "migrations", "20261026110000_a22_a32_email_guard_single_award.sql");
+assert(/new\.email := old\.email/.test(guard2) && /new\.email_confirmed := old\.email_confirmed/.test(guard2), "Profile guard must protect email and email_confirmed");
+assert((guard2.match(/'app\.bypass_profile_guard', 'true'/g) || []).length >= 2, "Auth sync functions must set the profile guard bypass");
+assert(!/raw_user_meta_data->>'role'\)::public\.user_role/.test(guard2), "Email sync must not trust the role from user metadata");
+const gam = read("supabase", "migrations", "20261026113000_a22_gamification_bypass_restore.sql");
+assert(/v_prev/.test(gam), "sync_gamification_to_profile must restore the previous bypass value");
+
 console.log("referral contract OK");
