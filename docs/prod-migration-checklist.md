@@ -156,6 +156,9 @@ Stato verificato in sola lettura su prod il 2026-10-26 (VERIFIED): A28 e A29/A30
 
 **P11 su prod (2026-10-26, VERIFIED in sola lettura):** `p11_preferred_city_and_volunteer_location` incollata da SQL Editor: oggetti identici a staging (md5 di `get_public_profiles`, `set_my_preferred_city`, `can_view_profile_row`, `clear_volunteer_location_string`; trigger `trg_clear_volunteer_location_string`; RLS e policy su `italian_provincial_capitals` (119 righe) e `volunteer_preferred_city`; 0 volontari con `location_string`). Riga `20261026170000` registrata in `supabase_migrations.schema_migrations` con ok di Francesco; cronologia di prod uguale a repo e staging (122 righe, stesso hash di `versione_nome`, VERIFIED 2026-10-26).
 
+**A40 su prod (2026-10-26, ok esplicito, VERIFIED):** `a40_my_reports_outcome` applicata (execute_sql, riga `20261026230000` registrata con il numero del file): `get_my_reports()` con impronta identica a staging, eseguibile solo da `authenticated` (anon respinto). Cronologia di prod uguale a repo e staging (127 righe, stesso hash). Il client (schermata `/my-reports`) arriva agli utenti prod con la build di A15.
+
+
 
 **A37 su prod (2026-10-26, ok esplicito, VERIFIED):** `a37_banned_profile_unavailable`: profilo di un bannato 'unavailable' per chi non e' admin (`get_public_profiles`, `profile_access_level`), escluso dalla scoperta, post e storie nascosti, al BAN annullate iscrizioni, candidature in attesa e attivita' dell'ente (`admin_resolve_report`). Impronte di funzioni e policy identiche a staging; API di prod dopo l'applicazione: lettura 200. La migration P11 applicata su staging dopo A37 non tocca queste funzioni.
 
