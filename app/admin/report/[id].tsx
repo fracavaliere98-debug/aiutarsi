@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { useToast } from '../../../context/ToastContext';
 import { 
-  ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
+  ChevronLeft, User, CheckCircle2, AlertTriangle, Bot, Ban, Lock
 } from 'lucide-react-native';
-import { adminNotificationService } from '../../../services/AdminNotificationService';
+import { adminNotificationService, REPORT_STATUS_LABEL, type ReportDecision } from '../../../services/AdminNotificationService';
 import { describeReportTarget } from '../../../utils/reportCategory';
 
 const formatDate = (dateString: string, includeYear = false) => {
@@ -38,6 +38,8 @@ export default function AdminReportDetail() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  // A31: per una segnalazione chiusa con BAN, l'utente e' ancora bannato? (null = non letto)
+  const [targetBanned, setTargetBanned] = useState<boolean | null>(null);
   const router = useRouter();
 
   const fetchDetails = useCallback(async () => {
@@ -47,7 +49,8 @@ export default function AdminReportDetail() {
         .select(`
           *,
           reporter:profiles!reports_reporter_id_fkey(id, full_name, avatar_url, role),
-          reported:profiles!reports_reported_id_fkey(id, full_name, avatar_url, role)
+          reported:profiles!reports_reported_id_fkey(id, full_name, avatar_url, role),
+          decidedBy:profiles!reports_admin_id_fkey(full_name)
         `)
         .eq('id', id)
         .single();
@@ -62,6 +65,18 @@ export default function AdminReportDetail() {
         .order('created_at', { ascending: false })
         .limit(5);
       setAuditLogs(logs || []);
+
+      if (data.status === 'banned' && data.reported_id) {
+        try {
+          const target = await adminNotificationService.getProfileForAdmin(data.reported_id);
+          setTargetBanned(!!target?.is_banned);
+        } catch (targetError) {
+          console.error('Error fetching banned user state:', targetError);
+          setTargetBanned(null);
+        }
+      } else {
+        setTargetBanned(null);
+      }
     } catch (error) {
       console.error('Error fetching report detail:', error);
     } finally {
@@ -73,7 +88,7 @@ export default function AdminReportDetail() {
     void fetchDetails();
   }, [fetchDetails]);
 
-  const handleAction = async (action: 'dismissed' | 'warned' | 'resolved' | 'banned', reason: string) => {
+  const handleAction = async (action: ReportDecision, reason: string) => {
     if (actionLoading) return;
     setActionLoading(true);
 
@@ -87,7 +102,7 @@ export default function AdminReportDetail() {
         `${Platform.OS} ${Platform.Version}`
       );
 
-      showToast('success', `Azione "${action}" completata.`);
+      showToast('success', `Decisione salvata: ${REPORT_STATUS_LABEL[action]}.`);
 
       // Ammonimento: l'utente segnalato deve sapere che c'è stato un intervento.
       if (action === 'warned' && report?.reported_id) {
@@ -119,10 +134,50 @@ export default function AdminReportDetail() {
 
       router.back();
     } catch (error: any) {
-      showToast('error', error.message);
+      // A31: un altro admin (o un doppio tocco) ha gia' deciso: lo diciamo e mostriamo la decisione salvata.
+      if (String(error?.message || '').includes('already_decided')) {
+        showToast('info', 'Questa segnalazione è già stata decisa.');
+        void fetchDetails();
+      } else {
+        showToast('error', error.message);
+      }
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const isDecided = !!report && (report.status ?? 'pending') !== 'pending';
+
+  const revokeBan = () => {
+    if (!report?.reported_id || actionLoading) return;
+    Alert.alert(
+      'Revocare il ban?',
+      `${report.reported?.full_name || 'L\'utente'} potrà di nuovo usare l'app e riceverà la notifica "Account riattivato". La segnalazione resta nello storico.`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Revoca ban',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await adminNotificationService.revokeBan(report.reported_id, 'Ban revocato dall\'admin', `${Platform.OS} ${Platform.Version}`);
+              showToast('success', 'Ban revocato: l\'utente è stato avvisato.');
+              await fetchDetails();
+            } catch (error: any) {
+              if (String(error?.message || '').includes('not_banned')) {
+                showToast('info', 'Il ban era già stato revocato.');
+                await fetchDetails();
+              } else {
+                showToast('error', error.message);
+              }
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#311b92" /></View>;
@@ -250,45 +305,57 @@ export default function AdminReportDetail() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Action Grid */}
+      {/* Action Grid: una segnalazione si decide una volta sola (A31) */}
       <View style={styles.footerActions}>
-        <View style={styles.actionGrid}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.grayButton]} 
-            onPress={() => handleAction('dismissed', 'Azione ignorata dall\'admin')}
-            disabled={actionLoading}
-          >
-            <CheckCircle2 size={24} color="#111827" />
-            <Text style={styles.actionButtonText}>Ignora</Text>
-          </TouchableOpacity>
+        {isDecided ? (
+          <View style={styles.decisionBox}>
+            <Lock size={20} color="#374151" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.decisionTitle}>Decisione presa: {REPORT_STATUS_LABEL[report.status] || report.status}</Text>
+              <Text style={styles.decisionMeta}>
+                {report.resolution_date ? formatDate(report.resolution_date, true) : ''}
+                {report.decidedBy?.full_name ? ` · ${report.decidedBy.full_name}` : ''}
+              </Text>
+              {report.status === 'banned' && targetBanned === false ? (
+                <Text style={styles.decisionMeta}>Ban revocato: l&apos;utente è di nuovo attivo.</Text>
+              ) : null}
+            </View>
+            {report.status === 'banned' && targetBanned === true ? (
+              <TouchableOpacity style={styles.revokeButton} onPress={revokeBan} disabled={actionLoading}>
+                <Text style={styles.revokeButtonText}>Revoca ban</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.actionGrid}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton]} 
+              onPress={() => handleAction('dismissed', 'Azione ignorata dall\'admin')}
+              disabled={actionLoading}
+            >
+              <CheckCircle2 size={24} color="#111827" />
+              <Text style={styles.actionButtonText}>Ignora</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.yellowButton]} 
-            onPress={() => handleAction('warned', 'Utente avvertito')}
-            disabled={actionLoading}
-          >
-            <AlertTriangle size={24} color="#F59E0B" />
-            <Text style={[styles.actionButtonText, { color: '#F59E0B' }]}>Avvertimento</Text>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.yellowButton]} 
+              onPress={() => handleAction('warned', 'Utente avvertito')}
+              disabled={actionLoading}
+            >
+              <AlertTriangle size={24} color="#F59E0B" />
+              <Text style={[styles.actionButtonText, { color: '#F59E0B' }]}>Avvertimento</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.orangeButton]} 
-            onPress={() => handleAction('resolved', 'Contenuto nascosto')}
-            disabled={actionLoading}
-          >
-            <EyeOff size={24} color="#F97316" />
-            <Text style={[styles.actionButtonText, { color: '#F97316' }]}>Nascondi</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.redButton]} 
-            onPress={() => handleAction('banned', 'Utente bannato per violazione termini')}
-            disabled={actionLoading}
-          >
-            <Ban size={24} color="white" />
-            <Text style={[styles.actionButtonText, { color: 'white' }]}>BAN</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.redButton]} 
+              onPress={() => handleAction('banned', 'Utente bannato per violazione termini')}
+              disabled={actionLoading}
+            >
+              <Ban size={24} color="white" />
+              <Text style={[styles.actionButtonText, { color: 'white' }]}>BAN</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -332,11 +399,15 @@ const styles = StyleSheet.create({
   logAction: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
   logDate: { fontSize: 13, color: '#9CA3AF' },
   footerActions: { padding: 20, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  decisionBox: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F3F4F6', borderRadius: 16, padding: 16 },
+  decisionTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  decisionMeta: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  revokeButton: { backgroundColor: 'white', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' },
+  revokeButtonText: { color: '#EF4444', fontWeight: '700', fontSize: 14 },
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  actionButton: { flex: 1, minWidth: '45%', height: 74, borderRadius: 16, justifyContent: 'center', alignItems: 'center', gap: 6 },
+  actionButton: { flex: 1, minWidth: '30%', height: 74, borderRadius: 16, justifyContent: 'center', alignItems: 'center', gap: 6 },
   grayButton: { backgroundColor: '#F3F4F6' },
   yellowButton: { backgroundColor: '#FEF3C7' },
-  orangeButton: { backgroundColor: '#FFEDD5' },
   redButton: { backgroundColor: '#EF4444' },
   actionButtonText: { fontSize: 13, fontWeight: '800', color: '#111827' }
 });

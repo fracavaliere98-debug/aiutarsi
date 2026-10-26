@@ -269,7 +269,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         init();
 
         // 3. Listen for Supabase Auth Changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // La callback NON deve essere async né fare await di chiamate Supabase: supabase-js
+        // (auth-js) la esegue tenendo il lock di sessione (es. dentro updateUser() per USER_UPDATED)
+        // e aspetta che finisca. Ogni query supabase-js deve leggere la sessione da quello stesso
+        // lock: un await qui dentro è un deadlock che blocca TUTTE le query dell'app finché un
+        // timeout non lo sblocca (causa reale dei "profiles.getUsers timeout" del 2026-10-26, ~8s
+        // di blocco dopo ogni salvataggio del profilo). Il lavoro asincrono si sposta fuori dal
+        // lock con setTimeout(0), come indica la documentazione Supabase.
+        // Contract test: scripts/test_auth_state_change_no_deadlock_contract.ts
+        let authEventSeq = 0;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             console.log(`[Supabase Auth] Event: ${event}`);
             trackEvent("auth_state_changed", {
                 event,
@@ -300,11 +309,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     ) {
                         return;
                     }
-                    const appUser = await authService.getCurrentUser(session);
-                    setUser(appUser);
-                    // No automatic full refresh anymore
+                    // Numero di sequenza: se arriva un evento più recente (o SIGNED_OUT) prima che
+                    // questo finisca, il risultato vecchio viene scartato invece di sovrascriverlo.
+                    const seq = ++authEventSeq;
+                    setTimeout(() => {
+                        void (async () => {
+                            try {
+                                const appUser = await authService.getCurrentUser(session);
+                                if (!isMounted || seq !== authEventSeq || isLoggingOutRef.current) return;
+                                setUser(appUser);
+                            } catch (e) {
+                                console.error(`[Supabase Auth] Profile reload after ${event} failed`, e);
+                            }
+                        })();
+                    }, 0);
                 }
             } else if (event === 'SIGNED_OUT') {
+                authEventSeq++;
                 authService.setCachedAccessToken(null);
                 setUser(null);
                 setUsersDB([]);

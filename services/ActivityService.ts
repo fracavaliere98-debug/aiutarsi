@@ -193,13 +193,15 @@ export class ActivityService {
         },
         signal?: AbortSignal
     ): Promise<{ activities: AppActivity[], totalCount: number, hasMore: boolean }> {
+        // Il token si allega in base alla sessione, non al filtro: molte chiamate (dashboard NPO,
+        // liste senza userId) non passano userId ma l'utente è loggato. Senza token profileRest usa la
+        // chiave anon, e da A26 anon non legge `profiles` (embed npo) -> 401 ripetuti (2026-10-26).
+        // Da sloggati _getAccessToken fallisce e la richiesta resta anonima come prima.
         let accessToken: string | undefined;
-        if (filter?.userId) {
-            try {
-                accessToken = await this._getAccessToken();
-            } catch {
-                accessToken = undefined;
-            }
+        try {
+            accessToken = await this._getAccessToken();
+        } catch {
+            accessToken = undefined;
         }
 
         // ── UNIFIED MATCH path: use new RPC for any geo or user-specific search (highest efficiency) ──────

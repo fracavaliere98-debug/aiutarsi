@@ -67,6 +67,15 @@ Se un service ha già un `_withTimeout` privato (`ChatService`, `ActivityService
 
 **Timeout tipici usati finora**: 8000ms per query dati generiche, 5000ms per `auth.getSession()` in `getCurrentUser` (gira ad ogni avvio app), 1500ms per i controlli veloci di token cache in `_getAccessToken()`.
 
+## 4b. Mai `await` di Supabase dentro `onAuthStateChange` (decisione 26/10/2026)
+
+Causa verificata di una parte dei blocchi descritti al punto 4: `@supabase/auth-js` esegue le callback di `onAuthStateChange` tenendo il lock di sessione e ne aspetta la fine (per esempio `updateUser()` → evento `USER_UPDATED`). Ogni query supabase-js deve leggere la sessione da quello stesso lock. Se la callback fa `await` di una query Supabase (anche indiretta, come `authService.getCurrentUser()`) si crea un deadlock: tutte le query dell'app restano ferme finché un timeout non lo sblocca. Sintomo osservato: circa 8 s di blocco dopo ogni salvataggio del profilo, con `profiles.getUsers timeout` / `Exception fetching users`, mentre il server rispondeva in ~300 ms.
+
+- Le callback di `onAuthStateChange` non sono `async` e non fanno `await`. Il lavoro asincrono va spostato fuori dal lock con `setTimeout(() => { ... }, 0)`, come indica la documentazione Supabase.
+- Un risultato arrivato dopo un evento più recente (o dopo `SIGNED_OUT`) si scarta (numero di sequenza in `AuthContext`).
+- Il token utente per le chiamate REST dirette (`utils/profileRest.ts`) si allega in base alla sessione, non ai parametri della chiamata: senza token la richiesta parte con la chiave anon, che da A26 non legge `profiles`.
+- Contract test: `scripts/test_auth_state_change_no_deadlock_contract.ts`.
+
 ## 5. Convenzione feedback UI: `showToast` vs `Alert.alert` vs `alert()` nativo
 
 Confermata il 24/07/2026, dopo un censimento completo dell'uso reale in `app/**` (49 chiamate `Alert.alert` in 16 file, 3 chiamate `alert()` nativo). Prima non esisteva nessuna convenzione: nello stesso set di schermate equivalenti (impostazioni ente/volontario) si trovavano tutti e tre i pattern usati in modo intercambiabile, a volte invertito tra le due varianti dello stesso schermo.
@@ -149,7 +158,11 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - Il client non scrive mai questi campi: se servono, si aggiunge una funzione server dedicata, non un'eccezione nel trigger.
 
 ### Segnalazioni: chiusura e ban (decisione 25/10/2026, A31)
-- Chiusura di una segnalazione (archivia / ammonisci / risolvi / banna) solo con `admin_resolve_report(report_id, action, reason, user_agent)` via `adminNotificationService.resolveReport`: verifica ADMIN, aggiorna `reports`, applica il ban sul profilo segnalato e scrive `admin_audit_logs` nella stessa transazione. Non banna se stessi né un altro admin.
+- Chiusura di una segnalazione solo con `admin_resolve_report(report_id, action, reason, user_agent)` via `adminNotificationService.resolveReport`: verifica ADMIN, aggiorna `reports`, applica il ban sul profilo segnalato e scrive `admin_audit_logs` nella stessa transazione. Non banna se stessi né un altro admin.
+- Decisioni possibili (26/10/2026): `dismissed` (Ignora), `warned` (Avvertimento: notifica urgente all'utente segnalato), `banned` (BAN: schermata "Account sospeso"). `resolved` ("Nascondi") è stato tolto perché non nascondeva nessun contenuto; resta solo nelle segnalazioni storiche. In tutti i casi chi ha segnalato riceve «Abbiamo gestito la tua segnalazione».
+- Una segnalazione si decide una volta sola: il server rifiuta una seconda decisione (`already_decided`) e la schermata di dettaglio mostra la decisione presa (stato, data, admin) al posto dei pulsanti.
+- Il ban vale anche nel database (26/10/2026): `public.check_request()` è la funzione pre-request di PostgREST (`alter role authenticator set pgrst.db_pre_request`). Per un utente con `is_banned` rifiuta ogni richiesta di scrittura alla Data API (tabelle e RPC) con HTTP 403 `USER_BANNED`; restano ammesse le letture e `rpc/get_my_profile` (schermata "Account sospeso"). Lo Storage, che non passa da PostgREST, ha policy RESTRICTIVE su `storage.objects` per insert/update/delete. Non coperti: Realtime (sola lettura nell'app) e le edge function chiamate col token dell'utente. Attenzione: `check_request` gira su OGNI richiesta, un errore lì blocca tutta l'API; si modifica solo con una prova reale (lettura e scrittura) subito dopo.
+- Revoca: solo `admin_revoke_ban(user_id, reason, user_agent)` via `adminNotificationService.revokeBan`, con conferma esplicita (`Alert.alert`) dalla schermata della segnalazione chiusa con BAN. Toglie il ban, scrive `UNBANNED` nell'audit log e notifica "Account riattivato"; la segnalazione resta `banned` nello storico.
 - Nessuna scrittura diretta da client su `profiles` di altri utenti né su `admin_audit_logs` (non ha policy di inserimento).
 - Contract test: `scripts/test_reports_admin_contract.ts`.
 

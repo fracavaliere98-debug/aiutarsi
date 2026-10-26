@@ -48,6 +48,7 @@ const suite = [
   { label: "review-no-time-limit-contract", path: "scripts/test_review_no_time_limit_contract.ts" },
   { label: "css-interop-stringify-patch-contract", path: "scripts/test_css_interop_stringify_patch_contract.ts" },
   { label: "auth-timeout-telemetry-contract", path: "scripts/test_auth_timeout_telemetry_contract.ts" },
+  { label: "auth-state-change-no-deadlock-contract", path: "scripts/test_auth_state_change_no_deadlock_contract.ts" },
   { label: "shared-contacts-contract", path: "scripts/test_shared_contacts_contract.ts" },
   { label: "verification-single-source-contract", path: "scripts/test_verification_single_source_contract.ts" },
 ];

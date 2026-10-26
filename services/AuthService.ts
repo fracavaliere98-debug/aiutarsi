@@ -818,6 +818,9 @@ export class AuthService {
     // risolto correttamente in corso). Evitare le chiamate ridondanti non elimina il bug di
     // fondo (resta comunque un rischio noto e già gestito col timeout), ma riduce la pressione
     // sul lock e quindi la probabilità/gravità delle raffiche.
+    // 2026-10-26: una causa verificata delle raffiche era un deadlock nostro, non del client: la
+    // callback di onAuthStateChange in AuthContext faceva await di getCurrentUser() dentro il lock
+    // di updateUser(). Regola e dettagli: docs/data-access-guidelines.md §4b.
     async getCurrentUser(
         knownSession?: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] | null
     ): Promise<AppUser | null> {

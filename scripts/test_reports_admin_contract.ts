@@ -42,4 +42,21 @@ const a31 = read("supabase", "migrations", "20261025225000_a31_admin_resolve_rep
 assert(/is_current_user_admin\(\)/.test(a31) && /app\.bypass_profile_guard/.test(a31), "admin_resolve_report must check ADMIN before bypassing the profile guard");
 assert(/new\.role := old\.role/.test(a31) && /new\.is_banned := old\.is_banned/.test(a31), "Profile guard must protect role and is_banned");
 
+// A31 (26/10/2026): una segnalazione si decide una volta sola e 'Nascondi' (resolved) non esiste piu'.
+assert(!/handleAction\('resolved'/.test(detail), "'Nascondi' was removed: it did not hide any content");
+assert(/isDecided/.test(detail) && /Decisione presa/.test(detail), "A decided report must show the decision instead of the action buttons");
+assert(/already_decided/.test(detail), "The screen must handle a report already decided by someone else");
+const once = read("supabase", "migrations", "20261026153500_a31_report_decision_once.sql");
+assert(/p_action not in \('dismissed', 'warned', 'banned'\)/.test(once), "Only dismissed, warned, banned are allowed");
+assert(/already_decided/.test(once), "The server must refuse a second decision on the same report");
+
+// A31 (26/10/2026): il ban vale anche nel database e l'admin puo' revocarlo.
+const enforce = read("supabase", "migrations", "20261026160000_a31_ban_enforcement_and_revoke.sql");
+assert(/pgrst\.db_pre_request = 'public\.check_request'/.test(enforce), "Banned users must be blocked on every Data API write (pre-request)");
+assert(/USER_BANNED/.test(enforce) && /rpc\/get_my_profile/.test(enforce), "Pre-request must block writes but keep get_my_profile for the banned screen");
+assert(/as restrictive for insert to authenticated/.test(enforce), "Banned users must not upload to Storage");
+assert(/admin_revoke_ban/.test(enforce) && /'UNBANNED'/.test(enforce), "Ban revocation must be audited");
+assert(/adminNotificationService\.revokeBan\(/.test(detail) && /Alert\.alert\(/.test(detail), "Revoke ban must go through the service with an explicit confirmation");
+assert(/rpc\('admin_revoke_ban'/.test(adminService), "revokeBan must call rpc admin_revoke_ban");
+
 console.log("reports admin contract OK");

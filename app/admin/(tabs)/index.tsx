@@ -23,7 +23,7 @@ interface Report {
   reported_id: string;
   reason: string;
   description: string;
-  status: 'pending' | 'resolved' | 'dismissed' | 'banned';
+  status: 'pending' | 'resolved' | 'dismissed' | 'warned' | 'banned'; // resolved: solo decisioni storiche (A31)
   created_at: string;
   is_ai_generated: boolean;
   reporter: { full_name: string; avatar_url: string };

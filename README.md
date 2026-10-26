@@ -16,6 +16,26 @@ npx expo start --ios
 
 Requisito runtime: usare Node 20.x (>= 20.19.4 per Expo SDK 57 / React Native 0.86). Con versioni piu recenti di Node, Expo puo fallire in avvio.
 
+### Build di sviluppo su iPhone (Apple ID gratuito)
+
+Expo Go dell'App Store non apre progetti SDK 57 e l'account Apple Developer è gratuito (niente `eas build` iOS interno, niente TestFlight). Si compila in locale con Xcode e si firma con il Personal Team.
+
+Prerequisiti (una volta): Xcode con Apple ID in Settings → Accounts, CocoaPods (`brew install cocoapods`), iPhone collegato via cavo almeno la prima volta e Modalità sviluppatore attiva (Impostazioni → Privacy e sicurezza).
+
+```bash
+IOS_FREE_TEAM=1 npx expo prebuild --platform ios --clean   # solo la prima volta o dopo modifiche native
+IOS_FREE_TEAM=1 npx expo run:ios --device                  # compila, installa, avvia Metro
+npx expo start --dev-client                                 # le volte successive: riapri l'app sull'iPhone
+```
+
+- `IOS_FREE_TEAM=1` (in `app.config.js`) toglie gli entitlement che il team gratuito non può firmare: push (`aps-environment`) e universal link (`associated-domains`). Senza la variabile la config è identica, quindi build EAS e OTA non cambiano. Va messa sempre davanti a `prebuild` e `run:ios`.
+- Primo avvio: sull'iPhone autorizzare lo sviluppatore in Impostazioni → Generali → VPN e gestione dispositivi.
+- La firma gratuita scade dopo 7 giorni: rifare `run:ios`. Va rifatto anche dopo ogni modifica nativa (dipendenze native, plugin o config in `app.json`/`app.config.js`, SDK). Dopo il primo abbinamento funziona anche senza cavo, sulla stessa Wi-Fi.
+- Non testabili con questa build: notifiche push e link `https://aiutarsi.app/...` (lo schema `aiutarsiapp://` funziona).
+- La build carica sempre il JS da Metro (working tree locale): gli OTA EAS non si applicano. Metro deve essere acceso.
+- `npx expo run:ios` va lanciato dalla radice del progetto, non da `ios/`.
+- Se `pod install` fallisce con "Failed to download ... from repo1.maven.org": è un download interrotto (Maven reindirizza a `repo.reactnative.dev`). Rilanciare `cd ios && pod install`; per Hermes in alternativa scaricare il file con `curl -fL` e usare `HERMES_ENGINE_TARBALL_PATH=<file> pod install`.
+
 ## UI e Design System
 
 La base condivisa del design system vive in:
@@ -107,6 +127,8 @@ manual workflow_dispatch
 
 - **OTA Deploy** (`ota-deploy.yml`): Run su push verso `main`. Esegue controlli statici/regression e pubblica OTA preview.
 - **EAS Build** (`eas-build.yml`): Run manuale. Esegue build Android preview su EAS Cloud.
+
+**Fingerprint e OTA.** `runtimeVersion` usa la policy `fingerprint`: ogni modifica nativa (nuova dipendenza nativa, plugin o config nativa, SDK) cambia il runtime. Gli OTA pubblicati dopo quel commit arrivano solo alle build EAS fatte da quel commit in poi; le build già installate restano all'ultimo JS compatibile. Dopo una modifica nativa servono nuove build EAS (preview con `eas-build.yml`, production con `eas build --profile production`/`production-apk`) prima che gli OTA tornino a raggiungere i tester. Esempio: `expo-dev-client` aggiunto il 2026-10-26 (commit `e309228`).
 - **Generate Master Audit Report** (`generate-audit.yml`): Run su push verso `main`. Rigenera la documentazione in `audit/`.
 
 ---
