@@ -103,13 +103,22 @@ export default function OnboardingProfile() {
             return;
         }
 
-        // Resolve referral code if entered
-        let referredById = undefined;
-        if (referralCode && referralCode.trim()) {
+        // A32: "invitato da" solo se l'utente ha inserito un codice; il server lo verifica e lo salva una volta sola.
+        if (referralCode.trim()) {
             try {
-                referredById = await authService.resolveReferralCode(referralCode.trim());
+                const referralStatus = await authService.setMyReferrer(referralCode.trim());
+                if (referralStatus === 'not_found') {
+                    showToast('error', "Codice amico non trovato. Controllalo oppure lascia il campo vuoto.");
+                    return;
+                }
+                if (referralStatus === 'self') {
+                    showToast('error', "Questo è il tuo codice. Inserisci quello della persona che ti ha invitato.");
+                    return;
+                }
             } catch (e) {
-                console.warn("Could not resolve referral code:", e);
+                console.warn("Could not save referral code:", e);
+                showToast('error', "Non riesco a verificare il codice amico. Riprova tra poco.");
+                return;
             }
         }
 
@@ -129,7 +138,6 @@ export default function OnboardingProfile() {
                 gender: demographics.gender,
                 date_of_birth: demographics.dateOfBirth,
                 avatar_url: avatar || undefined,
-                referred_by: referredById || undefined
             });
 
             if (success) {

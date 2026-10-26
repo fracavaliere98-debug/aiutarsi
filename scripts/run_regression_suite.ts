@@ -13,6 +13,7 @@ const suite = [
   { label: "attendance-confirmation-contract", path: "scripts/test_attendance_confirmation_contract.ts" },
   { label: "attendance-auto-confirm-and-reminder-contract", path: "scripts/test_attendance_auto_confirm_and_reminder_contract.ts" },
   { label: "reports-admin-contract", path: "scripts/test_reports_admin_contract.ts" },
+  { label: "referral-contract", path: "scripts/test_referral_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
   { label: "story-views-contract", path: "scripts/test_story_views_contract.ts" },

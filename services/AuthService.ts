@@ -898,17 +898,17 @@ export class AuthService {
         return user;
     }
 
-    async ensureReferralCodeExists(userId: string): Promise<string | null> {
-        const fallbackCode = userId.substring(0, 8).toUpperCase();
-
+    // A32: il codice proprio lo crea il server (rpc ensure_my_referral_code). Il client non scrive piu'
+    // referral_code: il trigger protect_privileged_profile_fields lo blocca.
+    async ensureReferralCodeExists(_userId: string): Promise<string | null> {
         try {
-            const accessToken = await this._getAccessTokenForRest();
-            await this._withTimeout(
-                profileRest.updateVolunteerProfile(userId, { referral_code: fallbackCode }, accessToken),
+            const { data, error } = await this._withTimeout(
+                supabase.rpc('ensure_my_referral_code'),
                 'profiles.referral_code.ensure',
                 5000
             );
-            return fallbackCode;
+            if (error) throw error;
+            return (data as string | null) || null;
         } catch (error) {
             console.warn("[DEBUG] AuthService: failed ensuring referral_code", this._formatErrorDetails(error));
             return null;
@@ -1625,19 +1625,17 @@ export class AuthService {
     }
 
     /**
-     * Resolve a referral code to a user ID
+     * A32: "invitato da". Salva l'invitante SOLO a partire dal codice inserito dall'utente in onboarding,
+     * una volta sola, mai se stessi (rpc set_my_referrer). Nessun codice -> nessun invitante.
      */
-    async resolveReferralCode(code: string): Promise<string | null> {
-        try {
-            const accessToken = await this._getAccessTokenForRest();
-            return await this._withTimeout(
-                profileRest.resolveReferralCode(code, accessToken),
-                'profiles.resolveReferralCode.rest',
-                8000
-            );
-        } catch {
-            return null;
-        }
+    async setMyReferrer(code: string): Promise<'ok' | 'empty' | 'already_set' | 'not_found' | 'self'> {
+        const { data, error } = await this._withTimeout(
+            supabase.rpc('set_my_referrer', { p_code: code }),
+            'profiles.setMyReferrer',
+            8000
+        );
+        if (error) throw error;
+        return ((data as { status?: string } | null)?.status || 'empty') as any;
     }
 }
 

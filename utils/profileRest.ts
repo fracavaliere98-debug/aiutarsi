@@ -520,15 +520,6 @@ export const profileRest = {
     );
     return rows.length;
   },
-  resolveReferralCode: async (code: string, accessToken?: string) => {
-    const rows = await request<Array<{ id: string }>>(
-      "GET",
-      `/rest/v1/profiles?referral_code=eq.${encodeURIComponent(code)}&select=id&limit=1`,
-      undefined,
-      accessToken
-    );
-    return rows[0]?.id || null;
-  },
   updateVolunteerProfile: async (userId: string, payload: Record<string, unknown>, accessToken?: string) => {
     return request(
       "PATCH",
