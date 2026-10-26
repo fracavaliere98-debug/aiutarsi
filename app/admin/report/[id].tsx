@@ -8,7 +8,7 @@ import {
   ChevronLeft, User, CheckCircle2, AlertTriangle, Bot, Ban, Lock
 } from 'lucide-react-native';
 import { adminNotificationService, REPORT_STATUS_LABEL, type ReportDecision } from '../../../services/AdminNotificationService';
-import { describeReportTarget } from '../../../utils/reportCategory';
+import { describeReportTarget, REPORT_UPDATE_NOTIFICATION_TITLE } from '../../../utils/reportCategory';
 
 const formatDate = (dateString: string, includeYear = false) => {
   if (!dateString) return '';
@@ -124,8 +124,8 @@ export default function AdminReportDetail() {
           await adminNotificationService.notifyUser(
             report.reporter_id,
             'SUCCESS',
-            'Aggiornamento Segnalazione',
-            'Abbiamo gestito la tua segnalazione.'
+            REPORT_UPDATE_NOTIFICATION_TITLE,
+            'Abbiamo gestito la tua segnalazione. Tocca per vedere l\'esito.'
           );
         } catch (notifyError) {
           console.error('Admin notification failed', notifyError);

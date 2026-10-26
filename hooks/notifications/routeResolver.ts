@@ -1,4 +1,5 @@
 import { AppNotification } from "./types";
+import { REPORT_UPDATE_NOTIFICATION_TITLE } from "../../utils/reportCategory";
 
 function getCommunityRoute(role: string | undefined) {
   return role === "NPO" ? "/(npo)/(tabs)/community" : "/(volunteer)/(tabs)/community";
@@ -32,6 +33,11 @@ function isVerificationOutcomeNotification(
 ) {
   const title = (notif.title || "").toLowerCase();
   return title.includes("profilo verificato") || title.includes("richiesta di verifica respinta");
+}
+
+/** A40: esito di una segnalazione. La notifica non ha l'id: si apre l'elenco con l'esito di tutte. */
+function isReportUpdateNotification(notif: Pick<AppNotification, "title">) {
+  return (notif.title || "").trim().toLowerCase() === REPORT_UPDATE_NOTIFICATION_TITLE.toLowerCase();
 }
 
 export function resolveNotificationRoute(
@@ -89,6 +95,9 @@ export function resolveNotificationRoute(
     case "INFO":
       if (isVerificationOutcomeNotification(notif)) {
         return getProfileRoute(role);
+      }
+      if (isReportUpdateNotification(notif)) {
+        return "/my-reports";
       }
       if (notif.activityId) return `/activity/${notif.activityId}`;
       return getNotificationsRoute(role);

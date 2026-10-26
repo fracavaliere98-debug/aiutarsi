@@ -6,3 +6,4 @@ export { SelectableChip } from "./SelectableChip";
 export { StatusPill } from "./StatusPill";
 export { ContactRow } from "./ContactRow";
 export { ProfileUnavailable } from "./ProfileUnavailable";
+export { FieldError, RequiredMark, RequiredFieldsNote } from "./FieldError";

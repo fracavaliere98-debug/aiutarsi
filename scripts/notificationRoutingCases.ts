@@ -142,4 +142,16 @@ export const notificationRoutingCases: RoutingCase[] = [
     notification: { type: "ACTIVITY_UPDATE", title: "Invito Attività", message: "" },
     expected: "/(volunteer)/(tabs)/community",
   },
+  {
+    label: "Report outcome notification routes the reporter to the list of their reports (A40)",
+    role: "VOLUNTEER",
+    notification: { type: "SUCCESS", title: "Aggiornamento Segnalazione", message: "Abbiamo gestito la tua segnalazione." },
+    expected: "/my-reports",
+  },
+  {
+    label: "Report outcome notification works for NPOs too (A40)",
+    role: "NPO",
+    notification: { type: "SUCCESS", title: "Aggiornamento Segnalazione", message: "" },
+    expected: "/my-reports",
+  },
 ];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -31,6 +31,10 @@ export default function CreateActivityScreen() {
     const { showToast } = useToast();
     const { data: activities = [] } = useActivitiesListQuery(user?.id);
     const createActivityMutation = useCreateActivityMutation();
+    // DIFESA contro il doppio invio (staging 26/10: due "Prova 1" identiche create a 0,9 s di distanza).
+    // Il bottone si disattiva solo quando React aggiorna isPending; questo blocco e' immediato e
+    // non dipende dal render. Causa del doppio invio NON verificata.
+    const submitLockRef = useRef(false);
 
     const [initialValues, setInitialValues] = useState<ActivityFormValues>(BLANK);
     const [resetKey, setResetKey] = useState("blank");
@@ -100,6 +104,8 @@ export default function CreateActivityScreen() {
             showToast("error", "Profilo ente non valido per creare attività.");
             return;
         }
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         try {
             await createActivityMutation.mutateAsync({
                 npoId: user.id,
@@ -120,6 +126,8 @@ export default function CreateActivityScreen() {
             });
             router.replace("/(npo)" as any);
         } catch {
+            // Solo in caso di errore si puo' riprovare; dopo un successo si resta bloccati fino alla navigazione.
+            submitLockRef.current = false;
             showToast("error", "Non sono riuscita a creare l'attività. Riprova.");
         }
     };

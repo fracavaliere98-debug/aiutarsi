@@ -19,6 +19,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
+import { getMissingRequiredFields, missingFieldsMessage } from '../../utils/requiredFields';
+import { FieldError, RequiredFieldsNote, RequiredMark } from '../../components/ui';
 import { colors } from "@/theme";
 
 export default function NPOReferentScreen() {
@@ -59,9 +61,18 @@ export default function NPOReferentScreen() {
         }
     };
 
+    // Campi obbligatori: dopo il primo "Continua" ogni campo vuoto mostra il suo messaggio.
+    const [showErrors, setShowErrors] = useState(false);
+    const missingFields = getMissingRequiredFields([
+        { key: 'name', label: 'Nome e cognome del referente', value: name },
+        { key: 'role', label: "Ruolo nell'organizzazione", value: role },
+    ]);
+    const isMissing = (key: string) => showErrors && missingFields.some((field) => field.key === key);
+
     const handleContinue = async () => {
-        if (!name || !role) {
-            showToast("error", "Inserite il nome e il ruolo del referente.");
+        if (missingFields.length > 0) {
+            setShowErrors(true);
+            showToast("warning", missingFieldsMessage(missingFields));
             return;
         }
 
@@ -116,9 +127,10 @@ export default function NPOReferentScreen() {
 
                     {/* Form */}
                     <View style={styles.form}>
+                        <RequiredFieldsNote />
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>NOME E COGNOME REFERENTE *</Text>
-                            <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>NOME E COGNOME REFERENTE<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, isMissing('name') && styles.inputContainerError]}>
                                 <User size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
@@ -127,11 +139,12 @@ export default function NPOReferentScreen() {
                                     onChangeText={setName}
                                 />
                             </View>
+                            <FieldError message={isMissing('name') ? 'Inserite nome e cognome della persona di riferimento.' : null} />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>RUOLO NELL&apos;ORGANIZZAZIONE *</Text>
-                            <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>RUOLO NELL&apos;ORGANIZZAZIONE<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, isMissing('role') && styles.inputContainerError]}>
                                 <User size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
@@ -140,6 +153,7 @@ export default function NPOReferentScreen() {
                                     onChangeText={setRole}
                                 />
                             </View>
+                            <FieldError message={isMissing('role') ? 'Inserite il ruolo, es. Coordinatore volontari.' : null} />
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -167,7 +181,7 @@ export default function NPOReferentScreen() {
                     <TouchableOpacity 
                         onPress={handleContinue}
                         disabled={isLoading}
-                        style={[styles.button, (!name || !role) && styles.buttonDisabled]}
+                        style={[styles.button, isLoading && styles.buttonDisabled]}
                     >
                         {isLoading ? (
                             <ActivityIndicator color="white" />
@@ -239,6 +253,9 @@ const styles = StyleSheet.create({
         color: '#8080A0',
         lineHeight: 18,
         marginBottom: 4,
+    },
+    inputContainerError: {
+        borderColor: colors.dangerStrong,
     },
     inputContainer: {
         backgroundColor: 'white',

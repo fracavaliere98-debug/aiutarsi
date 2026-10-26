@@ -18,3 +18,13 @@ export function describeReportTarget(contentType?: string | null): string {
     default: return 'Contenuto';
   }
 }
+
+/**
+ * A40: titolo della notifica che l'admin manda a chi ha segnalato quando decide.
+ * Lo usano sia app/admin/report/[id].tsx (invio) sia hooks/notifications/routeResolver.ts (tocco -> /my-reports):
+ * la notifica non porta l'id della segnalazione, e il tocco da push non riceve il payload.
+ */
+export const REPORT_UPDATE_NOTIFICATION_TITLE = 'Aggiornamento Segnalazione';
+
+/** A40: esito mostrato a chi ha segnalato (mai la sanzione esatta, vedi get_my_reports). */
+export type MyReportOutcome = 'pending' | 'action_taken' | 'no_violation';

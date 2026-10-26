@@ -4,7 +4,7 @@ import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { OnboardingStepHeader } from "../../components/onboarding/OnboardingStepHeader";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, UserRound, Gift, Calendar, ChevronDown, Check } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,7 +20,10 @@ import {
     validateVolunteerDemographics,
     birthDateToIso,
     getAdultMaxDate,
+    isAdult,
 } from "../../utils/profileDemographics";
+import { getMissingRequiredFields, missingFieldsMessage } from "../../utils/requiredFields";
+import { FieldError, RequiredFieldsNote, RequiredMark } from "../../components/ui";
 import { trackError, trackEvent } from "../../utils/monitoring";
 import { colors } from "@/theme";
 
@@ -49,6 +52,31 @@ export default function OnboardingProfile() {
     const [birthDateInput, setBirthDateInput] = useState(isoToBirthDateLabel(user?.date_of_birth));
     const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Campi obbligatori (sesso, data di nascita): asterisco rosso; dopo il primo tentativo ogni campo
+    // con un problema mostra il suo messaggio e la schermata scorre fino al primo.
+    const scrollRef = useRef<ScrollView>(null);
+    const fieldsY = useRef(0);
+    const fieldY = useRef<Record<string, number>>({});
+    const [showErrors, setShowErrors] = useState(false);
+    const birthDateIso = birthDateToIso(birthDateInput);
+    const genderError = showErrors && !gender ? "Scegli una delle opzioni." : null;
+    const birthDateError = !showErrors
+        ? null
+        : !birthDateInput.trim()
+            ? "Inserisci la tua data di nascita."
+            : !birthDateIso
+                ? "Data non valida: scrivila come GG/MM/AAAA oppure usa il calendario."
+                : !isAdult(birthDateIso)
+                    ? "Per usare AiutarSì devi avere almeno 18 anni."
+                    : null;
+    const rememberY = (key: string) => (event: { nativeEvent: { layout: { y: number } } }) => {
+        fieldY.current[key] = event.nativeEvent.layout.y;
+    };
+    const scrollToField = (key: string) => {
+        const y = fieldY.current[key];
+        if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(fieldsY.current + y - 16, 0), animated: true });
+    };
 
     useEffect(() => {
         const checkPendingReferral = async () => {
@@ -103,7 +131,13 @@ export default function OnboardingProfile() {
                 role: user?.role || "VOLUNTEER",
                 reason: demographics.error,
             });
-            showToast("error", demographics.error);
+            const missing = getMissingRequiredFields([
+                { key: "gender", label: "Sesso", value: gender },
+                { key: "birthDate", label: "Data di nascita", value: birthDateInput },
+            ]);
+            setShowErrors(true);
+            scrollToField(missing[0]?.key ?? (gender ? "birthDate" : "gender"));
+            showToast("warning", missing.length > 0 ? missingFieldsMessage(missing) : demographics.error);
             return;
         }
 
@@ -187,7 +221,7 @@ export default function OnboardingProfile() {
 
     return (
         <ScreenWrapper className="px-0 bg-background-light">
-            <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+            <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
                 <OnboardingStepHeader
                     title="Completa il profilo"
                     subtitle="Aggiungi una foto e due righe su di te. Bastano pochi dettagli per iniziare meglio."
@@ -232,7 +266,8 @@ export default function OnboardingProfile() {
                         </View>
                     </View>
 
-                    <View className="gap-4 mb-10">
+                    <View className="gap-4 mb-10" onLayout={(event) => { fieldsY.current = event.nativeEvent.layout.y; }}>
+                        <RequiredFieldsNote />
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <View className="flex-row items-center gap-2 mb-3">
                                 <View className="w-8 h-8 rounded-full items-center justify-center bg-primary/10">
@@ -250,12 +285,13 @@ export default function OnboardingProfile() {
                                 onChangeText={setBio}
                             />
                         </View>
-                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
-                            <Text className="text-sm font-bold text-primary mb-3">Sesso</Text>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm" onLayout={rememberY("gender")}>
+                            <Text className="text-sm font-bold text-primary mb-3">Sesso<RequiredMark /></Text>
                             <View className="relative">
                                 <TouchableOpacity
                                     onPress={() => setShowGenderDropdown((current) => !current)}
                                     className="bg-background-light px-4 py-4 rounded-2xl border border-primary/10 flex-row items-center justify-between"
+                                    style={genderError ? { borderColor: colors.dangerStrong } : undefined}
                                 >
                                     <Text className={`${gender ? "text-primary" : "text-secondary/60"} font-medium`}>
                                         {GENDER_OPTIONS.find((option) => option.value === gender)?.label || "Seleziona il sesso"}
@@ -286,12 +322,14 @@ export default function OnboardingProfile() {
                                     </View>
                                 )}
                             </View>
+                            <FieldError message={genderError} />
                         </View>
-                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
-                            <Text className="text-sm font-bold text-primary mb-3">Data di nascita</Text>
+                        <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm" onLayout={rememberY("birthDate")}>
+                            <Text className="text-sm font-bold text-primary mb-3">Data di nascita<RequiredMark /></Text>
                             <View className="flex-row items-center gap-2">
                                 <TextInput
                                     className="flex-1 bg-background-light p-4 rounded-2xl border border-primary/10 text-primary"
+                                    style={birthDateError ? { borderColor: colors.dangerStrong } : undefined}
                                     placeholder="GG/MM/AAAA"
                                     placeholderTextColor="#9ca3af"
                                     keyboardType="number-pad"
@@ -305,9 +343,13 @@ export default function OnboardingProfile() {
                                     <Calendar size={20} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
-                            <Text className="text-[11px] text-secondary/70 mt-2 leading-relaxed">
-                                Campo obbligatorio. Devi avere almeno 18 anni.
-                            </Text>
+                            {birthDateError ? (
+                                <FieldError message={birthDateError} />
+                            ) : (
+                                <Text className="text-[11px] text-secondary/70 mt-2 leading-relaxed">
+                                    Devi avere almeno 18 anni.
+                                </Text>
+                            )}
                         </View>
                         <View className="bg-white rounded-[24px] p-4 border border-primary/10 shadow-sm">
                             <Text className="text-sm font-bold text-primary mb-3">Posizione preferita</Text>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -20,6 +20,8 @@ import { AddressAutocomplete } from '../../components/AddressAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { OnboardingStepHeader } from '../../components/onboarding/OnboardingStepHeader';
 import { requestMediaLibraryPermission } from '../../utils/permissions';
+import { getMissingRequiredFields, missingFieldsMessage } from '../../utils/requiredFields';
+import { FieldError, RequiredFieldsNote, RequiredMark } from '../../components/ui';
 import { colors } from "@/theme";
 
 export default function NPODetailsScreen() {
@@ -41,6 +43,33 @@ export default function NPODetailsScreen() {
             ? { lat: user.location_lat, lng: user.location_lng } 
             : null
     );
+
+    // Campi obbligatori: asterisco rosso sull'etichetta; dopo il primo "Continua" ogni campo vuoto
+    // mostra il suo messaggio e la schermata scorre fino al primo mancante.
+    const scrollRef = useRef<ScrollView>(null);
+    const formY = useRef(0);
+    const fieldY = useRef<Record<string, number>>({});
+    const [showErrors, setShowErrors] = useState(false);
+    const requiredFields = [
+        { key: 'mission', label: 'Missione', value: mission },
+        { key: 'address', label: 'Indirizzo della sede', value: address },
+        { key: 'vatId', label: 'P.IVA / Codice fiscale', value: vatId },
+        { key: 'publicEmail', label: 'Email pubblica', value: publicEmail },
+        { key: 'phone', label: 'Telefono', value: phone },
+    ] as const;
+    const missingFields = getMissingRequiredFields([...requiredFields]);
+    const isMissing = (key: string) => showErrors && missingFields.some((field) => field.key === key);
+    const FIELD_ERRORS: Record<string, string> = {
+        mission: 'Scrivete in breve chi siete e cosa fate.',
+        address: "Cercate e scegliete l'indirizzo della sede.",
+        vatId: 'Inserite la partita IVA o il codice fiscale.',
+        publicEmail: "Inserite l'email che i volontari possono usare per contattarvi.",
+        phone: 'Inserite un numero di telefono.',
+    };
+    const errorFor = (key: string) => (isMissing(key) ? FIELD_ERRORS[key] : null);
+    const rememberY = (key: string) => (event: { nativeEvent: { layout: { y: number } } }) => {
+        fieldY.current[key] = event.nativeEvent.layout.y;
+    };
 
     const pickImage = async () => {
         const granted = await requestMediaLibraryPermission({
@@ -66,8 +95,13 @@ export default function NPODetailsScreen() {
     };
 
     const handleContinue = async () => {
-        if (!mission || !address || !vatId || !phone || !publicEmail) {
-            showToast("error", "Compilate i campi obbligatori: missione, indirizzo, P.IVA/CF, email pubblica e telefono.");
+        if (missingFields.length > 0) {
+            setShowErrors(true);
+            const firstY = fieldY.current[missingFields[0].key];
+            if (firstY !== undefined) {
+                scrollRef.current?.scrollTo({ y: Math.max(formY.current + firstY - 16, 0), animated: true });
+            }
+            showToast("warning", missingFieldsMessage(missingFields));
             return;
         }
 
@@ -99,7 +133,8 @@ export default function NPODetailsScreen() {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{ flex: 1 }}
             >
-                <ScrollView 
+                <ScrollView
+                    ref={scrollRef}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
@@ -128,10 +163,11 @@ export default function NPODetailsScreen() {
                     </View>
 
                     {/* Form */}
-                    <View style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>MISSIONE / DESCRIZIONE *</Text>
-                            <View style={[styles.inputContainer, styles.textAreaContainer]}>
+                    <View style={styles.form} onLayout={(event) => { formY.current = event.nativeEvent.layout.y; }}>
+                        <RequiredFieldsNote />
+                        <View style={styles.inputGroup} onLayout={rememberY('mission')}>
+                            <Text style={styles.inputLabel}>MISSIONE / DESCRIZIONE<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, styles.textAreaContainer, isMissing('mission') && styles.inputContainerError]}>
                                 <Info size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={[styles.input, styles.textArea]}
@@ -143,10 +179,11 @@ export default function NPODetailsScreen() {
                                     textAlignVertical="top"
                                 />
                             </View>
+                            <FieldError message={errorFor('mission')} />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>INDIRIZZO SEDE OPERATIVA *</Text>
+                        <View style={styles.inputGroup} onLayout={rememberY('address')}>
+                            <Text style={styles.inputLabel}>INDIRIZZO SEDE OPERATIVA<RequiredMark /></Text>
                             <AddressAutocomplete 
                                 initialValue={address}
                                 onSelect={(addr, lat, lng) => {
@@ -155,11 +192,12 @@ export default function NPODetailsScreen() {
                                 }}
                                 placeholder="Cerca indirizzo..."
                             />
+                            <FieldError message={errorFor('address')} />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>P.IVA / CODICE FISCALE *</Text>
-                            <View style={[styles.inputContainer, !!vatId && styles.inputContainerDisabled]}>
+                        <View style={styles.inputGroup} onLayout={rememberY('vatId')}>
+                            <Text style={styles.inputLabel}>P.IVA / CODICE FISCALE<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, !!vatId && styles.inputContainerDisabled, isMissing('vatId') && styles.inputContainerError]}>
                                 <Globe size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput
                                     style={[styles.input, !!vatId && styles.inputDisabled]}
@@ -172,11 +210,12 @@ export default function NPODetailsScreen() {
                             {!!vatId && (
                                 <Text style={styles.inputHint}>Inserito in fase di registrazione, non modificabile.</Text>
                             )}
+                            <FieldError message={errorFor('vatId')} />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>EMAIL PUBBLICA *</Text>
-                            <View style={styles.inputContainer}>
+                        <View style={styles.inputGroup} onLayout={rememberY('publicEmail')}>
+                            <Text style={styles.inputLabel}>EMAIL PUBBLICA<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, isMissing('publicEmail') && styles.inputContainerError]}>
                                 <Mail size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
@@ -187,11 +226,12 @@ export default function NPODetailsScreen() {
                                     autoCapitalize="none"
                                 />
                             </View>
+                            <FieldError message={errorFor('publicEmail')} />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>TELEFONO *</Text>
-                            <View style={styles.inputContainer}>
+                        <View style={styles.inputGroup} onLayout={rememberY('phone')}>
+                            <Text style={styles.inputLabel}>TELEFONO<RequiredMark /></Text>
+                            <View style={[styles.inputContainer, isMissing('phone') && styles.inputContainerError]}>
                                 <Phone size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.input}
@@ -201,6 +241,7 @@ export default function NPODetailsScreen() {
                                     keyboardType="phone-pad"
                                 />
                             </View>
+                            <FieldError message={errorFor('phone')} />
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -224,7 +265,7 @@ export default function NPODetailsScreen() {
                     <TouchableOpacity 
                         onPress={handleContinue}
                         disabled={isLoading}
-                        style={[styles.button, (!mission || !address || !vatId || !phone || !publicEmail) && styles.buttonDisabled]}
+                        style={[styles.button, isLoading && styles.buttonDisabled]}
                     >
                         {isLoading ? (
                             <ActivityIndicator color="white" />
@@ -315,6 +356,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#1A1A40',
         fontWeight: '500',
+    },
+    inputContainerError: {
+        borderColor: colors.dangerStrong,
     },
     inputContainerDisabled: {
         backgroundColor: '#F1F1F6',

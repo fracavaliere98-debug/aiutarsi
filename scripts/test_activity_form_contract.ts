@@ -304,6 +304,11 @@ function testStructuralWiring() {
     "REGRESSIONE: create-activity.tsx deve richiedere l'auto-rifinitura AI quando arriva da ai_draft=true"
   );
   pass("app/(npo)/create-activity.tsx: fix #1 (autoCurateOnLoad) cablato correttamente");
+  assert(
+    createWrapper.includes("submitLockRef.current = true") && createWrapper.includes("if (submitLockRef.current) return;"),
+    "create-activity.tsx deve bloccare il secondo invio con un lock immediato (due attivita' identiche create a 0,9 s, 26/10)"
+  );
+  pass("app/(npo)/create-activity.tsx: blocco del doppio invio presente");
 
   const editWrapper = readSource("app/(npo)/edit-activity/[id].tsx");
   assert(editWrapper.includes("onCancelActivity={isCancellable ? handleCancelActivity : undefined}"), "edit-activity/[id].tsx deve passare onCancelActivity ad ActivityForm (solo se annullabile)");

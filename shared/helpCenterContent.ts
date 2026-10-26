@@ -74,6 +74,12 @@ export const COMMON_GUIDE_SECTIONS: GuideSection[] = [
     title: "Notifiche",
     faqs: [
       {
+        id: "report-outcome",
+        question: "Come so cosa è successo alla mia segnalazione?",
+        answer:
+          'Quando la moderazione decide ricevi la notifica "Aggiornamento Segnalazione": toccala per vedere l\'esito. Ti diciamo se abbiamo preso provvedimenti oppure se non abbiamo rilevato violazioni. Per rispetto di tutti non diciamo quale provvedimento è stato preso.',
+      },
+      {
         id: "nonotif",
         question: "Non ricevo notifiche, cosa faccio?",
         answer:
