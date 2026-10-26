@@ -162,3 +162,9 @@ Passi rimasti:
 4. Opzionale, con ok: registrare in `supabase_migrations.schema_migrations` di prod le versioni applicate a mano, cosi' la cronologia coincide con i file del repo.
 
 Rollback: i commenti in fondo a ciascuna migration elencano i comandi inversi. Il rollback di A29/A30 riapre la lettura anonima di `activity_participants`: usarlo solo come passo temporaneo.
+
+## Cronologia migration (allineata il 2026-10-26)
+
+La tabella `supabase_migrations.schema_migrations` di staging e produzione coincide con `supabase/migrations/`: 116 righe, stessi numeri di versione e stessi nomi (VERIFIED con un hash sull'elenco `versione_nome` ordinato, uguale nei due ambienti e nel repo).
+
+Regola: il numero di versione di un file in `supabase/migrations/` e' quello registrato nella cronologia. `apply_migration` assegna un suo timestamp: dopo averla usata, rinomina il file del repo con quel numero (o registra a mano la riga con il numero del file se applichi dall'SQL Editor). Prima di registrare una migration applicata a mano, verifica che i suoi oggetti esistano davvero nel database.
