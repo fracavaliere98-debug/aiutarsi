@@ -140,3 +140,19 @@ Questa sezione va aggiornata man mano che le violazioni vengono chiuse, così il
 - Dove li vede l'ente: scheda candidatura (tab Volontari), lista iscritti nel dettaglio attività, sezione «Contatti condivisi con te» nel profilo del volontario. Componenti: `ContactRow` (`components/ui`), `SharedContactBlock`, `SharedContactsSection` (`components/npo`).
 - Un errore di lettura dei contatti non si nasconde con una lista vuota: la query espone `isError` e la schermata lo dice.
 - Contract test: `scripts/test_shared_contacts_contract.ts`.
+
+### Campi protetti del profilo (decisione 25-26/10/2026, A22/A31/R04)
+- Il trigger `protect_privileged_profile_fields` (BEFORE UPDATE su `profiles`) riporta al valore precedente: `is_verified`, `impact_points`, `verification_status`, `role`, `is_banned`, `ban_reason`, `ban_report_id`, `created_at`, `badges`, `referred_by`, `referral_code`. Vale su staging e prod (26/10).
+- Il trigger decide con `auth.role()`, cioè con il ruolo del TOKEN della richiesta, non con l'utente che esegue la funzione: anche una funzione `SECURITY DEFINER` chiamata da un utente viene bloccata. Per scrivere uno di questi campi la funzione server deve prima verificare chi chiama e poi impostare `set_config('app.bypass_profile_guard', 'true', true)` (esempi: `admin_resolve_report`, `admin_review_verification`, `sync_gamification_to_profile`, `set_my_referrer`). Anche le scritture fatte da Supabase Auth senza token utente (es. `sync_profile_email_confirmation`) sarebbero bloccate: per questo `email` ed `email_confirmed` non sono ancora nell'elenco (A22, secondo giro).
+- Il client non scrive mai questi campi: se servono, si aggiunge una funzione server dedicata, non un'eccezione nel trigger.
+
+### Segnalazioni: chiusura e ban (decisione 25/10/2026, A31)
+- Chiusura di una segnalazione (archivia / ammonisci / risolvi / banna) solo con `admin_resolve_report(report_id, action, reason, user_agent)` via `adminNotificationService.resolveReport`: verifica ADMIN, aggiorna `reports`, applica il ban sul profilo segnalato e scrive `admin_audit_logs` nella stessa transazione. Non banna se stessi né un altro admin.
+- Nessuna scrittura diretta da client su `profiles` di altri utenti né su `admin_audit_logs` (non ha policy di inserimento).
+- Contract test: `scripts/test_reports_admin_contract.ts`.
+
+### Codice amico (decisione 26/10/2026, A32)
+- `referral_code` è il codice PROPRIO da condividere: ogni utente ne ha uno, lo crea il server (`generate_referral_code`: 8 caratteri maiuscoli dall'id, alternativa se occupato) all'iscrizione, in `ensure_my_profile` e con `ensure_my_referral_code()` se manca. Il client non lo scrive.
+- `referred_by` ("invitato da") si imposta SOLO se l'utente inserisce un codice in onboarding, con `set_my_referrer(code)` via `authService.setMyReferrer`: ricerca senza distinzione maiuscole/minuscole, una volta sola, mai se stessi. Nessun codice = nessun invitante; non si deduce né si inventa. L'iscrizione non legge più l'invitante dai metadata.
+- Il premio "Coppia Vincente" scatta alla conferma di presenza della prima attività (`on_volunteer_attendance_confirmed` → `award_activity_completion_to_user(uuid, activities)`).
+- Contract test: `scripts/test_referral_contract.ts`.
