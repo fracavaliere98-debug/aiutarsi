@@ -49,7 +49,7 @@ L'app usa tre ambienti distinti gestiti da EAS:
 |---|---|---|---|
 | **Development** | `development` | — | manuale (`expo start`) |
 | **Preview** | `preview` | `preview` | push su `main` → GitHub Actions |
-| **Production** | `production` | `production` | tag `v*.*.*` → GitHub Actions |
+| **Production** | `production` | `production` | push su `main` → dopo preview, il job `ota-deploy-production` (workflow `ota-deploy.yml`) aspetta l'approvazione manuale dell'ambiente GitHub `production` (required reviewers). Non dipende da tag. |
 | **Production (APK demo/test)** | `production-apk` | `production` | manuale (`eas build --profile production-apk --platform android`) — APK a distribuzione interna, stesso backend di produzione, nessuna review store. Utile per test rapidi o demo prima della submission ufficiale. |
 
 ### Configurare EAS Secrets (primo deploy)

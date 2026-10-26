@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
-import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { 
   ChevronLeft, User, CheckCircle2, AlertTriangle, EyeOff, Bot, Ban
@@ -34,7 +33,6 @@ interface AuditLog {
 
 export default function AdminReportDetail() {
   const { id } = useLocalSearchParams();
-  const { user: adminUser } = useAuth();
   const { showToast } = useToast();
   const [report, setReport] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -80,39 +78,14 @@ export default function AdminReportDetail() {
     setActionLoading(true);
 
     try {
-      const { error: updateError } = await supabase
-        .from('reports')
-        .update({ 
-          status: action,
-          admin_id: adminUser?.id,
-          resolution_date: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      // Se è un BAN, aggiorna il profilo
-      if (action === 'banned') {
-        const { error: banError } = await supabase
-          .from('profiles')
-          .update({ 
-            is_banned: true, 
-            ban_reason: reason,
-            ban_report_id: id // L'ID della segnalazione corrente
-          })
-          .eq('id', report.reported_id);
-        if (banError) throw banError;
-      }
-
-      // Log dell'azione nell'Audit Log
-      await supabase.from('admin_audit_logs').insert({
-        admin_id: adminUser?.id,
-        target_id: report.reported_id,
-        action_type: action.toUpperCase(),
-        reason: reason,
-        ip_address: '0.0.0.0', // In una vera app prenderesti l'IP lato server
-        user_agent: `${Platform.OS} ${Platform.Version}`
-      });
+      // A31: report + ban + audit log in un'unica RPC lato server (il client non puo' scrivere
+      // il profilo di un altro utente: prima il ban non aveva effetto e l'audit log non veniva salvato).
+      await adminNotificationService.resolveReport(
+        String(id),
+        action,
+        reason,
+        `${Platform.OS} ${Platform.Version}`
+      );
 
       showToast('success', `Azione "${action}" completata.`);
 

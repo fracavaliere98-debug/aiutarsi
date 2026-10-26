@@ -147,3 +147,18 @@ Use this as the final release pass before shipping store builds. **Not started.*
 - [ ] Verify chat, notifications, and stories.
 - [ ] Verify production routing from notifications.
 - [ ] Verify Sentry stays quiet on the new release for the key flows.
+
+### Rilascio A28 / A29 / A30 (2026-10-26)
+
+Stato verificato in sola lettura su prod il 2026-10-26 (VERIFIED): A28 e A29/A30 sono GIA' applicate su `aiutarsi-prod` (SQL Editor, quindi non compaiono in `supabase_migrations.schema_migrations`). Presenti: `admin_review_verification`, `sync_is_verified_trigger`, `verification_request_sets_pending`, vincolo `profiles_is_verified_matches_status`, `get_shared_contacts_for_npo` (non eseguibile da `anon`), colonne `email`/`phone` su `applications` e `email` su `activity_participants` con i tre CHECK, policy `Participants viewable by signed-in users` al posto di quella per tutti; `anon` e `authenticated` non leggono piu' telefono, email e messaggio con SELECT diretta; 0 profili, 0 incoerenti. Vecchia `admin_set_npo_verification` eliminata. Non ancora su prod: `20261025225000_a31_admin_resolve_report.sql` (`admin_resolve_report` assente).
+
+Conseguenza: finche' il client nuovo non arriva sul canale `production`, l'app production attuale chiama una funzione che non esiste piu' (approvazione enti dall'app admin) e legge con SELECT diretta colonne ormai ritirate. Con 0 utenti non c'e' impatto, ma va chiuso prima del primo ente reale.
+
+Passi rimasti:
+
+1. Push di `main`: la CI esegue lint, tsc, regression, prod-migration-readiness e security-rls-check (live su staging), poi OTA su `preview`. Il canale `production` non dipende da tag: il job `ota-deploy-production` (`.github/workflows/ota-deploy.yml`) parte dopo l'approvazione manuale dell'ambiente GitHub `production`. Solo modifiche JS: il runtime e' `fingerprint`, se il fingerprint nativo e' cambiato serve una build EAS.
+2. `gemma-help-assistant` ridistribuita dal sorgente repo il 2026-10-26: staging v23, prod v13 (ok esplicito). Risposta reale verificata su entrambi (domanda sui contatti dei volontari, ruolo NPO). L'`ezbr_sha256` differisce tra i due progetti (51c9bc10… vs 6a4b995a…), come gia' noto non e' confrontabile tra progetti.
+3. Prove su prod con utenti di test creati con ok esplicito (mai azioni su `auth.users` senza conferma): richiesta di verifica, approvazione e rifiuto da admin, iscrizione e candidatura con email, lettura dei contatti dall'ente, sparizione dei contatti dopo annullamento o rifiuto.
+4. Opzionale, con ok: registrare in `supabase_migrations.schema_migrations` di prod le versioni applicate a mano, cosi' la cronologia coincide con i file del repo.
+
+Rollback: i commenti in fondo a ciascuna migration elencano i comandi inversi. Il rollback di A29/A30 riapre la lettura anonima di `activity_participants`: usarlo solo come passo temporaneo.

@@ -7,6 +7,32 @@ import { withTimeout } from '../utils/withTimeout';
  * e limita i tipi a INFO / SUCCESS / URGENT. Nessun insert diretto su notifications.
  */
 class AdminNotificationService {
+    /**
+     * A31: chiusura di una segnalazione (archivia / ammonisci / risolvi / banna) in un'unica
+     * transazione lato server. La RPC admin_resolve_report verifica che il chiamante sia ADMIN,
+     * applica il ban sul profilo segnalato (che il client non puo' scrivere: RLS + trigger di
+     * protezione) e scrive l'audit log. Se qualcosa fallisce non cambia nulla.
+     */
+    async resolveReport(
+        reportId: string,
+        action: 'dismissed' | 'warned' | 'resolved' | 'banned',
+        reason: string,
+        userAgent?: string
+    ): Promise<{ report_id: string; action: string; reported_id: string | null; reporter_id: string | null }> {
+        const { data, error } = await withTimeout(
+            supabase.rpc('admin_resolve_report', {
+                p_report_id: reportId,
+                p_action: action,
+                p_reason: reason || null,
+                p_user_agent: userAgent || null,
+            }),
+            'admin.resolveReport',
+            10000
+        );
+        if (error) throw error;
+        return data as any;
+    }
+
     /** Sorgenti dell'inbox admin: segnalazioni e verifiche pendenti + notifiche personali dell'admin. */
     async fetchInboxSources(userId?: string): Promise<{ reports: any[]; verifications: any[]; personalNotifications: any[] }> {
         const [reportsRes, verificationsRes, personalRes] = await withTimeout(
