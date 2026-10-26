@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAvailableChatEntitiesQuery } from '../../hooks/chat/queries';
 import { useChatInboxView } from '../../hooks/chat/useChatInboxView';
-import { useHideConversationMutation, useStartGroupConversationMutation, useStartPrivateConversationMutation } from '../../hooks/chat/mutations';
+import { useHideConversationMutation, useStartGroupConversationMutation, useStartPrivateConversationMutation, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST } from '../../hooks/chat/mutations';
 
 import { StandardLayout } from '../../components/StandardLayout';
 import { colors } from "@/theme";
@@ -279,6 +279,10 @@ export default function MessagesListScreen() {
             setShowNpoPicker(false);
             router.push(`/messages/${convId}` as any);
         } catch (error) {
+            if (error instanceof ChatNotAllowedError) {
+                showToast('info', CHAT_NOT_ALLOWED_TOAST);
+                return;
+            }
             console.error(error);
         }
     };

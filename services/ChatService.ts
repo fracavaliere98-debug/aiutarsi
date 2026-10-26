@@ -13,6 +13,16 @@ export class ChatFilterError extends Error {
     }
 }
 
+/** A26 P6: il server rifiuta l'apertura della chat (ban, blocco o nessuna relazione). */
+export class ChatNotAllowedError extends Error {
+    constructor() {
+        super('Non puoi scrivere a questa persona.');
+        this.name = 'ChatNotAllowedError';
+    }
+}
+
+export const CHAT_NOT_ALLOWED_TOAST = 'Non puoi scrivere a questa persona. Potete chattare solo se avete già un legame, per esempio una candidatura o un\'attività insieme.';
+
 class ChatService {
     private async _withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs: number): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -112,7 +122,16 @@ class ChatService {
      */
     async startPrivateConversation(userId1: string, userId2: string) {
         const accessToken = await this._getAccessToken();
-        const conversationId = await profileRest.startPrivateConversationBetween(userId1, userId2, accessToken);
+        let conversationId: string | null;
+        try {
+            conversationId = await profileRest.startPrivateConversationBetween(userId1, userId2, accessToken);
+        } catch (error) {
+            // Il server risponde con CHAT_NOT_ALLOWED (A26 P6): errore atteso, non un guasto.
+            if (String((error as any)?.message ?? '').includes('CHAT_NOT_ALLOWED')) {
+                throw new ChatNotAllowedError();
+            }
+            throw error;
+        }
         if (!conversationId) {
             throw new Error('Impossibile creare la conversazione privata');
         }

@@ -12,7 +12,7 @@ import { useToast } from "../../../context/ToastContext";
 import { useGamificationView } from "../../../hooks/gamification/selectors";
 import { ProfileUnavailable } from "../../../components/ui";
 import { BannedUserBanner } from "../../../components/admin/BannedUserBanner";
-import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
+import { useStartPrivateConversationMutation, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST } from "../../../hooks/chat/mutations";
 
 export default function NPOVolunteerProfile() {
     const { id } = useLocalSearchParams();
@@ -194,7 +194,12 @@ export default function NPOVolunteerProfile() {
                 }
             } as any);
         } catch (error) {
+            if (error instanceof ChatNotAllowedError) {
+                showToast("info", CHAT_NOT_ALLOWED_TOAST);
+                return;
+            }
             console.error("Error starting chat with volunteer:", error);
+            showToast("error", "Non riesco ad aprire la chat. Riprova.");
         }
     };
 

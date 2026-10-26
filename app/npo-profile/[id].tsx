@@ -15,7 +15,7 @@ import { ActivityCard } from "../../components/ActivityCard";
 import ReportModal from "../../components/ReportModal";
 import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useHasAppliedToNPO } from "../../hooks/applications/selectors";
-import { useStartPrivateConversationMutation } from "../../hooks/chat/mutations";
+import { useStartPrivateConversationMutation, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST } from "../../hooks/chat/mutations";
 import { colors } from "@/theme";
 import { ProfileUnavailable } from "../../components/ui";
 import { BannedUserBanner } from "../../components/admin/BannedUserBanner";
@@ -174,6 +174,10 @@ export default function NPOProfileScreen() {
                 }
             } as any);
         } catch (error) {
+            if (error instanceof ChatNotAllowedError) {
+                showToast("info", CHAT_NOT_ALLOWED_TOAST);
+                return;
+            }
             console.error("Error starting chat with NPO:", error);
             showToast("error", "Errore nell'avvio della chat");
         }

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ChatService, { ChatFilterError } from "../../services/ChatService";
+import ChatService, { ChatFilterError, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST } from "../../services/ChatService";
 import { chatKeys } from "./keys";
 import { applyConversationPreviewUpdate, getChatUnreadCount } from "./selectors";
 
@@ -203,4 +203,4 @@ export function useDeleteMessageMutation(userId?: string, conversationId?: strin
   });
 }
 
-export { ChatFilterError };
+export { ChatFilterError, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST };

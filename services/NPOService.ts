@@ -30,7 +30,8 @@ export class NPOService {
             email: profile.email || '',
             role: profile.role,
             name: profile.full_name || 'Utente',
-            avatar: profile.avatar_url || 'https://i.pravatar.cc/150?img=11',
+            // Senza foto resta vuoto: UserAvatar mostra le iniziali (prima c'era la foto finta di un servizio esterno).
+            avatar: profile.avatar_url || '',
             skills: profile.user_skills?.map((s: any) => s.skill) || [],
             interests: profile.user_interests?.map((i: any) => i.interest) || [],
             npoName: profile.npo_name,

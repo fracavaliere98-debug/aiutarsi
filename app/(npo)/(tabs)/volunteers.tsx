@@ -19,7 +19,7 @@ import { useActivitiesListQuery } from "../../../hooks/activities/queries";
 import { useSendNpoInviteMutation } from "../../../hooks/npo/mutations";
 import { MAX_ACTIVITY_INVITES, isInviteLimitError } from "../../../services/NPOService";
 import { useApproveApplicationMutation, useRejectApplicationMutation } from "../../../hooks/applications/mutations";
-import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
+import { useStartPrivateConversationMutation, ChatNotAllowedError, CHAT_NOT_ALLOWED_TOAST } from "../../../hooks/chat/mutations";
 import { useMyActivityInvitesQuery, useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { useNPOApplications, useSharedContacts } from "../../../hooks/applications/selectors";
 import { colors, palette } from "../../../theme";
@@ -197,6 +197,10 @@ export default function VolunteersScreen() {
                 }
             } as any);
         } catch (error) {
+            if (error instanceof ChatNotAllowedError) {
+                showToast("info", CHAT_NOT_ALLOWED_TOAST);
+                return;
+            }
             console.error("Error starting chat with volunteer:", error);
         }
     };
