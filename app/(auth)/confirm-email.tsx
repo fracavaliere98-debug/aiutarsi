@@ -2,6 +2,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MailCheck, ShieldCheck } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { AuthShell } from "../../components/auth/AuthShell";
@@ -20,6 +21,10 @@ function getStringParam(value?: string | string[]) {
     return Array.isArray(value) ? value[0] : value || "";
 }
 
+// Il link di conferma nella mail riapre l'app su /confirm-email SENZA email e ruolo (non li contiene):
+// li teniamo da parte quando arriviamo dalla registrazione o dal login e li rileggiamo da qui.
+const PENDING_CONFIRMATION_KEY = "@pending_email_confirmation";
+
 export default function ConfirmEmailScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ email?: string | string[]; role?: string | string[]; type?: string | string[] }>();
@@ -28,14 +33,38 @@ export default function ConfirmEmailScreen() {
     const [isChecking, setIsChecking] = useState(false);
     const [isResending, setIsResending] = useState(false);
 
-    const email = getStringParam(params.email);
-    const role = getStringParam(params.role);
+    const paramEmail = getStringParam(params.email);
+    const paramRole = getStringParam(params.role);
+    const [pending, setPending] = useState<{ email: string; role: string }>({ email: "", role: "" });
+    const email = paramEmail || pending.email;
+    const role = paramRole || pending.role;
     const authType = getStringParam(params.type);
     const roleLabel = useMemo(() => getRoleLabel(role), [role]);
     const isEmailChangeFlow = authType === "email_change" || authType === "email_change_current" || authType === "email_change_new";
 
     useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                if (paramEmail) {
+                    await AsyncStorage.setItem(PENDING_CONFIRMATION_KEY, JSON.stringify({ email: paramEmail, role: paramRole }));
+                    return;
+                }
+                const raw = await AsyncStorage.getItem(PENDING_CONFIRMATION_KEY);
+                const saved = raw ? JSON.parse(raw) : null;
+                if (!cancelled && saved?.email) setPending({ email: String(saved.email), role: String(saved.role || "") });
+            } catch {
+                // Solo un aiuto in piu': senza, la schermata mostra l'avviso di indirizzo non disponibile.
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [paramEmail, paramRole]);
+
+    useEffect(() => {
         if (!isLoaded || isLoading || !user || isEmailChangeFlow) return;
+        AsyncStorage.removeItem(PENDING_CONFIRMATION_KEY).catch(() => {});
         // Users who still need to complete onboarding must be routed to
         // /onboarding/intro, not to "/". The central navigation guard in
         // app/_layout.tsx already does this (same condition it uses to force

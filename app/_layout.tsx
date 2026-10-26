@@ -124,8 +124,10 @@ function RootLayoutNav() {
 
     // 4. Incomplete Profile: Forcing onboarding
     if ((user.role === "VOLUNTEER" || user.role === "NPO") && !hasCompletedOnboarding && !inOnboarding) {
-      const dest = user.role === "NPO" ? "/onboarding/intro" : "/onboarding/interests";
-      navigate(dest);
+      // Stessa destinazione della regola 3 (landing): l'onboarding parte sempre da "intro"
+      // (presentazione di Gemma). Due destinazioni diverse facevano rimbalzare il volontario
+      // tra "interests" e "intro" subito dopo login/conferma email.
+      navigate("/onboarding/intro");
       return;
     }
 
