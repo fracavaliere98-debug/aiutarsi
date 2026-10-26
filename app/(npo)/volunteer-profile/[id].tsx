@@ -10,6 +10,8 @@ import { useVolunteerApplications, useSharedContacts } from "../../../hooks/appl
 import { SharedContactsSection } from "../../../components/npo/SharedContactsSection";
 import { useToast } from "../../../context/ToastContext";
 import { useGamificationView } from "../../../hooks/gamification/selectors";
+import { ProfileUnavailable } from "../../../components/ui";
+import { BannedUserBanner } from "../../../components/admin/BannedUserBanner";
 import { useStartPrivateConversationMutation } from "../../../hooks/chat/mutations";
 
 export default function NPOVolunteerProfile() {
@@ -133,6 +135,11 @@ export default function NPOVolunteerProfile() {
         );
     }
 
+    // A37: utente bannato visto da chi non e' admin -> messaggio neutro, nessun dato.
+    if (user.profile_access === 'unavailable') {
+        return <ProfileUnavailable onBack={() => router.back()} />;
+    }
+
     // 3. Calculate Real Stats for this volunteer
     const volunteerStats = {
         totalHours: 0,
@@ -220,6 +227,7 @@ export default function NPOVolunteerProfile() {
                 affiliatedNPOs={affiliatedNPOs as any[]}
                 npoApplications={userApplications}
             >
+                {currentUser?.role === 'ADMIN' ? <BannedUserBanner userId={user.id} userName={user.name} /> : null}
                 <SharedContactsSection
                     contacts={volunteerContacts}
                     activityTitleById={activityTitleById}

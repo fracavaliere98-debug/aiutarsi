@@ -15,6 +15,7 @@ const suite = [
   { label: "reports-admin-contract", path: "scripts/test_reports_admin_contract.ts" },
   { label: "referral-contract", path: "scripts/test_referral_contract.ts" },
   { label: "preferred-city-contract", path: "scripts/test_preferred_city_contract.ts" },
+  { label: "profile-embed-columns-contract", path: "scripts/test_profile_embed_columns_contract.ts" },
   { label: "confirm-email-pending-contract", path: "scripts/test_confirm_email_pending_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },

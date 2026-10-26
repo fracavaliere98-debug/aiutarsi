@@ -35,6 +35,8 @@ export type AppUser = Omit<User,
     user_skills?: UserSkill[];
     user_interests?: UserInterest[];
     followed_entities?: { npo_id: string }[];
+    /** Livello di accesso restituito da get_public_profiles (A26/A37): 'unavailable' = utente bannato visto da non admin. */
+    profile_access?: 'self' | 'admin' | 'full' | 'limited' | 'unavailable';
     // Transitional UI aliases. Canonical profile snapshots stay on snake_case fields.
     name: string;
     avatar: string;

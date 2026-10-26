@@ -126,9 +126,12 @@ export class NPOService {
         const { data, error } = await withTimeout(
             supabase
                 .from('npo_followers')
+                // Colonne esplicite: dopo A26/A22 il ruolo authenticated legge solo alcune colonne di
+                // profiles e `*` fallisce con 42501 (permission denied). Servono solo i campi mostrati
+                // nelle liste follower (nome, foto, ultimo accesso) e quelli usati da Smart Match.
                 .select(`
                     follower:follower_id (
-                        *,
+                        id, role, full_name, avatar_url, last_seen_at,
                         user_skills (skill),
                         user_interests (interest)
                     )

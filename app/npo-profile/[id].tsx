@@ -17,6 +17,8 @@ import { useActivitiesDomain } from "../../hooks/activities/selectors";
 import { useHasAppliedToNPO } from "../../hooks/applications/selectors";
 import { useStartPrivateConversationMutation } from "../../hooks/chat/mutations";
 import { colors } from "@/theme";
+import { ProfileUnavailable } from "../../components/ui";
+import { BannedUserBanner } from "../../components/admin/BannedUserBanner";
 
 export default function NPOProfileScreen() {
     const { id } = useLocalSearchParams();
@@ -228,6 +230,11 @@ export default function NPOProfileScreen() {
         </View>
     );
 
+    // A37: ente bannato visto da chi non e' admin -> messaggio neutro, nessun dato.
+    if (npoUser.profile_access === 'unavailable') {
+        return <ProfileUnavailable onBack={() => router.back()} />;
+    }
+
     return (
         <StandardLayout
             title={npoUser.npoName || "Profilo Ente"}
@@ -236,6 +243,7 @@ export default function NPOProfileScreen() {
             bg="bg-background-light"
             onBack={() => router.back()}
         >
+            {user?.role === "ADMIN" ? <BannedUserBanner userId={npoUser.id} userName={npoUser.npoName || npoUser.name} /> : null}
             {/* Header Profile Section */}
             <View className="items-center mb-6">
                 <View className="relative mb-3">
