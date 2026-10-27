@@ -27,7 +27,7 @@ export interface Badge {
 // --- APP USER TYPE (Successor to OldUser) ---
 export type AppUser = Omit<User,
     'email' | 'bio' | 'phone' | 'website' | 'public_email' | 'location_string' |
-    'npo_name' | 'company_name' | 'is_verified' | 'profile_public' |
+    'npo_name' | 'company_name' | 'is_verified' |
     'show_email' | 'allow_calls' | 'show_volunteering_history' | 'volunteer_list_visible' |
     'embedding' | 'updated_at' | 'created_at' | 'last_seen_at' | 'expo_push_token' | 'referral_code' | 'referred_by'
 > & {
@@ -49,7 +49,6 @@ export type AppUser = Omit<User,
     isVerified?: boolean;
     locationString?: string;
     publicEmail?: string;
-    profile_public?: boolean;
     show_email?: boolean;
     allow_calls?: boolean;
     show_volunteering_history?: boolean;
@@ -171,7 +170,6 @@ export interface OldUser {
     phone?: string;
     website?: string;
     publicEmail?: string; // Contact email, distinct from login email
-    profile_public?: boolean;
     show_email?: boolean;
     allow_calls?: boolean;
     profile_completed: boolean;

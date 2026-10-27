@@ -611,7 +611,6 @@ export type Database = {
           npo_name: string | null
           phone: string | null
           profile_completed: boolean | null
-          profile_public: boolean | null
           public_email: string | null
           role: Database["public"]["Enums"]["user_role"]
           show_email: boolean | null
@@ -647,7 +646,6 @@ export type Database = {
           npo_name?: string | null
           phone?: string | null
           profile_completed?: boolean | null
-          profile_public?: boolean | null
           public_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean | null
@@ -680,7 +678,6 @@ export type Database = {
           npo_name?: string | null
           phone?: string | null
           profile_completed?: boolean | null
-          profile_public?: boolean | null
           public_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean | null
