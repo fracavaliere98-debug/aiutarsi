@@ -140,6 +140,48 @@ class ChatService {
     }
 
     /**
+     * A26 P6b: la tabella profiles non mostra piu' la riga di un volontario non pubblico a chi ha solo
+     * una chat in comune (lo sblocca la sua risposta). In quel caso l'embed `profiles` arriva null:
+     * nome e foto "come li vede chi guarda" (es. "Marta B.", nessuna foto) si prendono da
+     * get_public_profiles. Non critico: se la chiamata fallisce resta il nome di riserva della UI.
+     */
+    private async _fillHiddenProfiles(participants: any[] | undefined | null, messages?: any[] | null) {
+        const missing = new Set<string>();
+        for (const part of participants || []) {
+            if (part?.user_id && !part.profiles) missing.add(part.user_id);
+        }
+        for (const msg of messages || []) {
+            if (msg?.sender_id && !msg.profiles) missing.add(msg.sender_id);
+        }
+        if (!missing.size) return;
+        try {
+            const ids = Array.from(missing);
+            const { data: rows, error } = await this._withTimeout(
+                supabase.rpc('get_public_profiles', { p_ids: ids, p_limit: ids.length }),
+                'chat.hiddenProfiles',
+                8000
+            );
+            if (error) throw error;
+            const byId = new Map<string, any>(((rows as any[]) || []).map((row) => [row.profile_id, {
+                name: row.display_name,
+                npo_name: row.npo_name,
+                avatar: row.avatar_url,
+                role: row.role,
+                allow_calls: row.allow_calls,
+                last_seen_at: row.last_seen_at,
+            }]));
+            for (const part of participants || []) {
+                if (part?.user_id && !part.profiles && byId.has(part.user_id)) part.profiles = byId.get(part.user_id);
+            }
+            for (const msg of messages || []) {
+                if (msg?.sender_id && !msg.profiles && byId.has(msg.sender_id)) msg.profiles = byId.get(msg.sender_id);
+            }
+        } catch (e) {
+            console.warn('[ChatService] hidden profile lookup failed', e);
+        }
+    }
+
+    /**
      * A26 P4: il telefono non e' piu' leggibile dalla tabella profiles. Per il pulsante "Chiama"
      * serve solo quello degli enti (NPO/CORPORATE), che e' pubblico: lo prendiamo da
      * get_public_profiles. Il telefono di un volontario non arriva mai (resta privato).
@@ -181,6 +223,7 @@ class ChatService {
             this.startGroupConversation(data.activity_id, data.activities?.title || '');
         }
 
+        await this._fillHiddenProfiles(data.participants);
         return this._withOrgPhones(data);
     }
 
@@ -189,6 +232,7 @@ class ChatService {
         const rows = await profileRest.getConversationMetadata(conversationId, accessToken);
         const data = Array.isArray(rows) ? rows[0] : rows;
         if (!data) throw new Error('Conversazione non trovata');
+        await this._fillHiddenProfiles(data.participants);
         return this._withOrgPhones(data);
     }
 
@@ -282,6 +326,7 @@ class ChatService {
     async getMessages(conversationId: string, before?: string, limit: number = 20) {
         const accessToken = await this._getAccessToken();
         const data = await profileRest.getMessages(conversationId, before, limit, accessToken);
+        await this._fillHiddenProfiles(null, data as any[]);
         return data;
     }
 

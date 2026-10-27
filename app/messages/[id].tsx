@@ -255,6 +255,18 @@ export default function ChatDetailScreen() {
     : (fallbackPrivateProfile?.npo_name || fallbackPrivateProfile?.name || conversation?.activities?.title || conversation?.name || 'Gruppo');
   const displayAvatar = headerProfile?.avatar || fallbackPrivateProfile?.avatar;
 
+  // A26 P6b: quando l'ente scrive per primo, il volontario sa cosa succede se risponde.
+  // Derivata dai messaggi (nessun messaggio di sistema salvato): l'ente ha scritto, il volontario no.
+  const showFirstContactNote = useMemo(() => {
+    if (user?.role !== 'VOLUNTEER' || conversation?.type !== 'PRIVATE' || hasMoreMessages) return false;
+    const otherRole = headerProfile?.role || targetRole;
+    if (otherRole !== 'NPO') return false;
+    const fromOther = canonicalMessages.some((message: any) => message.sender_id !== user.id);
+    const fromMe = canonicalMessages.some((message: any) => message.sender_id === user.id)
+      || pendingMessages.length > 0;
+    return fromOther && !fromMe;
+  }, [canonicalMessages, conversation?.type, hasMoreMessages, headerProfile?.role, pendingMessages.length, targetRole, user?.id, user?.role]);
+
   const handleCall = () => {
     if (!otherPhone) {
       showToast('error', 'Questo utente non ha inserito un numero di telefono.');
@@ -659,6 +671,13 @@ export default function ChatDetailScreen() {
         )}
 
         <View className="p-4 bg-white border-t border-gray-100">
+          {showFirstContactNote ? (
+            <View className="mb-2 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-2">
+              <Text className="text-xs font-semibold text-slate-500">
+                {`Se rispondi, accetti di condividere il tuo profilo pubblico con ${displayTitle}. Email e telefono restano privati.`}
+              </Text>
+            </View>
+          ) : null}
           {composerDisabledReason ? (
             <View className="mb-2 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-2">
               <Text className="text-xs font-semibold text-slate-500">{composerDisabledReason}</Text>

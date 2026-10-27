@@ -213,7 +213,12 @@ export default function OnboardingProfile() {
                 classification: "error_technical",
                 issueName: "onboarding_profile_submit_failed",
             });
-            showToast('error', "Errore salvataggio profilo: " + error.message);
+            // A26 P7: il server rifiuta le date da minorenne con ADULT_REQUIRED.
+            if (String(error?.message ?? "").includes("ADULT_REQUIRED")) {
+                showToast('error', "Per usare AiutarSì devi avere almeno 18 anni.");
+            } else {
+                showToast('error', "Errore salvataggio profilo: " + error.message);
+            }
         } finally {
             setIsUploading(false);
         }

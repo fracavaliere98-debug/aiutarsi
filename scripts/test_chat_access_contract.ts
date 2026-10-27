@@ -49,7 +49,7 @@ const service = read("services", "ChatService.ts");
 assert(/class ChatNotAllowedError/.test(service), "ChatService must expose ChatNotAllowedError");
 assert(/includes\('CHAT_NOT_ALLOWED'\)/.test(service), "ChatService must map CHAT_NOT_ALLOWED");
 
-const screens: Array<[string, string[]]> = [
+const screens: [string, string[]][] = [
   ["NPO volunteer profile", ["app", "(npo)", "volunteer-profile", "[id].tsx"]],
   ["NPO volunteers tab", ["app", "(npo)", "(tabs)", "volunteers.tsx"]],
   ["NPO public profile", ["app", "npo-profile", "[id].tsx"]],
@@ -60,5 +60,22 @@ for (const [label, path] of screens) {
   assert(/instanceof ChatNotAllowedError/.test(src) && /CHAT_NOT_ALLOWED_TOAST/.test(src),
     `${label} must show a friendly message when the chat is not allowed`);
 }
+
+// P6b: privacy nelle chat (inbox, riga di profilo, nota di primo contatto)
+const p6b = read("supabase", "migrations", "20261026235000_a26_p6b_chat_privacy.sql");
+assert(/p_user_id = auth\.uid\(\) OR coalesce\(auth\.role\(\), ''\) = 'service_role'/.test(p6b),
+  "get_chat_inbox must serve only the caller's own inbox (service_role excepted)");
+assert(/public\.get_public_profiles\(p_ids => ARRAY\[other_part\.user_id\]/.test(p6b),
+  "Inbox title/photo must come from get_public_profiles (masked name for non-public volunteers)");
+const rowRule = p6b.split("function public.can_view_profile_row")[1]?.split("$function$;")[0] ?? "";
+assert(/profile_access_level\(p_target\) in \('self', 'admin', 'full'\)/.test(rowRule) && !/conversation_participants/.test(rowRule),
+  "A shared conversation alone must not unlock a profile row");
+assert(/p_user_id is distinct from auth\.uid\(\) and coalesce\(auth\.role\(\), ''\) <> 'service_role'/.test(p6b),
+  "get_unread_messages_count must check the caller");
+assert(/_fillHiddenProfiles/.test(service) && /get_public_profiles/.test(service),
+  "ChatService must fill hidden participant/sender profiles from get_public_profiles");
+const chatScreen = read("app", "messages", "[id].tsx");
+assert(/Se rispondi, accetti di condividere il tuo profilo pubblico con \$\{displayTitle\}\. Email e telefono restano privati\./.test(chatScreen),
+  "First-contact note must be shown to the volunteer when the NPO writes first");
 
 console.log("chat-access-contract: ok");

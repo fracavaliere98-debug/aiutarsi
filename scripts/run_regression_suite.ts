@@ -23,6 +23,7 @@ const suite = [
   { label: "required-fields-contract", path: "scripts/test_required_fields_contract.ts" },
   { label: "activity-invites-contract", path: "scripts/test_activity_invites_contract.ts" },
   { label: "chat-access-contract", path: "scripts/test_chat_access_contract.ts" },
+  { label: "adult-only-contract", path: "scripts/test_adult_only_contract.ts" },
   { label: "confirm-email-pending-contract", path: "scripts/test_confirm_email_pending_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
   { label: "stories-contract", path: "scripts/test_stories_contract.ts" },
