@@ -25,6 +25,7 @@ const suite = [
   { label: "chat-access-contract", path: "scripts/test_chat_access_contract.ts" },
   { label: "adult-only-contract", path: "scripts/test_adult_only_contract.ts" },
   { label: "profile-public-removed-contract", path: "scripts/test_profile_public_removed_contract.ts" },
+  { label: "definer-user-id-contract", path: "scripts/test_definer_user_id_contract.ts" },
   { label: "privacy-policy-contract", path: "scripts/test_privacy_policy_contract.ts" },
   { label: "confirm-email-pending-contract", path: "scripts/test_confirm_email_pending_contract.ts" },
   { label: "activity-form-contract", path: "scripts/test_activity_form_contract.ts" },
