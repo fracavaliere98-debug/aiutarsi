@@ -7,6 +7,7 @@ import { useToast } from "../../../context/ToastContext";
 import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
+import { LegalConsentCheckboxes } from "../../../components/auth/LegalConsentCheckboxes";
 import { trackEvent } from "../../../utils/monitoring";
 import { colors } from "@/theme";
 
@@ -22,9 +23,10 @@ export default function NPORegister() {
         password: "",
     });
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     const handleRegister = async () => {
-        if (!formData.orgName || !formData.taxId || !formData.email || !formData.password || !acceptedPrivacy) {
+        if (!formData.orgName || !formData.taxId || !formData.email || !formData.password || !acceptedPrivacy || !acceptedTerms) {
             trackEvent("auth_register_validation_failed", {
                 role: "NPO",
                 hasOrgName: !!formData.orgName,
@@ -32,8 +34,9 @@ export default function NPORegister() {
                 hasEmail: !!formData.email,
                 hasPassword: !!formData.password,
                 acceptedPrivacy,
+                acceptedTerms,
             });
-            showToast("error", "Compila tutti i campi e accetta la privacy.");
+            showToast("error", "Compila tutti i campi e spunta sia la Privacy Policy sia i Termini e Condizioni.");
             return;
         }
 
@@ -46,7 +49,7 @@ export default function NPORegister() {
                 role: "NPO",
                 profile_completed: false,
                 npo_vat_id: formData.taxId.trim(),
-            });
+            }, { acceptedTerms, acceptedPrivacy });
 
             if (result.requiresEmailConfirmation) {
                 showToast("success", "Registrazione completata. Controlla la tua email per continuare.");
@@ -125,25 +128,12 @@ export default function NPORegister() {
                     icon={<Lock size={18} color={colors.textSecondary} />}
                 />
 
-                <TouchableOpacity
-                    onPress={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                    style={styles.privacyRow}
-                    activeOpacity={0.8}
-                >
-                    <View style={[styles.checkbox, acceptedPrivacy && styles.checkboxChecked]}>
-                        {acceptedPrivacy ? <Text style={styles.checkboxTick}>✓</Text> : null}
-                    </View>
-                    <Text style={styles.privacyText}>
-                        Accetto la{" "}
-                        <Text onPress={() => router.push("/privacy-policy")} style={styles.inlineLink}>
-                            Privacy Policy
-                        </Text>
-                        {" "}e i{" "}
-                        <Text onPress={() => router.push("/terms" as any)} style={styles.inlineLink}>
-                            Termini di Servizio
-                        </Text>
-                    </Text>
-                </TouchableOpacity>
+                <LegalConsentCheckboxes
+                    acceptedPrivacy={acceptedPrivacy}
+                    acceptedTerms={acceptedTerms}
+                    onChangePrivacy={setAcceptedPrivacy}
+                    onChangeTerms={setAcceptedTerms}
+                />
 
                 <Button
                     title={isLoading ? "Registrazione..." : "Crea account NPO"}

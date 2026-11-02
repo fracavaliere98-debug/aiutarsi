@@ -204,9 +204,8 @@ export default function LandingPage() {
       </section>
 
       <footer className="site-footer">
-        <a href="https://aiutarsi.app/privacy-policy" target="_blank" rel="noreferrer">
-          Privacy
-        </a>
+        <a href="/privacy-policy">Privacy</a>
+        <a href="/terms">Termini</a>
         <a href="mailto:aiutarsi.it@gmail.com?subject=AiutarSì%20-%20Contatti">
           Contatti
         </a>

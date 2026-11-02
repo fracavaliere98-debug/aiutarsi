@@ -7,6 +7,13 @@ import { getAuthScheme, getSupabaseProjectRef, isPreviewRuntime } from '../utils
 import { getPasswordRequirementsText, isPasswordStrongEnough } from '../utils/passwordValidation';
 import { withTimeout } from '../utils/withTimeout';
 import { trackError } from '../utils/monitoring';
+import { TERMS_VERSION } from '../shared/termsContent';
+import { PRIVACY_POLICY_VERSION } from '../shared/privacyPolicyContent';
+
+export interface RegistrationLegalConsent {
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+}
 
 export type EmailConfirmationState = {
     exists: boolean;
@@ -445,7 +452,12 @@ export class AuthService {
         return user;
     }
 
-    async register(userData: Omit<AppUser, 'id'>): Promise<{ user: AppUser; hasSession: boolean; requiresEmailConfirmation: boolean }> {
+    async register(userData: Omit<AppUser, 'id'>, legal: RegistrationLegalConsent): Promise<{ user: AppUser; hasSession: boolean; requiresEmailConfirmation: boolean }> {
+        // Privacy Policy e Termini vanno accettati con due caselle separate. Il server salva data e
+        // versione (tabella legal_acceptances) leggendo terms_version / privacy_version dai metadati.
+        if (!legal?.acceptedTerms || !legal?.acceptedPrivacy) {
+            throw new Error("Per registrarti devi leggere la Privacy Policy e accettare i Termini e Condizioni.");
+        }
         if (!userData.email) {
             throw new Error("L'email è obbligatoria.");
         }
@@ -478,7 +490,9 @@ export class AuthService {
                     impact_points: (metadata as any).impact_points || 0,
                     skills: (metadata as any).skills || [],
                     interests: (metadata as any).interests || [],
-                    followedNPOs: []
+                    followedNPOs: [],
+                    terms_version: TERMS_VERSION,
+                    privacy_version: PRIVACY_POLICY_VERSION,
                 },
             },
         });

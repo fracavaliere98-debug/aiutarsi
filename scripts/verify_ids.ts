@@ -38,7 +38,7 @@ async function verifyIdMigration() {
         password: "password",
         name: "New Volunteer",
         role: "VOLUNTEER"
-    } as any);
+    } as any, { acceptedTerms: true, acceptedPrivacy: true });
     console.log("New User ID:", registration.user.id);
     console.log("New ID starts with vol_:", registration.user.id.startsWith('vol_'));
 

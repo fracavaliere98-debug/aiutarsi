@@ -7,6 +7,7 @@ import { useToast } from "../../../context/ToastContext";
 import { AuthShell } from "../../../components/auth/AuthShell";
 import { AuthField } from "../../../components/auth/AuthField";
 import { Button } from "../../../components/Button";
+import { LegalConsentCheckboxes } from "../../../components/auth/LegalConsentCheckboxes";
 import { colors } from "@/theme";
 
 export default function CorporateRegister() {
@@ -21,10 +22,11 @@ export default function CorporateRegister() {
         password: "",
     });
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     const handleRegister = async () => {
-        if (!formData.companyName || !formData.vatId || !formData.email || !formData.password || !acceptedPrivacy) {
-            showToast("error", "Compila tutti i campi e accetta privacy e termini.");
+        if (!formData.companyName || !formData.vatId || !formData.email || !formData.password || !acceptedPrivacy || !acceptedTerms) {
+            showToast("error", "Compila tutti i campi e spunta sia la Privacy Policy sia i Termini e Condizioni.");
             return;
         }
 
@@ -36,7 +38,7 @@ export default function CorporateRegister() {
                 password: formData.password,
                 role: "CORPORATE",
                 companyName: formData.companyName,
-            });
+            }, { acceptedTerms, acceptedPrivacy });
 
             if (result.requiresEmailConfirmation) {
                 showToast("success", "Registrazione completata: controlla la tua email per continuare.");
@@ -107,25 +109,12 @@ export default function CorporateRegister() {
                     icon={<Lock size={18} color={colors.textSecondary} />}
                 />
 
-                <TouchableOpacity
-                    onPress={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                    style={styles.privacyRow}
-                    activeOpacity={0.8}
-                >
-                    <View style={[styles.checkbox, acceptedPrivacy && styles.checkboxChecked]}>
-                        {acceptedPrivacy ? <Text style={styles.checkboxTick}>✓</Text> : null}
-                    </View>
-                    <Text style={styles.privacyText}>
-                        Accetto la{" "}
-                        <Text onPress={() => router.push("/privacy-policy")} style={styles.inlineLink}>
-                            Privacy Policy
-                        </Text>
-                        {" "}e i{" "}
-                        <Text onPress={() => router.push("/terms" as any)} style={styles.inlineLink}>
-                            Termini di Servizio
-                        </Text>
-                    </Text>
-                </TouchableOpacity>
+                <LegalConsentCheckboxes
+                    acceptedPrivacy={acceptedPrivacy}
+                    acceptedTerms={acceptedTerms}
+                    onChangePrivacy={setAcceptedPrivacy}
+                    onChangeTerms={setAcceptedTerms}
+                />
 
                 <Button
                     title={isLoading ? "Registrazione..." : "Crea account corporate"}

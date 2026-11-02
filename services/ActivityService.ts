@@ -5,6 +5,15 @@ import { profileRest } from '../utils/profileRest';
 import { supabase } from '../utils/supabase';
 import { storageService } from './StorageService';
 
+/**
+ * Lista COMPLETA delle attivita' (useActivitiesListQuery): molte schermate la filtrano dopo per ente o per
+ * iscrizione, quindi non deve essere una classifica troncata. Prima il default era 50: con 65 attivita' su
+ * staging le nuove di un ente finivano oltre il taglio e non comparivano (A47, 02/11/2026).
+ * Limite noto: oltre ~1000 attivita' serviranno letture per ente / per utente invece della lista completa.
+ */
+export const ALL_ACTIVITIES_LIMIT = 1000;
+const HYDRATION_CHUNK_SIZE = 100;
+
 export class ActivityService {
     private async _withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, label: string): Promise<T> {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -229,14 +238,20 @@ export class ActivityService {
                 const ids = (data || []).map((r: any) => r.id);
                 if (ids.length === 0) return { activities: [], totalCount: 0, hasMore: false };
 
-                const [skillRows, partRows] = await this._withTimeout(
+                // Gli id finiscono nell'indirizzo della richiesta (in.(...)): a blocchi, altrimenti con la
+                // lista completa (ALL_ACTIVITIES_LIMIT) l'URL supera i limiti di lunghezza (A47).
+                const idChunks: string[][] = [];
+                for (let i = 0; i < ids.length; i += HYDRATION_CHUNK_SIZE) idChunks.push(ids.slice(i, i + HYDRATION_CHUNK_SIZE));
+                const [skillChunks, partChunks] = await this._withTimeout(
                     Promise.all([
-                        profileRest.listActivitySkills(ids, accessToken),
-                        profileRest.listActivityParticipants(ids, accessToken),
+                        Promise.all(idChunks.map((chunk) => profileRest.listActivitySkills(chunk, accessToken))),
+                        Promise.all(idChunks.map((chunk) => profileRest.listActivityParticipants(chunk, accessToken))),
                     ]),
                     3500,
                     'activities.related_hydration'
                 );
+                const skillRows = skillChunks.flat();
+                const partRows = partChunks.flat();
 
                 const skillsMap: Record<string, string[]> = {};
                 for (const row of skillRows || []) {

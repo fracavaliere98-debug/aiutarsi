@@ -11,6 +11,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   output: "export",
+  // I testi legali stanno in ../shared (fonte unica con l'app): Next deve poter importare file fuori da landing/.
+  experimental: { externalDir: true },
   outputFileTracingRoot: __dirname,
 };
 

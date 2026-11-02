@@ -3,7 +3,7 @@
  * Controlla anche: SDK in package.json, permessi in app.json, colonne di profiles, Sentry solo id, coerenza policy/Termini.
  * Il test legge il codice e controlla che ogni fornitore esterno a cui mandiamo dati sia nominato
  * nell'informativa. Se aggiungi una funzione che manda testo utente a un nuovo servizio, questo test
- * fallisce finche' non aggiorni app/privacy-policy.tsx (e PRIVACY_POLICY_LAST_UPDATE).
+ * fallisce finche' non aggiorni shared/privacyPolicyContent.ts (e PRIVACY_POLICY_LAST_UPDATE / PRIVACY_POLICY_VERSION).
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -13,7 +13,10 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), "utf8");
 
-const policy = read("app", "privacy-policy.tsx");
+// Il testo vive in shared/ (fonte unica per app e landing); app/privacy-policy.tsx lo importa.
+const policy = read("shared", "privacyPolicyContent.ts");
+const policyScreen = read("app", "privacy-policy.tsx");
+assert(/shared\/privacyPolicyContent/.test(policyScreen), "app/privacy-policy.tsx must import the text from shared/privacyPolicyContent");
 
 // Contenuti minimi
 for (const [needle, label] of [
@@ -103,7 +106,7 @@ for (const [keyRe, policyRe, label] of permissionToPolicy) {
 }
 
 // Colonne di profiles: ogni colonna nuova costringe a decidere se la policy va aggiornata.
-// Dopo aver controllato (e aggiornato app/privacy-policy.tsx se serve) aggiungi la colonna qui sotto.
+// Dopo aver controllato (e aggiornato shared/privacyPolicyContent.ts se serve) aggiungi la colonna qui sotto.
 const REVIEWED_PROFILE_COLUMNS = new Set([
   "allow_calls", "avatar_url", "ban_reason", "ban_report_id", "bio", "company_name", "created_at",
   "date_of_birth", "email", "email_confirmed", "embedding", "expo_push_token", "full_name", "gender",
@@ -118,7 +121,7 @@ const profileColumns = [...rowBlock.matchAll(/^\s{10}([a-z_]+)\??:/gm)].map((m) 
 assert(profileColumns.length > 20, "Could not parse the columns of profiles in types/supabase.ts");
 const unreviewed = profileColumns.filter((c) => !REVIEWED_PROFILE_COLUMNS.has(c));
 assert(unreviewed.length === 0,
-  `New columns in profiles not reviewed for the privacy policy: ${unreviewed.join(", ")}. Check app/privacy-policy.tsx and components/legal/TermsContent.tsx, then add them to REVIEWED_PROFILE_COLUMNS`);
+  `New columns in profiles not reviewed for the privacy policy: ${unreviewed.join(", ")}. Check shared/privacyPolicyContent.ts and shared/termsContent.ts, then add them to REVIEWED_PROFILE_COLUMNS`);
 
 // Data della policy: formato valido e non nel futuro
 const MONTHS = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
@@ -133,7 +136,8 @@ const policyDate = parseItalianDate(policy.match(/PRIVACY_POLICY_LAST_UPDATE = '
 assert(policyDate.getTime() <= Date.now() + 86_400_000, "PRIVACY_POLICY_LAST_UPDATE is in the future");
 
 // Termini e Condizioni: stessi fatti della policy, nessun testo di lavoro visibile all'utente
-const terms = read("components", "legal", "TermsContent.tsx");
+const terms = read("shared", "termsContent.ts");
+assert(/shared\/termsContent/.test(read("components", "legal", "TermsContent.tsx")), "TermsContent.tsx must import the text from shared/termsContent");
 for (const [needle, label] of [
   [/almeno 18 anni/, "eta' minima 18 anni"],
   [/Profilo pubblico/, "impostazione profilo pubblico"],
@@ -156,6 +160,46 @@ assert(termsDate.getTime() <= Date.now() + 86_400_000, "TERMS_LAST_UPDATE is in 
 // Coerenza di fatti con la policy
 assert(/PRIVACY_CONTACT_EMAIL = 'aiutarsi\.it@gmail\.com'/.test(policy) && /CONTACT_EMAIL = "aiutarsi\.it@gmail\.com"/.test(terms), "Policy and Terms must use the same contact email");
 assert(/dopo che agisci verso di lui/.test(policy) && /dopo che agisci verso di lui/.test(terms), "Policy and Terms must describe the same unlock rule for NPO");
+// Versioni: la versione salvata alla registrazione e' la data del testo (AAAA-MM-GG) e deve coincidere
+// con la data mostrata, altrimenti il registro delle accettazioni dice una cosa diversa da quella letta.
+function isoFromItalian(d: Date) { return d.toISOString().slice(0, 10); }
+const policyVersion = policy.match(/PRIVACY_POLICY_VERSION = '(\d{4}-\d{2}-\d{2})'/)?.[1];
+const termsVersion = terms.match(/TERMS_VERSION = "(\d{4}-\d{2}-\d{2})"/)?.[1];
+assert(policyVersion === isoFromItalian(policyDate), `PRIVACY_POLICY_VERSION (${policyVersion}) must match PRIVACY_POLICY_LAST_UPDATE (${isoFromItalian(policyDate)})`);
+assert(termsVersion === isoFromItalian(termsDate), `TERMS_VERSION (${termsVersion}) must match TERMS_LAST_UPDATE (${isoFromItalian(termsDate)})`);
+
+// Fatti verificati sul database il 02/11/2026 (get_public_profiles): l'email del profilo non e' visibile ad
+// alcun ente; gli enti vedono solo i contatti che il volontario sceglie di condividere. Nessun testo deve
+// promettere l'interruttore "mostra la mia email" (rimosso con A29/A30).
+for (const [name, text] of [["policy", policy], ["terms", terms], ["help center", read("shared", "helpCenterContent.ts")]] as const) {
+  assert(!/mostra la mia email/i.test(text), `The ${name} must not mention "mostra la mia email" (removed in A29/A30)`);
+}
+assert(/Contatti che condividi/.test(policy) && /scegli tu quale email e quale telefono/.test(terms), "Policy and Terms must explain the contacts shared with an NPO on application/enrollment");
+assert(/Registro delle accettazioni/.test(policy), "The privacy policy must say that we store the accepted version and date");
+
+// Registrazione: due caselle separate e obbligatorie in tutte e tre le schermate, e il blocco anche nel service
+for (const name of ["volunteer", "npo", "corporate"]) {
+  const screen = read("app", "(auth)", "register", `${name}.tsx`);
+  assert(/<LegalConsentCheckboxes/.test(screen), `register/${name}.tsx must show the two consent checkboxes`);
+  assert(/!acceptedPrivacy \|\| !acceptedTerms/.test(screen), `register/${name}.tsx must block registration unless both boxes are checked`);
+  assert(/\{ acceptedTerms, acceptedPrivacy \}\);/.test(screen), `register/${name}.tsx must pass the consents to register()`);
+}
+const consentUi = read("components", "auth", "LegalConsentCheckboxes.tsx");
+assert(/Privacy Policy/.test(consentUi) && /Termini e Condizioni/.test(consentUi) && /onChangePrivacy/.test(consentUi) && /onChangeTerms/.test(consentUi), "LegalConsentCheckboxes must have separate Privacy Policy and Terms checkboxes");
+const authService = read("services", "AuthService.ts");
+assert(/!legal\?\.acceptedTerms \|\| !legal\?\.acceptedPrivacy/.test(authService), "AuthService.register must refuse registration without both consents");
+assert(/terms_version: TERMS_VERSION/.test(authService) && /privacy_version: PRIVACY_POLICY_VERSION/.test(authService), "AuthService.register must send terms_version and privacy_version");
+const acceptanceMigration = readdirSync(join(process.cwd(), "supabase", "migrations")).filter((f) => f.includes("legal_acceptances"));
+assert(acceptanceMigration.length >= 1, "A migration creating legal_acceptances must exist");
+const migrationSql = read("supabase", "migrations", acceptanceMigration[0]);
+assert(/enable row level security/i.test(migrationSql) && /terms_version/.test(migrationSql) && /privacy_version/.test(migrationSql), "legal_acceptances migration must enable RLS and read terms_version / privacy_version");
+
+// Landing: le pagine web leggono lo STESSO testo dell'app (nessuna copia)
+for (const [dir, importName] of [["privacy-policy", "privacyPolicyContent"], ["terms", "termsContent"]] as const) {
+  const page = read("landing", "app", dir, "page.tsx");
+  assert(new RegExp(`shared/${importName}`).test(page), `landing/app/${dir}/page.tsx must import the text from shared/${importName}`);
+}
+
 // Campi aperti ammessi solo nelle sezioni 1 (titolare) e 18 (foro): task "Titolare del trattamento"
 const openFields = [...terms.matchAll(/title: "(\d+)\.[^"]*",\s*paragraphs: \[([\s\S]*?)\n    \],/g)]
   .filter((m) => /\[DA COMPLETARE\]/.test(m[2])).map((m) => m[1]);

@@ -3,7 +3,7 @@ import { Alert, AppState, AppStateStatus } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { AppUser } from "../types";
-import { authService } from "../services/AuthService";
+import { authService, type RegistrationLegalConsent } from "../services/AuthService";
 import { supabase } from "../utils/supabase";
 import { profileService } from "../services/ProfileService";
 import { getSupabaseProjectRef } from "../utils/runtimeConfig";
@@ -24,7 +24,7 @@ interface AuthContextType {
     users: AppUser[];
     usersDB: AppUser[]; 
     login: (email: string, password: string) => Promise<boolean>;
-    register: (userData: Partial<AppUser>) => Promise<{ ok: boolean; requiresEmailConfirmation: boolean }>;
+    register: (userData: Partial<AppUser>, legal: RegistrationLegalConsent) => Promise<{ ok: boolean; requiresEmailConfirmation: boolean }>;
     logout: () => Promise<void>;
     isLoaded: boolean;
     isLoading: boolean;
@@ -515,7 +515,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
-    const register = useCallback(async (userData: Partial<AppUser>): Promise<{ ok: boolean; requiresEmailConfirmation: boolean }> => {
+    const register = useCallback(async (userData: Partial<AppUser>, legal: RegistrationLegalConsent): Promise<{ ok: boolean; requiresEmailConfirmation: boolean }> => {
         // setIsLoading(true); // Don't trigger global loading
         try {
             // Check required fields (basic validation)
@@ -527,7 +527,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 role: userData.role || "unknown",
                 emailDomain: userData.email?.split("@")[1] || "unknown",
             });
-            const result = await authService.register(userData as any);
+            const result = await authService.register(userData as any, legal);
 
             if (result.hasSession) {
                 setUser(result.user);

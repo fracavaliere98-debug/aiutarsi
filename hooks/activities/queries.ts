@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { activityService } from "../../services/ActivityService";
+import { ALL_ACTIVITIES_LIMIT, activityService } from "../../services/ActivityService";
 import { AppActivity } from "../../types";
 import { activityKeys } from "./keys";
 import { ActivityFilters } from "./types";
@@ -9,7 +9,8 @@ const PAGE_SIZE = 15;
 export function useActivitiesListQuery(userId?: string) {
     return useQuery({
         queryKey: activityKeys.list(userId),
-        queryFn: async () => (await activityService.getActivities({ userId })).activities,
+        // Lista completa: le schermate la filtrano per ente o iscrizione (A47), non e' una classifica.
+        queryFn: async () => (await activityService.getActivities({ userId, limit: ALL_ACTIVITIES_LIMIT })).activities,
         placeholderData: (previousData) => previousData,
         staleTime: 60_000,
     });

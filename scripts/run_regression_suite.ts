@@ -21,6 +21,7 @@ const suite = [
   { label: "profile-embed-columns-contract", path: "scripts/test_profile_embed_columns_contract.ts" },
   { label: "banned-hidden-everywhere-contract", path: "scripts/test_banned_hidden_everywhere_contract.ts" },
   { label: "required-fields-contract", path: "scripts/test_required_fields_contract.ts" },
+  { label: "activities-list-complete-contract", path: "scripts/test_activities_list_complete_contract.ts" },
   { label: "activity-invites-contract", path: "scripts/test_activity_invites_contract.ts" },
   { label: "chat-access-contract", path: "scripts/test_chat_access_contract.ts" },
   { label: "adult-only-contract", path: "scripts/test_adult_only_contract.ts" },
