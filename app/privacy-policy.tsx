@@ -7,7 +7,7 @@ import { SoftCard } from '../components/SoftCard';
 // A26 P8: informativa scritta dai fatti verificati nel codice e sul database (27/10/2026).
 // Fonte unica del testo. Se cambia cosa l'app raccoglie, a chi visibilita' o a quali fornitori
 // manda dati, va aggiornata qui e va rialzata PRIVACY_POLICY_LAST_UPDATE.
-const PRIVACY_POLICY_LAST_UPDATE = '27 Ottobre 2026';
+const PRIVACY_POLICY_LAST_UPDATE = '2 Novembre 2026';
 const PRIVACY_CONTACT_EMAIL = 'aiutarsi.it@gmail.com';
 
 type PolicySection = { title: string; paragraphs: string[] };
@@ -28,6 +28,7 @@ const SECTIONS: PolicySection[] = [
             'Telefono: facoltativo. Se ti iscrivi a un\'attività puoi condividerlo con l\'ente che la organizza.',
             'Quello che fai nell\'app: candidature, iscrizioni e presenze alle attività, enti che segui, messaggi nelle chat, segnalazioni e blocchi.',
             'Dati tecnici: il codice per inviarti le notifiche, la data dell\'ultimo accesso e i rapporti sugli errori dell\'app.',
+            'Permessi del telefono (sono tutti facoltativi e li gestisci dalle impostazioni del telefono): posizione, per mostrarti le attività vicine (la usiamo per quella ricerca e non la salviamo); fotocamera e galleria, per la foto profilo; calendario, per aggiungere le attività a cui ti iscrivi; notifiche. Le mappe dell\'app usano i servizi di mappe di Apple o di Google.',
         ],
     },
     {
@@ -36,6 +37,7 @@ const SECTIONS: PolicySection[] = [
             'Per far funzionare il servizio che ci chiedi: creare il tuo account, farti trovare dagli enti, gestire candidature, iscrizioni e chat. La base è il contratto che accetti usando AiutarSì.',
             'Per suggerirti attività compatibili (Smart Match), inviarti notifiche e tenere sicura la comunità con segnalazioni e controlli automatici dei contenuti. La base è il nostro interesse legittimo a offrire un servizio sicuro e utile; le notifiche push le attivi tu dal telefono.',
             'Per verificare che tu abbia almeno 18 anni, come previsto dalle regole del servizio.',
+            'Le regole d\'uso del servizio, comprese quelle su visibilità del profilo, chat e moderazione, sono nei Termini e Condizioni.',
         ],
     },
     {
@@ -55,7 +57,7 @@ const SECTIONS: PolicySection[] = [
             'Supabase gestisce database, accesso e file. I server di produzione sono nell\'Unione Europea (Irlanda).',
             'Google (Gemini) riceve: la tua presentazione, i tuoi interessi e le tue competenze per calcolare i suggerimenti; il testo di post e di alcuni messaggi di chat per il controllo automatico dei contenuti; i testi delle attività per migliorarne la descrizione; le domande che scrivi nel Centro Assistenza. Non inviamo a Google la tua email né il tuo telefono. Il trattamento da parte di Google può avvenire anche fuori dall\'Unione Europea.',
             'Expo recapita le notifiche push e gli aggiornamenti dell\'app.',
-            'Sentry riceve i rapporti sugli errori dell\'app, che includono il tuo identificativo, la tua email e il tuo nome.',
+            'Sentry riceve i rapporti sugli errori dell\'app, che includono solo il tuo identificativo tecnico e il tuo ruolo: non la tua email né il tuo nome.',
             'Non vendiamo i tuoi dati e non li usiamo per pubblicità.',
         ],
     },

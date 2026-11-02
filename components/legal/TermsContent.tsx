@@ -2,6 +2,17 @@ import React from "react";
 import { Text, View } from "react-native";
 import { SoftCard } from "../SoftCard";
 
+// A26 (02/11/2026): Termini e Condizioni riscritti in italiano semplice. Qui stanno anche le regole
+// e i consensi sul modo in cui l'app tratta i dati (visibilità del profilo, chat, controlli
+// automatici). I fatti devono restare uguali a quelli dell'informativa privacy (app/privacy-policy.tsx):
+// scripts/test_privacy_policy_contract.ts controlla che i due testi non si disallineino.
+// Se cambi il significato di una regola: alza TERMS_VERSION e TERMS_LAST_UPDATE.
+// Unici campi aperti: titolare (sezione 1) e foro per i non consumatori (sezione 18),
+// da chiudere con la task "Titolare del trattamento".
+export const TERMS_VERSION = "2026-11-02";
+const TERMS_LAST_UPDATE = "2 Novembre 2026";
+const CONTACT_EMAIL = "aiutarsi.it@gmail.com";
+
 type SectionProps = {
   title: string;
   paragraphs: string[];
@@ -20,167 +31,179 @@ function TermsSection({ title, paragraphs }: SectionProps) {
   );
 }
 
-export function TermsContent() {
-  const sections: SectionProps[] = [
-    {
-      title: "1. Identita del prestatore del servizio",
-      paragraphs: [
-        "Ai sensi del D.Lgs. 9 aprile 2003, n. 70, il prestatore del servizio deve essere identificato in modo diretto e permanente. Prima della pubblicazione questi campi devono essere completati con dati reali: ragione sociale o nome del titolare [DA COMPLETARE], sede legale [DA COMPLETARE], codice fiscale e/o partita IVA [DA COMPLETARE], iscrizione REA o Registro delle Imprese se applicabile [DA COMPLETARE], PEC [DA COMPLETARE], indirizzo email di contatto diretto aiutarsi.it@gmail.com.",
-        "Se l'attivita e soggetta a licenze, autorizzazioni o vigilanza settoriale, devono essere indicati anche gli estremi dell'autorita competente. In assenza di tali dati, la pagina non puo considerarsi completa sotto il profilo informativo.",
-      ],
-    },
-    {
-      title: "2. Oggetto del servizio",
-      paragraphs: [
-        "AiutarSi e un servizio digitale che consente a volontari, enti del Terzo Settore, organizzazioni non profit e, ove previsti, partner aziendali, di creare un account, pubblicare o consultare opportunita di volontariato, candidarsi alle attivita, interagire tramite messaggistica e utilizzare funzionalita di supporto, raccomandazione e assistenza.",
-        "Il servizio ha natura di piattaforma di intermediazione informativa e organizzativa. Salvo ove espressamente indicato diversamente, AiutarSi non assume il ruolo di datore di lavoro, agenzia di collocamento, organizzatore esclusivo dell'evento, assicuratore, ente certificatore o sostituto degli obblighi di legge gravanti sugli enti promotori.",
-      ],
-    },
-    {
-      title: "3. Accettazione dei termini e capacita di agire",
-      paragraphs: [
-        "Creando un account, accedendo all'app o utilizzando il servizio, l'utente dichiara di avere la capacita giuridica necessaria per accettare i presenti termini oppure di agire con il consenso del soggetto che esercita la responsabilita genitoriale o la rappresentanza legale, se richiesto dalla legge applicabile.",
-        "Se l'utente utilizza il servizio per conto di un ente o di una societa, dichiara di essere autorizzato a vincolare tale organizzazione ai presenti termini.",
-      ],
-    },
-    {
-      title: "4. Caratteristiche del servizio digitale",
-      paragraphs: [
-        "Il servizio e fornito tramite applicazione mobile e, dove disponibile, tramite interfacce web o strumenti collegati. Per il corretto utilizzo sono normalmente necessari: dispositivo compatibile, connessione Internet, software aggiornato, accesso alle notifiche push se richieste dalle funzionalita e, per alcune funzioni, consenso facoltativo all'uso di posizione, fotocamera, galleria o documenti.",
-        "Le funzionalita disponibili possono variare per ruolo utente, area geografica, sistema operativo, disponibilita di servizi terzi e stato dell'account. Funzioni sperimentali, di ranking, matching o assistenza AI possono fornire risultati probabilistici e devono essere sempre verificati dall'utente.",
-      ],
-    },
-    {
-      title: "5. Registrazione, account e sicurezza",
-      paragraphs: [
-        "L'utente si impegna a fornire dati accurati, aggiornati, completi e non fuorvianti. E vietato creare account con identita false, impersonare terzi, aggirare sospensioni, condividere credenziali in modo non autorizzato o utilizzare l'account per scopi illeciti o lesivi della sicurezza della piattaforma.",
-        "L'utente e responsabile della custodia delle proprie credenziali e di tutte le attivita compiute tramite il proprio account, salvo prova di accesso non autorizzato non imputabile all'utente. In caso di sospetto abuso o compromissione delle credenziali, l'utente deve avvisare senza ritardo il gestore del servizio.",
-      ],
-    },
-    {
-      title: "6. Regole di condotta",
-      paragraphs: [
-        "E vietato pubblicare, trasmettere o utilizzare contenuti falsi, diffamatori, discriminatori, minacciosi, violenti, offensivi, pornografici, lesivi di diritti di terzi, contrari alla normativa sul volontariato, alla tutela dei minori, alla sicurezza pubblica, alla proprieta intellettuale o alla protezione dei dati personali.",
-        "Gli utenti devono usare la piattaforma in modo corretto e diligente, evitare candidature abusive, recensioni manipolate, spam, scraping, reverse engineering non consentito, tentativi di accesso non autorizzato o uso del servizio per reclutamento illecito, fundraising non autorizzato o attivita estranee alle finalita dichiarate della piattaforma.",
-      ],
-    },
-    {
-      title: "7. Regole specifiche per enti, organizzazioni e partner",
-      paragraphs: [
-        "Gli enti e le organizzazioni che pubblicano attivita, raccolgono candidature o interagiscono con volontari restano gli unici responsabili della legittimita delle opportunita pubblicate, dell'accuratezza delle informazioni, dell'eventuale copertura assicurativa, della sicurezza operativa, delle autorizzazioni necessarie, della gestione dei partecipanti e del rispetto delle norme applicabili al Terzo Settore, al lavoro volontario e alla sicurezza.",
-        "Gli enti si impegnano a non pubblicare opportunita ingannevoli o discriminatorie, a non richiedere compensi non dichiarati, a non raccogliere dati eccedenti rispetto alle finalita dichiarate e a trattare i dati degli utenti nel rispetto della normativa privacy applicabile.",
-      ],
-    },
-    {
-      title: "8. Candidature, adesioni e rapporti tra utenti",
-      paragraphs: [
-        "La pubblicazione di un'attivita o la candidatura di un volontario non garantiscono automaticamente ammissione, conferma, esecuzione o continuita dell'attivita. La decisione di approvare, rifiutare, rinviare o annullare una partecipazione spetta al soggetto che gestisce l'attivita, salvo diversi obblighi inderogabili di legge.",
-        "I rapporti organizzativi, logistici e operativi che si instaurano tra volontari, enti e altri utenti restano in capo ai soggetti direttamente coinvolti. AiutarSi non e parte del rapporto operativo tra gli utenti e non garantisce l'effettiva esecuzione delle attivita pubblicate.",
-      ],
-    },
-    {
-      title: "9. Contenuti degli utenti e licenza d'uso",
-      paragraphs: [
-        "I contenuti caricati o trasmessi dagli utenti restano, ove applicabile, nella titolarita dei rispettivi aventi diritto. L'utente concede tuttavia al gestore del servizio una licenza non esclusiva, mondiale, gratuita, limitata alla durata necessaria e finalizzata a ospitare, riprodurre, adattare tecnicamente, organizzare, visualizzare e comunicare tali contenuti nei limiti necessari all'erogazione, sicurezza, moderazione e promozione interna del servizio.",
-        "L'utente garantisce di avere tutti i diritti, consensi e basi giuridiche necessari per pubblicare contenuti, immagini, documenti e dati di terzi. Il gestore puo rimuovere o disabilitare contenuti in caso di sospetta illiceita, violazione dei presenti termini o ordine dell'autorita competente.",
-      ],
-    },
-    {
-      title: "10. Moderazione, restrizioni e segnalazioni",
-      paragraphs: [
-        "Il gestore puo adottare misure ragionevoli e proporzionate per contrastare contenuti illeciti, abusi della piattaforma, violazioni dei presenti termini, comportamenti rischiosi per la comunita o per adempiere a obblighi normativi, inclusi avvisi, limitazioni di visibilita, rimozione di contenuti, sospensione temporanea o chiusura dell'account.",
-        "Gli utenti possono inviare segnalazioni relative a contenuti o condotte potenzialmente illeciti o contrari ai presenti termini tramite il Centro assistenza o scrivendo a aiutarsi.it@gmail.com, fermo restando che l'indirizzo legale o dedicato alle segnalazioni DSA deve essere indicato in modo espresso se diverso [DA COMPLETARE]. Quando richiesto dalla normativa applicabile, il gestore fornisce una motivazione della decisione adottata e consente i rimedi previsti dalla legge.",
-      ],
-    },
-    {
-      title: "11. Servizi AI, ranking e suggerimenti automatici",
-      paragraphs: [
-        "La piattaforma puo utilizzare sistemi automatici, inclusi strumenti di raccomandazione, classificazione, assistenza conversazionale o generazione di testo, per suggerire attivita, organizzare i contenuti o supportare gli utenti. Tali sistemi possono produrre risultati incompleti, inaccurati o non aggiornati e non sostituiscono valutazioni umane, legali, mediche, di sicurezza o professionali.",
-        "L'utente si impegna a verificare autonomamente le informazioni rilevanti prima di prendere decisioni operative sulla base di output automatici.",
-      ],
-    },
-    {
-      title: "12. Corrispettivi, prezzi e modifiche economiche",
-      paragraphs: [
-        "Alla data del 26 marzo 2026, salvo ove diversamente indicato in specifiche schermate o offerte, l'uso ordinario dell'app AiutarSi e presentato come gratuito per gli utenti finali. Se saranno introdotti servizi a pagamento, abbonamenti o funzionalita premium, il prezzo totale, le imposte applicabili, le condizioni economiche, la durata e le modalita di rinnovo o cessazione dovranno essere mostrate chiaramente prima della conclusione del contratto.",
-        "Nessuna clausola dei presenti termini limita i diritti inderogabili riconosciuti ai consumatori dal Codice del Consumo e dalla normativa europea applicabile ai servizi digitali.",
-      ],
-    },
-    {
-      title: "13. Recesso, cancellazione e cessazione",
-      paragraphs: [
-        "L'utente puo smettere di usare il servizio in qualsiasi momento e, se disponibile nell'app o richiesto per legge, chiedere la cancellazione del proprio account. La cancellazione dell'account non elimina automaticamente obblighi, consensi, segnalazioni, registrazioni o dati la cui conservazione sia necessaria per obblighi di legge, sicurezza, prevenzione abusi o difesa in giudizio.",
-        "Se in futuro saranno offerti servizi digitali a pagamento o contratti a distanza con consumatori, le eventuali informazioni sul diritto di recesso, sulle eccezioni applicabili e sulle modalita di esercizio dovranno essere mostrate in modo specifico prima dell'acquisto, ove richiesto dalla legge.",
-      ],
-    },
-    {
-      title: "14. Proprieta intellettuale",
-      paragraphs: [
-        "Salvo ove diversamente indicato, software, marchi, loghi, interfacce, banche dati non generate dagli utenti, testi editoriali, design e ogni altro elemento del servizio sono protetti dalle norme sulla proprieta intellettuale e restano di titolarita del gestore o dei rispettivi licenzianti.",
-        "E vietato copiare, distribuire, estrarre, decompilare, rivendere, utilizzare per attivita concorrenti o sfruttare in modo non autorizzato parti sostanziali del servizio, salvo nei limiti consentiti dalla legge.",
-      ],
-    },
-    {
-      title: "15. Privacy e protezione dei dati",
-      paragraphs: [
-        "Il trattamento dei dati personali avviene secondo l'informativa privacy applicabile, che deve essere coerente con il Regolamento (UE) 2016/679 e con la normativa nazionale vigente. I presenti termini non sostituiscono l'informativa privacy, che deve indicare almeno titolare del trattamento, finalita, basi giuridiche, tempi di conservazione, destinatari, trasferimenti, diritti degli interessati e canali di contatto.",
-        "Se specifiche organizzazioni trattano dati ricevuti attraverso la piattaforma come titolari autonomi, esse ne rispondono direttamente verso gli interessati per i trattamenti di rispettiva competenza.",
-      ],
-    },
-    {
-      title: "16. Limitazioni di responsabilita",
-      paragraphs: [
-        "Nei limiti consentiti dalla legge, il servizio e fornito senza garanzia di disponibilita continua, assenza di errori o idoneita per finalita particolari. Il gestore non risponde per interruzioni, ritardi, perdite di opportunita, danni indiretti o conseguenze derivanti da condotte di terzi, indisponibilita di reti o servizi esterni, dati inesatti inseriti dagli utenti o cancellazioni imposte da obblighi normativi o di sicurezza.",
-        "Resta fermo che non e esclusa o limitata la responsabilita nei casi in cui tale esclusione o limitazione sia vietata dalla legge, inclusi dolo, colpa grave, lesioni a diritti inderogabili del consumatore o altre ipotesi di responsabilita non derogabile.",
-      ],
-    },
-    {
-      title: "17. Manleva",
-      paragraphs: [
-        "L'utente si impegna a tenere indenne il gestore del servizio da reclami, contestazioni, danni, costi o richieste derivanti da uso illecito della piattaforma, violazione dei presenti termini, violazione di diritti di terzi, caricamento di contenuti non autorizzati o inosservanza di obblighi normativi imputabili all'utente o all'organizzazione da lui rappresentata, nei limiti consentiti dalla legge.",
-      ],
-    },
-    {
-      title: "18. Modifiche del servizio e dei termini",
-      paragraphs: [
-        "Il gestore puo aggiornare, sospendere, modificare o dismettere in tutto o in parte il servizio per ragioni tecniche, organizzative, normative o di sicurezza. I presenti termini possono essere modificati per adeguamenti legislativi, evoluzione del prodotto o cambiamenti del modello di servizio.",
-        "Le modifiche sostanziali devono essere comunicate con congruo preavviso quando richiesto dalla legge o quando incidono in modo rilevante sui diritti e sugli obblighi degli utenti. L'uso continuato del servizio dopo l'entrata in vigore delle modifiche costituisce accettazione dei termini aggiornati, salvo diritti di recesso o cessazione previsti dalla legge.",
-      ],
-    },
-    {
-      title: "19. Legge applicabile e foro competente",
-      paragraphs: [
-        "I presenti termini sono regolati dalla legge italiana, salva l'applicazione delle norme imperative di tutela eventualmente previste a favore dei consumatori dalla legge del paese di residenza abituale del consumatore.",
-        "Per gli utenti qualificabili come consumatori, il foro competente inderogabile e quello del luogo di residenza o domicilio del consumatore, ove previsto dalla legge. Per gli utenti che non agiscono in qualita di consumatori, salvo diversa previsione inderogabile, il foro esclusivo e [DA COMPLETARE].",
-      ],
-    },
-    {
-      title: "20. Clausole finali",
-      paragraphs: [
-        "L'eventuale nullita o inefficacia di una clausola non comporta la nullita delle restanti disposizioni, che restano efficaci nei limiti consentiti dalla legge. Il mancato esercizio di un diritto da parte del gestore non costituisce rinuncia.",
-        "I presenti termini devono essere resi scaricabili, memorizzabili e riproducibili dall'utente prima dell'accettazione. Prima della messa in produzione si raccomanda una revisione da parte di un avvocato abilitato in Italia, per verificare coerenza con identita del titolare, flussi reali dell'app, base contrattuale, ruoli privacy e obblighi di settore.",
-      ],
-    },
-  ];
+const SUMMARY: string[] = [
+  "Questi Termini valgono per tutti: volontari, enti non profit e aziende partner. Dove le regole sono diverse lo diciamo.",
+  "AiutarSì mette in contatto volontari ed enti non profit. Non organizziamo noi le attività e non siamo parte del rapporto tra te e l'ente.",
+  "Serve avere almeno 18 anni.",
+  "Quando ti iscrivi accetti le regole su come vengono mostrati il tuo nome e il tuo profilo, su chat e segnalazioni e sui controlli automatici dei contenuti (sezione 5).",
+  "Il servizio è gratuito. Puoi cancellare l'account quando vuoi dalle impostazioni.",
+];
 
+const SECTIONS: SectionProps[] = [
+  {
+    title: "1. Chi siamo e come contattarci",
+    paragraphs: [
+      "AiutarSì è gestita da: ragione sociale o nome del titolare [DA COMPLETARE], sede [DA COMPLETARE], codice fiscale o partita IVA [DA COMPLETARE].",
+      `Per qualsiasi domanda, segnalazione o richiesta sui tuoi dati scrivi a ${CONTACT_EMAIL}.`,
+    ],
+  },
+  {
+    title: "2. Cosa fa AiutarSì e cosa non fa",
+    paragraphs: [
+      "Questi Termini si applicano a ogni utente: volontari, enti del Terzo Settore, organizzazioni non profit e aziende partner. Ogni sezione vale per tutti, salvo quelle che indicano espressamente a chi si rivolgono (per esempio la 7, per enti e aziende).",
+      "AiutarSì è un'app che permette a volontari, enti del Terzo Settore e aziende partner di creare un profilo, pubblicare e trovare attività di volontariato, candidarsi, iscriversi e scriversi in chat.",
+      "Siamo una piattaforma di incontro. Non siamo il datore di lavoro dei volontari, non siamo un'agenzia di collocamento, non organizziamo le attività al posto degli enti e non diamo assicurazioni. Le attività sono degli enti che le pubblicano.",
+    ],
+  },
+  {
+    title: "3. Chi può usare AiutarSì",
+    paragraphs: [
+      "Puoi registrarti solo se hai almeno 18 anni. Ti chiediamo la data di nascita per verificarlo e il controllo viene fatto anche dai nostri server. Non registriamo minorenni.",
+      "Se ti registri per conto di un ente o di un'azienda dichiari di poterla rappresentare e di poterla vincolare a questi Termini.",
+    ],
+  },
+  {
+    title: "4. Il tuo account",
+    paragraphs: [
+      "Inserisci dati veri e aggiornali se cambiano. Non puoi usare l'identità di un'altra persona, creare più account per aggirare una sospensione o cedere il tuo account.",
+      "Custodisci la tua password: sei responsabile di ciò che succede con il tuo account, salvo accessi non autorizzati che non dipendono da te. Se pensi che qualcuno sia entrato nel tuo account, scrivici subito.",
+    ],
+  },
+  {
+    title: "5. Cosa accetti usando AiutarSì",
+    paragraphs: [
+      "Nome e profilo. Il nome e cognome che inserisci è visibile agli altri utenti secondo la tua impostazione «Profilo pubblico» (attiva di partenza, la cambi quando vuoi). Con il profilo pubblico gli enti verificati e gli altri volontari vedono nome, foto, presentazione, livello, badge, interessi e competenze. Con il profilo non pubblico gli altri vedono solo nome e iniziale del cognome (per esempio «Marta B.») e il livello; un ente vede il profilo completo solo dopo che agisci verso di lui (ti candidi, ti iscrivi a una sua attività o rispondi a un suo messaggio). Seguire un ente non mostra il tuo profilo.",
+      "Se sei un ente o un'azienda. Il profilo dell'ente o dell'azienda (nome, indirizzo e posizione, sito, email e telefono pubblici, referente) è visibile agli altri utenti. Il documento che carichi per la verifica lo vedono solo i nostri amministratori. Finché l'ente non è verificato non può vedere i profili dei volontari. Dopo la verifica un ente vede il profilo completo di un volontario solo alle condizioni descritte qui sopra, e le regole su chat e segnalazioni valgono anche per te.",
+      "Email e telefono. La tua email non è mai mostrata agli altri volontari. Se attivi «mostra la mia email», la vede solo l'ente a cui appartieni. Il telefono è facoltativo: se lo condividi iscrivendoti a un'attività lo vede solo l'ente che la organizza.",
+      "Chat. Un ente può scriverti solo se c'è un legame (una tua candidatura, l'iscrizione a una sua attività o se lo segui). Tu puoi scrivere agli enti. Puoi bloccare chi non vuoi più sentire.",
+      "Controlli automatici e suggerimenti. Per tenere sicura la comunità controlliamo in modo automatico i testi dei post e di alcuni messaggi di chat, e usiamo la tua presentazione, i tuoi interessi e le tue competenze per suggerirti attività. Questi testi sono elaborati da Google (Gemini), come spiegato nell'informativa privacy.",
+      "Segnalazioni. Se segnali un contenuto o una persona, o se sei segnalato, i nostri amministratori possono vedere ciò che serve per valutare il caso.",
+      "Notifiche e permessi. Le notifiche push, la posizione, la fotocamera, la galleria e il calendario sono facoltativi: li attivi o li togli tu dalle impostazioni del telefono.",
+      "Come trattiamo i dati personali è spiegato nell'informativa privacy, che è un documento separato. Leggerla non sostituisce questi Termini e viceversa.",
+    ],
+  },
+  {
+    title: "6. Regole di comportamento",
+    paragraphs: [
+      "Usa AiutarSì con rispetto. Non puoi pubblicare o inviare contenuti falsi, offensivi, minacciosi, discriminatori, sessualmente espliciti, che violino i diritti di altri o la legge, né dati personali di altre persone senza il loro permesso.",
+      "Non puoi fare spam, candidature false o abusive, raccolta fondi non autorizzata, reclutamento per attività estranee al volontariato, accessi non autorizzati, estrazione automatica di dati dell'app o ricostruzione del suo funzionamento.",
+    ],
+  },
+  {
+    title: "7. Regole per enti e aziende",
+    paragraphs: [
+      "Gli enti e le aziende sono gli unici responsabili delle attività che pubblicano: devono essere vere, lecite e non discriminatorie, con informazioni corrette su luogo, orari e compiti. Devono avere le autorizzazioni, la sicurezza e le coperture assicurative richieste dalla legge per il volontariato.",
+      "Non possono chiedere compensi ai volontari se non dichiarati, né raccogliere più dati di quelli necessari. I dati dei volontari ricevuti tramite AiutarSì vanno usati solo per gestire la partecipazione alle attività: l'ente ne risponde direttamente verso i volontari. Gli enti vengono verificati dai nostri amministratori prima di vedere i profili dei volontari.",
+    ],
+  },
+  {
+    title: "8. Candidature, attività e rapporti tra utenti",
+    paragraphs: [
+      "Candidarsi o iscriversi non garantisce di essere accettati. La decisione spetta all'ente, che può approvare, rifiutare o annullare una partecipazione.",
+      "Quello che succede durante un'attività è un rapporto tra volontario ed ente. AiutarSì non garantisce che un'attività si svolga e non risponde di ciò che avviene durante o dopo, salvo i casi in cui la legge lo prevede.",
+    ],
+  },
+  {
+    title: "9. I contenuti che pubblichi",
+    paragraphs: [
+      "I contenuti che carichi (testi, foto, documenti) restano tuoi. Ci dai solo il permesso, gratuito e non esclusivo, di conservarli, mostrarli agli altri utenti secondo le impostazioni di visibilità, adattarli tecnicamente (per esempio ridimensionare una foto) e usarli per far funzionare, proteggere e moderare il servizio, finché resta il tuo account o il contenuto.",
+      "Garantisci di avere il diritto di pubblicare ciò che carichi. Possiamo rimuovere un contenuto se sembra illecito, se viola questi Termini o se lo ordina un'autorità.",
+    ],
+  },
+  {
+    title: "10. Segnalazioni, sospensioni e rimozioni",
+    paragraphs: [
+      "Possiamo avvisarti, limitare la visibilità di un contenuto, rimuoverlo, sospendere o chiudere un account quando serve per far rispettare questi Termini, proteggere la comunità o rispettare la legge. La misura è proporzionata alla gravità.",
+      `Quando prendiamo una decisione su un tuo contenuto o account ti spieghiamo il motivo. Se pensi che sia sbagliata scrivi a ${CONTACT_EMAIL}: la riesaminiamo. Questo non limita i tuoi diritti previsti dalla legge.`,
+      "Puoi segnalare contenuti o persone dall'app o dal Centro Assistenza.",
+    ],
+  },
+  {
+    title: "11. Suggerimenti automatici e assistente",
+    paragraphs: [
+      "L'app usa sistemi automatici per suggerire attività compatibili, controllare i contenuti e rispondere alle domande nel Centro Assistenza. Possono sbagliare o essere incompleti. Controlla sempre le informazioni importanti con l'ente prima di decidere e non usare le risposte dell'assistente come consulenza legale, medica o professionale.",
+    ],
+  },
+  {
+    title: "12. Costi",
+    paragraphs: [
+      "L'uso di AiutarSì è gratuito per volontari ed enti. Se in futuro introdurremo servizi a pagamento ti mostreremo prima, in modo chiaro, prezzo, durata e condizioni, e li accetterai separatamente. Il gratuito di oggi non ti obbliga a nulla.",
+    ],
+  },
+  {
+    title: "13. Cancellare l'account",
+    paragraphs: [
+      "Puoi chiedere la cancellazione dalle impostazioni. Hai 30 giorni per ripensarci; passati i 30 giorni l'account viene eliminato insieme ai dati collegati, come spiegato nell'informativa privacy.",
+      "Possiamo chiudere un account che viola questi Termini. Alcuni dati possono restare più a lungo se la legge ci obbliga a conservarli o ci servono per difenderci in giudizio.",
+    ],
+  },
+  {
+    title: "14. Proprietà intellettuale",
+    paragraphs: [
+      "L'app, il nome AiutarSì, il logo, la grafica e i testi redazionali sono del gestore o di chi ce li ha concessi in licenza. Non puoi copiarli, rivenderli o usarli per attività concorrenti senza permesso, oltre ciò che la legge consente.",
+    ],
+  },
+  {
+    title: "15. Dati personali",
+    paragraphs: [
+      "Quali dati raccogliamo, perché, chi li vede, a quali servizi esterni li mandiamo, per quanto tempo li conserviamo e quali sono i tuoi diritti è spiegato nell'Informativa sulla Privacy, disponibile nell'app.",
+    ],
+  },
+  {
+    title: "16. Limiti di responsabilità",
+    paragraphs: [
+      "L'app è offerta così com'è: facciamo il possibile perché funzioni, ma non possiamo garantire che sia sempre disponibile e senza errori. Nei limiti consentiti dalla legge non rispondiamo di interruzioni dovute a servizi esterni o alla rete, di informazioni sbagliate inserite da altri utenti o di danni indiretti.",
+      "Niente in questi Termini esclude o limita la nostra responsabilità per dolo o colpa grave, né i diritti che la legge riconosce ai consumatori e che non si possono escludere.",
+    ],
+  },
+  {
+    title: "17. Modifiche ai Termini e al servizio",
+    paragraphs: [
+      "Possiamo cambiare l'app o questi Termini per motivi tecnici, di sicurezza, di legge o perché il servizio evolve. Per le modifiche importanti ti avvisiamo nell'app almeno 30 giorni prima, salvo urgenze di sicurezza o obblighi di legge.",
+      "Se non sei d'accordo con la modifica puoi smettere di usare AiutarSì e cancellare l'account prima che entri in vigore. Se continui a usarla dopo quella data, vale la nuova versione.",
+    ],
+  },
+  {
+    title: "18. Legge applicabile e controversie",
+    paragraphs: [
+      "Questi Termini sono regolati dalla legge italiana. Se sei un consumatore restano validi i diritti inderogabili del tuo paese di residenza e puoi rivolgerti al giudice del luogo in cui risiedi o hai il domicilio.",
+      "Prima di qualsiasi azione ti chiediamo di scriverci: cerchiamo sempre di risolvere il problema in via amichevole. Per chi non è consumatore il foro competente è [DA COMPLETARE].",
+    ],
+  },
+  {
+    title: "19. Clausole finali",
+    paragraphs: [
+      "Se una parte di questi Termini non fosse valida, le altre restano in vigore. Se non facciamo valere subito un nostro diritto, non vuol dire che vi rinunciamo.",
+    ],
+  },
+];
+
+export function TermsContent() {
   return (
     <SoftCard className="p-6">
       <Text className="text-primary font-black text-xl mb-4">
         Termini e Condizioni d&apos;Uso
       </Text>
       <Text className="text-secondary text-sm leading-6 mb-4">
-        Ultimo aggiornamento: 26 Marzo 2026
+        Ultimo aggiornamento: {TERMS_LAST_UPDATE}
       </Text>
-      <Text className="text-secondary text-sm leading-6 mb-6">
-        I presenti termini disciplinano l&apos;accesso e l&apos;uso dell&apos;app AiutarSi e dei
-        servizi digitali collegati. Alcuni dati obbligatori per legge non risultano
-        presenti nel repository e sono quindi indicati come [DA COMPLETARE]. Devono
-        essere sostituiti con informazioni reali prima della pubblicazione. Per richieste
-        di contatto e supporto, l&apos;indirizzo operativo indicato nell&apos;app è
-        aiutarsi.it@gmail.com.
+      <Text className="text-secondary text-sm leading-6 mb-4">
+        Questi Termini sono il patto tra te e AiutarSì. Usando l&apos;app o creando un account li accetti.
       </Text>
 
-      {sections.map((section) => (
+      <View className="mb-6">
+        <Text className="text-primary font-bold text-lg mb-2">In breve</Text>
+        {SUMMARY.map((line) => (
+          <Text key={line} className="text-secondary text-sm leading-6 mb-2">
+            {"•  "}{line}
+          </Text>
+        ))}
+        <Text className="text-secondary text-xs leading-5 mt-1">
+          Questo riassunto aiuta a capire, ma valgono le sezioni qui sotto.
+        </Text>
+      </View>
+
+      {SECTIONS.map((section) => (
         <TermsSection key={section.title} title={section.title} paragraphs={section.paragraphs} />
       ))}
     </SoftCard>

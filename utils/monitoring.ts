@@ -170,11 +170,9 @@ export function setMonitoringUser(user: AppUser | null) {
         return;
     }
 
-    Sentry.setUser({
-        id: user.id,
-        email: user.email || undefined,
-        username: user.full_name || user.name || user.npo_name || undefined,
-    });
+    // A26 (02/11/2026): a Sentry mandiamo solo l'id tecnico (minimizzazione). Niente email, nome o
+    // altri dati personali: il test scripts/test_privacy_policy_contract.ts lo verifica.
+    Sentry.setUser({ id: user.id });
 
     Sentry.setContext("app_user", {
         role: user.role,
