@@ -11,14 +11,19 @@ import { useToast } from "../../../context/ToastContext";
 import { NPOHeaderActions } from "../../../components/NPOHeaderActions";
 import { ErrorState } from "../../../components/ErrorState";
 import { ActivityCard } from "../../../components/ActivityCard";
-import { useActivitiesDomain } from "../../../hooks/activities/selectors";
+import { useNpoOwnActivitiesQuery } from "../../../hooks/activities/queries";
+import type { AppActivity } from "../../../types";
 import { colors } from "@/theme";
 
 type ViewMode = "list" | "calendar";
 
+const EMPTY_ACTIVITIES: AppActivity[] = [];
+
 export default function NPOCalendarScreen() {
     const { user } = useAuth();
-    const { activities, error, loadData } = useActivitiesDomain(user);
+    // Le proprie attivita', annullate comprese (la lista generale non contiene le annullate, A47).
+    const { data: activities = EMPTY_ACTIVITIES, isError: error, refetch } = useNpoOwnActivitiesQuery(user?.id);
+    const loadData = async () => { await refetch(); };
     const router = useRouter();
     const { showToast } = useToast();
     const npoDisplayName = user?.npoName || user?.name || "il tuo ente";

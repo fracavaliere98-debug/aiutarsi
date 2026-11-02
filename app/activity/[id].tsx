@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import {
     View, Text, TouchableOpacity, Image, ScrollView,
     Share, Platform, Dimensions, ActivityIndicator, Linking
@@ -72,7 +72,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ActivityDetail() {
-    const { id } = useLocalSearchParams();
+    const { id, invite } = useLocalSearchParams<{ id: string; invite?: string }>();
     const router = useRouter();
     const { user, users, fetchUserById } = useAuth();
     const { activities, reviews, error, loadData } = useActivitiesDomain(user);
@@ -125,6 +125,14 @@ export default function ActivityDetail() {
     const sendInviteMutation = useSendNpoInviteMutation();
     const { data: myActivityInvites = [] } = useMyActivityInvitesQuery(canInviteSuggested ? user?.id : undefined);
     const suggestedQuery = useSuggestedVolunteersQuery(activity?.id, canInviteSuggested && suggestOpen);
+    // Arrivo dall'avviso "pochi iscritti" della home (?invite=volunteers): finestra degli inviti gia' aperta, una volta sola.
+    const autoOpenedInvite = useRef(false);
+    useEffect(() => {
+        if (invite === 'volunteers' && canInviteSuggested && !autoOpenedInvite.current) {
+            autoOpenedInvite.current = true;
+            setSuggestOpen(true);
+        }
+    }, [invite, canInviteSuggested]);
     const invitedCount = useMemo(
         () => myActivityInvites.filter(invite => invite.activityId === activity?.id).length,
         [myActivityInvites, activity?.id]

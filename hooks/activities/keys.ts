@@ -6,6 +6,8 @@ export const activityKeys = {
     all: ["activities"] as const,
     lists: (userId?: string) => [...activityKeys.all, "list", userId ?? ANONYMOUS_USER_KEY] as const,
     list: (userId?: string) => [...activityKeys.lists(userId), "all"] as const,
+    /** Attivita' di un ente, annullate comprese (schermata Attivita' dell'ente, A47). */
+    npoOwn: (npoId?: string) => [...activityKeys.all, "npo-own", npoId ?? ANONYMOUS_USER_KEY] as const,
     paginatedLists: (userId?: string) => [...activityKeys.all, "paginated-list", userId ?? ANONYMOUS_USER_KEY] as const,
     paginatedList: (userId: string | undefined, filters: ActivityFilters) => [...activityKeys.paginatedLists(userId), filters] as const,
     details: () => [...activityKeys.all, "detail"] as const,

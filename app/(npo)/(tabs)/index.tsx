@@ -19,6 +19,8 @@ import { useApplicationsDomain, useNPOApplications } from "../../../hooks/applic
 import { useNPOFollowersQuery } from "../../../hooks/npo/queries";
 import { colors } from "@/theme";
 import { AppActivity } from "../../../types";
+import { LowCoverageActivitiesModal } from "../../../components/npo/LowCoverageActivitiesModal";
+import { inviteFollowersRoute, inviteVolunteersHref } from "../../../components/npo/lowCoverageLogic";
 
 export default function NPODashboard() {
     const { user } = useAuth();
@@ -31,6 +33,7 @@ export default function NPODashboard() {
     const { insights, dismissInsight } = useNPOInsights();
     const [lowCoverageActivities, setLowCoverageActivities] = useState<AppActivity[]>([]);
     const [overdueActivities, setOverdueActivities] = useState<AppActivity[]>([]);
+    const [lowCoverageOpen, setLowCoverageOpen] = useState(false);
     const lowCoverageCount = lowCoverageActivities.length;
     const overdueCount = overdueActivities.length;
 
@@ -179,12 +182,12 @@ export default function NPODashboard() {
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => {
-                        // Con una sola attività coinvolta portiamo l'ente dritto lì (è quella "su cui
-                        // si sta ponendo attenzione"); con più di una l'elenco puntuale resta il report.
+                        // Dritto all'invito (Francesco 02/11/2026): con una sola attività si apre la sua scheda
+                        // con "Invita i tuoi volontari" già aperto; con più attività un elenco con l'invito per ognuna.
                         if (lowCoverageActivities.length === 1) {
-                            router.push(`/activity/${lowCoverageActivities[0].id}` as any);
+                            router.push(inviteVolunteersHref(lowCoverageActivities[0].id) as any);
                         } else {
-                            router.push("/(npo)/report" as any);
+                            setLowCoverageOpen(true);
                         }
                     }}
                     style={{
@@ -207,7 +210,7 @@ export default function NPODashboard() {
                                 <Text style={{ fontSize: 9, fontWeight: '800', color: 'white', backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, letterSpacing: 0.4 }}>ATTENZIONE</Text>
                             </View>
                             <Text style={{ fontSize: 13, fontWeight: '900', color: 'white', lineHeight: 17 }} numberOfLines={2} ellipsizeMode="tail">
-                                Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per {lowCoverageActivities.length === 1 ? "vederla" : "vedere il report"}.
+                                Hai {lowCoverageCount} {lowCoverageCount === 1 ? 'attività con pochi iscritti' : 'attività con pochi iscritti'} nei prossimi giorni. Tocca per invitare i tuoi volontari.
                             </Text>
                         </View>
                         <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -332,6 +335,19 @@ export default function NPODashboard() {
                     />
                 )}
             </View>
+            <LowCoverageActivitiesModal
+                visible={lowCoverageOpen}
+                activities={lowCoverageActivities}
+                onClose={() => setLowCoverageOpen(false)}
+                onInviteVolunteers={(activityId) => {
+                    setLowCoverageOpen(false);
+                    router.push(inviteVolunteersHref(activityId) as any);
+                }}
+                onInviteFollowers={(activityId) => {
+                    setLowCoverageOpen(false);
+                    router.push(inviteFollowersRoute(activityId) as any);
+                }}
+            />
         </StandardLayout>
     );
 }

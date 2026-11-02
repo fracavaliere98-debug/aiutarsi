@@ -16,6 +16,26 @@ export function useActivitiesListQuery(userId?: string) {
     });
 }
 
+/**
+ * Tutte le attivita' di un ente, annullate comprese, lette direttamente per npo_id (A47, 02/11/2026).
+ * La lista generale (useActivitiesListQuery) esclude le annullate, quindi la scheda "Annullate" dell'ente
+ * restava sempre vuota.
+ */
+export const NPO_OWN_ACTIVITY_STATUSES = ["APERTA", "IN_CORSO", "COMPLETATA", "CANCELLATA"];
+export function useNpoOwnActivitiesQuery(npoId?: string) {
+    return useQuery({
+        queryKey: activityKeys.npoOwn(npoId),
+        queryFn: async () => (await activityService.getActivities({
+            npoId,
+            limit: ALL_ACTIVITIES_LIMIT,
+            statuses: NPO_OWN_ACTIVITY_STATUSES,
+        })).activities,
+        enabled: !!npoId,
+        placeholderData: (previousData) => previousData,
+        staleTime: 60_000,
+    });
+}
+
 export function usePaginatedActivitiesQuery(userId: string | undefined, filters: ActivityFilters = {}) {
     return useInfiniteQuery<
         { activities: AppActivity[]; hasMore: boolean; totalCount: number },

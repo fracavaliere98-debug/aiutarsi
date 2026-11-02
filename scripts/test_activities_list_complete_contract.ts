@@ -25,4 +25,12 @@ assert(/const HYDRATION_CHUNK_SIZE = (\d+);/.test(service) && Number(service.mat
 assert(/idChunks\.map\(\(chunk\) => profileRest\.listActivitySkills\(chunk/.test(service) && /idChunks\.map\(\(chunk\) => profileRest\.listActivityParticipants\(chunk/.test(service),
   "Nessuna richiesta con tutti gli id insieme");
 
+// La lista generale esclude le annullate: la schermata Attivita' dell'ente (scheda "Annullate") legge le
+// proprie attivita' per npo_id, annullate comprese.
+const ownQuery = read("hooks", "activities", "queries.ts");
+assert(/NPO_OWN_ACTIVITY_STATUSES = \[[^\]]*"CANCELLATA"/.test(ownQuery), "useNpoOwnActivitiesQuery include le annullate");
+assert(/useNpoOwnActivitiesQuery[\s\S]{0,400}npoId,\s*limit: ALL_ACTIVITIES_LIMIT/.test(ownQuery), "useNpoOwnActivitiesQuery legge per ente, senza taglio");
+const projects = read("app", "(npo)", "(tabs)", "projects.tsx");
+assert(/useNpoOwnActivitiesQuery\(user\?\.id\)/.test(projects) && !/useActivitiesDomain\(/.test(projects), "La schermata Attivita' dell'ente non usa la lista generale");
+
 console.log("activities-list-complete-contract: ok");
